@@ -9,4 +9,7 @@ __pycache__/
 *$py.class
 
 # energy_py specific
-/results
+/saved_runs
+/results/*csv
+/results/*h5
+/results/figures/*png
