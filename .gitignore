@@ -8,8 +8,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# energy_py specific
-/saved_runs
-/results/*csv
-/results/*h5
-/results/figures/*png
+# energy_py
+results/*.csv
+results/*.h5
+results/*.png
