@@ -11,4 +11,4 @@ __pycache__/
 # energy_py
 results/*.csv
 results/*.h5
-results/*.png
+results/figures/*.png
