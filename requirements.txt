@@ -5,6 +5,7 @@ Keras==2.0.0
 mccabe==0.6.1
 numpy==1.12.1
 packaging==16.8
+pandas==0.18.1
 pep8==1.7.0
 protobuf==3.2.0
 pycodestyle==2.3.1
@@ -14,6 +15,7 @@ pyparsing==2.2.0
 PyYAML==3.12
 requests==2.13.0
 seaborn==0.7.1
+scipy==0.19.0
 six==1.10.0
 tensorflow==1.0.1
 tensorflow-gpu==1.0.1

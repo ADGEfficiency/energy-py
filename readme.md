@@ -4,7 +4,7 @@
 
 Reinforcement learning in energy systems requires first proving the concepts in a virtual environment.  This project demonstrates the ability of reinforcement learning to control a virtual energy environment.
 
-To get started clone this repo and run core.py (see below).
+To get started clone this repo and run core.py.
 
 This project is built and maintained by Adam Green -  adam.green@adgefficiency.com.  
 
