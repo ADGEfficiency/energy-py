@@ -6,7 +6,9 @@ Reinforcement learning in energy systems requires first proving the concepts in 
 
 To get started clone this repo and run core.py (see below).
 
-This project is built and maintained by Adam Green -  adam.green@adgefficiency.com.  [You can read the introductory blog post for this project here. ](http://adgefficiency.com/energy_py-reinforcement-learning-for-energy-systems/)
+This project is built and maintained by Adam Green -  adam.green@adgefficiency.com.  
+
+[You can read the introductory blog post for this project here. ](http://adgefficiency.com/energy_py-reinforcement-learning-for-energy-systems/)
 
 ## Guide to the project
 
