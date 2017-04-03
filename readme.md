@@ -128,6 +128,6 @@ net energy cost = export electricity revenue - (gas cost + import electricity co
 - penalty for start/stops
 - O&M costs
 
-Visit [adgefficiency.com](https://www.adgefficiency.com) where I blog about energy and machine learning.
+Visit [adgefficiency.com](http://www.adgefficiency.com) where I blog about energy and machine learning.
 
 Thanks for reading!
