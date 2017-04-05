@@ -3,6 +3,7 @@ from keras.layers import Dense
 from keras.optimizers import adam
 import keras.backend.tensorflow_backend as KTF
 
+
 def Dense_Q(input_length, device):
     devices = ['cpu:0', 'gpu:0']
     with KTF.tf.device(devices[device]):  # force tensorflow to train on GPU
@@ -12,7 +13,6 @@ def Dense_Q(input_length, device):
                                           log_device_placement=False)
                 )
             )
-
         model = Sequential()
         model.add(Dense(units=50, input_shape=(input_length,),
                         activation='relu', kernel_initializer='he_uniform'))
