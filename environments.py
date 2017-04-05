@@ -25,8 +25,7 @@ class energy_py(gym.Env):
             {'Name': 'Export electricity price', 'Min': -200, 'Max': 1600}]
 
         self.asset_models = [
-            assets.library.gas_turbine(size=7.5, name='GT 1'),
-            assets.library.gas_engine(size=7.5, name='GE 1')]
+            assets.library.gas_engine(size=20, name='GT 1')]
 
         self.state_names = [d['Name'] for d in self.state_models]
         self.action_names = [var['Name']
@@ -78,7 +77,9 @@ class energy_py(gym.Env):
         # actions are applied to the next state
         # unseen by the agent when taking action - intended behaviour
         self.steps += int(1)
-        self.state = self.ts.iloc[self.steps, 1:].values
+
+        state_ = self.ts.iloc[self.steps, 1:]
+        self.state = state_.values
 
         # sum of energy inputs/outputs for all assets
         total_gas_burned = sum([asset.gas_burnt for asset in self.asset_models])
@@ -88,10 +89,10 @@ class energy_py(gym.Env):
         total_elect_gen = sum([asset.power_output for asset in self.asset_models])
 
         # energy demands
-        elect_dem = self.ts.loc[self.steps, 'Electrical']
-        HGH_dem = self.ts.loc[self.steps, 'HGH']
-        LGH_dem = self.ts.loc[self.steps, 'LGH']
-        COOL_dem = self.ts.loc[self.steps, 'Cooling']
+        elect_dem = state_['Electrical']
+        HGH_dem = state_['HGH']
+        LGH_dem = state_['LGH']
+        COOL_dem = state_['Cooling']
 
         # energy balances
         HGH_bal = HGH_dem - total_HGH_gen
@@ -113,9 +114,9 @@ class energy_py(gym.Env):
         export_elect = abs(min(0, elect_bal))
 
         # all prices in £/MWh
-        gas_price = self.ts.loc[self.steps, 'Gas price']
-        import_price = self.ts.loc[self.steps, 'Import electricity price']
-        export_price = self.ts.loc[self.steps, 'Export electricity price']
+        gas_price = state_['Gas price']
+        import_price = state_['Import electricity price']
+        export_price = state_['Export electricity price']
         gas_cost = (gas_price * gas_burned) / 2  # £/HH
         import_cost = (import_price * import_elect) / 2  # £/HH
         export_revenue = (export_price * export_elect) / 2  # £/HH
@@ -132,7 +133,7 @@ class energy_py(gym.Env):
 
         self.action_space = self.create_action_space(self.last_actions)
 
-        SP = self.ts.loc[self.steps, 'Settlement period']
+        SP = state_['Settlement period']
         total_heat_demand = HGH_dem + LGH_dem
         self.info.append([SP,
                           total_elect_gen,
