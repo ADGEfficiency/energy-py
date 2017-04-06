@@ -2,30 +2,25 @@ import random
 import itertools
 import copy
 import numpy as np
-import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
-
 import assets.value_functions
 import assets.utils
 
 
 class Q_learner(object):
 
-    def __init__(self, env, verbose):
+    def __init__(self, env, verbose, device):
         self.timer = assets.utils.Timer()
         self.verbose = verbose
         self.env = env
         input_length = len(self.env.s_mins) + len(self.env.a_mins)
-        self.network = assets.value_functions.Dense_Q(input_length)
+        self.network = assets.value_functions.Dense_Q(input_length, device=device)
         self.batch_size = 64
-        self.epochs = 100
+        self.epochs = 200
 
         self.memory, self.network_memory, self.info = [], [], []
         self.save_csv = False
 
         self.epsilon = 1.0
-        self.epsilon_decay = 0.9999 # TODO this calculated automagically
         self.policy_ = 0  # 0 = naive, 1 = e-greedy
         self.discount = 0.9
         self.test_state_actions = self.get_test_state_actions()
@@ -35,8 +30,7 @@ class Q_learner(object):
         state = self.env.reset()
         done = False
         while done is not True:
-            state = copy.copy(self.env.state)
-            last_action = copy.copy(self.env.last_actions)
+            state = self.env.state
             action, state_action, choice = self.policy(state)
             next_state, reward, done, env_info = self.env.step(action)
 
@@ -64,7 +58,7 @@ class Q_learner(object):
             elif episode_number > 0:
                 hist = self.train_model()
                 final_loss = hist.history['loss'][-1]
-                self.epsilon = self.decay_epsilon()
+                self.epsilon = self.decay_epsilon(episode_number)
 
             self.info.append([
                 self.timer.get_time(),
@@ -86,9 +80,10 @@ class Q_learner(object):
         print('Total run time is ' + self.timer.get_time())
         return self
 
-    def decay_epsilon(self):
+    def decay_epsilon(self, episode_number):
+        # TODO harcoded to be at 0.1 after 25 episodes
         if self.epsilon != 0:
-            self.epsilon = max(0.1, self.epsilon_decay * self.epsilon)
+            self.epsilon = max(0.1, -0.0375 * episode_number + 1.0375)
         return self.epsilon
 
     def policy(self, state):
@@ -159,8 +154,9 @@ class Q_learner(object):
         if self.verbose > 0:
             print('Starting training')
         sample_size = min(len(self.network_memory), self.batch_size)
-        batch = np.array(random.sample(self.network_memory, sample_size))
-        # batch = np.array(batch)
+        memory_length = -50000
+        batch = np.array(random.sample(self.network_memory[memory_length:],
+                                       sample_size))
         features = np.hstack(batch[:, 0]).reshape(sample_size, -1)
         reward = batch[:, 1]
         next_state_actions = batch[:, 2]
@@ -174,7 +170,7 @@ class Q_learner(object):
         start, returns = 0, []
         for k in range(0, sample_size):
             stop = start + lengths[k]
-            if batch[k, 3] == True:  # if last step
+            if batch[k, 3] is True:  # if last step
                 rtn = 0
             else:
                 rtn = np.max(next_state_pred[start:stop])
@@ -212,129 +208,3 @@ class Q_learner(object):
             test_state_actions.append(state_action)
         test_state_actions = np.array(test_state_actions)
         return test_state_actions
-
-    def outputs(self):
-        print('Generating outputs')
-        plt.style.use('seaborn-deep')
-
-        idx = np.linspace(1, len(self.memory), len(self.memory), endpoint=True)
-        index = pd.Index(idx, dtype=int, name='Step')
-
-        memory = pd.DataFrame(
-            self.memory,
-            index=index,
-            columns=['State', 'Action', 'State Action', 'Reward', 'Next State',
-                     'Episode', 'Step', 'Epsilon', 'Choice', 'Done']
-            )
-
-        agent_info = pd.DataFrame(
-            self.info,
-            index=index,
-            columns=['Run Time', 'Q Test', 'Training History']
-            )
-
-        network_memory = pd.DataFrame(
-            self.network_memory,
-            index=index,
-            columns=['State Action (normalized)',
-                     'Reward', 'Next State & Actions','Done']
-            )
-
-        memory = pd.concat([memory, agent_info], axis=1)
-        sums = memory.groupby(['Episode']).sum().add_prefix('Total ')
-        means = memory.groupby(['Episode']).mean().add_prefix('Mean ')
-        count = memory.groupby('Episode')['Step'].count().rename('Step')
-        summary = pd.concat([sums, means, count], axis=1)
-
-        x = summary.index
-        steps = summary.loc[:, 'Step'].values
-        tick_locations = np.cumsum(steps)
-        last_step_start = int(tick_locations[-2])
-        last_step_stop = int(tick_locations[-1])
-
-        env_info = pd.DataFrame(
-            self.env.info,
-            index=range(last_step_start, last_step_stop),
-            columns=['Settlement period',
-                     'Power generated [MWe]',
-                     'Import electricity price [£/MWh]',
-                     'Total heat demand [MW]']
-            )
-        env_info.loc[:, 'Steps'] = np.arange(1, env_info.shape[0] + 1)
-
-        # Figure 1
-        f1, ax1 = plt.subplots(3, 1, sharex=True)
-        sns.tsplot(memory.loc[:, 'Q Test'], memory.index, ax=ax1[0])
-        sns.tsplot(memory.loc[:, 'Training History'], memory.index, ax=ax1[1])
-        sns.tsplot(memory.loc[:, 'Training History'], memory.index, ax=ax1[2])
-        ax1[0].set(ylabel='Q Test')
-        ax1[1].set(ylabel='Training History')
-        ax1[2].set(ylabel='Training History')
-        ax1[2].set_ylim([0, 5000])
-        ax2 = ax1[0].twiny()
-        ax2.set_xlim(ax1[0].get_xlim())
-        ax2.set_xticks(tick_locations)
-        ax2.set_xticklabels(summary.index)
-        ax2.set_xlabel('Episode')
-        f1.savefig('results/figures/f1.png')
-        plt.close(f1)
-
-        # Figure 2
-        f2, ax2 = plt.subplots(2, 1, sharex=True)
-        sns.tsplot(summary.loc[:, 'Mean Epsilon'], x, ax=ax2[0], marker='o')
-        sns.tsplot(summary.loc[:, 'Total Reward'], x,
-                   ax=ax2[1], marker='o', color='g')
-        ax2[0].set(ylabel='Mean Epsilon')
-        ax2[1].set(ylabel='Total Reward')
-        f2.savefig('results/figures/f2.png')
-        plt.close(f2)
-
-        def col_to_graph(df, names):
-            length = df.iloc[0, 0].shape[0]
-            f, axes = plt.subplots(length, 1)
-            for i, ax in enumerate(axes):
-                df.loc[:, names[i]] = [item_list[i] for item_list in df.iloc[:, 0]]
-                ax.plot(df.index, df.loc[:, names[i]])
-                ax.set_xlim([last_step_start, last_step_stop])
-                ax.set_ylabel(names[i], rotation=0)
-            return f, df
-
-        # Figure 3
-        actions = memory.loc[:, 'Action'].to_frame(name='Actions')
-        action_names = self.env.action_names
-        f3, actions = col_to_graph(actions, action_names)
-        f3.savefig('results/figures/f3.png')
-        plt.close(f3)
-
-        # Figure 4
-        states = memory.loc[:, 'State'].to_frame(name='States')
-        state_names = self.env.state_names
-        f4, states = col_to_graph(states, state_names)
-        f4.savefig('results/figures/f4.png')
-        plt.close(f4)
-
-        # Figure 5
-        f5, ax5 = plt.subplots(1, 1)
-        fig5_vars = ['Power generated [MWe]',
-                     'Import electricity price [£/MWh]',
-                     'Total heat demand [MW]']
-        x_range = env_info['Steps'].as_matrix()
-        for var in fig5_vars:
-            ax5.plot(x_range, env_info.loc[:, var], label=var)
-        ax5.legend(loc='best')
-        ax5.set_xlabel('Steps')
-        ax5.set_xlim(x_range[0], x_range[-1])
-        ax5.set_xticks(x_range)
-        f5.savefig('results/figures/f5.png')
-        plt.close(f5)
-
-        if self.save_csv:
-            print('Saving csvs')
-            memory.to_csv('results/memory.csv')
-            network_memory.to_csv('results/network_memory.csv')
-            summary.to_csv('results/summary.csv')
-            states.to_csv('results/states.csv')
-            actions.to_csv('results/actions.csv')
-        print('Finished generating outputs')
-
-        return memory, network_memory, summary, states, actions
