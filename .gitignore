@@ -12,3 +12,4 @@ __pycache__/
 results/*.csv
 results/*.h5
 results/figures/*.png
+demo.py
