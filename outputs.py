@@ -95,7 +95,7 @@ def gen(agent):
                        color='r')
 
         if k == 2 or k == 3:
-            axes1.set_ylim([0, 5000])
+            axes1.set_xlim(tick_locations[-2], tick_locations[-1])
             axes1.set_xlabel('Steps', fontsize=14)
         else:
             axes1.set_title(name, y=1.11, fontsize=18)

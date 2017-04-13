@@ -10,7 +10,8 @@ import assets.library
 
 class energy_py(gym.Env):
 
-    def __init__(self, episode_length):
+    def __init__(self, episode_length, lag):
+        self.lag = lag
         self.verbose = 0
         self.ts = self.load_data(episode_length)
         self.state_models = [
@@ -25,7 +26,9 @@ class energy_py(gym.Env):
             {'Name': 'Export electricity price', 'Min': -200, 'Max': 1600}]
 
         self.asset_models = [
-            assets.library.gas_engine(size=20, name='GT 1')]
+            assets.library.gas_engine(size=25, name='GT 1'),
+            assets.library.gas_engine(size=25, name='GT 2'),
+            assets.library.gas_engine(size=25, name='GT 3')]
 
         self.state_names = [d['Name'] for d in self.state_models]
         self.action_names = [var['Name']
@@ -38,7 +41,7 @@ class energy_py(gym.Env):
         self.maxs = np.append(self.s_maxs, self.a_maxs)
 
         self.seed()
-        self.reset()
+        self.state = self.reset()
 
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
                                 Open AI methods
@@ -50,20 +53,20 @@ class energy_py(gym.Env):
 
     def _reset(self):
         self.steps = int(0)
-        self.state = self.ts.iloc[0, 1:].values
+        self.state = self.ts.iloc[0, 1:].values  # visible state
         self.info = []
         self.done = False
-        [asset.reset for asset in self.asset_models]
+        [asset.reset() for asset in self.asset_models]
         self.last_actions = [var['Current']
                              for asset in self.asset_models
                              for var in asset.variables]
 
         self.observation_space = self.create_obs_space()
-        self.action_space = self.create_action_space(self.last_actions)
+        self.action_space, self.lows, self.highs = self.create_action_space(self.last_actions)
         return self.state
 
     def _step(self, action):
-        assert self.action_space.contains(action), "%r (%s) invalid" % (action, type(action))
+        true_state = self.ts.iloc[self.steps + self.lag, 1:]
 
         # take actions
         count = 0
@@ -73,14 +76,6 @@ class energy_py(gym.Env):
                 count += 1
             asset.update()
 
-        # go to next state
-        # actions are applied to the next state
-        # unseen by the agent when taking action - intended behaviour
-        self.steps += int(1)
-
-        state_ = self.ts.iloc[self.steps, 1:]
-        self.state = state_.values
-
         # sum of energy inputs/outputs for all assets
         total_gas_burned = sum([asset.gas_burnt for asset in self.asset_models])
         total_HGH_gen = sum([asset.HG_heat_output for asset in self.asset_models])
@@ -89,10 +84,10 @@ class energy_py(gym.Env):
         total_elect_gen = sum([asset.power_output for asset in self.asset_models])
 
         # energy demands
-        elect_dem = state_['Electrical']
-        HGH_dem = state_['HGH']
-        LGH_dem = state_['LGH']
-        COOL_dem = state_['Cooling']
+        elect_dem = true_state['Electrical']
+        HGH_dem = true_state['HGH']
+        LGH_dem = true_state['LGH']
+        COOL_dem = true_state['Cooling']
 
         # energy balances
         HGH_bal = HGH_dem - total_HGH_gen
@@ -114,32 +109,35 @@ class energy_py(gym.Env):
         export_elect = abs(min(0, elect_bal))
 
         # all prices in £/MWh
-        gas_price = state_['Gas price']
-        import_price = state_['Import electricity price']
-        export_price = state_['Export electricity price']
+        gas_price = true_state['Gas price']
+        import_price = true_state['Import electricity price']
+        export_price = true_state['Export electricity price']
         gas_cost = (gas_price * gas_burned) / 2  # £/HH
         import_cost = (import_price * import_elect) / 2  # £/HH
         export_revenue = (export_price * export_elect) / 2  # £/HH
 
         reward = export_revenue - (gas_cost + import_cost)  # £/HH
 
-        if self.steps == len(self.ts) - 1:
+        SP = true_state['Settlement period']
+        total_heat_demand = HGH_dem + LGH_dem
+        self.info.append([SP,
+                          total_elect_gen,
+                          import_price,
+                          total_heat_demand])
+
+        self.steps += int(1)
+        if self.steps == (len(self.ts) - self.lag - 1):  # TODO
             self.done = True
+
+        next_visible_state = self.ts.iloc[self.steps, 1:].values
+        next_state = next_visible_state
 
         next_state = self.state
         self.last_actions = [var['Current']
                              for asset in self.asset_models
                              for var in asset.variables]
 
-        self.action_space = self.create_action_space(self.last_actions)
-
-        SP = state_['Settlement period']
-        total_heat_demand = HGH_dem + LGH_dem
-        self.info.append([SP,
-                          total_elect_gen,
-                          import_price,
-                          total_heat_demand]
-                         )
+        self.action_space, self.lows, self.highs = self.create_action_space(self.last_actions)
 
         return next_state, reward, self.done, self.info
 
@@ -171,24 +169,41 @@ class energy_py(gym.Env):
     def create_action_space(self, last_actions):
         # available actions are not constant - depend on asset current var
         # spaces = used to define legitimate action space
-        actions = []
+        actions, lows, highs = [], [], []
         for j, asset in enumerate(self.asset_models):
-            current = last_actions[j * 2]
-            binary = last_actions[j * 2 + 1]
+            current = last_actions[j]
             radius = asset.variables[0]['Radius']
-            LB_curr = max(current - radius, asset.variables[0]['Min'])
-            UB_curr = min(current + radius, asset.variables[0]['Max'])
-            LB_bin = asset.variables[1]['Min']
-            UB_bin = asset.variables[1]['Max']
-            # only go to minimum load from off
-            if binary == 0:
-                UB_curr = asset.variables[0]['Min']
-            # only turn off if load=min
-            if current > asset.variables[0]['Min']:
-                LB_bin = asset.variables[1]['Max']
-            actions.append([LB_curr, UB_curr])
-            actions.append([LB_bin, UB_bin])
-        return spaces.MultiDiscrete(actions)
+            current_min = asset.variables[0]['Min']
+            current_max = asset.variables[0]['Max']
+            lower_bound = max(current - radius, current_min)
+            upper_bound = min(current + radius, current_max)
+
+            off = gym.spaces.Box(low=0, high=0, shape=(1))
+
+            minimum = gym.spaces.Box(low=current_min,
+                                     high=current_min,
+                                     shape=(1))
+
+            current_space = gym.spaces.Box(low=lower_bound,
+                                           high=upper_bound,
+                                           shape=(1))
+
+            if current == 0:  # off
+                action = gym.spaces.Tuple((off, minimum))
+                low = min(off.low, minimum.low)
+                high = max(off.high, minimum.high)
+            elif current == current_min:  # at minimum load
+                action = gym.spaces.Tuple((off, current_space))
+                low = min(off.low, current_space.low)
+                high = max(off.high, current_space.high)
+            else:
+                action = current_space
+                low = current_space.low
+                high = current_space.high
+            actions.append(action)
+            lows.append(low)
+            highs.append(high)
+        return actions, lows, highs
 
     def asset_mins_maxs(self):
         a_mins, a_maxs = [], []
