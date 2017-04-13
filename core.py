@@ -5,12 +5,12 @@ import environments
 import agents
 import outputs
 
-EPISODES = 75
-EPISODE_LENGTH = 336  # number of half hour periods per episode
-GEN_OUTPUTS = 25  # generate outputs every n episodes
+EPISODES = 50
+EPISODE_LENGTH = 10  # number of half hour periods per episode
+GEN_OUTPUTS = 10  # generate outputs every n episodes
 
-env = environments.energy_py(EPISODE_LENGTH)
-agent = agents.Q_learner(env, verbose=0, device=0)
+env = environments.energy_py(episode_length=EPISODE_LENGTH, lag=5)
+agent = agents.Q_learner(env, verbose=1, device=0)
 episodes = np.linspace(1, EPISODES, EPISODES, endpoint=True).astype(int)
 
 print('Started at ' + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
@@ -43,8 +43,7 @@ final_results = pd.DataFrame(
            'Value [£/episode]',
            'Run time',
            'Number of episodes'],
-    columns=['Final results']
-)
+    columns=['Final results'])
 
 final_results.to_csv('results/final_results.csv')
 print(final_results)
