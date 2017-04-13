@@ -4,15 +4,12 @@ class gas_generators(object):  # the base class for gas_generatorss
         self.name = str(name)
         self.variables = [{'Name': self.name + ' Load',
                            'Current': 0, 'Min': 50, 'Max': 100,
-                           'Init': 50, 'Radius': 20},
-                          {'Name': self.name + ' On/Off',
-                           'Current': 0, 'Min': 0, 'Max': 1, 'Init': 1}]
+                           'Init': 0, 'Radius': 20}]
         self.reset()
         self.update()
 
     def update(self):
-        self.on_off = int(self.variables[1]['Current'])
-        self.load = float(self.variables[0]['Current']/100) * self.on_off  # %
+        self.load = float(self.variables[0]['Current'])/100  # %
         self.power_output = float(self.size * self.load)  # MWe
         elect_effy = self.load * self.coeffs[0] + self.coeffs[1]
         HG_effy = self.load * self.coeffs[2] + self.coeffs[3]
