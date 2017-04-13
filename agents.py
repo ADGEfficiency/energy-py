@@ -2,6 +2,7 @@ import random
 import itertools
 import copy
 import numpy as np
+import pandas as pd
 import assets.value_functions
 import assets.utils
 
@@ -70,7 +71,7 @@ class Q_learner(object):
                       ' - step ' + str(self.env.steps) +
                       ' - choice ' + str(choice))
                 print('state ' + str(state))
-                print('last action was ' + str(last_action))
+                print('last action was ' + str(self.env.last_actions))
                 print('action ' + str(action))
                 print('state action ' + str(state_action))
                 print('next state ' + str(next_state))
@@ -89,11 +90,12 @@ class Q_learner(object):
     def policy(self, state):
         if self.policy_ == 0:  # naive
             choice = 'NAIVE'
-            action = self.env.action_space.high
+            action = self.env.highs
         elif self.policy_ == 1:  # e-greedy
             if random.random() < self.epsilon:
                 choice = 'RANDOM'
-                action = self.env.action_space.sample()
+                action = [np.random.choice(np.array(action_space.sample()).flatten())
+                          for action_space in self.env.action_space]
             else:
                 choice = 'GREEDY'
                 state_actions = self.state_to_state_actions(
@@ -112,24 +114,30 @@ class Q_learner(object):
                     ]
                 action = denormalized_action
                 action = [int(act) for act in action]
+        action = np.array(action).reshape(-1)
         state_action = np.concatenate([state, action])
         return action, state_action, choice
 
     def state_to_state_actions(self, state, action):
-        # use this fctn for both state (s) and next state (s')
-        # correct action to pass is the last action
-        action_space = self.env.create_action_space(action)
-        a_bounds = [action_space.low, action_space.high]
-        all_rng = []
-        for m, act in enumerate(a_bounds[0]):
-            rng = np.linspace(
-                start=a_bounds[0][m],
-                stop=a_bounds[1][m],
-                num=(a_bounds[1][m] - a_bounds[0][m]) + 1
-                )
-            all_rng.append(rng)
+        action_space = self.env.create_action_space(last_actions=action)[0]
+        bounds = []
+        for asset in action_space:
+            try:
+                inner_bounds = []
+                for action in asset.spaces:
+                    rng = np.linspace(start=action.low,
+                                      stop=action.high,
+                                      num=(action.high - action.low) + 1)
+                    inner_bounds.append(rng)
+                inner_bounds = np.concatenate(inner_bounds)
+                bounds.append(inner_bounds)
+            except AttributeError:  # catches case that isn't Tuple
+                rng = np.linspace(start=asset.low,
+                                  stop=asset.high,
+                                  num=(asset.high - asset.low) + 1)
+                bounds.append(rng)
 
-        actions = [np.array(tup) for tup in list(itertools.product(*all_rng))]
+        actions = [np.array(tup) for tup in list(itertools.product(*bounds))]
         state_actions = [np.concatenate((state, a)) for a in actions]
         norm_state_actions = self.normalize(state_actions)
         return norm_state_actions
@@ -148,6 +156,7 @@ class Q_learner(object):
             norm_array = np.array(norm_state_action).reshape(-1, length)
             norm_state_actions.append(norm_array)
             norm_state_action = []
+        norm_state_actions = np.array(norm_state_actions).reshape(-1,length)
         return norm_state_actions
 
     def train_model(self):
@@ -200,11 +209,8 @@ class Q_learner(object):
         return all_preds, pct_not_unique
 
     def get_test_state_actions(self):
-        test_state_actions = []
-        for i in range(0, 4):
-            state_action = np.concatenate([
-                self.env.observation_space.sample(),
-                self.env.action_space.sample()])
-            test_state_actions.append(state_action)
-        test_state_actions = np.array(test_state_actions)
+        Q_test = pd.read_csv('assets/Q_test.csv', index_col=[0])
+        Q_test.iloc[:, 1:] = Q_test.iloc[:, 1:].apply(pd.to_numeric)
+        test_state_actions = np.array(Q_test.iloc[:, 1:])
+        test_state_actions = self.normalize(test_state_actions)
         return test_state_actions
