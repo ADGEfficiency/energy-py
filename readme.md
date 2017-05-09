@@ -20,7 +20,7 @@ agent = agents.Q_learner(env, verbose=0)
 
 episode = 0  # the episode number
 agent.policy_ = 1  # naive policy
-agent.single_episode(episode_number)
+agent.single_episode(episode)
 ```
 
 ### core.py
