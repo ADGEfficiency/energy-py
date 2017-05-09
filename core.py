@@ -1,15 +1,15 @@
 import numpy as np
 import pandas as pd
 import time
-import environments
+import environments.env_CHP
 import agents
 import outputs
 
-EPISODES = 50
-EPISODE_LENGTH = 10  # number of half hour periods per episode
+EPISODES = 200
+EPISODE_LENGTH = 48  # number of half hour periods per episode
 GEN_OUTPUTS = 10  # generate outputs every n episodes
 
-env = environments.energy_py(episode_length=EPISODE_LENGTH, lag=5)
+env = environments.env_CHP.env(episode_length=EPISODE_LENGTH, lag=0, verbose=0)
 agent = agents.Q_learner(env, verbose=1, device=0)
 episodes = np.linspace(1, EPISODES, EPISODES, endpoint=True).astype(int)
 
