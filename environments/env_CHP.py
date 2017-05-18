@@ -5,8 +5,8 @@ import gym
 from gym import spaces
 from gym.utils import seeding
 
-import environments.library
 import environments.base_env
+import environments.library
 
 
 class env(environments.base_env.base_class):
@@ -40,15 +40,33 @@ class env(environments.base_env.base_class):
                                 Open AI methods
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-    def _step(self, action):
+    def _step(self, actions):
+        # true state is ahead of the visible state
+        # true state is totally hidden from agent
         true_state = self.ts.iloc[self.steps + self.lag, 1:]
 
-        # take actions
-        count = 0
-        for asset in self.asset_models:
+        # taking actions
+        for k, asset in enumerate(self.asset_models):
             for var in asset.variables:
-                var['Current'] = action[count]
-                count += 1
+                action = actions[k]
+
+                if var['Current'] == 0 and action > 0:
+                    # if off before and we do any positive action we turn on
+                    var['Current'] = var['Min']
+
+                elif (var['Current'] + action) < var['Min'] and var['Current'] > var['Min']:
+                    # if we decrease load below the var['Min'] we turn off
+                    var['Current'] = var['Min']
+
+                elif (var['Current'] + action) < var['Min'] and var['Current'] == var['Min']:
+                    var['Current'] = 0
+
+                elif (var['Current'] + action) >= var['Max']:
+                    var['Current'] = var['Max']
+
+                else:
+                    var['Current'] = var['Current'] + action
+
             asset.update()
 
         # sum of energy inputs/outputs for all assets
@@ -101,18 +119,17 @@ class env(environments.base_env.base_class):
                           total_heat_demand])
 
         self.steps += int(1)
-        if self.steps == (len(self.ts) - self.lag - 1):  # TODO
+        if self.steps == (len(self.ts) - self.lag - 1):  #TODO do I need 1 here?
             self.done = True
 
-        next_visible_state = self.ts.iloc[self.steps, 1:].values
-        next_state = next_visible_state
+        next_state = self.ts.iloc[self.steps, 1:].values # visible state
+        self.state = next_state # visible state
 
-        next_state = self.state
         self.last_actions = [var['Current']
                              for asset in self.asset_models
                              for var in asset.variables]
 
-        self.action_space, self.lows, self.highs = self.create_action_space(self.last_actions)
+        self.action_space = self.create_action_space()
 
         return next_state, reward, self.done, self.info
 
@@ -127,43 +144,53 @@ class env(environments.base_env.base_class):
         ts.loc[:, 'Timestamp'] = ts.loc[:, 'Timestamp'].apply(pd.to_datetime)
         return ts
 
-    def _create_action_space(self, last_actions):
-        # available actions are not constant - depend on asset current var
-        # spaces = used to define legitimate action space
-        actions, lows, highs = [], [], []
+    def _create_action_space(self):
+        action_space = []
         for j, asset in enumerate(self.asset_models):
-            current = last_actions[j]
             radius = asset.variables[0]['Radius']
-            current_min = asset.variables[0]['Min']
-            current_max = asset.variables[0]['Max']
-            lower_bound = max(current - radius, current_min)
-            upper_bound = min(current + radius, current_max)
-
-            off = gym.spaces.Box(low=0,
-                                 high=0,
-                                 shape=(1))
-
-            minimum = gym.spaces.Box(low=current_min,
-                                     high=current_min,
-                                     shape=(1))
-
-            current_space = gym.spaces.Box(low=lower_bound,
-                                           high=upper_bound,
-                                           shape=(1))
-
-            if current == 0:  # off
-                action = gym.spaces.Tuple((off, minimum))
-                low = min(off.low, minimum.low)
-                high = max(off.high, minimum.high)
-            elif current == current_min:  # at minimum load
-                action = gym.spaces.Tuple((off, current_space))
-                low = min(off.low, current_space.low)
-                high = max(off.high, current_space.high)
-            else:
-                action = current_space
-                low = current_space.low
-                high = current_space.high
-            actions.append(action)
-            lows.append(low)
-            highs.append(high)
-        return actions, lows, highs
+            space = gym.spaces.Box(low=-radius,
+                                   high=radius,
+                                   shape=(1))
+            action_space.append(space)
+        return action_space
+    #
+    # def _create_action_space_OLD(self, last_actions):
+    #     # available actions are not constant - depend on asset current var
+    #     # spaces = used to define legitimate action space
+    #     actions, lows, highs = [], [], []
+    #     for j, asset in enumerate(self.asset_models):
+    #         current = last_actions[j]
+    #         radius = asset.variables[0]['Radius']
+    #         current_min = asset.variables[0]['Min']
+    #         current_max = asset.variables[0]['Max']
+    #         lower_bound = max(current - radius, current_min)
+    #         upper_bound = min(current + radius, current_max)
+    #
+    #         off = gym.spaces.Box(low=0,
+    #                              high=0,
+    #                              shape=(1))
+    #
+    #         minimum = gym.spaces.Box(low=current_min,
+    #                                  high=current_min,
+    #                                  shape=(1))
+    #
+    #         current_space = gym.spaces.Box(low=lower_bound,
+    #                                        high=upper_bound,
+    #                                        shape=(1))
+    #
+    #         if current == 0:  # off
+    #             action = gym.spaces.Tuple((off, minimum))
+    #             low = min(off.low, minimum.low)
+    #             high = max(off.high, minimum.high)
+    #         elif current == current_min:  # at minimum load
+    #             action = gym.spaces.Tuple((off, current_space))
+    #             low = min(off.low, current_space.low)
+    #             high = max(off.high, current_space.high)
+    #         else:
+    #             action = current_space
+    #             low = current_space.low
+    #             high = current_space.high
+    #         actions.append(action)
+    #         lows.append(low)
+    #         highs.append(high)
+    #     return actions, lows, highs

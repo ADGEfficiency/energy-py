@@ -41,7 +41,7 @@ class base_class(gym.Env):
                              for var in asset.variables]
 
         self.observation_space = self.create_obs_space()
-        self.action_space, self.lows, self.highs = self.create_action_space(self.last_actions)
+        self.action_space = self.create_action_space()
         return self.state
 
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -51,8 +51,8 @@ class base_class(gym.Env):
     def load_data(self, episode_length):
         return self._load_data(episode_length)
 
-    def create_action_space(self, last_actions):
-        return self._create_action_space(last_actions)
+    def create_action_space(self):
+        return self._create_action_space()
 
     def create_obs_space(self):
         states, self.state_names = [], []

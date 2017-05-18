@@ -15,15 +15,15 @@ class Q_learner(object):
         self.env = env
         input_length = len(self.env.s_mins) + len(self.env.a_mins)
         self.network = assets.value_functions.Dense_Q(input_length, device=device)
-        self.batch_size = 64
-        self.epochs = 200
+        self.batch_size = 64  # size of batch for sampling memory
+        self.epochs = 500
 
         self.memory, self.network_memory, self.info = [], [], []
         self.save_csv = False
 
-        self.epsilon = 1.0
-        self.policy_ = 0  # 0 = naive, 1 = e-greedy
-        self.discount = 0.9
+        self.epsilon = 1.0  # initial exploration factor
+        self.policy_ = 0   # 0 = naive, 1 = e-greedy
+        self.discount = 0.9  # discount factor for next_state
         self.test_state_actions = self.get_test_state_actions()
 
     def single_episode(self, episode_number):
@@ -50,7 +50,7 @@ class Q_learner(object):
             self.network_memory.append([
                 copy.copy(self.normalize([state_action])),
                 copy.copy(reward),
-                self.state_to_state_actions(next_state, action),
+                self.state_to_state_actions(next_state),
                 copy.copy(done)])
 
             if episode_number == 0:
@@ -90,7 +90,7 @@ class Q_learner(object):
     def policy(self, state):
         if self.policy_ == 0:  # naive
             choice = 'NAIVE'
-            action = self.env.highs
+            action = [action_space.high for action_space in self.env.action_space]
         elif self.policy_ == 1:  # e-greedy
             if random.random() < self.epsilon:
                 choice = 'RANDOM'
@@ -98,10 +98,7 @@ class Q_learner(object):
                           for action_space in self.env.action_space]
             else:
                 choice = 'GREEDY'
-                state_actions = self.state_to_state_actions(
-                    state,
-                    self.env.last_actions
-                    )
+                state_actions = self.state_to_state_actions(state)
                 v_stack = np.vstack(state_actions)
                 returns = self.network.predict(v_stack)
                 optimal_state_action = list(state_actions[np.argmax(returns)].flatten())
@@ -118,8 +115,8 @@ class Q_learner(object):
         state_action = np.concatenate([state, action])
         return action, state_action, choice
 
-    def state_to_state_actions(self, state, action):
-        action_space = self.env.create_action_space(last_actions=action)[0]
+    def state_to_state_actions(self, state):
+        action_space = self.env.create_action_space()
         bounds = []
         for asset in action_space:
             try:
