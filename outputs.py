@@ -155,7 +155,7 @@ def gen(agent):
     ax5.legend(loc='best', fontsize=18)
     ax5.set_xlabel('Steps (Episode ' + str(memory['Episode'].iloc[-1]) +')',
                    fontsize=14)
-    ax5.set_xlim(0, x_range[-1])
+    ax5.set_xlim(1, x_range[-1])
     ticks = x_range[0::50]
     ax5.set_xticks(ticks)
     f5.savefig('results/figures/f5.png')
