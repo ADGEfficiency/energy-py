@@ -14,6 +14,6 @@ __pycache__/
 # project specific
 results/*.csv
 results/*.h5
-results/figures/*.png
+results/*.png
 demo.py
 test.py
