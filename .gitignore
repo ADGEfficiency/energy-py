@@ -8,8 +8,12 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# energy_py
+# Jupyter noteboook checkpoints
+*checkpoint.ipynb
+
+# project specific
 results/*.csv
 results/*.h5
 results/figures/*.png
 demo.py
+test.py
