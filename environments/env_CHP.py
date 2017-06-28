@@ -1,22 +1,25 @@
-import numpy as np
-import pandas as pd
+import random
 
 import gym
 from gym import spaces
 from gym.utils import seeding
+import numpy as np
+import pandas as pd
 
 import environments.base_env
 import environments.library
+import matplotlib.pyplot as plt
 
 
 class env(environments.base_env.base_class):
 
-    def __init__(self, episode_length, lag, verbose):
+    def __init__(self, episode_length, lag, random_ts, verbose):
         self.episode_length = episode_length
         self.lag = lag
+        self.random_ts = random_ts
         self.verbose = verbose
 
-        self.ts = self.load_data(self.episode_length)
+        self.actual_state, self.visible_state = self.load_data(self.episode_length, self.lag, self.random_ts)
         self.state_models = [
             {'Name': 'Settlement period', 'Min': 0, 'Max': 48},
             {'Name': 'HGH demand', 'Min': 0, 'Max': 30},
@@ -30,8 +33,7 @@ class env(environments.base_env.base_class):
 
         self.asset_models = [
             environments.library.gas_engine(size=25, name='GT 1'),
-            environments.library.gas_engine(size=25, name='GT 2'),
-            environments.library.gas_engine(size=25, name='GT 3')]
+            environments.library.gas_engine(size=25, name='GT 2')]
 
         self.state = self.reset()
 
@@ -41,34 +43,47 @@ class env(environments.base_env.base_class):
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
     def _step(self, actions):
-        # true state is ahead of the visible state
-        # true state is totally hidden from agent
-        true_state = self.ts.iloc[self.steps + self.lag, 1:]
+        actual_state = self.actual_state.iloc[self.steps, 1:]
+        time_stamp = pd.to_datetime(self.actual_state.iloc[self.steps, 0])
+
+        if self.verbose > 0:
+            self.asset_states()
+            print(actions)
 
         # taking actions
         for k, asset in enumerate(self.asset_models):
             for var in asset.variables:
                 action = actions[k]
 
-                if var['Current'] == 0 and action > 0:
-                    # if off before and we do any positive action we turn on
-                    var['Current'] = var['Min']
+                # case at full load
+                if var['Current'] == var['Max']:
+                    var['Current'] = min([var['Max'],
+                                                 var['Current'] + action])
 
-                elif (var['Current'] + action) < var['Min'] and var['Current'] > var['Min']:
-                    # if we decrease load below the var['Min'] we turn off
-                    var['Current'] = var['Min']
+                # case at minimum load
+                elif var['Current'] == var['Min']:
+                    if (var['Current'] + action) < var['Min']:
+                        var['Current'] = 0
+                    elif (var['Current'] + action) >= var['Min']:
+                        var['Current'] = var['Min'] + action
 
-                elif (var['Current'] + action) < var['Min'] and var['Current'] == var['Min']:
-                    var['Current'] = 0
+                # case at off
+                elif var['Current'] == 0:
+                    if action < 0:
+                        var['Current'] = 0
+                    else:
+                        var['Current'] = var['Min']
 
-                elif (var['Current'] + action) >= var['Max']:
-                    var['Current'] = var['Max']
-
+                # case in all other times
                 else:
-                    var['Current'] = var['Current'] + action
+                    new = var['Current'] + action
+                    new = min(new, var['Max'])
+                    new = max(new, var['Min'])
+                    var['Current'] = new
 
-            asset.update()
-
+                asset.update()
+        if self.verbose > 0:
+            self.asset_states()
         # sum of energy inputs/outputs for all assets
         total_gas_burned = sum([asset.gas_burnt for asset in self.asset_models])
         total_HGH_gen = sum([asset.HG_heat_output for asset in self.asset_models])
@@ -77,10 +92,10 @@ class env(environments.base_env.base_class):
         total_elect_gen = sum([asset.power_output for asset in self.asset_models])
 
         # energy demands
-        elect_dem = true_state['Electrical']
-        HGH_dem = true_state['HGH']
-        LGH_dem = true_state['LGH']
-        COOL_dem = true_state['Cooling']
+        elect_dem = actual_state['Electrical']
+        HGH_dem = actual_state['HGH']
+        LGH_dem = actual_state['LGH']
+        COOL_dem = actual_state['Cooling']
 
         # energy balances
         HGH_bal = HGH_dem - total_HGH_gen
@@ -102,28 +117,29 @@ class env(environments.base_env.base_class):
         export_elect = abs(min(0, elect_bal))
 
         # all prices in £/MWh
-        gas_price = true_state['Gas price']
-        import_price = true_state['Import electricity price']
-        export_price = true_state['Export electricity price']
+        gas_price = actual_state['Gas price']
+        import_price = actual_state['Import electricity price']
+        export_price = actual_state['Export electricity price']
         gas_cost = (gas_price * gas_burned) / 2  # £/HH
         import_cost = (import_price * import_elect) / 2  # £/HH
         export_revenue = (export_price * export_elect) / 2  # £/HH
 
         reward = export_revenue - (gas_cost + import_cost)  # £/HH
 
-        SP = true_state['Settlement period']
+        SP = actual_state['Settlement period']
         total_heat_demand = HGH_dem + LGH_dem
         self.info.append([SP,
                           total_elect_gen,
                           import_price,
-                          total_heat_demand])
+                          total_heat_demand,
+                          time_stamp])
 
         self.steps += int(1)
-        if self.steps == (len(self.ts) - self.lag - 1):  #TODO do I need 1 here?
+        if self.steps == (self.episode_length - abs(self.lag) - 1):
             self.done = True
 
-        next_state = self.ts.iloc[self.steps, 1:].values # visible state
-        self.state = next_state # visible state
+        next_state = self.visible_state.iloc[self.steps, 1:] # visible state
+        self.state = next_state
 
         self.last_actions = [var['Current']
                              for asset in self.asset_models
@@ -137,12 +153,32 @@ class env(environments.base_env.base_class):
                                 Non-Open AI methods
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-    def _load_data(self, episode_length):
+    def _load_data(self, episode_length, lag, random_ts):
+        # TODO the random TS
         ts = pd.read_csv('environments/time_series.csv', index_col=[0])
-        ts = ts.iloc[:episode_length, :]
         ts.iloc[:, 1:] = ts.iloc[:, 1:].apply(pd.to_numeric)
         ts.loc[:, 'Timestamp'] = ts.loc[:, 'Timestamp'].apply(pd.to_datetime)
-        return ts
+
+        if random_ts:
+            idx = random.randint(0, self.episode_length)
+
+        ts = ts.iloc[idx:idx+self.episode_length, :]
+
+        if lag < 0:
+            actual_state = ts.iloc[:lag, :]
+            visible_state = ts.shift(lag).iloc[:lag, :]
+
+        elif lag == 0:
+            actual_state = ts.iloc[:, :]
+            visible_state = ts.iloc[:, :]
+
+        elif lag > 0:
+            actual_state = ts.iloc[lag:, :]
+            visible_state = ts.shift(lag).iloc[lag:, :]
+
+        assert actual_state.shape == visible_state.shape
+
+        return visible_state, actual_state
 
     def _create_action_space(self):
         action_space = []
@@ -153,44 +189,34 @@ class env(environments.base_env.base_class):
                                    shape=(1))
             action_space.append(space)
         return action_space
-    #
-    # def _create_action_space_OLD(self, last_actions):
-    #     # available actions are not constant - depend on asset current var
-    #     # spaces = used to define legitimate action space
-    #     actions, lows, highs = [], [], []
-    #     for j, asset in enumerate(self.asset_models):
-    #         current = last_actions[j]
-    #         radius = asset.variables[0]['Radius']
-    #         current_min = asset.variables[0]['Min']
-    #         current_max = asset.variables[0]['Max']
-    #         lower_bound = max(current - radius, current_min)
-    #         upper_bound = min(current + radius, current_max)
-    #
-    #         off = gym.spaces.Box(low=0,
-    #                              high=0,
-    #                              shape=(1))
-    #
-    #         minimum = gym.spaces.Box(low=current_min,
-    #                                  high=current_min,
-    #                                  shape=(1))
-    #
-    #         current_space = gym.spaces.Box(low=lower_bound,
-    #                                        high=upper_bound,
-    #                                        shape=(1))
-    #
-    #         if current == 0:  # off
-    #             action = gym.spaces.Tuple((off, minimum))
-    #             low = min(off.low, minimum.low)
-    #             high = max(off.high, minimum.high)
-    #         elif current == current_min:  # at minimum load
-    #             action = gym.spaces.Tuple((off, current_space))
-    #             low = min(off.low, current_space.low)
-    #             high = max(off.high, current_space.high)
-    #         else:
-    #             action = current_space
-    #             low = current_space.low
-    #             high = current_space.high
-    #         actions.append(action)
-    #         lows.append(low)
-    #         highs.append(high)
-    #     return actions, lows, highs
+
+    def _make_outputs(self, path):
+        def fig_engineering(env_info):
+            fig, ax = plt.subplots(1, 1)
+            fig.set_size_inches(8*2, 6*2)
+            print(env_info.shape)
+            print(env_info.index)
+            env_info.plot(y=['Power generated [MWe]',
+                             'Import electricity price [£/MWh]',
+                             'Total heat demand [MW]'],
+                              subplots=False,
+                              kind='line',
+                              use_index=True,
+                              ax=ax)
+
+            ax.legend(loc='best', fontsize=18)
+            ax.set_xlabel('Steps (Last Episode)')
+            ax.set_title('Operation for Last Episode')
+            fig.savefig(path+'figures/fig_engineering.png')
+            return fig
+
+        env_info = pd.DataFrame(self.info,
+                                columns=['Settlement period',
+                                         'Power generated [MWe]',
+                                         'Import electricity price [£/MWh]',
+                                         'Total heat demand [MW]',
+                                         'Timestamp'])
+        env_info.loc[:, 'Timestamp'] = env_info.loc[:, 'Timestamp'].apply(pd.to_datetime)
+        env_info.set_index(keys='Timestamp', inplace=True, drop=True)
+        f1 = fig_engineering(env_info)
+        return env_info

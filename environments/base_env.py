@@ -17,8 +17,9 @@ class base_class(gym.Env):
         return [seed]
 
     def _reset(self):
-        self.verbose = 0
-        self.ts = self.load_data(self.episode_length)
+        self.steps = int(0)
+        self.state_df, self.actual_state_df = self.load_data(self.episode_length, self.lag, self.random_ts)
+        self.state = self.state_df.iloc[self.steps, 1:]
 
         self.state_names = [d['Name'] for d in self.state_models]
         self.action_names = [var['Name']
@@ -31,8 +32,6 @@ class base_class(gym.Env):
         self.maxs = np.append(self.s_maxs, self.a_maxs)
 
         self.seed()
-        self.steps = int(0)
-        self.state = self.ts.iloc[0, 1:].values  # visible state
         self.info = []
         self.done = False
         [asset.reset() for asset in self.asset_models]
@@ -48,8 +47,11 @@ class base_class(gym.Env):
                                 Non-Open AI methods
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-    def load_data(self, episode_length):
-        return self._load_data(episode_length)
+    def load_data(self, episode_length, lag, random_ts):
+        return self._load_data(episode_length, lag, random_ts)
+
+    def make_outputs(self):
+        return self._make_outputs()
 
     def create_action_space(self):
         return self._create_action_space()
@@ -77,6 +79,7 @@ class base_class(gym.Env):
         return a_mins, a_maxs
 
     def asset_states(self):
+        asset_states = []
         for asset in self.asset_models:
             for var in asset.variables:
                 print(var['Name'] + ' is ' + str(var['Current']))
