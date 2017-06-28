@@ -2,9 +2,10 @@
 Code kindly supplied by Felipe Aguirre Martinez - many thanks!
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-import os
-import time
 from functools import wraps
+import os
+import pickle
+import time
 
 
 class Timer:
@@ -44,6 +45,18 @@ class Timer:
                 raise e
 
         return timed_func
+
+
+
+def dump_pickle(obj, name):
+    with open(name, 'wb') as handle:
+        pickle.dump(obj, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+def load_pickle(name):
+    with open(name, 'rb') as handle:
+        obj = pickle.load(handle)
+    return obj
 
 
 if __name__ == '__main__':
