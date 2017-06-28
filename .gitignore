@@ -12,8 +12,9 @@ __pycache__/
 *checkpoint.ipynb
 
 # project specific
-results/*.csv
-results/*.h5
-results/*.png
+results/**/*.csv
+results/**/*.h5
+results/**/*.png
+results/**/*.pickle
 demo.py
 test.py
