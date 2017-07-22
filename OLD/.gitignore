@@ -1,0 +1,20 @@
+# virtualenv
+.venv/
+venv/
+ENV/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter noteboook checkpoints
+*checkpoint.ipynb
+
+# project specific
+results/**/*.csv
+results/**/*.h5
+results/**/*.png
+results/**/*.pickle
+demo.py
+test.py
