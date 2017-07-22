@@ -1,3 +1,6 @@
+import collections
+
+
 class gas_generators(object):  # the base class for gas_generatorss
     def __init__(self, size, name):
         self.size = float(size)  # power output in MWe
@@ -35,3 +38,21 @@ class gas_engine(gas_generators):
     def __init__(self, size, name):
         self.coeffs = [0.08, 0.3, 0.0, 0.2, 0.04, 0.16]
         gas_generators.__init__(self, size, name)
+
+
+class flex(object):
+    def __init__(self, max_capacity, memory, name):
+        self.max_capacity = max_capacity
+        self.history = collections.deque(maxlen=memory)
+        self.name = name
+
+        self.variables = [{'Name': self.name + ' flex',
+                           'Current': 0, 'Min': -max_capacity, 'Max': max_capacity,
+                           'Init': 0, 'Radius': max_capacity}]
+
+    def reset(self):
+        self.capacity = self.max_capacity
+
+    def update(self, action):
+        self.history.append(action)
+        self.capacity = self.max_capacity - sum(self.history)

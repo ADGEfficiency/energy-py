@@ -21,11 +21,6 @@ class base_class(gym.Env):
         self.state_df, self.actual_state_df = self.load_data(self.episode_length, self.lag, self.random_ts)
         self.state = self.state_df.iloc[self.steps, 1:]
 
-        self.state_names = [d['Name'] for d in self.state_models]
-        self.action_names = [var['Name']
-                             for asset in self.asset_models
-                             for var in asset.variables]
-
         self.s_mins, self.s_maxs = self.state_mins_maxs()
         self.a_mins, self.a_maxs = self.asset_mins_maxs()
         self.mins = np.append(self.s_mins, self.a_mins)
@@ -84,3 +79,6 @@ class base_class(gym.Env):
             for var in asset.variables:
                 print(var['Name'] + ' is ' + str(var['Current']))
         return self
+
+    def get_test_state_actions(self):
+        return self._get_test_state_actions()

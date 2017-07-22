@@ -20,16 +20,15 @@ class env(environments.base_env.base_class):
         self.verbose = verbose
 
         self.actual_state, self.visible_state = self.load_data(self.episode_length, self.lag, self.random_ts)
-        self.state_models = [
-            {'Name': 'Settlement period', 'Min': 0, 'Max': 48},
-            {'Name': 'HGH demand', 'Min': 0, 'Max': 30},
-            {'Name': 'LGH demand', 'Min': 0, 'Max': 20},
-            {'Name': 'Cooling demand', 'Min': 0, 'Max': 10},
-            {'Name': 'Electrical demand', 'Min': 0, 'Max': 20},
-            {'Name': 'Ambient temperature', 'Min': 0, 'Max': 30},
-            {'Name': 'Gas price', 'Min': 15, 'Max': 25},
-            {'Name': 'Import electricity price', 'Min': -200, 'Max': 1600},
-            {'Name': 'Export electricity price', 'Min': -200, 'Max': 1600}]
+        self.state_models = [{'Name': 'Settlement period', 'Min': 0, 'Max': 48},
+                             {'Name': 'HGH demand', 'Min': 0, 'Max': 30},
+                             {'Name': 'LGH demand', 'Min': 0, 'Max': 20},
+                             {'Name': 'Cooling demand', 'Min': 0, 'Max': 10},
+                             {'Name': 'Electrical demand', 'Min': 0, 'Max': 20},
+                             {'Name': 'Ambient temperature', 'Min': 0, 'Max': 30},
+                             {'Name': 'Gas price', 'Min': 15, 'Max': 25},
+                             {'Name': 'Import electricity price', 'Min': -200, 'Max': 1600},
+                             {'Name': 'Export electricity price', 'Min': -200, 'Max': 1600}]
 
         self.asset_models = [
             environments.library.gas_engine(size=25, name='GT 1'),
@@ -154,7 +153,6 @@ class env(environments.base_env.base_class):
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
     def _load_data(self, episode_length, lag, random_ts):
-        # TODO the random TS
         ts = pd.read_csv('environments/time_series.csv', index_col=[0])
         ts.iloc[:, 1:] = ts.iloc[:, 1:].apply(pd.to_numeric)
         ts.loc[:, 'Timestamp'] = ts.loc[:, 'Timestamp'].apply(pd.to_datetime)
