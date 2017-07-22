@@ -247,12 +247,10 @@ class agent(object):
         self.hists[2] += hist.history['loss']
 
         return self.hists
-
-
+        
     def get_test_state_actions(self):
-        Q_test = pd.read_csv('assets/Q_test.csv', index_col=[0])
-        Q_test.iloc[:, 1:] = Q_test.iloc[:, 1:].apply(pd.to_numeric)
-        test_state_actions = np.array(Q_test.iloc[:, 1:])
+        Q_test = self.env.get_test_state_actions()
+        test_state_actions = np.array(Q_test.values)
         test_state_actions = self.normalize(test_state_actions)
         return test_state_actions
 
