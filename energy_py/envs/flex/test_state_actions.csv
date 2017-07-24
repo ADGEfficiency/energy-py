@@ -1,0 +1,4 @@
+SETTLEMENTDATE,electricity_price,electricity_demand,flexibility
+01/07/2009 00:30,0,10,2.5
+01/07/2009 09:00,25,10,2.5
+01/07/2009 23:30,50,10,2.5
