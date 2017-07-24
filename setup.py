@@ -1,8 +1,8 @@
 from setuptools import setup
 
 setup(name='energy_py',
-      version='0.2',
-      description='reinforcement learning for energy systems',
+      version='2.0',
+      description='Reinforcement learning for energy systems',
       author='Adam Green',
       author_email='adam.green@adgefficiency.com',
       url='http://adgefficiency.com/',
