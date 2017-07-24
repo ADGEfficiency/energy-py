@@ -3,7 +3,7 @@ import numpy as np
 
 class Base_Env(object):
     """
-    the main energy_py environment class
+    the energy_py base environment class
     inspired by the gym.Env class
 
     The methods of this class are:
@@ -43,7 +43,7 @@ class Base_Env(object):
 
         Returns:
             observation (np array): agent's observation of the current environment
-            reward (float) : amount of reward returned after previous action
+            reward (np float) : amount of reward returned after previous action
             done (boolean): whether the episode has ended, in which case further step() calls will return undefined results
             info (dict): contains auxiliary diagnostic information (helpful for debugging, and sometimes learning)
         """
@@ -62,7 +62,6 @@ class Space(object):
     The base class for observation & action spaces
 
     Analagous to the 'Space' object used in gym
-
     """
 
     def sample(self):
@@ -84,13 +83,12 @@ class Discrete_Space(Space):
     A single dimension discrete space
 
     Args:
-        low  (float): an array with the minimum bound for each
-        high (float): an array with the maximum bound for each
-        step (float): an array with step size
+        low  (float) : an array with the minimum bound for each
+        high (float) : an array with the maximum bound for each
+        step (float) : an array with step size
     """
 
-    def __init__(self, low, high, step, current=None):
-        self.current = current
+    def __init__(self, low, high, step):
         self.low = low
         self.high = high
         self.step = step
@@ -108,12 +106,11 @@ class Continuous_Space(Space):
     A single dimension continuous space
 
     Args:
-        low  (float): an array with the minimum bound for each
-        high (float): an array with the maximum bound for each
+        low  (float) : an array with the minimum bound for each
+        high (float) : an array with the maximum bound for each
     """
 
-    def __init__(self, low, high, current=None):
-        self.current = current
+    def __init__(self, low, high):
         self.low = low
         self.high = high
 
