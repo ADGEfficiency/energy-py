@@ -21,8 +21,5 @@ setup(name='energy_py',
                 'energy_py.envs',
                 'energy_py.main'],
 
-      install_requires=['numpy',
-                        'pandas',
-                        'tensorflow-gpu',
-                        'keras']
+      install_requires=[]
       )
