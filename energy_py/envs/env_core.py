@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 
 class Base_Env(object):
@@ -20,6 +21,10 @@ class Base_Env(object):
         observation_space
         reward_range (defaults to -inf, +inf)
     """
+    def __init__(self):
+        self.info = {}
+        self.done = False
+        return None
 
     # Override in ALL subclasses
     def _step(self, action): raise NotImplementedError
@@ -29,6 +34,41 @@ class Base_Env(object):
     action_space = None
     observation_space = None
     reward_range = (-np.inf, np.inf)
+
+    def load_state(self, csv_name, lag, episode_length):
+        """
+        loads state infomation from a csv
+        """
+        #  loading time series data
+        ts = pd.read_csv(csv_name,
+                         index_col=0,
+                         parse_dates=True)
+
+        #  now dealing with the lag
+        #  if no lag then state = observation
+        if lag == 0:
+            observation_ts = ts.iloc[:, :]
+            state_ts = ts.iloc[:, :]
+
+        #  a negative lag means the agent can only see the past
+        elif lag < 0:
+            #  we shift & cut the observation
+            observation_ts = ts.shift(lag).iloc[:-lag, :]
+            #  we cut the state
+            state_ts = ts.iloc[:-lag, :]
+
+        #  a positive lag means the agent can see the future
+        elif lag > 0:
+            #  we shift & cut the observation
+            observation_ts = ts.shift(lag).iloc[lag:, :]
+            #  we cut the state
+            state_ts = ts.iloc[lag:, :]
+        observation_ts = observation_ts.iloc[:episode_length, :]
+        state_ts = state_ts.iloc[:episode_length, :]
+        #  checking our two ts are the same shape
+        assert observation_ts.shape == state_ts.shape
+
+        return observation_ts, state_ts
 
     def step(self, action):
         """
@@ -56,6 +96,7 @@ class Base_Env(object):
         Returns: observation (np array): the initial observation
         """
         return self._reset()
+
 
 class Space(object):
     """
