@@ -12,17 +12,20 @@ class Flexibility_Env(Base_Env):
 
     The environment simulates a pre-cooling type demand flexibility action
 
-    Pre-cooling occurs for a given amount of time (memory)
+    Pre-cooling occurs for a given amount of time (cooling_adjustment_time)
     After pre-cooling is finished post-cooling occurs
+
+    Total cooling generated is the same for the RL and BAU case
+
     Finally there is a user defined amount of relaxation time between the
     end of the post-cooling and the start of the next pre-cooling
 
     Args:
-        lag             (int) : lag between observation & state
-        episode_length  (int) : length of the episdode
-        memory          (int) : number of time steps pre-cooling & post-cooling events last for
-        relaxation_time (int) : time between end of post-cool & next pre-cool
-        COP             (int) : a coefficient of performance for the chiller
+        lag                     (int) : lag between observation & state
+        episode_length          (int) : length of the episdode
+        cooling_adjustment_time (int) : number of time steps pre-cooling & post-cooling events last for
+        relaxation_time         (int) : time between end of post-cool & next pre-cool
+        COP                     (int) : a coefficient of performance for the chiller
     """
 
     def __init__(self, lag,
@@ -89,6 +92,9 @@ class Flexibility_Env(Base_Env):
         self.info['relaxation_hist'] = []
         self.info['steps'] = []
         self.info['adjusted_demand'] = []
+        self.info['reward'] = []
+        self.info['BAU_cost'] = []
+        self.info['RL_cost'] = []
         #  resetting the outputs dictionary
         self.outputs = {}
         print('environment reset')
@@ -153,6 +159,7 @@ class Flexibility_Env(Base_Env):
             self.update_hists(0, demand_adjustment, 0)
 
         #  are we in a post-cooling event
+        #  - sum of post-cool isn't zero
         #  -
         elif postcool_sum != 0 and postcool_count < self.cooling_adjustment_time and self.postcool_hist[-1] != 0:
             print('in post-cooling')
@@ -178,10 +185,22 @@ class Flexibility_Env(Base_Env):
 
         #  now we can calculate the reward
         #  the reward signal is the cost to generate cooling
-        reward = adjusted_demand * electricity_price / self.COP
+        #  note we divide by two to get $/hh (state is on HH basis)
+        RL_cost = adjusted_demand * electricity_price / (2 * self.COP)
+        reward = - RL_cost
+
+        #  we also calculate the business as usual cost
+        BAU_cost = cooling_demand * electricity_price / (2 * self.COP)
 
         #  saving info
-        self.info = self.update_info(cooling_demand, electricity_price, action, demand_adjustment, adjusted_demand)
+        self.info = self.update_info(cooling_demand,
+                                     electricity_price,
+                                     action,
+                                     demand_adjustment,
+                                     adjusted_demand,
+                                     reward,
+                                     BAU_cost,
+                                     RL_cost)
 
         #  check to see if episode is done
         if self.steps == (self.episode_length - abs(self.lag) - 1):
@@ -202,7 +221,14 @@ class Flexibility_Env(Base_Env):
         self.relaxation_hist.append(relaxation)
         return None
 
-    def update_info(self, cooling_demand, electricity_price, action, demand_adjustment, adjusted_demand):
+    def update_info(self, cooling_demand,
+                          electricity_price,
+                          action,
+                          demand_adjustment,
+                          adjusted_demand,
+                          reward,
+                          BAU_cost,
+                          RL_cost):
         """
         helper function to updates the self.info dictionary
         """
@@ -212,6 +238,11 @@ class Flexibility_Env(Base_Env):
         self.info['action'].append(action)
         self.info['demand_adjustment_hist'].append(demand_adjustment)
         self.info['adjusted_demand'].append(adjusted_demand)
+
+        self.info['reward'].append(reward)
+        self.info['BAU_cost'].append(BAU_cost)
+        self.info['RL_cost'].append(RL_cost)
+
         self.info['precool_hist'].append(self.precool_hist[-1])
         self.info['postcool_hist'].append(self.postcool_hist[-1])
         self.info['relaxation_hist'].append(self.relaxation_hist[-1])
@@ -239,15 +270,28 @@ class Flexibility_Env(Base_Env):
         print('total cooling demand was {}'.format(cooling_demand))
         print('total adjusted demand was {}'.format(adjusted_demand))
 
+        RL_cost = sum(self.info['RL_cost'])
+        BAU_cost = sum(self.info['BAU_cost'])
+        print('RL cost was {}'.format(RL_cost))
+        print('BAU cost was {}'.format(BAU_cost))
+        print('Savings were {}'.format(BAU_cost-RL_cost))
+
         self.outputs['dataframe'] = pd.DataFrame.from_dict(self.info)
         self.outputs['dataframe'].index = self.state_ts.index
         self.outputs['dataframe'].to_csv('output_df.csv')
 
-        self.outputs['time_series_fig'] = time_series_fig(df=self.outputs['dataframe'],
+        self.outputs['cooling_demand_fig'] = time_series_fig(df=self.outputs['dataframe'],
                                                           cols=['cooling_demand',
                                                                 'adjusted_demand'],
                                                           ylabel='Cooling Demand [MW]',
                                                           xlabel='Time')
+        self.outputs['cost_fig'] = time_series_fig(df=self.outputs['dataframe'],
+                                                          cols=['BAU_cost',
+                                                                'RL_cost',
+                                                                'electricity_price'],
+                                                          ylabel='Cost to deliver electricity [$/HH]',
+                                                          xlabel='Time')
+
         return self.outputs
 
 
@@ -260,12 +304,13 @@ if __name__ == '__main__':
 
     for i in range(env.episode_length):
         action = 0
-        if i > 24:
+        if i > 30:
             action=1
         env.step(action)
 
     outputs = env.output_info()
-    fig = outputs['time_series_fig']
-    fig.show()
-    df = outputs['dataframe']
-    print(df.describe())
+    f1 = outputs['cooling_demand_fig']
+    f1.show()
+
+    f2 = outputs['cost_fig']
+    f2.show()
