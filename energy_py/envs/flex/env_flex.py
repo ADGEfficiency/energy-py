@@ -75,9 +75,9 @@ class Flexibility_Env(Base_Env):
         self.steps = 0
         self.done = False
         #  resetting the deques used to track history
-        self.precool_hist = collections.deque([0], maxlen=self.cooling_adjustment_time)
-        self.postcool_hist = collections.deque([0], maxlen=self.cooling_adjustment_time)
-        self.relaxation_hist = collections.deque([0], maxlen=self.relaxation_time)
+        self.precool_hist = collections.deque([], maxlen=self.cooling_adjustment_time)
+        self.postcool_hist = collections.deque([], maxlen=self.cooling_adjustment_time)
+        self.relaxation_hist = collections.deque([], maxlen=self.relaxation_time)
         #  resetting the info dictionary
         self.info['cooling_demand'] = []
         self.info['electricity_price'] = []
@@ -99,6 +99,12 @@ class Flexibility_Env(Base_Env):
         Args:
             action (boolean) : whether or not to start a precooling event
         """
+        print('step is {}'.format(self.steps))
+        print('pre-cooling history {}'.format(self.precool_hist))
+        print('post-cooling history {}'.format(self.postcool_hist))
+        print('relaxation history {}'.format(self.relaxation_hist))
+
+
         #  check that the action is valid
         assert self.action_space[0].contains(action), "%r (%s) invalid" % (action, type(action))
         #  pulling out the state infomation
@@ -107,56 +113,67 @@ class Flexibility_Env(Base_Env):
         electricity_price = self.state.loc['electricity_price']
 
         #  summing the history of the pre-cooling, post-cooling & relaxation modes
-        precool_hist = sum(self.precool_hist)
-        postcool_hist = sum(self.postcool_hist)
-        relaxation_hist = sum(self.relaxation_hist)
+        precool_sum = sum(self.precool_hist)
+        postcool_sum = sum(self.postcool_hist)
+        relaxation_sum = sum(self.relaxation_hist)
+
+        precool_count = sum([1 for x in self.precool_hist if x != 0])
+        postcool_count = sum([1 for x in self.postcool_hist if x != 0])
+        relaxation_count = sum([1 for x in self.relaxation_hist if x != 0])
+
+        print(precool_sum)
+        print(postcool_sum)
+        print(relaxation_sum)
+        print('precool count {}'.format(precool_count))
+        print('postcool count {}'.format(postcool_count))
+        print('relax count {}'.format(relaxation_count))
 
         #  should we start a precooling event
-        if precool_hist == 0 and action == 1 and self.postcool_hist[-1] == 0 and relaxation_hist == 0:
-            print('starting pre-cooling event')
-            self.update_hists(1, 0, 0)
-            demand_adjustment = cooling_demand
-
-        #  are we already in a precooling event
-        elif precool_hist > 0 and precool_hist < self.cooling_adjustment_time and self.precool_hist[-1] == 1:
-            print('continuing pre-cooling event')
-            self.update_hists(1, 0, 0)
-            demand_adjustment = cooling_demand
-
-        #  are we at the end of a precooling event
-        #  aka should we start a postcooling event
-        elif precool_hist == self.cooling_adjustment_time:
-            print('ending pre-cooling event')
-            print('starting post-cooling event')
-            self.update_hists(0, 1, 0)
+        #  - has an action started?
+        #  - are we not already in a precool event
+        #  - are we not in a relaxation period
+        if action == 1 and precool_sum == 0 and relaxation_count == 0 and self.postcool_hist[-1] == 0:
+            print('starting precooling')
             demand_adjustment = -cooling_demand
+            self.update_hists(demand_adjustment, 0, 0)
 
-        #  are we already in a postcooling event
-        elif postcool_hist > 0 and postcool_hist < self.cooling_adjustment_time and self.postcool_hist[-1] == 1:
-            print('continuing post-cooling event')
-            self.update_hists(0, 1, 0)
+        #  are we in a pre-cooling event
+        #  - sum of pre-cool adjustments isn't zero
+        #  - count of pre-cool adjustments is less than the cooling adjustment time
+        elif precool_sum != 0 and precool_count < self.cooling_adjustment_time and self.precool_hist[-1] != 0:
+            print('in pre-cooling')
             demand_adjustment = -cooling_demand
+            self.update_hists(demand_adjustment, 0, 0)
+
+        #  are we finishing a pre-cooling event / starting post-cooling
+        #  - count of pre-cool is equal to the cooling adjustment time
+        elif precool_count == self.cooling_adjustment_time:
+            print('ending pre-cooling & starting post-cooling')
+            demand_adjustment = -self.precool_hist[0]
+            self.update_hists(0, demand_adjustment, 0)
+
+        #  are we in a post-cooling event
+        #  -
+        elif postcool_sum != 0 and postcool_count < self.cooling_adjustment_time and self.postcool_hist[-1] != 0:
+            print('in post-cooling')
+            demand_adjustment = -self.precool_hist[0]
+            self.update_hists(0, demand_adjustment, 0)
 
         #  are we ending a postcooling event
-        elif postcool_hist == self.cooling_adjustment_time and precool_hist == 0:
+        elif postcool_count == self.cooling_adjustment_time and precool_sum == 0:
             print('ending post-cooling event')
+            demand_adjustment = 0
             self.update_hists(0, 0, 1)
-            demand_adjustment = -cooling_demand
 
         else:
             print('nothing is happening')
-            self.update_hists(0, 0, 0)
             demand_adjustment = 0
+            self.update_hists(0, 0, 0)
 
-            if relaxation_hist > 0:
+            if relaxation_count > 0:
                 print('in relaxation time')
 
-        print(self.steps)
-        print('pre-cooling history {}'.format(self.precool_hist))
-        print('post-cooling history {}'.format(self.postcool_hist))
-        print('relaxation history {}'.format(self.relaxation_hist))
         print('demand adjustment is {}'.format(demand_adjustment))
-
         adjusted_demand = cooling_demand + demand_adjustment
 
         #  now we can calculate the reward
@@ -204,14 +221,16 @@ class Flexibility_Env(Base_Env):
         """
         extracts info and turns into dataframes & graphs
         """
-        def time_series_fig(dataframe, columns):
+        def time_series_fig(df, cols, xlabel, ylabel):
             """
             makes a time series figure from a dataframe and specified columns
             """
             #  make the figure & axes objects
             fig, ax = plt.subplots(1, 1, figsize = (20, 20))
-            for col in columns:
-                dataframe.loc[:, col].plot(kind='line', ax=ax, label=col)
+            for col in cols:
+                df.loc[:, col].plot(kind='line', ax=ax, label=col)
+            plt.xlabel(xlabel)
+            plt.ylabel(ylabel)
             plt.legend()
             return fig
 
@@ -222,26 +241,28 @@ class Flexibility_Env(Base_Env):
 
         self.outputs['dataframe'] = pd.DataFrame.from_dict(self.info)
         self.outputs['dataframe'].index = self.state_ts.index
+        self.outputs['dataframe'].to_csv('output_df.csv')
 
-        self.outputs['time_series_fig'] = time_series_fig(self.outputs['dataframe'],
-                                                          ['cooling_demand',
-                                                           'adjusted_demand'])
+        self.outputs['time_series_fig'] = time_series_fig(df=self.outputs['dataframe'],
+                                                          cols=['cooling_demand',
+                                                                'adjusted_demand'],
+                                                          ylabel='Cooling Demand [MW]',
+                                                          xlabel='Time')
         return self.outputs
 
 
 if __name__ == '__main__':
-    env = Flexibility_Env(lag = 0,
-                          episode_length = 48,
-                          cooling_adjustment_time = 5,
-                          relaxation_time = 48,
-                          COP = 1)
+    env = Flexibility_Env(lag=0,
+                          episode_length=48,
+                          cooling_adjustment_time=4,
+                          relaxation_time=48,
+                          COP=1)
 
     for i in range(env.episode_length):
-        action = 1
-        if i < 20:
-            action = 0
+        action = 0
+        if i > 24:
+            action=1
         env.step(action)
-
 
     outputs = env.output_info()
     fig = outputs['time_series_fig']
