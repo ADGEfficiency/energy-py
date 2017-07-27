@@ -1,3 +1,5 @@
+import collections
+
 import numpy as np
 import pandas as pd
 
@@ -22,8 +24,9 @@ class Base_Env(object):
         reward_range (defaults to -inf, +inf)
     """
     def __init__(self):
-        self.info = {}
-        self.done = False
+        self.info    = collections.defaultdict(list)
+        self.outputs = collections.defaultdict(list)
+        self.done    = False
         return None
 
     # Override in ALL subclasses
@@ -162,11 +165,3 @@ class Continuous_Space(Space):
         return (x >= self.low) and (x <= self.high)
 
 if __name__ == '__main__':
-
-
-    space = Continuous_Space(low=0, high=20)
-    # print(space.space)
-    print(space.sample())
-    print(space.contains(2))
-    print(space.contains(1.2))
-    print(space.contains(100))
