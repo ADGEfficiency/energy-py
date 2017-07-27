@@ -34,7 +34,7 @@ class Flexibility_Env(Base_Env):
                        relaxation_time,
                        COP):
 
-        #  calling init method parent class
+        #  calling init method of the parent Base_Env class
         super().__init__()
 
         #  inputs relevant to the RL learning problem
@@ -44,7 +44,6 @@ class Flexibility_Env(Base_Env):
         self.cooling_adjustment_time = cooling_adjustment_time
         self.relaxation_time = relaxation_time
         self.COP = COP
-
         #  resetting the environment
         self.state = self.reset()
 
@@ -72,31 +71,18 @@ class Flexibility_Env(Base_Env):
 
         self.test_state_actions = self.get_tests()
 
-        #  setting to the initial state
-        self.state = self.state_ts.iloc[0, :]
         #  reseting the step counter
         self.steps = 0
+        #  setting to the initial state
+        self.state = np.array(self.state_ts.iloc[self.steps, :])
         self.done = False
         #  resetting the deques used to track history
         self.precool_hist = collections.deque([], maxlen=self.cooling_adjustment_time)
         self.postcool_hist = collections.deque([], maxlen=self.cooling_adjustment_time)
         self.relaxation_hist = collections.deque([], maxlen=self.relaxation_time)
-        #  resetting the info dictionary
-        self.info['cooling_demand'] = []
-        self.info['electricity_price'] = []
-        self.info['action'] = []
-        self.info['action'] = []
-        self.info['demand_adjustment_hist'] = []
-        self.info['precool_hist'] = []
-        self.info['postcool_hist'] = []
-        self.info['relaxation_hist'] = []
-        self.info['steps'] = []
-        self.info['adjusted_demand'] = []
-        self.info['reward'] = []
-        self.info['BAU_cost'] = []
-        self.info['RL_cost'] = []
-        #  resetting the outputs dictionary
-        self.outputs = {}
+        #  resetting the info & outputs dictionaries
+        self.info = collections.defaultdict([])
+        self.outputs = collections.defaultdict([])
         print('environment reset')
         return self.state
 
@@ -109,7 +95,6 @@ class Flexibility_Env(Base_Env):
         print('pre-cooling history {}'.format(self.precool_hist))
         print('post-cooling history {}'.format(self.postcool_hist))
         print('relaxation history {}'.format(self.relaxation_hist))
-
 
         #  check that the action is valid
         assert self.action_space[0].contains(action), "%r (%s) invalid" % (action, type(action))
@@ -208,7 +193,7 @@ class Flexibility_Env(Base_Env):
         else:
         #  moving onto next step
             self.steps += int(1)
-            self.state = self.state_ts.iloc[self.steps, :]
+            self.state = np.array(self.state_ts.iloc[self.steps, :])
 
         return self.state, reward, self.done, self.info
 
@@ -285,13 +270,13 @@ class Flexibility_Env(Base_Env):
                                                                 'adjusted_demand'],
                                                           ylabel='Cooling Demand [MW]',
                                                           xlabel='Time')
+
         self.outputs['cost_fig'] = time_series_fig(df=self.outputs['dataframe'],
                                                           cols=['BAU_cost',
                                                                 'RL_cost',
                                                                 'electricity_price'],
                                                           ylabel='Cost to deliver electricity [$/HH]',
                                                           xlabel='Time')
-
         return self.outputs
 
 
