@@ -23,6 +23,7 @@ class Base_Env(object):
         observation_space
         reward_range (defaults to -inf, +inf)
     """
+
     def __init__(self):
         self.info    = collections.defaultdict(list)
         self.outputs = collections.defaultdict(list)
@@ -38,7 +39,7 @@ class Base_Env(object):
     observation_space = None
     reward_range = (-np.inf, np.inf)
 
-    def load_state(self, csv_name, lag, episode_length):
+    def load_state(self, csv_name, lag):
         """
         loads state infomation from a csv
         """
@@ -66,8 +67,8 @@ class Base_Env(object):
             observation_ts = ts.shift(lag).iloc[lag:, :]
             #  we cut the state
             state_ts = ts.iloc[lag:, :]
-        observation_ts = observation_ts.iloc[:episode_length, :]
-        state_ts = state_ts.iloc[:episode_length, :]
+        observation_ts = observation_ts.iloc[:, :]
+        state_ts = state_ts.iloc[:, :]
         #  checking our two ts are the same shape
         assert observation_ts.shape == state_ts.shape
 
@@ -75,11 +76,21 @@ class Base_Env(object):
 
     def step(self, action):
         """
-        Run one timestep of the environment's dynamics. When end of
-        episode is reached, you are responsible for calling `reset()`
-        to reset this environment's state.
+        Run one timestep of the environment's dynamics.
+        When end of episode is reached, you are responsible for calling reset().
 
         Accepts an action and returns a tuple (observation, reward, done, info).
+
+        The step function should progress in the following order:
+        - action = a[1]
+        - reward = r[1]
+        - next_state = next_state[1]
+        - update_info()
+        - step += 1
+        - self.state = next_state[1]
+
+        step() returns the observation - not the state!
+        This is to allow the state to remain hidden (if desired by the modeller).
 
         Args:
             action (object): an action provided by the environment
@@ -98,6 +109,7 @@ class Base_Env(object):
 
         Returns: observation (np array): the initial observation
         """
+        print('Reset environment.')
         return self._reset()
 
 
@@ -110,21 +122,26 @@ class Space(object):
 
     def sample(self):
         """
-        Uniformly randomly sample a random element of this space
+        Uniformly randomly sample a random element of this space.
         """
         return self._sample()
 
     def contains(self, x):
         """
         Return boolean specifying if x is a valid
-        member of this space
+        member of this space.
         """
         return self._contains(x)
 
+    def discretize(self, step):
+        """
+        Method to discretize the action space.
+        """
+        return self._discretize(step)
 
 class Discrete_Space(Space):
     """
-    A single dimension discrete space
+    A single dimension discrete space.
 
     Args:
         low  (float) : an array with the minimum bound for each
@@ -133,10 +150,9 @@ class Discrete_Space(Space):
     """
 
     def __init__(self, low, high, step):
-        self.low = low
+        self.low  = low
         self.high = high
         self.step = step
-        self.discrete_space = np.arange(low, high + step, step).reshape(- 1)
 
     def _sample(self):
         return np.random.choice(self.discrete_space)
@@ -144,10 +160,12 @@ class Discrete_Space(Space):
     def _contains(self, x):
         return np.in1d(x, self.discrete_space)
 
+    def _discretize(self, step):
+        return np.arange(self.low, self.high + self.step, self.step).reshape(-1)
 
 class Continuous_Space(Space):
     """
-    A single dimension continuous space
+    A single dimension continuous space.
 
     Args:
         low  (float) : an array with the minimum bound for each
@@ -155,7 +173,7 @@ class Continuous_Space(Space):
     """
 
     def __init__(self, low, high):
-        self.low = low
+        self.low  = low
         self.high = high
 
     def _sample(self):
@@ -164,4 +182,6 @@ class Continuous_Space(Space):
     def _contains(self, x):
         return (x >= self.low) and (x <= self.high)
 
-if __name__ == '__main__':
+    def _discretize(self, step):
+        self.step = step
+        return np.arange(self.low, self.high + step, step).reshape(-1)

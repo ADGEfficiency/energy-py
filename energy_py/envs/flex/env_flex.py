@@ -8,21 +8,21 @@ from energy_py.envs.env_core import Base_Env, Discrete_Space, Continuous_Space
 
 class Flexibility_Env(Base_Env):
     """
-    An environment that simulates a flexibile electricity system
+    An environment that simulates a pre-cooling type demand flexibility action.
+    Agent chooses to start a pre-cooling action or not.
 
-    The environment simulates a pre-cooling type demand flexibility action
+    Pre-cooling occurs for a given amount of time (cooling_adjustment_time).
+    After pre-cooling is finished post-cooling occurs.
 
-    Pre-cooling occurs for a given amount of time (cooling_adjustment_time)
-    After pre-cooling is finished post-cooling occurs
-
-    Total cooling generated is the same for the RL and BAU case
+    Total cooling generated is the same for the RL and BAU case.
 
     Finally there is a user defined amount of relaxation time between the
-    end of the post-cooling and the start of the next pre-cooling
+    end of the post-cooling and the start of the next pre-cooling.
 
     Args:
         lag                     (int) : lag between observation & state
-        episode_length          (int) : length of the episdode
+        episode_length          (int) : length of the episode
+
         cooling_adjustment_time (int) : number of time steps pre-cooling & post-cooling events last for
         relaxation_time         (int) : time between end of post-cool & next pre-cool
         COP                     (int) : a coefficient of performance for the chiller
@@ -40,19 +40,41 @@ class Flexibility_Env(Base_Env):
         #  inputs relevant to the RL learning problem
         self.lag = lag
         self.episode_length = episode_length
+
         #  technical energy inputs
         self.cooling_adjustment_time = cooling_adjustment_time
         self.relaxation_time = relaxation_time
         self.COP = COP
+
         #  resetting the environment
-        self.state = self.reset()
+        self.observation = self.reset()
 
     def get_tests(self):
         return None
 
+    def get_state(self, steps):
+        """
+        Helper function to create the state numpy array
+
+        Args:
+            steps (int) : the relevant step for the desired state
+        """
+        state = np.array(self.state_ts.iloc[steps, :])
+        return state
+
+    def get_observation(self, steps):
+        """
+        Helper function to create the state numpy array
+
+        Args:
+            steps (int) : the relevant step for the desired observation
+        """
+        observation = np.array(self.observation_ts.iloc[steps, :])
+        return observation
+
     def _reset(self):
         """
-        resets the environment
+        Resets the environment
         """
         #  we define our action space
         #  it's a single action - a binary start pre-cooling now or not
@@ -66,25 +88,26 @@ class Flexibility_Env(Base_Env):
                                                              self.episode_length)
 
         #  defining the observation spaces
+        #  these are defined from the loaded csvs
         self.observation_space = [Continuous_Space(col.min(), col.max())
                                   for name, col in self.observation_ts.iteritems()]
 
-        self.test_state_actions = self.get_tests()
-
-        #  reseting the step counter
+        #  reseting the step counter, state, observation & done status
         self.steps = 0
-        #  setting to the initial state
-        self.state = np.array(self.state_ts.iloc[self.steps, :])
+        self.state = self.get_state(self.steps)
+        self.observation = self.get_observation(self.steps)
         self.done = False
+
         #  resetting the deques used to track history
         self.precool_hist = collections.deque([], maxlen=self.cooling_adjustment_time)
         self.postcool_hist = collections.deque([], maxlen=self.cooling_adjustment_time)
         self.relaxation_hist = collections.deque([], maxlen=self.relaxation_time)
+
         #  resetting the info & outputs dictionaries
-        self.info = collections.defaultdict([])
-        self.outputs = collections.defaultdict([])
-        print('environment reset')
-        return self.state
+        self.info = collections.defaultdict(list)
+        self.outputs = collections.defaultdict(list)
+
+        return self.observation
 
     def _step(self, action):
         """
@@ -98,10 +121,10 @@ class Flexibility_Env(Base_Env):
 
         #  check that the action is valid
         assert self.action_space[0].contains(action), "%r (%s) invalid" % (action, type(action))
-        #  pulling out the state infomation
 
-        cooling_demand = self.state.loc['cooling_demand']
-        electricity_price = self.state.loc['electricity_price']
+        #  pulling out the state infomation
+        electricity_price = self.state[0]
+        cooling_demand = self.state[1]
 
         #  summing the history of the pre-cooling, post-cooling & relaxation modes
         precool_sum = sum(self.precool_hist)
@@ -111,13 +134,6 @@ class Flexibility_Env(Base_Env):
         precool_count = sum([1 for x in self.precool_hist if x != 0])
         postcool_count = sum([1 for x in self.postcool_hist if x != 0])
         relaxation_count = sum([1 for x in self.relaxation_hist if x != 0])
-
-        print(precool_sum)
-        print(postcool_sum)
-        print(relaxation_sum)
-        print('precool count {}'.format(precool_count))
-        print('postcool count {}'.format(postcool_count))
-        print('relax count {}'.format(relaxation_count))
 
         #  should we start a precooling event
         #  - has an action started?
@@ -131,6 +147,7 @@ class Flexibility_Env(Base_Env):
         #  are we in a pre-cooling event
         #  - sum of pre-cool adjustments isn't zero
         #  - count of pre-cool adjustments is less than the cooling adjustment time
+        #  - last entry of the post-cool isn't zero (ie a pre-cool hasn't just ended)
         elif precool_sum != 0 and precool_count < self.cooling_adjustment_time and self.precool_hist[-1] != 0:
             print('in pre-cooling')
             demand_adjustment = -cooling_demand
@@ -145,7 +162,8 @@ class Flexibility_Env(Base_Env):
 
         #  are we in a post-cooling event
         #  - sum of post-cool isn't zero
-        #  -
+        #  - count of post-cool is less than the cooling adjustment time
+        #  - last entry of the post-cool isn't zero (ie a post-cool hasn't just ended)
         elif postcool_sum != 0 and postcool_count < self.cooling_adjustment_time and self.postcool_hist[-1] != 0:
             print('in post-cooling')
             demand_adjustment = -self.precool_hist[0]
@@ -171,71 +189,95 @@ class Flexibility_Env(Base_Env):
         #  now we can calculate the reward
         #  the reward signal is the cost to generate cooling
         #  note we divide by two to get $/hh (state is on HH basis)
-        RL_cost = adjusted_demand * electricity_price / (2 * self.COP)
+        RL_cost = (adjusted_demand / 2) * electricity_price / self.COP
         reward = - RL_cost
 
         #  we also calculate the business as usual cost
-        BAU_cost = cooling_demand * electricity_price / (2 * self.COP)
+        BAU_cost = (cooling_demand / 2) * electricity_price / self.COP
+
+        #  getting the next state & next observation
+        next_state = self.get_state(self.steps + 1)
+        next_observation = self.get_observation(self.steps + 1)
 
         #  saving info
-        self.info = self.update_info(cooling_demand,
-                                     electricity_price,
-                                     action,
-                                     demand_adjustment,
-                                     adjusted_demand,
-                                     reward,
-                                     BAU_cost,
-                                     RL_cost)
+        self.info = self.update_info(steps            = self.steps,
+                                     state            = self.state,
+                                     observation      = self.observation,
+                                     action           = action,
+                                     reward           = reward,
+                                     next_state       = next_state,
+                                     next_observation = next_observation
+                                     BAU_cost         = BAU_cost,
+                                     RL_cost          = RL_cost,
+
+                                     cooling_demand = cooling_demand,
+                                     electricity_price = electricity_price,
+                                     demand_adjustment = demand_adjustment,
+                                     adjusted_demand = adjusted_demand)
 
         #  check to see if episode is done
+        #  else move onto next step
         if self.steps == (self.episode_length - abs(self.lag) - 1):
             self.done = True
         else:
-        #  moving onto next step
             self.steps += int(1)
-            self.state = np.array(self.state_ts.iloc[self.steps, :])
+            self.state = next_state
+            self.observation = next_observation
 
-        return self.state, reward, self.done, self.info
+        return self.observation, reward, self.done, self.info
 
     def update_hists(self, precool, postcool, relaxation):
         """
-        helper function to update the deques
+        Helper function to update the deques.
         """
         self.precool_hist.append(precool)
         self.postcool_hist.append(postcool)
         self.relaxation_hist.append(relaxation)
         return None
 
-    def update_info(self, cooling_demand,
-                          electricity_price,
+    def update_info(self, steps,
+                          state,
+                          observation,
                           action,
-                          demand_adjustment,
-                          adjusted_demand,
                           reward,
-                          BAU_cost,
-                          RL_cost):
-        """
-        helper function to updates the self.info dictionary
-        """
-        self.info['steps'].append(self.steps)
-        self.info['cooling_demand'].append(cooling_demand)
-        self.info['electricity_price'].append(electricity_price)
-        self.info['action'].append(action)
-        self.info['demand_adjustment_hist'].append(demand_adjustment)
-        self.info['adjusted_demand'].append(adjusted_demand)
+                          next_state,
+                          next_observation,
 
+                          BAU_cost,
+                          RL_cost,
+
+                          cooling_demand,
+                          electricity_price,
+                          demand_adjustment,
+                          adjusted_demand):
+        """
+        Helper function to update self.info.
+        """
+        self.info['steps'].append(steps)
+        self.info['state'].append(state)
+        self.info['observation'].append(observation)
+        self.info['action'].append(action)
         self.info['reward'].append(reward)
+        self.info['next_state'].append(next_state)
+        self.info['next_observation'].append(next_observation)
+
         self.info['BAU_cost'].append(BAU_cost)
         self.info['RL_cost'].append(RL_cost)
+
+        self.info['cooling_demand'].append(cooling_demand)
+        self.info['electricity_price'].append(electricity_price)
+        self.info['demand_adjustment_hist'].append(demand_adjustment)
+        self.info['adjusted_demand'].append(adjusted_demand)
 
         self.info['precool_hist'].append(self.precool_hist[-1])
         self.info['postcool_hist'].append(self.postcool_hist[-1])
         self.info['relaxation_hist'].append(self.relaxation_hist[-1])
+
         return self.info
 
     def output_info(self):
         """
-        extracts info and turns into dataframes & graphs
+        Extracts from self.info and turns into DataFrames & figures.
         """
         def time_series_fig(df, cols, xlabel, ylabel):
             """
@@ -282,7 +324,7 @@ class Flexibility_Env(Base_Env):
 
 if __name__ == '__main__':
     env = Flexibility_Env(lag=0,
-                          episode_length=48,
+                          episode_length=20,
                           cooling_adjustment_time=4,
                           relaxation_time=48,
                           COP=1)
