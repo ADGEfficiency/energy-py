@@ -1,6 +1,7 @@
 # energy_py SPECIFIC
-*.csv
-
+# ignore the output_df's
+energy_py\energy_py\envs\battery\output_df.csv
+energy_py\energy_py\envs\flex\output_df.csv
 
 # GENERIC
 # from https://github.com/github/gitignore/blob/master/Python.gitignore
