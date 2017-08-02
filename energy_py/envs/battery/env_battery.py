@@ -69,7 +69,6 @@ class Battery_Env(Base_Env):
             steps (int) : the relevant step for the desired observation
         """
         observation = np.array(self.observation_ts.iloc[steps, :])
-        observation =
         return observation
 
     def _reset(self):
@@ -77,14 +76,11 @@ class Battery_Env(Base_Env):
         Resets the environment.
         """
         #  we define our action space
-        #  two actions
-        #  - amount of electricity to charge this step [MWh]
-        #  - amount of electricity to discharge this step [MWh]
+        #  single action - how much to charge or discharge [MWh]
 
-        self.action_space = [Continuous_Space(low  = 0,
-                                              high = self.capacity),
-                             Continuous_Space(low  = 0,
-                                              high = self.capacity)]
+        self.action_space = [Continuous_Space(low  = -self.capacity, 
+                                              high = self.capacity,
+                                              step = 1)]
 
         #  loading the state time series data
         self.observation_ts, self.state_ts = self.load_state('state.csv',
@@ -118,7 +114,7 @@ class Battery_Env(Base_Env):
     def _step(self, action):
         """
         Args:
-            action [charge, discharge] : actions to perform this time step
+            action [net_charge] : action to perform this time step
         """
         print('step is {}'.format(self.steps))
 
@@ -132,8 +128,7 @@ class Battery_Env(Base_Env):
         old_charge = self.state[2]
 
         #  taking the actions
-        #  net charge = charge - discharge (all in MWh)
-        net_action = action[0] - action[1]
+        net_charge = action 
         unbounded_new_charge = old_charge + net_charge
 
         #  we first check to make sure this charge is within our capacity limits
@@ -193,7 +188,7 @@ class Battery_Env(Base_Env):
                                      action           = action,
                                      reward           = reward,
                                      next_state       = next_state,
-                                     next_observation = next_observation
+                                     next_observation = next_observation,
                                      BAU_cost         = BAU_cost,
                                      RL_cost          = RL_cost)
 

@@ -1,4 +1,5 @@
 import collections
+import os
 
 import numpy as np
 import pandas as pd
@@ -39,12 +40,12 @@ class Base_Env(object):
     observation_space = None
     reward_range = (-np.inf, np.inf)
 
-    def load_state(self, csv_name, lag):
+    def load_state(self, csv_path, lag):
         """
         loads state infomation from a csv
         """
         #  loading time series data
-        ts = pd.read_csv(csv_name,
+        ts = pd.read_csv(csv_path,
                          index_col=0,
                          parse_dates=True)
 
@@ -153,6 +154,7 @@ class Discrete_Space(Space):
         self.low  = low
         self.high = high
         self.step = step
+        self.discrete_space = self.discretize(self.step)
 
     def _sample(self):
         return np.random.choice(self.discrete_space)
@@ -172,9 +174,11 @@ class Continuous_Space(Space):
         high (float) : an array with the maximum bound for each
     """
 
-    def __init__(self, low, high):
+    def __init__(self, low, high, step):
         self.low  = low
         self.high = high
+        self.step = step
+        self.discrete_space = self.discretize(self.step)
 
     def _sample(self):
         return np.random.uniform(low=self.low, high=self.high)

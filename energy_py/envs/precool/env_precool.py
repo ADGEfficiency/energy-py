@@ -1,4 +1,5 @@
 import collections
+import os
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -6,7 +7,7 @@ import pandas as pd
 
 from energy_py.envs.env_core import Base_Env, Discrete_Space, Continuous_Space
 
-class Flexibility_Env(Base_Env):
+class Precool_Env(Base_Env):
     """
     An environment that simulates a pre-cooling type demand flexibility action.
     Agent chooses to start a pre-cooling action or not.
@@ -32,7 +33,7 @@ class Flexibility_Env(Base_Env):
                        episode_length,
                        cooling_adjustment_time,
                        relaxation_time,
-                       COP):
+                       COP=3):
 
         #  calling init method of the parent Base_Env class
         super().__init__()
@@ -83,13 +84,13 @@ class Flexibility_Env(Base_Env):
                                             step = 1)]
 
         #  loading the state time series data
-        self.observation_ts, self.state_ts = self.load_state('state.csv',
-                                                             self.lag,
-                                                             self.episode_length)
+        state_path = os.path.join(os.path.dirname(__file__), 'state.csv')
+        self.observation_ts, self.state_ts = self.load_state(state_path,
+                                                             self.lag)
 
         #  defining the observation spaces
         #  these are defined from the loaded csvs
-        self.observation_space = [Continuous_Space(col.min(), col.max())
+        self.observation_space = [Continuous_Space(col.min(), col.max(), step=1)
                                   for name, col in self.observation_ts.iteritems()]
 
         #  reseting the step counter, state, observation & done status
@@ -206,7 +207,7 @@ class Flexibility_Env(Base_Env):
                                      action           = action,
                                      reward           = reward,
                                      next_state       = next_state,
-                                     next_observation = next_observation
+                                     next_observation = next_observation,
                                      BAU_cost         = BAU_cost,
                                      RL_cost          = RL_cost,
 
@@ -304,7 +305,7 @@ class Flexibility_Env(Base_Env):
         print('Savings were {}'.format(BAU_cost-RL_cost))
 
         self.outputs['dataframe'] = pd.DataFrame.from_dict(self.info)
-        self.outputs['dataframe'].index = self.state_ts.index
+        self.outputs['dataframe'].index = self.state_ts.index[:len(self.outputs['dataframe'])]
         self.outputs['dataframe'].to_csv('output_df.csv')
 
         self.outputs['cooling_demand_fig'] = time_series_fig(df=self.outputs['dataframe'],
@@ -322,22 +323,3 @@ class Flexibility_Env(Base_Env):
         return self.outputs
 
 
-if __name__ == '__main__':
-    env = Flexibility_Env(lag=0,
-                          episode_length=20,
-                          cooling_adjustment_time=4,
-                          relaxation_time=48,
-                          COP=1)
-
-    for i in range(env.episode_length):
-        action = 0
-        if i > 30:
-            action=1
-        env.step(action)
-
-    outputs = env.output_info()
-    f1 = outputs['cooling_demand_fig']
-    f1.show()
-
-    f2 = outputs['cost_fig']
-    f2.show()
