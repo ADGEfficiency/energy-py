@@ -1,4 +1,4 @@
-SETTLEMENTDATE,electricity_price,site_electricity_demand
+SETTLEMENTDATE,electricity_price,electricity_demand
 01/01/2018 00:00,20,2.3
 01/01/2018 00:30,20,2.188029537
 01/01/2018 01:00,20,1.343232399

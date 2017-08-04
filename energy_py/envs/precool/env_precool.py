@@ -321,5 +321,3 @@ class Precool_Env(Base_Env):
                                                           ylabel='Cost to deliver electricity [$/HH]',
                                                           xlabel='Time')
         return self.outputs
-
-

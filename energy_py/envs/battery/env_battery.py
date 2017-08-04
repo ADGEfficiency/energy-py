@@ -23,13 +23,15 @@ class Battery_Env(Base_Env):
                                           how much of the stored electricity we
                                           can later extract
         initial_charge          (float) : inital amount of electricity stored [MWh]
+        verbose                 (int)   : controls env print statements
     """
     def __init__(self, lag,
                        episode_length,
                        power_rating,
                        capacity,
                        round_trip_eff = 0.8,
-                       initial_charge = 0):
+                       initial_charge = 0,
+                       verbose = 0):
 
         #  calling init method of the parent Base_Env class
         super().__init__()
@@ -43,6 +45,7 @@ class Battery_Env(Base_Env):
         self.capacity       = capacity
         self.round_trip_eff = round_trip_eff
         self.initial_charge = initial_charge
+        self.verbose        = verbose
 
         #  resetting the environment
         self.observation    = self.reset()
@@ -79,12 +82,12 @@ class Battery_Env(Base_Env):
         #  we define our action space
         #  single action - how much to charge or discharge [MWh]
 
-        self.action_space = [Continuous_Space(low  = -self.capacity, 
-                                              high = self.capacity,
+        self.action_space = [Continuous_Space(low  = -self.power_rating,
+                                              high = self.power_rating,
                                               step = 1)]
 
         #  loading the state time series data
-        csv_path = os.path.join(os.path.dirname(__file__), 'state.csv') 
+        csv_path = os.path.join(os.path.dirname(__file__), 'state.csv')
         self.observation_ts, self.state_ts = self.load_state(csv_path,
                                                              self.lag)
 
@@ -115,23 +118,23 @@ class Battery_Env(Base_Env):
     def _step(self, action):
         """
         Args:
-            action [net_charge] : action to perform this time step
+            action (float) : rate to charge/discharge this time step
         """
-        print('step is {}'.format(self.steps))
 
         #  check that the action is valid
+        print(type(action))
         for i, act in enumerate(action):
             assert self.action_space[i].contains(act), "%r (%s) invalid" % (action, type(action))
 
         #  pulling out the state infomation
         electricity_price = self.state[0]
-        site_electricity_demand = self.state[1]
+        electricity_demand = self.state[1]
         old_charge = self.state[2]
 
         #  taking the action
         #  note we / 2 to convert to MWh/hh
-        net_charge = action[0] / 2 
-
+        action = action[0]
+        net_charge = action / 2
         unbounded_new_charge = old_charge + net_charge
 
         #  we first check to make sure this charge is within our capacity limits
@@ -143,9 +146,18 @@ class Battery_Env(Base_Env):
         unbounded_rate = (bounded_new_charge - old_charge) * 2
         rate = max(min(unbounded_rate, self.power_rating), -self.power_rating)
 
-        # / 2 is to convert from MW to MWh/hh
-        new_charge = old_charge + rate / 2
+        #  finally we account for round trip efficiency
+        losses = 0
+
+        if rate > 0:
+            losses = rate * (1 - self.round_trip_eff) / 2
+
+        new_charge = old_charge + rate / 2 - losses
         net_stored = new_charge - old_charge
+        rate = net_stored * 2
+
+        assert new_charge == old_charge + net_stored
+        assert net_stored * 2 == rate
 
         assert rate <= self.power_rating
         assert rate >= -self.power_rating
@@ -153,30 +165,18 @@ class Battery_Env(Base_Env):
         assert new_charge <= self.capacity
         assert new_charge >= 0
 
-        assert net_stored * 2 == rate
-
-        #  finally we account for the round trip efficiency
-        #  accounted for by electricity being lost as soon as it's stored
-        losses = 0
-        if new_charge > old_charge:
-            losses = net_stored * (1 - self.round_trip_eff)
-
-        new_charge = new_charge - losses
-        net_stored = new_charge - old_charge
-        assert new_charge == old_charge + net_stored
-
         #  calculate the business as usual cost
         #  BAU depends on
         #  - site demand
         #  - electricity price
-        BAU_cost = (site_electricity_demand / 2) * electricity_price
+        BAU_cost = (electricity_demand / 2) * electricity_price
 
         #  now we can calculate the reward
         #  reward depends on both
         #  - how much electricity the site is demanding
         #  - what our battery is doing
         #  - electricity price
-        adjusted_demand = site_electricity_demand - rate / 2
+        adjusted_demand = electricity_demand + rate / 2
         RL_cost = (adjusted_demand / 2) * electricity_price
         reward = - RL_cost
 
@@ -185,15 +185,27 @@ class Battery_Env(Base_Env):
         next_observation = self.get_observation(self.steps + 1, charge=new_charge)
 
         #  saving info
-        self.info = self.update_info(steps            = self.steps,
-                                     state            = self.state,
-                                     observation      = self.observation,
-                                     action           = action,
-                                     reward           = reward,
-                                     next_state       = next_state,
-                                     next_observation = next_observation,
-                                     BAU_cost         = BAU_cost,
-                                     RL_cost          = RL_cost)
+        self.info = self.update_info(steps                   = self.steps,
+                                     state                   = self.state,
+                                     observation             = self.observation,
+                                     action                  = action,
+                                     reward                  = reward,
+                                     next_state              = next_state,
+                                     next_observation        = next_observation,
+                                     BAU_cost                = BAU_cost,
+                                     RL_cost                 = RL_cost,
+                                     electricity_price       = electricity_price,
+                                     electricity_demand = electricity_demand,
+                                     rate                    = rate,
+                                     new_charge = new_charge)
+
+        if self.verbose > 0:
+            print('step is {}'.format(self.steps))
+            print('action was {}'.format(action))
+            print('old charge was {}'.format(old_charge))
+            print('new charge is {}'.format(new_charge))
+            print('rate is {}'.format(rate))
+            print('losses were {}'.format(losses))
 
         #  check to see if episode is done
         if self.steps == (self.episode_length - abs(self.lag) - 1):
@@ -215,7 +227,12 @@ class Battery_Env(Base_Env):
                           next_observation,
 
                           BAU_cost,
-                          RL_cost):
+                          RL_cost,
+
+                          electricity_price,
+                          electricity_demand,
+                          rate,
+                          new_charge):
         """
         helper function to updates the self.info dictionary
         """
@@ -229,6 +246,11 @@ class Battery_Env(Base_Env):
 
         self.info['BAU_cost'].append(BAU_cost)
         self.info['RL_cost'].append(RL_cost)
+
+        self.info['electricity_price'].append(electricity_price)
+        self.info['electricity_demand'].append(electricity_demand)
+        self.info['rate'].append(rate)
+        self.info['new_charge'].append(new_charge)
 
         return self.info
 
@@ -256,14 +278,15 @@ class Battery_Env(Base_Env):
         print('Savings were {}'.format(BAU_cost-RL_cost))
 
         self.outputs['dataframe'] = pd.DataFrame.from_dict(self.info)
-        self.outputs['dataframe'].index = self.state_ts.index
+        self.outputs['dataframe'].index = self.state_ts.index[:len(self.outputs['dataframe'])]
         self.outputs['dataframe'].to_csv('output_df.csv')
-        #
-        # self.outputs['cooling_demand_fig'] = time_series_fig(df=self.outputs['dataframe'],
-        #                                                   cols=['cooling_demand',
-        #                                                         'adjusted_demand'],
-        #                                                   ylabel='Cooling Demand [MW]',
-        #                                                   xlabel='Time')
+
+        self.outputs['technical_fig'] = time_series_fig(df=self.outputs['dataframe'],
+                                                          cols=['rate',
+                                                                'new_charge',
+                                                                'action'],
+                                                          ylabel='Electricity [MW or MWh]',
+                                                          xlabel='Time')
 
         self.outputs['cost_fig'] = time_series_fig(df=self.outputs['dataframe'],
                                                           cols=['BAU_cost',
@@ -272,24 +295,3 @@ class Battery_Env(Base_Env):
                                                           ylabel='Cost to deliver electricity [$/hh]',
                                                           xlabel='Time')
         return self.outputs
-
-
-if __name__ == '__main__':
-    env = Battery_Env(lag=0,
-                      episode_length=48,
-                      power_rating=2,
-                      capacity=10)
-
-
-    for i in range(env.episode_length):
-        action = [1, 0]
-        if i > 30:
-            action=[0,1]
-        env.step(action)
-
-    outputs = env.output_info()
-    f1 = outputs['cooling_demand_fig']
-    f1.show()
-
-    f2 = outputs['cost_fig']
-    f2.show()
