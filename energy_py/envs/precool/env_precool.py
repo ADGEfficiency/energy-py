@@ -92,6 +92,9 @@ class Precool_Env(Base_Env):
         #  these are defined from the loaded csvs
         self.observation_space = [Continuous_Space(col.min(), col.max(), step=1)
                                   for name, col in self.observation_ts.iteritems()]
+        
+        #  setting the reward range
+        self.reward_range = (-np.inf, np.inf)
 
         #  reseting the step counter, state, observation & done status
         self.steps = 0

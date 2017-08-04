@@ -99,6 +99,9 @@ class Battery_Env(Base_Env):
         #  we also append on an additional observation of the battery charge
         self.observation_space.append(Continuous_Space(0, self.capacity, 1))
 
+        #  setting the reward range
+        self.reward_range = (-np.inf, np.inf)
+
         #  reseting the step counter, state, observation & done status
         self.steps = 0
         self.state = self.get_state(steps=self.steps, charge=self.initial_charge)
