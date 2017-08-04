@@ -84,8 +84,8 @@ class Precool_Env(Base_Env):
                                             step = 1)]
 
         #  loading the state time series data
-        state_path = os.path.join(os.path.dirname(__file__), 'state.csv')
-        self.observation_ts, self.state_ts = self.load_state(state_path,
+        csv_path = os.path.join(os.path.dirname(__file__), 'state.csv')
+        self.observation_ts, self.state_ts = self.load_state(csv_path,
                                                              self.lag)
 
         #  defining the observation spaces

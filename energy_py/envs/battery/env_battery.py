@@ -1,4 +1,5 @@
 import collections
+import os
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -83,17 +84,17 @@ class Battery_Env(Base_Env):
                                               step = 1)]
 
         #  loading the state time series data
-        self.observation_ts, self.state_ts = self.load_state('state.csv',
-                                                             self.lag,
-                                                             self.episode_length)
+        csv_path = os.path.join(os.path.dirname(__file__), 'state.csv') 
+        self.observation_ts, self.state_ts = self.load_state(csv_path,
+                                                             self.lag)
 
         #  defining the observation spaces from the state csv
         #  these are defined from the loaded csvs
-        self.observation_space = [Continuous_Space(col.min(), col.max())
+        self.observation_space = [Continuous_Space(col.min(), col.max(), 1)
                                   for name, col in self.observation_ts.iteritems()]
 
         #  we also append on an additional observation of the battery charge
-        self.observation_space.append(Continuous_Space(0, self.capacity))
+        self.observation_space.append(Continuous_Space(0, self.capacity, 1))
 
         #  reseting the step counter, state, observation & done status
         self.steps = 0
@@ -127,8 +128,10 @@ class Battery_Env(Base_Env):
         site_electricity_demand = self.state[1]
         old_charge = self.state[2]
 
-        #  taking the actions
-        net_charge = action 
+        #  taking the action
+        #  note we / 2 to convert to MWh/hh
+        net_charge = action[0] / 2 
+
         unbounded_new_charge = old_charge + net_charge
 
         #  we first check to make sure this charge is within our capacity limits
@@ -156,11 +159,11 @@ class Battery_Env(Base_Env):
         #  accounted for by electricity being lost as soon as it's stored
         losses = 0
         if new_charge > old_charge:
-            losses = net_stored * self.round_trip_eff
+            losses = net_stored * (1 - self.round_trip_eff)
 
         new_charge = new_charge - losses
         net_stored = new_charge - old_charge
-        assert new_charge == old_charge + net_stored + losses
+        assert new_charge == old_charge + net_stored
 
         #  calculate the business as usual cost
         #  BAU depends on
