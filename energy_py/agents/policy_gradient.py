@@ -33,9 +33,9 @@ def network(data, n_inputs, n_outputs):
         layer_2 = layer(layer_1, [100, 100], [100], tf.nn.relu)
 
     with tf.variable_scope('layer_3'):
-        layer_3 = layer(layer_2, [100, n_outputs], [100])
+        prediction = layer(layer_2, [100, n_outputs], [100])
 
-    return layer_3
+    return prediction
 
 
 #  specify network architecture
@@ -47,12 +47,14 @@ observation = tf.placeholder(tf.float32, shape=[None, n_inputs])
 with tf.variable_scope('policy_network'):
     action = network(observation, n_inputs, n_outputs)
 
+with tf.variable_scope('loss'):
+    y = tf.placeholder(tf.float32, shape=(None, 1))
+    loss = tf.reduce_mean(tf.squared_difference(prediction, y))
+
+with tf.variable_scope('train'):
+        optimizer = tf.train.AdamOptimizer().minimize(loss)
 
 
+with tf.Session() as sess:
 
-optimizer = tf.train.AdamOptimizer()
-
-sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True,
-                                        log_device_placement=True))
-
-sess.run(tf.initialize_all_variables())
+        sess.run(tf.initialize_all_variables())
