@@ -18,11 +18,13 @@ setup(name='energy_py',
 
       packages=['energy_py',
                 'energy_py.agents',
+                'energy_py.agents.naive',
+                'energy_py.agents.policy_based',
                 'energy_py.envs',
                 'energy_py.envs.precool',
                 'energy_py.envs.battery',
 		        'energy_py.main'],
-      
+
       package_data = {'':['*.csv']},
       install_requires=[]
       )
