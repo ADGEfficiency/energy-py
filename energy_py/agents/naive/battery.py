@@ -46,8 +46,8 @@ class Naive_Battery_Agent(Base_Agent):
         else:
             #  charge at max rate
             action = self.action_space[0].high
-
-        return np.array(action)
+        print('hour was {} action was {}'.format(hour, action))
+        return np.array([action])
 
     def _learn(self):
         print('I am an agent based on a human desgined heuristic.')

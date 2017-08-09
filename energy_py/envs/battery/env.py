@@ -41,10 +41,10 @@ class Battery_Env(Base_Env):
         self.episode_length = episode_length
 
         #  technical energy inputs
-        self.power_rating   = power_rating
-        self.capacity       = capacity
-        self.round_trip_eff = round_trip_eff
-        self.initial_charge = initial_charge
+        self.power_rating   = float(power_rating)
+        self.capacity       = float(capacity)
+        self.round_trip_eff = float(round_trip_eff)
+        self.initial_charge = float(initial_charge)
         self.verbose        = verbose
 
         #  resetting the environment
@@ -133,7 +133,7 @@ class Battery_Env(Base_Env):
         #  pulling out the state infomation
         electricity_price = self.state[0]
         electricity_demand = self.state[1]
-        old_charge = self.state[2]
+        old_charge = self.state[-1]
 
         #  taking the action
         #  note we / 12 to convert from MW to MWh/5 min
@@ -158,7 +158,10 @@ class Battery_Env(Base_Env):
 
         new_charge = old_charge + rate / 12 - losses
         net_stored = new_charge - old_charge
-        rate = net_stored * 12
+        rate = net_stored * 12 
+
+        print(rate)
+        print(-self.power_rating)
 
         assert new_charge == old_charge + net_stored
         assert net_stored * 12 == rate
