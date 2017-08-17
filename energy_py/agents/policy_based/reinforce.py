@@ -97,9 +97,12 @@ class REINFORCE_Agent(Base_Agent):
 
             #  clipping to avoid nan error with the log operation
             self.clipped_action = tf.clip_by_value(self.taken_action,1e-10,1.0)
-            self.log_prob = - self.normal_dist.log_prob(self.clipped_action, 'log_prob')
+
+            self.log_probs = self.normal_dist.log_prob(self.clipped_action, 'log_prob') 
+            self.log_prob = tf.reduce_sum(self.log_probs)
+
             self.losses = self.log_prob * self.discounted_return
-            self.loss = tf.reduce_mean(self.losses)
+            self.loss = - tf.reduce_sum(self.losses)
 
             #  creating the training step
             self.optimizer = tf.train.AdamOptimizer(self.learning_rate)
