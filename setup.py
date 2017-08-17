@@ -25,7 +25,8 @@ setup(name='energy_py',
                 'energy_py.envs.precool',
                 'energy_py.envs.battery',
 		        'energy_py.main',
-		        'energy_py.main.scripts'],
+		        'energy_py.main.scripts',
+		        'energy_py.main.notebooks'],
 
       package_data = {'':['*.csv']},
       install_requires=[]
