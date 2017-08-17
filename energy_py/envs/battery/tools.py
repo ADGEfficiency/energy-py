@@ -1,6 +1,6 @@
 """
-This script was used to generate the state CSV.  Running it again should be
-done with caution - the initial raw data was overwritten!
+This script was used to generate the state CSV for the battery environment
+Running it again should be done with caution - the initial raw data was overwritten!
 
 The raw data for the 'electricity_price' is the historical price of
 electricity in the South Australian NEMWEB market.
@@ -8,6 +8,9 @@ electricity in the South Australian NEMWEB market.
 The data was provided by AEMO here - http://www.nemweb.com.au/REPORTS/
 
 The 'electricity_demand' is modelled at a constant 10 MW.
+
+It is envisoned that the user will input their own electricity price and
+demand data.  Note that this environment works on a 5 minute frequency.
 
 We add in some additional datetime features to help our model learn.
 """

@@ -25,32 +25,43 @@ class Base_Env(object):
         reward_range (defaults to -inf, +inf)
     """
 
-    def __init__(self):
-        self.info    = collections.defaultdict(list)
-        self.outputs = collections.defaultdict(list)
-        self.done    = False
+    def __init__(self, episode_visualizer, episode_length):
+        self.episode_visualizer_obj = episode_visualizer
+        self.episode_length = episode_length
+
+        self.info       = collections.defaultdict(list)
+        self.episode    = None
         return None
 
     # Override in ALL subclasses
     def _step(self, action): raise NotImplementedError
     def _reset(self): raise NotImplementedError
+    def _output_results(self): raise NotImplementedError
 
-    # Set these in ALL subclasses
-    action_space = None
-    observation_space = None
-    reward_range = (-np.inf, np.inf)
+    #  Set these in ALL subclasses
+    action_space = None       #  list of length num_actions
+    observation_space = None  #  list of length obs_dim
+    reward_space = None       #  single space object
 
     def load_state(self, csv_path, lag):
         """
         loads state infomation from a csv
+
+        length = 2016 defaults to one week at 5 minuute time frequency
         """
 
         #  loading time series data
         ts = pd.read_csv(csv_path,
                          index_col=0,
                          parse_dates=True)
+        ts_length = ts.shape[0]
 
-        #  now dealing with the lag
+        #  indexing the time series for a random time period
+        start = np.random.randint(0, ts_length - self.episode_length)
+        #  ending the time period based on the user defined episode length
+        end = start + self.episode_length
+        ts = ts.iloc[start:end+1]  # some protections against the randomnumber!
+
         #  if no lag then state = observation
         if lag == 0:
             observation_ts = ts.iloc[:, :]
@@ -69,14 +80,15 @@ class Base_Env(object):
             observation_ts = ts.shift(lag).iloc[lag:, :]
             #  we cut the state
             state_ts = ts.iloc[lag:, :]
-        observation_ts = observation_ts.iloc[:, :]
-        state_ts = state_ts.iloc[:, :]
+
         #  checking our two ts are the same shape
         assert observation_ts.shape == state_ts.shape
+        print('observation time series shape is {}'.format(observation_ts.shape))
+        print('observation time series columns are {}'.format(observation_ts.columns))
 
         return observation_ts, state_ts
 
-    def step(self, action):
+    def step(self, action, episode):
         """
         Run one timestep of the environment's dynamics.
         When end of episode is reached, you are responsible for calling reset().
@@ -95,7 +107,8 @@ class Base_Env(object):
         This is to allow the state to remain hidden (if desired by the modeller).
 
         Args:
-            action (object): an action provided by the environment
+            action  (object): an action provided by the environment
+            episode (int): the current episode number
 
         Returns:
             observation (np array): agent's observation of the current environment
@@ -103,6 +116,9 @@ class Base_Env(object):
             done (boolean): whether the episode has ended, in which case further step() calls will return undefined results
             info (dict): contains auxiliary diagnostic information (helpful for debugging, and sometimes learning)
         """
+        #  update the current episode number
+        self.episode = episode
+
         return self._step(action)
 
     def reset(self):
@@ -111,82 +127,18 @@ class Base_Env(object):
 
         Returns: observation (np array): the initial observation
         """
-        print('Reset environment.')
+        print('Reset environment')
+        self.episode_visualizer = None
+        self.episode = None
         return self._reset()
 
 
-class Space(object):
-    """
-    The base class for observation & action spaces
-
-    Analagous to the 'Space' object used in gym
-    """
-
-    def sample(self):
+    def output_results(self):
         """
-        Uniformly randomly sample a random element of this space.
+        Initializes the visalizer object.
         """
-        return self._sample()
-
-    def contains(self, x):
-        """
-        Return boolean specifying if x is a valid
-        member of this space.
-        """
-        return self._contains(x)
-
-    def discretize(self, step):
-        """
-        Method to discretize the action space.
-        """
-        return self._discretize(step)
-
-class Discrete_Space(Space):
-    """
-    A single dimension discrete space.
-
-    Args:
-        low  (float) : an array with the minimum bound for each
-        high (float) : an array with the maximum bound for each
-        step (float) : an array with step size
-    """
-
-    def __init__(self, low, high, step):
-        self.low  = low
-        self.high = high
-        self.step = step
-        self.discrete_space = self.discretize(self.step)
-
-    def _sample(self):
-        return np.random.choice(self.discrete_space)
-
-    def _contains(self, x):
-        return np.in1d(x, self.discrete_space)
-
-    def _discretize(self, step):
-        return np.arange(self.low, self.high + self.step, self.step).reshape(-1)
-
-class Continuous_Space(Space):
-    """
-    A single dimension continuous space.
-
-    Args:
-        low  (float) : an array with the minimum bound for each
-        high (float) : an array with the maximum bound for each
-    """
-
-    def __init__(self, low, high, step):
-        self.low  = low
-        self.high = high
-        self.step = step
-        self.discrete_space = self.discretize(self.step)
-
-    def _sample(self):
-        return np.random.uniform(low=self.low, high=self.high)
-
-    def _contains(self, x):
-        return (x >= self.low) and (x <= self.high)
-
-    def _discretize(self, step):
-        self.step = step
-        return np.arange(self.low, self.high + step, step).reshape(-1)
+        #  initalize the visualizer object with the current environment info
+        self.episode_visualizer = self.episode_visualizer_obj(env_info=self.info, state_ts=self.state_ts, episode=self.episode)
+        #  runs the main visualizer method
+        _ = self.episode_visualizer.output_results()
+        return self._output_results()

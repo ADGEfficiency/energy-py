@@ -1,11 +1,45 @@
 import collections
+import decimal
 import os
 
-import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 
-from energy_py.envs.env_core import Base_Env, Continuous_Space
+from energy_py.envs.env_core import Base_Env
+from energy_py.main.scripts.spaces import Continuous_Space
+from energy_py.main.scripts.visualizers import Env_Episode_Visualizer
+from energy_py.main.scripts.utils import ensure_dir
+
+
+class Battery_Visualizer(Env_Episode_Visualizer):
+    """
+    A class to create charts for the Battery environment.
+    """
+
+    def __init__(self, env_info, state_ts, episode):
+        super().__init__(env_info, state_ts, episode)
+
+    def _output_results(self):
+        """
+        The main visulizer function
+        """
+        #  make the main dataframe
+        self.outputs['dataframe'] = self.make_dataframe()
+        #  print out some results
+        self.print_results()
+        #  making the graphs
+        self.outputs['electricity_cost_fig'] = self.make_electricity_cost_fig()
+        self.outputs['technical_fig'] = self.make_technical_fig()
+        return self.outputs
+
+    def make_technical_fig(self):
+        fig = self.make_time_series_fig(self.outputs['dataframe'],
+                                        cols=['rate', 'new_charge'],
+                                        ylabel='Electricity [MW or MWh]',
+                                        xlabel='Time')
+        path = os.path.join(self.base_path, 'technical_fig_{}.png'.format(self.episode))
+        ensure_dir(path)
+        fig.savefig(path)
+        return fig
 
 
 class Battery_Env(Base_Env):
@@ -28,13 +62,16 @@ class Battery_Env(Base_Env):
     def __init__(self, lag,
                        episode_length,
                        power_rating,
+
                        capacity,
-                       round_trip_eff = 0.8,
+                       round_trip_eff = 0.9,
                        initial_charge = 0,
-                       verbose = 0):
+                       verbose = 0,
+
+                       episode_visualizer = Battery_Visualizer):
 
         #  calling init method of the parent Base_Env class
-        super().__init__()
+        super().__init__(episode_visualizer, episode_length)
 
         #  inputs relevant to the RL learning problem
         self.lag            = lag
@@ -100,8 +137,13 @@ class Battery_Env(Base_Env):
         #  we also append on an additional observation of the battery charge
         self.observation_space.append(Continuous_Space(0, self.capacity, 1))
 
-        #  setting the reward range
-        self.reward_range = (-np.inf, np.inf)
+        #  setting the reward
+        #  minimum reward = minimum electricity price * max rate of discharge
+        #  maximum reward = maximum electricity price * max rate of discharge
+        #  note here that I used the AEMO mins & maxes
+        self.reward_space = Continuous_Space((-2000 * -self.power_rating)/12,
+                                             (14000 * self.power_rating)/12,
+                                             1)
 
         #  reseting the step counter, state, observation & done status
         self.steps = 0
@@ -124,25 +166,36 @@ class Battery_Env(Base_Env):
         Args:
             action (np.array)         :
             where - action[0] (float) : rate to charge/discharge this time step
+
+            TODO needs protection against zero demand
         """
 
-        #  check that the action is valid
-        for i, act in enumerate(action):
-            assert self.action_space[i].contains(act), "%r (%s) invalid" % (action, type(action))
+        #  setting the decimal context
+        #  make use of decimal so that tht energy balance works
+        decimal.getcontext().prec = 6
+
+        #  we also set a tolerance for the energy balances
+        tolerance = 1e-4
+
+        #  no check on action space
+        #  this is because the action clipping is done in the
+        action = float(action[0])
+        action = decimal.Decimal(action)
 
         #  pulling out the state infomation
         electricity_price = self.state[0]
         electricity_demand = self.state[1]
-        old_charge = self.state[-1]
+        old_charge = decimal.Decimal(self.state[-1])
 
         #  taking the action
         #  note we / 12 to convert from MW to MWh/5 min
-        action = action[0]
         net_charge = action / 12
         unbounded_new_charge = old_charge + net_charge
 
         #  we first check to make sure this charge is within our capacity limits
-        bounded_new_charge = max(min(unbounded_new_charge, self.capacity), 0)
+        bounded_new_charge = max(min(unbounded_new_charge,
+                                     decimal.Decimal(self.capacity)),
+                                 decimal.Decimal(0))
 
         #  now we check to see this new charge is within our power rating
         #  note the * 12 is to convert from MWh/5min to MW
@@ -153,24 +206,21 @@ class Battery_Env(Base_Env):
         #  finally we account for round trip efficiency
         losses = 0
 
+        rate = decimal.Decimal(rate)
+
         if rate > 0:
-            losses = rate * (1 - self.round_trip_eff) / 12
+            losses = rate * (1 - decimal.Decimal(self.round_trip_eff)) / 12
 
         new_charge = old_charge + rate / 12 - losses
         net_stored = new_charge - old_charge
-        rate = net_stored * 12 
+        rate = net_stored * 12
 
-        print(rate)
-        print(-self.power_rating)
+        # TODO more work on balances
+        assert (new_charge) - (old_charge + net_stored) < tolerance
+        assert (rate) - (12 * net_stored) < tolerance
 
-        assert new_charge == old_charge + net_stored
-        assert net_stored * 12 == rate
-
-        assert rate <= self.power_rating
-        assert rate >= -self.power_rating
-
-        assert new_charge <= self.capacity
-        assert new_charge >= 0
+        #  we then change our rate back into a floating point number
+        rate = float(rate)
 
         #  calculate the business as usual cost
         #  BAU depends on
@@ -183,28 +233,9 @@ class Battery_Env(Base_Env):
         #  - how much electricity the site is demanding
         #  - what our battery is doing
         #  - electricity price
-        adjusted_demand = electricity_demand + rate / 12
+        adjusted_demand = electricity_demand + rate
         RL_cost = (adjusted_demand / 12) * electricity_price
-        reward = - RL_cost
-
-        #  getting the next state & next observation
-        next_state = self.get_state(self.steps + 1, charge=new_charge)
-        next_observation = self.get_observation(self.steps + 1, charge=new_charge)
-
-        #  saving info
-        self.info = self.update_info(steps                   = self.steps,
-                                     state                   = self.state,
-                                     observation             = self.observation,
-                                     action                  = action,
-                                     reward                  = reward,
-                                     next_state              = next_state,
-                                     next_observation        = next_observation,
-                                     BAU_cost                = BAU_cost,
-                                     RL_cost                 = RL_cost,
-                                     electricity_price       = electricity_price,
-                                     electricity_demand = electricity_demand,
-                                     rate                    = rate,
-                                     new_charge = new_charge)
+        reward = -RL_cost
 
         if self.verbose > 0:
             print('step is {}'.format(self.steps))
@@ -215,17 +246,52 @@ class Battery_Env(Base_Env):
             print('losses were {}'.format(losses))
 
         #  check to see if episode is done
-        if self.steps == (self.episode_length - abs(self.lag) - 1):
+        if self.steps == (self.episode_length - 1):
             self.done = True
+            next_state = False
+            next_observation = False
+            print('Episode {} finished'.format(self.episode))
+
         else:
         #  moving onto next step
             self.steps += int(1)
-            self.state = next_state
-            self.observation = next_observation
+            next_state = self.get_state(self.steps + 1, charge=float(new_charge))
+            next_observation = self.get_observation(self.steps + 1, charge=float(new_charge))
+
+        #  saving info
+        self.info = self.update_info(episode            = self.episode,
+                                     steps              = self.steps,
+                                     state              = self.state,
+                                     observation        = self.observation,
+                                     action             = action,
+                                     reward             = reward,
+                                     next_state         = next_state,
+                                     next_observation   = next_observation,
+
+                                     BAU_cost           = BAU_cost,
+                                     RL_cost            = RL_cost,
+
+                                     electricity_price  = electricity_price,
+                                     electricity_demand = electricity_demand,
+                                     rate               = rate,
+                                     new_charge         = new_charge,
+                                     old_charge         = old_charge,
+                                     net_stored         = net_stored)
+
+        #  moving to next time step
+        self.state = next_state
+        self.observation = next_observation
 
         return self.observation, reward, self.done, self.info
 
-    def update_info(self, steps,
+    def _output_results(self):
+        """
+        Running environment specific output functions.
+        """
+        return self.episode_visualizer.outputs
+
+    def update_info(self, episode,
+                          steps,
                           state,
                           observation,
                           action,
@@ -239,10 +305,13 @@ class Battery_Env(Base_Env):
                           electricity_price,
                           electricity_demand,
                           rate,
-                          new_charge):
+                          new_charge,
+                          old_charge,
+                          net_stored):
         """
         helper function to updates the self.info dictionary
         """
+        self.info['episode'].append(episode)
         self.info['steps'].append(steps)
         self.info['state'].append(state)
         self.info['observation'].append(observation)
@@ -258,47 +327,7 @@ class Battery_Env(Base_Env):
         self.info['electricity_demand'].append(electricity_demand)
         self.info['rate'].append(rate)
         self.info['new_charge'].append(new_charge)
+        self.info['old_charge'].append(old_charge)
+        self.info['net_stored'].append(net_stored)
 
         return self.info
-
-    def output_info(self):
-        """
-        extracts info and turns into dataframes & graphs
-        """
-        def time_series_fig(df, cols, xlabel, ylabel):
-            """
-            makes a time series figure from a dataframe and specified columns
-            """
-            #  make the figure & axes objects
-            fig, ax = plt.subplots(1, 1, figsize = (20, 20))
-            for col in cols:
-                df.loc[:, col].plot(kind='line', ax=ax, label=col)
-            plt.xlabel(xlabel)
-            plt.ylabel(ylabel)
-            plt.legend()
-            return fig
-
-        RL_cost = sum(self.info['RL_cost'])
-        BAU_cost = sum(self.info['BAU_cost'])
-        print('RL cost was {}'.format(RL_cost))
-        print('BAU cost was {}'.format(BAU_cost))
-        print('Savings were {}'.format(BAU_cost-RL_cost))
-
-        self.outputs['dataframe'] = pd.DataFrame.from_dict(self.info)
-        self.outputs['dataframe'].index = self.state_ts.index[:len(self.outputs['dataframe'])]
-        self.outputs['dataframe'].to_csv('output_df.csv')
-
-        self.outputs['technical_fig'] = time_series_fig(df=self.outputs['dataframe'],
-                                                          cols=['rate',
-                                                                'new_charge',
-                                                                'action'],
-                                                          ylabel='Electricity [MW or MWh]',
-                                                          xlabel='Time')
-
-        self.outputs['cost_fig'] = time_series_fig(df=self.outputs['dataframe'],
-                                                          cols=['BAU_cost',
-                                                                'RL_cost',
-                                                                'electricity_price'],
-                                                          ylabel='Cost to deliver electricity [$/hh]',
-                                                          xlabel='Time')
-        return self.outputs
