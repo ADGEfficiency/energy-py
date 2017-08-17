@@ -3,7 +3,7 @@
 energy_py\energy_py\envs\battery\output_df.csv
 energy_py\energy_py\envs\flex\output_df.csv
 
-/results
+**/results/
 
 # GENERIC
 # from https://github.com/github/gitignore/blob/master/Python.gitignore
