@@ -96,9 +96,9 @@ class REINFORCE_Agent(Base_Agent):
             # self.taken_action = self.taken_action + self.epsilon
 
             #  clipping to avoid nan error with the log operation
-            self.clipped_action = tf.clip_by_value(self.taken_action,1e-10,1.0)
+            # self.clipped_action = tf.clip_by_value(self.taken_action, 1e-10, self.action_space[0].high)
 
-            self.log_probs = self.normal_dist.log_prob(self.clipped_action, 'log_prob') 
+            self.log_probs = self.normal_dist.log_prob(self.taken_action, 'log_prob')
             self.log_prob = tf.reduce_sum(self.log_probs)
 
             self.losses = self.log_prob * self.discounted_return
@@ -138,6 +138,7 @@ class REINFORCE_Agent(Base_Agent):
         #  generating an action from the policy network
         action = session.run(self.action, {self.observation : scaled_observation})
         action = action.reshape(self.num_actions)
+        print('action prediction is {}'.format(action))
         return action
 
     def random_action(self):
@@ -161,11 +162,11 @@ class REINFORCE_Agent(Base_Agent):
                      self.discounted_return : discounted_returns}
 
 
-        _, loss, losses, log_prob, clip_act  = session.run([self.train_step, self.loss, self.losses,self.log_prob, self.clipped_action], feed_dict)
+        _, loss, losses, log_prob, taken_act  = session.run([self.train_step, self.loss, self.losses,self.log_prob, self.taken_action], feed_dict)
         self.memory.losses.append(loss)
 
-        # print(losses)
-        print(clip_act)
-        print(log_prob)
-        print(loss)
+        # print('losees is {}'.format(losses))
+        print('taken_action is {}'.format(taken_act))
+        print('log_prob is {}'.format(log_prob))
+        print('loss is {}'.format(loss))
         return loss

@@ -149,17 +149,23 @@ class Agent_Memory(Agent_Memory_Visualizer):
 
         sample_size = min(batch_size, len(self.scaled_experiences))
         #  limiting the scaled_experiences list to the memory length
-        memory = self.scaled_experiences[-self.memory_length:]
+        memory = self.experiences[-self.memory_length:]
+        scaled_memory = self.scaled_experiences[-self.memory_length:]
+
+        assert len(memory) == len(scaled_memory
+                                  )
         #  indicies for the batch
         indicies = np.random.randint(low=0,
                                      high=len(memory),
                                      size=sample_size)
         #  randomly sample from the memory & returns
         memory_batch = [memory[i] for i in indicies]
+        scaled_memory_batch = [scaled_memory[i] for i in indicies]
 
-        observations = np.array([exp.observation for exp in memory_batch]).reshape(-1, len(self.observation_space))
-        actions = np.array([exp.action  for exp in memory_batch]).reshape(-1, len(self.action_space))
-        returns = np.array([exp.discounted_return for exp in memory_batch]).reshape(-1, 1)
+        #  note that we dont take the scaled returns!!!
+        observations = np.array([exp.observation for exp in scaled_memory_batch]).reshape(-1, len(self.observation_space))
+        actions = np.array([exp.action for exp in memory_batch]).reshape(-1, len(self.action_space))
+        returns = np.array([exp.discounted_return for exp in scaled_memory_batch]).reshape(-1, 1)
 
         assert observations.shape[0] == actions.shape[0]
         assert observations.shape[0] == returns.shape[0]
@@ -224,7 +230,8 @@ class Agent_Memory(Agent_Memory_Visualizer):
         fig = self.make_time_series_fig(self.outputs['dataframe_episodic'],
                                                           cols=['loss'],
                                                           ylabel='Loss',
-                                                          xlabel='Episode')
+                                                          xlabel='Episode',
+                                                          ylim=[-100, 0])
 
         path = os.path.join(self.base_path, 'loss_per_episode.png')
         ensure_dir(path)
@@ -243,7 +250,7 @@ class Agent_Memory(Agent_Memory_Visualizer):
         self.outputs['dataframe_steps'], self.outputs['dataframe_episodic'] = self.make_dataframes()
 
         self.outputs['returns_fig'] = self.make_returns_fig()
-        
+
         if self.losses:
             self.outputs['loss_fig'] = self.make_loss_fig()
         return self.outputs

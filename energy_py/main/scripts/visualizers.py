@@ -36,7 +36,7 @@ class Visualizer(object):
         """
         return self._output_results()
 
-    def make_time_series_fig(self, df, cols, xlabel, ylabel):
+    def make_time_series_fig(self, df, cols, xlabel, ylabel, ylim=[]):
         """
         makes a time series figure from a dataframe and specified columns
         """
@@ -48,6 +48,9 @@ class Visualizer(object):
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
         plt.legend()
+
+        if ylim:
+            ax.set_ylim(ylim)
         return fig
 
 
