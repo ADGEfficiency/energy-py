@@ -4,14 +4,20 @@ This experiment script uses a REINFORCE agent to control the battery environment
 Experiment runs through the entire length of the state time series CSV.
 """
 
+import sys
+
 import tensorflow as tf
 
 from energy_py.agents.policy_based.reinforce import REINFORCE_Agent
 from energy_py.envs.battery.battery_env import Battery_Env
 from energy_py.main.scripts.experiment_blocks import run_single_episode
 
-EPISODE_LENGTH = 2016
-EPISODES = 20
+args = sys.argv
+
+EPISODES = int(args[1])
+EPISODE_LENGTH = int(args[2])
+
+print('running {} episodes of length {}'.format(EPISODES, EPISODE_LENGTH))
 
 env = Battery_Env(lag            = 0,
                   episode_length = EPISODE_LENGTH,
