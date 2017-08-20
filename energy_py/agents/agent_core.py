@@ -15,11 +15,11 @@ class Base_Agent(object):
         learn
     """
 
-    def __init__(self, env, epsilon_decay_steps=10000, memory_length=int(1e6), discount_factor=0.99, verbose=0):
+    def __init__(self, env, epsilon_decay_steps=10000, memory_length=int(1e6), discount_rate=0.99, verbose=0):
         self.env = env
 
         self.memory_length = memory_length
-        self.discount_factor = discount_factor
+        self.discount_rate = discount_rate
         self.epsilon_decay_steps = epsilon_decay_steps
         self.verbose = verbose
 
@@ -32,7 +32,7 @@ class Base_Agent(object):
                                    observation_space=env.observation_space,
                                    action_space=env.action_space,
                                    reward_space=env.reward_space,
-                                   discount_factor=discount_factor)
+                                   discount_rate=discount_rate)
 
         #  grabbing the action & observation spaces
         self.action_space = env.action_space
