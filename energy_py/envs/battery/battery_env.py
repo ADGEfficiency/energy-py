@@ -57,6 +57,7 @@ class Battery_Env(Base_Env):
                                           how much of the stored electricity we
                                           can later extract
         initial_charge          (float) : inital amount of electricity stored [MWh]
+        ts_mode
         verbose                 (int)   : controls env print statements
     """
     def __init__(self, lag,
@@ -66,12 +67,14 @@ class Battery_Env(Base_Env):
                        capacity,
                        round_trip_eff = 0.9,
                        initial_charge = 0,
-                       verbose = 0,
 
-                       episode_visualizer = Battery_Visualizer):
+                       episode_visualizer = Battery_Visualizer,
+                       ts_mode = 'random',
+
+                       verbose = 0):
 
         #  calling init method of the parent Base_Env class
-        super().__init__(episode_visualizer, episode_length)
+        super().__init__(episode_visualizer, episode_length, ts_mode, verbose)
 
         #  inputs relevant to the RL learning problem
         self.lag            = lag
@@ -82,6 +85,8 @@ class Battery_Env(Base_Env):
         self.capacity       = float(capacity)
         self.round_trip_eff = float(round_trip_eff)
         self.initial_charge = float(initial_charge)
+
+        self.ts_mode        = ts_mode
         self.verbose        = verbose
 
         #  resetting the environment
@@ -118,16 +123,21 @@ class Battery_Env(Base_Env):
         Resets the environment.
         """
         #  we define our action space
-        #  single action - how much to charge or discharge [MWh]
+        #  two actions
+        #   1 -  how much to charge [MWh]
+        #   2 -  how much to discharge [MWh]
+        #  use two actions to keep the logprob of an action being negative
 
         self.action_space = [Continuous_Space(low  = -self.power_rating,
-                                              high = self.power_rating,
-                                              step = 1)]
+                                              high = self.power_rating),
+                             Continuous_Space(low  = 0,
+                                              high = self.power_rating)]
 
         #  loading the state time series data
         csv_path = os.path.join(os.path.dirname(__file__), 'state.csv')
         self.observation_ts, self.state_ts = self.load_state(csv_path,
-                                                             self.lag)
+                                                             self.lag,
+                                                             mode=self.ts_mode)
 
         #  defining the observation spaces from the state csv
         #  these are defined from the loaded csvs
@@ -165,7 +175,8 @@ class Battery_Env(Base_Env):
         """
         Args:
             action (np.array)         :
-            where - action[0] (float) : rate to charge/discharge this time step
+            where - action[0] (float) : rate to charge this time step
+            where - action[1] (float) : rate to discharge this time step
 
             TODO needs protection against zero demand
         """
@@ -174,28 +185,24 @@ class Battery_Env(Base_Env):
         #  make use of decimal so that tht energy balance works
         decimal.getcontext().prec = 6
 
-        #  we also set a tolerance for the energy balances
-        tolerance = 1e-4
-
-        #  no check on action space
-        #  this is because the action clipping is done in the
-        action = float(action[0])
-        action = decimal.Decimal(action)
-
         #  pulling out the state infomation
         electricity_price = self.state[0]
         electricity_demand = self.state[1]
         old_charge = decimal.Decimal(self.state[-1])
 
-        #  taking the action
-        #  note we / 12 to convert from MW to MWh/5 min
-        net_charge = action / 12
-        unbounded_new_charge = old_charge + net_charge
+        #  checking the actions are valid
+        for i, act in enumerate(action):
+            assert act >= self.action_space[i].low
+            assert act <= self.action_space[i].high
+
+        #  calculate the net effect of the two actions
+        #  also convert from MW to MWh/5 min by /12
+        net_charge = float(action[0] - action[1]) / 12
+        net_charge = decimal.Decimal(net_charge)
 
         #  we first check to make sure this charge is within our capacity limits
-        bounded_new_charge = max(min(unbounded_new_charge,
-                                     decimal.Decimal(self.capacity)),
-                                 decimal.Decimal(0))
+        unbounded_new_charge = old_charge + net_charge
+        bounded_new_charge = max(min(unbounded_new_charge, decimal.Decimal(self.capacity)), decimal.Decimal(0))
 
         #  now we check to see this new charge is within our power rating
         #  note the * 12 is to convert from MWh/5min to MW
@@ -205,17 +212,19 @@ class Battery_Env(Base_Env):
 
         #  finally we account for round trip efficiency
         losses = 0
+        gross_rate = decimal.Decimal(rate)
 
-        rate = decimal.Decimal(rate)
+        if gross_rate > 0:
+            losses = gross_rate * (1 - decimal.Decimal(self.round_trip_eff)) / 12
 
-        if rate > 0:
-            losses = rate * (1 - decimal.Decimal(self.round_trip_eff)) / 12
-
-        new_charge = old_charge + rate / 12 - losses
+        new_charge = old_charge + gross_rate / 12 - losses
         net_stored = new_charge - old_charge
         rate = net_stored * 12
 
         # TODO more work on balances
+        #  set a tolerance for the energy balances
+        tolerance = 1e-4
+
         assert (new_charge) - (old_charge + net_stored) < tolerance
         assert (rate) - (12 * net_stored) < tolerance
 

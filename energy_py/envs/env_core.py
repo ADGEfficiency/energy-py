@@ -25,9 +25,11 @@ class Base_Env(object):
         reward_range (defaults to -inf, +inf)
     """
 
-    def __init__(self, episode_visualizer, episode_length):
+    def __init__(self, episode_visualizer, episode_length, ts_mode, verbose):
         self.episode_visualizer_obj = episode_visualizer
         self.episode_length = episode_length
+        self.ts_mode = ts_mode
+        self.verbose = verbose
 
         self.info       = collections.defaultdict(list)
         self.episode    = None
@@ -43,12 +45,14 @@ class Base_Env(object):
     observation_space = None  #  list of length obs_dim
     reward_space = None       #  single space object
 
-    def load_state(self, csv_path, lag):
+    def load_state(self, csv_path, lag, mode):
         """
         loads state infomation from a csv
 
         length = 2016 defaults to one week at 5 minuute time frequency
         """
+
+        assert (mode == 'random') or (mode == 'from_start')
 
         #  loading time series data
         ts = pd.read_csv(csv_path,
@@ -56,11 +60,27 @@ class Base_Env(object):
                          parse_dates=True)
         ts_length = ts.shape[0]
 
-        #  indexing the time series for a random time period
-        start = np.random.randint(0, ts_length - self.episode_length)
-        #  ending the time period based on the user defined episode length
-        end = start + self.episode_length
-        ts = ts.iloc[start:end+1]  # some protections against the randomnumber!
+        if mode == 'random':
+            #  indexing the time series for a random time period
+            start = np.random.randint(0, ts_length - self.episode_length)
+            #  ending the time period based on the user defined episode length
+            end = start + self.episode_length
+
+        elif mode == 'from_start':
+            #  starting at the beginning
+            start = 0
+            #  ending after the episode length
+            end = self.episode_length
+
+        assert start >= 0
+        assert end <= ts_length
+        #  indexing the dataframe
+        ts = ts.iloc[start:end+1]
+
+        #  now a three block if statement to deal with the lag
+        #  1 - lag is 0
+        #  2 - lag is negative
+        #  3 - lag is positive
 
         #  if no lag then state = observation
         if lag == 0:
@@ -83,8 +103,9 @@ class Base_Env(object):
 
         #  checking our two ts are the same shape
         assert observation_ts.shape == state_ts.shape
-        print('observation time series shape is {}'.format(observation_ts.shape))
-        print('observation time series columns are {}'.format(observation_ts.columns))
+        if self.verbose > 0:
+            print('observation time series shape is {}'.format(observation_ts.shape))
+            print('observation time series columns are {}'.format(observation_ts.columns))
 
         return observation_ts, state_ts
 
@@ -127,7 +148,8 @@ class Base_Env(object):
 
         Returns: observation (np array): the initial observation
         """
-        print('Reset environment')
+        if self.verbose > 0:
+            print('Reset environment')
         self.episode_visualizer = None
         self.episode = None
         return self._reset()
