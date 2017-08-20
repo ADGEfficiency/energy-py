@@ -41,7 +41,7 @@ class Discrete_Space(Space):
         step (float) : an array with step size
     """
 
-    def __init__(self, low, high, step):
+    def __init__(self, low, high, step=1):
         self.low  = float(low)
         self.high = float(high)
         self.step = int(step)
@@ -66,7 +66,7 @@ class Continuous_Space(Space):
         high (float) : an array with the maximum bound for each
     """
 
-    def __init__(self, low, high, step):
+    def __init__(self, low, high, step=1):
         self.low  = float(low)
         self.high = float(high)
         self.step = int(step)

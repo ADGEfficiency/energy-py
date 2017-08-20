@@ -89,16 +89,20 @@ class Env_Episode_Visualizer(Visualizer):
         steps = self.outputs['dataframe'].loc[:, 'steps']
         steps = steps.iloc[-1]
 
+        saving = BAU_cost-RL_cost
+
         print('Episode {} ran for {} steps'.format(self.episode, steps))
         print('RL cost was {}'.format(RL_cost))
         print('BAU cost was {}'.format(BAU_cost))
-        print('Savings were {}'.format(BAU_cost-RL_cost))
+        print('Savings were {}'.format(saving))
 
-        hours_per_step = 5/60
-        episode_run_time = hours_per_step * steps
-        daily_avg_saving = episode_run_time * 24
-        # print('Daily average saving was {}'.format(daily_avg_saving))
+        #  TODO should take env time step into account
+        #  here is hardcoded as 5 minutes
+        avg_saving_per_hour = saving / (steps / 12)
+        avg_saving_per_day = 24 * avg_saving_per_hour
 
+        print('Mean hourly saving was {}'.format(avg_saving_per_hour))
+        print('Mean daily saving was {}'.format(avg_saving_per_day))
         return None
 
     def make_electricity_cost_fig(self):
@@ -117,9 +121,105 @@ class Env_Episode_Visualizer(Visualizer):
 
 class Agent_Memory_Visualizer(Visualizer):
     """
-    A class to create graphs from agent memory.
+    A class to create outputs from agent memory.
     """
     def __init__(self):
         super().__init__()
         self.base_path = os.path.join('results/')
-        pass
+
+    def make_dataframes(self):
+        """
+        Helper function for self.output_results()
+
+        Creates two dataframes
+        'dataframe_steps'    = dataframe on a step frequency
+        'dataframe_episodic' = dataframe on a episodic frequency
+        """
+        #  create lists on a step by step basis
+        episodes = [exp.episode for exp in self.experiences]
+        steps = [exp.step for exp in self.experiences]
+        observations = [exp.observation for exp in self.experiences]
+        actions = [exp.action for exp in self.experiences]
+        rewards = [exp.reward for exp in self.experiences]
+        scaled_rewards = [exp.reward for exp in self.scaled_experiences]
+        discounted_returns =  [exp.discounted_return for exp in self.scaled_experiences]
+
+        df_dict = {
+                   'episode':episodes,
+                   'step':steps,
+                   'observation':observations,
+                   'action':actions,
+                   'reward':rewards,
+                   'scaled_reward':scaled_rewards,
+                   'discounted_return':discounted_returns
+                   }
+
+        dataframe_steps = pd.DataFrame.from_dict(df_dict)
+
+        #  expanding out the tuples
+        for col in dataframe_steps.columns:
+            pd.DataFrame(dataframe_steps.loc[: ,col].values.tolist(),
+                         index=dataframe_steps.index)
+
+        dataframe_episodic = dataframe_steps.groupby(by=['episode'],
+                                                  axis=0).sum()
+
+        if self.losses:
+            dataframe_episodic.loc[:, 'loss'] = self.losses
+
+        dataframe_steps.set_index('episode', drop=True, inplace=True)
+        # dataframe_episodic.set_index('episode', drop=True, inplace=True)
+
+        path_steps = os.path.join(self.base_path, 'agent_df_steps.csv')
+        ensure_dir(path_steps)
+        dataframe_steps.to_csv(path_steps)
+
+        path_episodic = os.path.join(self.base_path, 'agent_df_episodic.csv')
+        ensure_dir(path_episodic)
+        dataframe_episodic.to_csv(path_episodic)
+        return dataframe_steps,  dataframe_episodic
+
+    def make_returns_fig(self):
+        """
+        Makes a plot of undiscounted reward per episode
+        """
+        fig = self.make_time_series_fig(self.outputs['dataframe_episodic'],
+                                                          cols=['reward'],
+                                                          ylabel='Undiscounted total reward per episode',
+                                                          xlabel='Episode')
+
+        path = os.path.join(self.base_path, 'return_per_episode.png')
+        ensure_dir(path)
+        fig.savefig(path)
+        return fig
+
+    def make_loss_fig(self):
+        """
+        Makes a plot of undiscounted reward per episode
+        """
+        fig = self.make_time_series_fig(self.outputs['dataframe_episodic'],
+                                                          cols=['loss'],
+                                                          ylabel='Loss',
+                                                          xlabel='Episode')
+
+        path = os.path.join(self.base_path, 'loss_per_episode.png')
+        ensure_dir(path)
+        fig.savefig(path)
+        return fig
+
+    def _output_results(self):
+        """
+        The main function to output results from the memory
+
+        Overridden method of the Visualizer parent class
+
+        Envionsed to run after all episodes are finished
+        """
+        #  making the two summary dataframes
+        self.outputs['dataframe_steps'], self.outputs['dataframe_episodic'] = self.make_dataframes()
+
+        self.outputs['returns_fig'] = self.make_returns_fig()
+
+        if self.losses:
+            self.outputs['loss_fig'] = self.make_loss_fig()
+        return self.outputs
