@@ -23,12 +23,14 @@ env = Battery_Env(lag            = 0,
                   episode_length = EPISODE_LENGTH,
                   power_rating   = 2,      #  in MW
                   capacity       = 2,
+                  initial_charge = 2,
+                  ts_mode        = 'from_start',
                   verbose        = 0)     #  in MWh
 
 agent = REINFORCE_Agent(env,
-                        learning_rate = 0.001,
-                        batch_size = 64,
-                        epsilon_decay_steps = EPISODE_LENGTH * EPISODES / 2)
+                        epsilon_decay_steps = EPISODE_LENGTH * EPISODES / 2,
+                        learning_rate = 0.1,
+                        batch_size = 64)
 
 #  creating the TensorFlow session for this experiment
 with tf.Session() as sess:
