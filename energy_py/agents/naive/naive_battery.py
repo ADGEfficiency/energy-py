@@ -43,17 +43,17 @@ class Naive_Battery_Agent(Base_Agent):
         #  simple rules to decide what actions to take
         if hour >= 6 and hour < 10:
             #  discharge at max rate
-            action = self.action_space[0].low
+            action = [self.action_space[0].low, self.action_space[1].high]
 
         elif hour >= 15 and hour < 21:
             #  discharge at max rate
-            action = self.action_space[0].low
+            action = [self.action_space[0].low, self.action_space[1].high]
 
         else:
             #  charge at max rate
-            action = self.action_space[0].high
+            action = [self.action_space[0].high, self.action_space[1].low]
 
-        return np.array([action])
+        return np.array(action)
 
     def _learn(self):
         print('I am an agent based on a human desgined heuristic')

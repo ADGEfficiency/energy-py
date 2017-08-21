@@ -14,6 +14,8 @@ from energy_py.main.scripts.visualizers import Agent_Memory_Visualizer
 
 class Agent_Memory(Agent_Memory_Visualizer):
     """
+    inherits from Visualizer!
+
     A class to hold the memory of an agent
 
     Contains functions to process the memory for an agent to learn from
@@ -103,12 +105,13 @@ class Agent_Memory(Agent_Memory_Visualizer):
         #  scaling the action
         scaled_action = self.scale_array(exp.action, self.action_space, self.normalize)
         #  scaling the reward
-        scaled_reward = self.scale_reward(exp.reward, self.reward_space, self.normalize)
-        #  now we scale the next observation
+                #  now we scale the next observation
         if exp.next_observation is False:
             scaled_next_observation = False
+            scaled_reward = 0 
         else:
             scaled_next_observation = self.scale_array(exp.next_observation, self.observation_space, self.normalize)
+            scaled_reward = self.scale_reward(exp.reward, self.reward_space, self.normalize)
 
         #  making a named tuple for the scaled experience
         scaled_exp = self.Scaled_Experience(scaled_obs,
@@ -137,12 +140,22 @@ class Agent_Memory(Agent_Memory_Visualizer):
 
         Should only be done once a episode is finished - TODO a check
         """
+        print('agent memory is processing episode experience')
         old_experiences = [exp for exp in self.scaled_experiences if exp.episode == episode_number]
 
         #  we now reprocess our scaled experiences
-        for i, experience in enumerate(old_experiences):
+        print('calculating discounted returns')
+        for i, exp in enumerate(old_experiences):
             discounted_return = sum(self.discount_rate**j * exp.reward for j, exp in enumerate(old_experiences[i:]))
-            scaled_exp = self.scale_experience(experience, discounted_return)
+
+            scaled_exp = self.Scaled_Experience(exp.observation,
+                                   exp.action,
+                                   exp.reward,
+                                   exp.next_observation,
+                                   exp.step,
+                                   exp.episode,
+                                   discounted_return)
+
             idx = -(len(old_experiences) - i)
             self.scaled_experiences[idx] = scaled_exp
 

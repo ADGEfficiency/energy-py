@@ -26,9 +26,6 @@ class Battery_Visualizer(Env_Episode_Visualizer):
         self.outputs['dataframe'] = self.make_dataframe()
         #  print out some results
         self.print_results()
-        #  making the graphs
-        self.outputs['electricity_cost_fig'] = self.make_electricity_cost_fig()
-        self.outputs['technical_fig'] = self.make_technical_fig()
         return self.outputs
 
     def make_technical_fig(self):
@@ -62,6 +59,7 @@ class Battery_Env(Base_Env):
     """
     def __init__(self, lag,
                        episode_length,
+                       episode_start,
                        power_rating,
 
                        capacity,
@@ -69,16 +67,16 @@ class Battery_Env(Base_Env):
                        initial_charge = 0,
 
                        episode_visualizer = Battery_Visualizer,
-                       ts_mode = 'random',
 
                        verbose = 0):
 
         #  calling init method of the parent Base_Env class
-        super().__init__(episode_visualizer, episode_length, ts_mode, verbose)
+        super().__init__(episode_visualizer, episode_length, episode_start, verbose)
 
         #  inputs relevant to the RL learning problem
         self.lag            = lag
         self.episode_length = episode_length
+        self.episode_start  = episode_start
 
         #  technical energy inputs
         self.power_rating   = float(power_rating)
@@ -86,7 +84,6 @@ class Battery_Env(Base_Env):
         self.round_trip_eff = float(round_trip_eff)
         self.initial_charge = float(initial_charge)
 
-        self.ts_mode        = ts_mode
         self.verbose        = verbose
 
         #  resetting the environment
@@ -128,7 +125,7 @@ class Battery_Env(Base_Env):
         #   2 -  how much to discharge [MWh]
         #  use two actions to keep the logprob of an action being negative
 
-        self.action_space = [Continuous_Space(low  = -self.power_rating,
+        self.action_space = [Continuous_Space(low  = 0,
                                               high = self.power_rating),
                              Continuous_Space(low  = 0,
                                               high = self.power_rating)]
@@ -136,8 +133,7 @@ class Battery_Env(Base_Env):
         #  loading the state time series data
         csv_path = os.path.join(os.path.dirname(__file__), 'state.csv')
         self.observation_ts, self.state_ts = self.load_state(csv_path,
-                                                             self.lag,
-                                                             mode=self.ts_mode)
+                                                             self.lag)
 
         #  defining the observation spaces from the state csv
         #  these are defined from the loaded csvs
@@ -150,9 +146,13 @@ class Battery_Env(Base_Env):
         #  setting the reward
         #  minimum reward = minimum electricity price * max rate of discharge
         #  maximum reward = maximum electricity price * max rate of discharge
-        #  note here that I used the AEMO mins & maxes
-        self.reward_space = Continuous_Space((-2000 * -self.power_rating)/12,
-                                             (14000 * self.power_rating)/12,
+        #  I've assumed a minimum of $-2000/MWh & max of $14,000/MWh 
+
+        #  we also need the peak customer demand
+        peak_customer_demand = self.state_ts.loc[:, 'electricity_demand_[MW]'].max()
+        peak_demand = self.power_rating + peak_customer_demand 
+        self.reward_space = Continuous_Space((-2000 * peak_demand)/12,
+                                             (14000 * peak_demand)/12,
                                              1)
 
         #  reseting the step counter, state, observation & done status
@@ -255,17 +255,18 @@ class Battery_Env(Base_Env):
             print('losses were {}'.format(losses))
 
         #  check to see if episode is done
-        if self.steps == (self.episode_length - 1):
+        if self.steps == (self.episode_length ):
             self.done = True
             next_state = False
             next_observation = False
+            reward = 0
             print('Episode {} finished'.format(self.episode))
 
         else:
         #  moving onto next step
+            next_state = self.get_state(self.steps, charge=float(new_charge))
+            next_observation = self.get_observation(self.steps, charge=float(new_charge))
             self.steps += int(1)
-            next_state = self.get_state(self.steps + 1, charge=float(new_charge))
-            next_observation = self.get_observation(self.steps + 1, charge=float(new_charge))
 
         #  saving info
         self.info = self.update_info(episode            = self.episode,
@@ -283,6 +284,8 @@ class Battery_Env(Base_Env):
                                      electricity_price  = electricity_price,
                                      electricity_demand = electricity_demand,
                                      rate               = rate,
+                                     losses             = losses,
+                                     adjusted_demand    = adjusted_demand,
                                      new_charge         = new_charge,
                                      old_charge         = old_charge,
                                      net_stored         = net_stored)
@@ -314,6 +317,8 @@ class Battery_Env(Base_Env):
                           electricity_price,
                           electricity_demand,
                           rate,
+                          losses,
+                          adjusted_demand,
                           new_charge,
                           old_charge,
                           net_stored):
@@ -329,12 +334,14 @@ class Battery_Env(Base_Env):
         self.info['next_state'].append(next_state)
         self.info['next_observation'].append(next_observation)
 
-        self.info['BAU_cost'].append(BAU_cost)
-        self.info['RL_cost'].append(RL_cost)
+        self.info['BAU_cost_[$/5min]'].append(BAU_cost)
+        self.info['RL_cost_[$/5min]'].append(RL_cost)
 
         self.info['electricity_price'].append(electricity_price)
         self.info['electricity_demand'].append(electricity_demand)
         self.info['rate'].append(rate)
+        self.info['losses'].append(losses)
+        self.info['adjusted_demand'].append(adjusted_demand)
         self.info['new_charge'].append(new_charge)
         self.info['old_charge'].append(old_charge)
         self.info['net_stored'].append(net_stored)

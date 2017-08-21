@@ -2,6 +2,7 @@
 """
 
 import collections
+import itertools
 import os
 
 import matplotlib.pyplot as plt
@@ -53,6 +54,10 @@ class Visualizer(object):
             ax.set_ylim(ylim)
         return fig
 
+    def save_fig(self, fig, path):
+        ensure_dir(path)
+        fig.savefig(path)
+
 
 class Env_Episode_Visualizer(Visualizer):
     """
@@ -73,14 +78,8 @@ class Env_Episode_Visualizer(Visualizer):
         self.base_path = os.path.join('results/episodes/')
 
     def make_dataframe(self):
+        #  create the output dataframe
         self.outputs['dataframe'] = pd.DataFrame.from_dict(self.env_info)
-        # TODO get the index working properly
-        # self.outputs['dataframe'].index = self.state_ts.index[:len(self.outputs['dataframe'])]
-
-        path = os.path.join(self.base_path, 'env_history_{}.csv'.format(self.episode))
-        ensure_dir(path)
-        self.outputs['dataframe'].to_csv(path)
-
         return self.outputs['dataframe']
 
     def print_results(self):
@@ -105,20 +104,6 @@ class Env_Episode_Visualizer(Visualizer):
         print('Mean daily saving was {}'.format(avg_saving_per_day))
         return None
 
-    def make_electricity_cost_fig(self):
-        fig = self.make_time_series_fig(self.outputs['dataframe'],
-                                                          cols=['BAU_cost',
-                                                                'RL_cost',
-                                                                'electricity_price'],
-                                                          ylabel='Cost to deliver electricity [$/hh]',
-                                                          xlabel='Time')
-
-        path = os.path.join(self.base_path, 'electricity_cost_fig_{}.png'.format(self.episode))
-        ensure_dir(path)
-        fig.savefig(path)
-        return fig
-
-
 class Agent_Memory_Visualizer(Visualizer):
     """
     A class to create outputs from agent memory.
@@ -136,30 +121,30 @@ class Agent_Memory_Visualizer(Visualizer):
         'dataframe_episodic' = dataframe on a episodic frequency
         """
         #  create lists on a step by step basis
-        episodes = [exp.episode for exp in self.experiences]
-        steps = [exp.step for exp in self.experiences]
-        observations = [exp.observation for exp in self.experiences]
-        actions = [exp.action for exp in self.experiences]
-        rewards = [exp.reward for exp in self.experiences]
-        scaled_rewards = [exp.reward for exp in self.scaled_experiences]
-        discounted_returns =  [exp.discounted_return for exp in self.scaled_experiences]
+        print('agent memory is making dataframes')
+        assert len(self.experiences) == len(self.scaled_experiences)
+
+        ep, stp, obs, act, rew, scl_rew, dis_ret = [], [], [], [], [], [], []
+        for exp, scaled_exp in itertools.zip_longest(self.experiences, self.scaled_experiences):
+            ep.append(exp.episode)
+            stp.append(exp.step)
+            obs.append(exp.observation)
+            act.append(exp.action)
+            rew.append(exp.reward)
+            scl_rew.append(scaled_exp.reward)
+            dis_ret.append(scaled_exp.discounted_return)
 
         df_dict = {
-                   'episode':episodes,
-                   'step':steps,
-                   'observation':observations,
-                   'action':actions,
-                   'reward':rewards,
-                   'scaled_reward':scaled_rewards,
-                   'discounted_return':discounted_returns
+                   'episode':ep,
+                   'step':stp,
+                   'observation':obs,
+                   'action':act,
+                   'reward':rew,
+                   'scaled_reward':scl_rew,
+                   'discounted_return':dis_ret
                    }
 
         dataframe_steps = pd.DataFrame.from_dict(df_dict)
-
-        #  expanding out the tuples
-        for col in dataframe_steps.columns:
-            pd.DataFrame(dataframe_steps.loc[: ,col].values.tolist(),
-                         index=dataframe_steps.index)
 
         dataframe_episodic = dataframe_steps.groupby(by=['episode'],
                                                   axis=0).sum()
@@ -168,44 +153,8 @@ class Agent_Memory_Visualizer(Visualizer):
             dataframe_episodic.loc[:, 'loss'] = self.losses
 
         dataframe_steps.set_index('episode', drop=True, inplace=True)
-        # dataframe_episodic.set_index('episode', drop=True, inplace=True)
 
-        path_steps = os.path.join(self.base_path, 'agent_df_steps.csv')
-        ensure_dir(path_steps)
-        dataframe_steps.to_csv(path_steps)
-
-        path_episodic = os.path.join(self.base_path, 'agent_df_episodic.csv')
-        ensure_dir(path_episodic)
-        dataframe_episodic.to_csv(path_episodic)
         return dataframe_steps,  dataframe_episodic
-
-    def make_returns_fig(self):
-        """
-        Makes a plot of undiscounted reward per episode
-        """
-        fig = self.make_time_series_fig(self.outputs['dataframe_episodic'],
-                                                          cols=['reward'],
-                                                          ylabel='Undiscounted total reward per episode',
-                                                          xlabel='Episode')
-
-        path = os.path.join(self.base_path, 'return_per_episode.png')
-        ensure_dir(path)
-        fig.savefig(path)
-        return fig
-
-    def make_loss_fig(self):
-        """
-        Makes a plot of undiscounted reward per episode
-        """
-        fig = self.make_time_series_fig(self.outputs['dataframe_episodic'],
-                                                          cols=['loss'],
-                                                          ylabel='Loss',
-                                                          xlabel='Episode')
-
-        path = os.path.join(self.base_path, 'loss_per_episode.png')
-        ensure_dir(path)
-        fig.savefig(path)
-        return fig
 
     def _output_results(self):
         """
@@ -217,9 +166,104 @@ class Agent_Memory_Visualizer(Visualizer):
         """
         #  making the two summary dataframes
         self.outputs['dataframe_steps'], self.outputs['dataframe_episodic'] = self.make_dataframes()
-
-        self.outputs['returns_fig'] = self.make_returns_fig()
-
-        if self.losses:
-            self.outputs['loss_fig'] = self.make_loss_fig()
         return self.outputs
+
+class Eternity_Visualizer(Visualizer):
+    """
+    A class to join together data generated by the agent and environment
+    """
+    def __init__(self, episode, 
+                       agent,
+                       env):
+        super().__init__()
+        
+        self.env = env
+        self.agent = agent
+        self.episode = episode
+
+        self.base_path_agent = os.path.join('results/')
+        self.base_path_env = os.path.join('results/episodes')
+        self.figures = {}
+
+        #  pull out the data 
+        print('Eternity visualizer is pulling data out of the agent')
+        self.agent_memory = self.agent.memory.output_results()
+        print('Eternity visualizer is pulling data out of the environment')
+        self.env_info = self.env.output_results()
+
+        self.state_ts = self.env.state_ts
+        self.observation_ts = self.env.observation_ts
+        
+        #  use the index from the state_ts for the other len(total_steps) dataframes
+        index = pd.to_datetime(self.state_ts.index)
+        dfs = [self.agent_memory['dataframe_steps'],self.env_info['dataframe']]
+
+        for df in dfs:
+            df.index = index
+
+
+    def _output_results(self):
+        """
+        Generates results
+        """
+        def save_df(df, path):
+            ensure_dir(path)
+            df.to_csv(path)
+
+        print('saving the figures')   
+        self.figures['elect_cost'] = self.make_electricity_cost_fig()
+        self.figures['returns'] = self.make_returns_fig()
+        if self.agent.memory.losses:
+            self.figures['loss'] = self.make_loss_fig()
+
+        print('saving env dataframe')
+        save_df(self.env_info['dataframe'],
+                os.path.join(self.base_path_env, 'env_history_{}.csv'.format(self.episode)))
+
+        print('saving state dataframe')
+        save_df(self.state_ts,
+                os.path.join(self.base_path_env, 'state_ts_{}.csv'.format(self.episode)))
+
+        print('saving memory steps dataframe')
+        save_df(self.agent_memory['dataframe_steps'],
+                os.path.join(self.base_path_agent, 'agent_df_steps.csv'))
+
+        print('saving memory episodic dataframe')
+        save_df(self.agent_memory['dataframe_episodic'],
+                os.path.join(self.base_path_agent, 'agent_df_episodic.csv'))
+
+    def make_electricity_cost_fig(self):
+        fig = self.make_time_series_fig(self.env_info['dataframe'],
+                                                      cols=['BAU_cost_[$/5min]',
+                                                            'RL_cost_[$/5min]',
+                                                            'electricity_price'],
+                                                      ylabel='Cost to deliver electricity [$/5min]',
+                                                      xlabel='Time')
+
+        self.save_fig(fig,os.path.join(self.base_path_env,'electricity_cost_fig_{}.png'.format(self.episode)))
+        return fig
+    def make_returns_fig(self):
+        """
+        Makes a plot of undiscounted reward per episode
+        """
+        fig = self.make_time_series_fig(self.agent_memory['dataframe_episodic'],
+                                                          cols=['reward'],
+                                                          ylabel='Undiscounted total reward per episode',
+                                                          xlabel='Episode')
+
+        self.save_fig(fig, os.path.join(self.base_path_agent, 'return_per_episode.png'))
+        return fig
+
+    def make_loss_fig(self):
+        """
+        Makes a plot of undiscounted reward per episode
+        """
+        fig = self.make_time_series_fig(self.agent_memory['dataframe_episodic'],
+                                                          cols=['loss'],
+                                                          ylabel='Loss',
+                                                          xlabel='Episode')
+
+        self.save_fig(fig, os.path.join(self.base_path_agent, 'loss_per_episode.png'))
+        return fig
+
+

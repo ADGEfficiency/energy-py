@@ -22,10 +22,10 @@ print('running {} episodes of length {}'.format(EPISODES, EPISODE_LENGTH))
 env = Battery_Env(lag            = 0,
                   episode_length = EPISODE_LENGTH,
                   power_rating   = 2,      #  in MW
-                  capacity       = 2,
+                  capacity       = 2,      #  in MWh
                   initial_charge = 2,
                   ts_mode        = 'from_start',
-                  verbose        = 0)     #  in MWh
+                  verbose        = 0)     
 
 agent = REINFORCE_Agent(env,
                         epsilon_decay_steps = EPISODE_LENGTH * EPISODES / 2,

@@ -25,10 +25,10 @@ class Base_Env(object):
         reward_range (defaults to -inf, +inf)
     """
 
-    def __init__(self, episode_visualizer, episode_length, ts_mode, verbose):
+    def __init__(self, episode_visualizer, episode_length, episode_start, verbose):
         self.episode_visualizer_obj = episode_visualizer
         self.episode_length = episode_length
-        self.ts_mode = ts_mode
+        self.episode_start = episode_start
         self.verbose = verbose
 
         self.info       = collections.defaultdict(list)
@@ -45,14 +45,12 @@ class Base_Env(object):
     observation_space = None  #  list of length obs_dim
     reward_space = None       #  single space object
 
-    def load_state(self, csv_path, lag, mode):
+    def load_state(self, csv_path, lag):
         """
         loads state infomation from a csv
 
         length = 2016 defaults to one week at 5 minuute time frequency
         """
-
-        assert (mode == 'random') or (mode == 'from_start')
 
         #  loading time series data
         ts = pd.read_csv(csv_path,
@@ -60,20 +58,21 @@ class Base_Env(object):
                          parse_dates=True)
         ts_length = ts.shape[0]
 
-        if mode == 'random':
+        #  changing the episode length if we want to run the whole time series
+        if self.episode_length == 'maximum':
+            self.episode_length = ts_length - 1
+
+        if self.episode_start == 'random':
             #  indexing the time series for a random time period
             start = np.random.randint(0, ts_length - self.episode_length)
-            #  ending the time period based on the user defined episode length
-            end = start + self.episode_length
 
-        elif mode == 'from_start':
-            #  starting at the beginning
-            start = 0
-            #  ending after the episode length
-            end = self.episode_length
+        else:
+            #  starting at user defined input
+            start = self.episode_start
+       
+        #  now we can send the end of the episode
+        end = start + self.episode_length
 
-        assert start >= 0
-        assert end <= ts_length
         #  indexing the dataframe
         ts = ts.iloc[start:end+1]
 
