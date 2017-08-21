@@ -83,14 +83,18 @@ class REINFORCE_Agent(Base_Agent):
             #  indexes for the output layer
             mean_idx = tf.range(start=0, limit=output_dim, delta=2)
             stdev_idx = tf.range(start=1, limit=output_dim, delta=2)
+
             #  gather ops
             means = tf.gather(params=self.output_layer, indices=mean_idx, axis=1)
             stdevs = tf.gather(params=self.output_layer, indices=stdev_idx, axis=1)
+
             #  clip the stdev so that stdev >= a small positive number
             stdevs = tf.clip_by_value(stdevs, 1e-10, tf.reduce_max(stdevs))
             self.norm_dist = tf.contrib.distributions.Normal(loc=means, scale=stdevs)
+
             #  selecting an action by sampling from the distribution
             self.action = self.norm_dist.sample(1)
+
             #  clipping the action
             lows = np.array([space.low for space in self.action_space])
             highs = np.array([space.high for space in self.action_space])
@@ -110,6 +114,7 @@ class REINFORCE_Agent(Base_Agent):
             #  creating the training step
             self.optimizer = tf.train.AdamOptimizer(self.learning_rate)
             self.train_step = self.optimizer.minimize(self.loss)
+        
         return None
 
     def _act(self, observation, session, epsilon):
@@ -137,11 +142,14 @@ class REINFORCE_Agent(Base_Agent):
         """
         Helper function for _act
         """
+
         #  scaling the observation for use in the policy network
         scaled_observation = self.memory.scale_array(observation,
                                                      self.observation_space,
                                                      self.memory.normalize)
+
         scaled_observation = scaled_observation.reshape(-1, self.observation_dim)
+
         #  generating an action from the policy network
         action = session.run(self.action, {self.observation : scaled_observation})
         action = action.reshape(self.num_actions)
@@ -153,8 +161,10 @@ class REINFORCE_Agent(Base_Agent):
         """
         if self.verbose > 0:
             print('acting randomly')
+
         #  sampling the space object for every dimension of the action space
         random_actions = [space.sample() for space in self.action_space]
+
         #  converting the list to a np array of the correct shape
         action = np.array(random_actions).reshape(self.num_actions)
         assert len(self.action_space) == action.shape[0]

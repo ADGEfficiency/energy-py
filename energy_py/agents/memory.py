@@ -31,11 +31,11 @@ class Agent_Memory(Agent_Memory_Visualizer):
         self.observation_space = observation_space
         self.action_space      = action_space
         self.reward_space      = reward_space
-        self.discount_rate   = discount_rate
+        self.discount_rate     = discount_rate
 
         #  a named tuple to hold experience
         self.Experience = collections.namedtuple('experience', 'observation, action, reward, next_observation, step, episode')
-        self.Scaled_Experience = collections.namedtuple('experience', 'observation, action, reward, next_observation, step, episode, discounted_return')
+        self.Scaled_Experience = collections.namedtuple('experience', 'observation, reward, step, episode, discounted_return')
 
         self.training_data = []  #  TODO
 
@@ -72,17 +72,33 @@ class Agent_Memory(Agent_Memory_Visualizer):
 
         Used to scale the observation and action
         """
+
         #  empty numpy array
         scaled_array = np.array([])
+
         #  iterate across the array values & corresponding space object
         for value, spc in itertools.zip_longest(array, space):
-            #  use the fctn to transform the array
-            scaled = scaler_fctn(value,
-                                 spc.low,
-                                 spc.high)
+            
+            if spc.type == 'continuous':
+                scaled = scaler_fctn(value,
+                                     spc.low,
+                                     spc.high)
+
+            elif spc.type == 'discrete':
+                dis_space = spc.discrete_space
+                scaled = np.zeros(dis_space.shape) 
+                idx = np.where(dis_space == value)
+                scaled[idx] = 1
+                assert np.sum(scaled) == 1
+
+            else:
+                assert 1 == 0
+
             #  appending the scaled value onto the scaled array
             scaled_array = np.append(scaled_array, scaled)
-        assert array.shape == scaled_array.shape
+
+        scaled_array = scaled_array.reshape(-1)
+
         return scaled_array
 
     def scale_reward(self, reward, space, scaler_fctn=normalize):
@@ -100,24 +116,16 @@ class Agent_Memory(Agent_Memory_Visualizer):
         Discounted return is an optimal arg so that the scaled_exp array can
         be created at any time
         """
-        #  here I do it a simple way - scaling the observation
         scaled_obs = self.scale_array(exp.observation, self.observation_space, self.normalize)
-        #  scaling the action
-        scaled_action = self.scale_array(exp.action, self.action_space, self.normalize)
-        #  scaling the reward
-                #  now we scale the next observation
+
         if exp.next_observation is False:
-            scaled_next_observation = False
-            scaled_reward = 0 
+            scaled_reward = self.scale_reward(0, self.reward_space, self.normalize)
         else:
-            scaled_next_observation = self.scale_array(exp.next_observation, self.observation_space, self.normalize)
             scaled_reward = self.scale_reward(exp.reward, self.reward_space, self.normalize)
 
         #  making a named tuple for the scaled experience
         scaled_exp = self.Scaled_Experience(scaled_obs,
-                                            scaled_action,
                                             scaled_reward,
-                                            scaled_next_observation,
                                             exp.step,
                                             exp.episode,
                                             discounted_return)

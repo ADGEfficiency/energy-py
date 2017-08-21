@@ -24,11 +24,11 @@ class Space(object):
         """
         return self._contains(x)
 
-    def discretize(self, step):
+    def discretize(self):
         """
         Method to discretize the action space.
         """
-        return self._discretize(step)
+        return self._discretize()
 
 
 class Discrete_Space(Space):
@@ -45,7 +45,8 @@ class Discrete_Space(Space):
         self.low  = float(low)
         self.high = float(high)
         self.step = int(step)
-        self.discrete_space = self.discretize(self.step)
+        self.type = 'discrete'
+        self.discrete_space = self.discretize()
 
     def _sample(self):
         return np.random.choice(self.discrete_space)
@@ -53,7 +54,7 @@ class Discrete_Space(Space):
     def _contains(self, x):
         return np.in1d(x, self.discrete_space)
 
-    def _discretize(self, step):
+    def _discretize(self):
         return np.arange(self.low, self.high + self.step, self.step).reshape(-1)
 
 
@@ -70,14 +71,10 @@ class Continuous_Space(Space):
         self.low  = float(low)
         self.high = float(high)
         self.step = int(step)
-        self.discrete_space = self.discretize(self.step)
+        self.type = 'continuous'
 
     def _sample(self):
         return np.random.uniform(low=self.low, high=self.high)
 
     def _contains(self, x):
         return (x >= self.low) and (x <= self.high)
-
-    def _discretize(self, step):
-        self.step = step
-        return np.arange(self.low, self.high + step, step).reshape(-1)
