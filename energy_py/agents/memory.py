@@ -35,7 +35,7 @@ class Agent_Memory(Agent_Memory_Visualizer):
 
         #  a named tuple to hold experience
         self.Experience = collections.namedtuple('experience', 'observation, action, reward, next_observation, step, episode')
-        self.Scaled_Experience = collections.namedtuple('experience', 'observation, reward, step, episode, discounted_return')
+        self.Scaled_Experience = collections.namedtuple('scaled_experience', 'observation, action, reward, next_observation, step, episode, discounted_return')
 
         self.training_data = []  #  TODO
 
@@ -125,7 +125,9 @@ class Agent_Memory(Agent_Memory_Visualizer):
 
         #  making a named tuple for the scaled experience
         scaled_exp = self.Scaled_Experience(scaled_obs,
+                                            None,
                                             scaled_reward,
+                                            None,
                                             exp.step,
                                             exp.episode,
                                             discounted_return)
@@ -148,23 +150,43 @@ class Agent_Memory(Agent_Memory_Visualizer):
 
         Should only be done once a episode is finished - TODO a check
 
-
-        rtn = exp.reward + self.discount_rate * next_exp.discounted_return
         """
         print('agent memory is processing episode experience')
-        print(episode_number)
-        episode_experiences = [exp for exp in self.scaled_experiences if exp.episode == episode_number]
+        episode_experiences, indicies, idx = [], [], 0
+        for idx, exp in enumerate(self.scaled_experiences, 0):
+            if exp.episode == episode_number:
+                episode_experiences.append(exp)
+                indicies.append(idx)
+
         print('calculating discounted returns')
+        #  we reverse our experience list so we can do an efficient backup
+        episode_experiences.reverse()
+        #  blank array to hold the returns
+        rtns = np.zeros(len(episode_experiences))
+        scaled_episode_experiences = []
+        for j, exp in enumerate(episode_experiences):
+            print('discounting calcs for {} of {}'.format(j,len(episode_experiences)))
+            if j == 0:
+                total_return = 0
+            else:
+                total_return = exp.reward + self.discount_rate * rtns[j-1]
 
-        for i, exp in enumerate(episode_experiences, 1):
+            rtns[j] = total_return
 
-            scaled_exp = self.Scaled_Experience(reverse_exp.observation,
-                                                reverse_exp.reward,
-                                                reverse_exp.step,
-                                                reverse_exp.episode,
-                                                rtn)
+            scaled_exp = self.Scaled_Experience(exp.observation,
+                                                None,
+                                                exp.reward,
+                                                None,
+                                                exp.step,
+                                                exp.episode,
+                                                total_return)
+            scaled_episode_experiences.append(scaled_exp)
+        #  now we use our original indicies to reindex
+        scaled_episode_experiences.reverse()
 
-            self.scaled_experiences[-i] = scaled_exp
+        for k, idx in enumerate(indicies):
+            self.scaled_experiences[idx] = scaled_episode_experiences[k]
+
 
         assert len(self.experiences) == len(self.scaled_experiences)
 

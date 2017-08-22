@@ -26,16 +26,18 @@ class Battery_Visualizer(Env_Episode_Visualizer):
         self.outputs['dataframe'] = self.make_dataframe()
         #  print out some results
         self.print_results()
+
+        self.figures = {'technical_fig':self.make_technical_fig}
         return self.outputs
 
-    def make_technical_fig(self):
-        fig = self.make_time_series_fig(self.outputs['dataframe'],
-                                        cols=['rate', 'new_charge'],
-                                        ylabel='Electricity [MW or MWh]',
-                                        xlabel='Time')
-        path = os.path.join(self.base_path, 'technical_fig_{}.png'.format(self.episode))
-        ensure_dir(path)
-        fig.savefig(path)
+
+
+    def make_technical_fig(self, env_outputs_df, env_outputs_path):
+        fig = self.make_figure(df=env_outputs_df,
+                               cols=['rate', 'new_charge'],
+                               xlabel='Time',
+                               ylabel='Electricity [MW or MWh]',
+                               path=os.path.join(env_outputs_path, 'technical_fig_{}.png'.format(self.episode)))
         return fig
 
 
@@ -146,11 +148,11 @@ class Battery_Env(Base_Env):
         #  setting the reward
         #  minimum reward = minimum electricity price * max rate of discharge
         #  maximum reward = maximum electricity price * max rate of discharge
-        #  I've assumed a minimum of $-2000/MWh & max of $14,000/MWh 
+        #  I've assumed a minimum of $-2000/MWh & max of $14,000/MWh
 
         #  we also need the peak customer demand
         peak_customer_demand = self.state_ts.loc[:, 'electricity_demand_[MW]'].max()
-        peak_demand = self.power_rating + peak_customer_demand 
+        peak_demand = self.power_rating + peak_customer_demand
         self.reward_space = Continuous_Space((-2000 * peak_demand)/12,
                                              (14000 * peak_demand)/12,
                                              1)
@@ -240,9 +242,9 @@ class Battery_Env(Base_Env):
         #  now we can calculate the reward
         #  reward depends on both
         #  - how much electricity the site is demanding
-        #  - what our battery is doing
+        #  - what our battery is doing (on a gross basis!)
         #  - electricity price
-        adjusted_demand = electricity_demand + rate
+        adjusted_demand = electricity_demand + gross_rate
         RL_cost = (adjusted_demand / 12) * electricity_price
         reward = -RL_cost
 

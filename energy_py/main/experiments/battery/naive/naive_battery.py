@@ -18,7 +18,7 @@ from energy_py.envs.battery.battery_env import Battery_Env
 from energy_py.main.scripts.experiment_blocks import run_single_episode
 from energy_py.main.scripts.visualizers import Eternity_Visualizer
 
-EPISODE_LENGTH = 100
+EPISODE_LENGTH = 'maximum'
 EPISODE_START = 0
 
 env = Battery_Env(lag            = 0,
@@ -26,7 +26,7 @@ env = Battery_Env(lag            = 0,
                   episode_start  = EPISODE_START,
                   power_rating   = 2,  #  in MW
                   capacity       = 4,  #  in MWh
-                  verbose        = 1)
+                  verbose        = 0)
 
 assert env.lag == 0  # must be zero for naive agents
 
