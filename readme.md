@@ -20,7 +20,7 @@ Cooling flexibility action
 
 **Agents**
 REINFORCE aka Monte Carlo policy gradient - TensorFlow
-Q-Learning
+
 
 **Basic usage**
 from energy_py.agents.policy_based.reinforce import REINFORCE_Agent
