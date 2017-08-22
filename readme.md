@@ -32,8 +32,6 @@ pip install requirements.txt
 ```
 The main dependencies of energy_py are numpy, pandas & TensorFlow.  energy_py was built using TensorFlow 1.3.0.
 
-Installing
-
 ### Project structure
 
 Enviroments are created by inheriting from the [Base_Env](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/envs/env_core.py) class.  
