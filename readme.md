@@ -5,21 +5,23 @@ This aim of this project is to demonstrate the ability of reinforcement learning
 This project is built and maintained by Adam Green - adam.green@adgefficiency.com.
 
 ### Installation
-Setup a virtual environment using your favourite method. Below I use Anaconda to create a Python 3.5 virtual environment:
+Below I use Anaconda to create a Python 3.5 virtual environment.  You can of course use your own environment manager.
+
+If you just want to install to your system Python you can skip to cloning the repo.  
 ```
 conda create --name energy_py python=3.5.2
 ```
 Activate the virtual environment
 ```
 activate energy_py (windows)
-or
+
 source activate energy_py (unix)
 ```
-Now clone the repo somewhere
+Clone the repo somewhere
 ```
 git clone https://github.com/ADGEfficiency/energy_py.git
 ```
-Now move into the energy_py folder and install using setup.py.  This will install energy_py into your activated Python environment
+Move into the energy_py folder and install using setup.py.  This will install energy_py into your activated Python environment
 ```
 cd energy_py
 python setup.py install
@@ -28,11 +30,15 @@ Finally install the required packages
 ```
 pip install requirements.txt
 ```
-The main packages used by energy_py are numpy, pandas & TensorFlow.  energy_py was built using TensorFlow 1.3.0.
+The main dependencies of energy_py are numpy, pandas & TensorFlow.  energy_py was built using TensorFlow 1.3.0.
 
 Installing
 
-### Guide to the project
+### Project structure
+
+Enviroments are created by inheriting from the [Base_Env](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/envs/env_core.py) class.  
+
+Agents are created by inheriting from the [Base_Agent](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/agent_core.py) class.  
 
 **Environments**
 
