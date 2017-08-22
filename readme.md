@@ -40,7 +40,7 @@ Installing
 
 [A cooling flexibility action (in progress)](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/envs/precool)
 
-Combined heat and power plant (port over from energy_py v1.0)
+Combined heat and power plant (to be ported over from energy_py v1.0)
 
 **Agents**
 
@@ -48,9 +48,9 @@ Combined heat and power plant (port over from energy_py v1.0)
 
 [REINFORCE aka Monte Carlo policy gradient - TensorFlow](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/policy_based/reinforce.py)
 
-Q-Learning (port over from energy_py v2.0)
+Q-Learning (to be ported over from energy_py v1.0)
 
-Double Q-Learning (port over from energy_py v2.0)
+Double Q-Learning (to be ported over from energy_py v1.0)
 
 ### Basic usage
 ```
