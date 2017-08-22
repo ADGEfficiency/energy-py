@@ -78,7 +78,7 @@ class Agent_Memory(Agent_Memory_Visualizer):
 
         #  iterate across the array values & corresponding space object
         for value, spc in itertools.zip_longest(array, space):
-            
+
             if spc.type == 'continuous':
                 scaled = scaler_fctn(value,
                                      spc.low,
@@ -86,7 +86,7 @@ class Agent_Memory(Agent_Memory_Visualizer):
 
             elif spc.type == 'discrete':
                 dis_space = spc.discrete_space
-                scaled = np.zeros(dis_space.shape) 
+                scaled = np.zeros(dis_space.shape)
                 idx = np.where(dis_space == value)
                 scaled[idx] = 1
                 assert np.sum(scaled) == 1
@@ -147,25 +147,24 @@ class Agent_Memory(Agent_Memory_Visualizer):
         Calculates the discounted returns
 
         Should only be done once a episode is finished - TODO a check
+
+
+        rtn = exp.reward + self.discount_rate * next_exp.discounted_return
         """
         print('agent memory is processing episode experience')
-        old_experiences = [exp for exp in self.scaled_experiences if exp.episode == episode_number]
-
-        #  we now reprocess our scaled experiences
+        print(episode_number)
+        episode_experiences = [exp for exp in self.scaled_experiences if exp.episode == episode_number]
         print('calculating discounted returns')
-        for i, exp in enumerate(old_experiences):
-            discounted_return = sum(self.discount_rate**j * exp.reward for j, exp in enumerate(old_experiences[i:]))
 
-            scaled_exp = self.Scaled_Experience(exp.observation,
-                                   exp.action,
-                                   exp.reward,
-                                   exp.next_observation,
-                                   exp.step,
-                                   exp.episode,
-                                   discounted_return)
+        for i, exp in enumerate(episode_experiences, 1):
 
-            idx = -(len(old_experiences) - i)
-            self.scaled_experiences[idx] = scaled_exp
+            scaled_exp = self.Scaled_Experience(reverse_exp.observation,
+                                                reverse_exp.reward,
+                                                reverse_exp.step,
+                                                reverse_exp.episode,
+                                                rtn)
+
+            self.scaled_experiences[-i] = scaled_exp
 
         assert len(self.experiences) == len(self.scaled_experiences)
 
