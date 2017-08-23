@@ -5,7 +5,7 @@ import os
 import numpy as np
 
 from energy_py.envs.env_core import Base_Env
-from energy_py.main.scripts.spaces import Continuous_Space
+from energy_py.main.scripts.spaces import Continuous_Space, Discrete_Space
 from energy_py.main.scripts.visualizers import Env_Episode_Visualizer
 from energy_py.main.scripts.utils import ensure_dir
 
@@ -27,18 +27,19 @@ class Battery_Visualizer(Env_Episode_Visualizer):
         #  print out some results
         self.print_results()
 
-        self.figures = {'technical_fig':self.make_technical_fig}
+        def make_technical_fig(env_outputs_df, env_outputs_path):
+            fig = self.make_figure(df=env_outputs_df,
+                                   cols=['rate', 'new_charge'],
+                                   xlabel='Time',
+                                   ylabel='Electricity [MW or MWh]',
+                                   path=os.path.join(env_outputs_path, 'technical_fig_{}.png'.format(self.episode)))
+            return fig
+
+        self.figures = {'technical_fig':make_technical_fig}
         return self.outputs
 
 
 
-    def make_technical_fig(self, env_outputs_df, env_outputs_path):
-        fig = self.make_figure(df=env_outputs_df,
-                               cols=['rate', 'new_charge'],
-                               xlabel='Time',
-                               ylabel='Electricity [MW or MWh]',
-                               path=os.path.join(env_outputs_path, 'technical_fig_{}.png'.format(self.episode)))
-        return fig
 
 
 class Battery_Env(Base_Env):
@@ -56,7 +57,6 @@ class Battery_Env(Base_Env):
                                           how much of the stored electricity we
                                           can later extract
         initial_charge          (float) : inital amount of electricity stored [MWh]
-        ts_mode
         verbose                 (int)   : controls env print statements
     """
     def __init__(self, lag,
@@ -85,8 +85,6 @@ class Battery_Env(Base_Env):
         self.capacity       = float(capacity)
         self.round_trip_eff = float(round_trip_eff)
         self.initial_charge = float(initial_charge)
-
-        self.verbose        = verbose
 
         #  resetting the environment
         self.observation    = self.reset()
@@ -126,7 +124,6 @@ class Battery_Env(Base_Env):
         #   1 -  how much to charge [MWh]
         #   2 -  how much to discharge [MWh]
         #  use two actions to keep the logprob of an action being negative
-
         self.action_space = [Continuous_Space(low  = 0,
                                               high = self.power_rating),
                              Continuous_Space(low  = 0,
@@ -136,11 +133,22 @@ class Battery_Env(Base_Env):
         csv_path = os.path.join(os.path.dirname(__file__), 'state.csv')
         self.observation_ts, self.state_ts = self.load_state(csv_path,
                                                              self.lag)
-
+        if self.verbose:
+            print('state & observation time series')
         #  defining the observation spaces from the state csv
         #  these are defined from the loaded csvs
-        self.observation_space = [Continuous_Space(col.min(), col.max(), 1)
-                                  for name, col in self.observation_ts.iteritems()]
+        #  we loop over the columns of the observation times series dataframe
+        self.observation_space = []
+        for name, col in self.observation_ts.iteritems():
+            print(name)
+            if str(name[:2]) == 'D_':
+                obs_space = Discrete_Space(col.min(), col.max(), 1)
+            elif str(name[:2]) == 'C_':
+                obs_space = Continuous_Space(col.min(), col.max(), 1)
+            else:
+                print('state.csv is not labelled correctly')
+                assert 1 == 0
+            self.observation_space.append(obs_space)
 
         #  we also append on an additional observation of the battery charge
         self.observation_space.append(Continuous_Space(0, self.capacity, 1))
@@ -150,8 +158,11 @@ class Battery_Env(Base_Env):
         #  maximum reward = maximum electricity price * max rate of discharge
         #  I've assumed a minimum of $-2000/MWh & max of $14,000/MWh
 
+        #  choose to use a fixed range because we can sometimes sample a
+        #  small part of the state into state_ts
+
         #  we also need the peak customer demand
-        peak_customer_demand = self.state_ts.loc[:, 'electricity_demand_[MW]'].max()
+        peak_customer_demand = self.state_ts.loc[:, 'C_electricity_demand_[MW]'].max()
         peak_demand = self.power_rating + peak_customer_demand
         self.reward_space = Continuous_Space((-2000 * peak_demand)/12,
                                              (14000 * peak_demand)/12,
@@ -244,7 +255,7 @@ class Battery_Env(Base_Env):
         #  - how much electricity the site is demanding
         #  - what our battery is doing (on a gross basis!)
         #  - electricity price
-        adjusted_demand = electricity_demand + gross_rate
+        adjusted_demand = electricity_demand + float(gross_rate)
         RL_cost = (adjusted_demand / 12) * electricity_price
         reward = -RL_cost
 

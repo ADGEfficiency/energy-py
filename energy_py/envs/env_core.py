@@ -69,7 +69,7 @@ class Base_Env(object):
         else:
             #  starting at user defined input
             start = self.episode_start
-       
+
         #  now we can send the end of the episode
         end = start + self.episode_length
 
@@ -138,7 +138,10 @@ class Base_Env(object):
         """
         #  update the current episode number
         self.episode = episode
+        self.episode_visualizer = None
 
+        if self.verbose:
+            print('step {} - episode {}'.format(self.steps, episode))
         return self._step(action)
 
     def reset(self):
@@ -149,8 +152,8 @@ class Base_Env(object):
         """
         if self.verbose > 0:
             print('Reset environment')
+            self.episode = None
         self.episode_visualizer = None
-        self.episode = None
         return self._reset()
 
 
@@ -162,4 +165,5 @@ class Base_Env(object):
         self.episode_visualizer = self.episode_visualizer_obj(env_info=self.info, state_ts=self.state_ts, episode=self.episode)
         #  runs the main visualizer method
         _ = self.episode_visualizer.output_results()
+        #  continues on into environment specific code for the output_results method
         return self._output_results()
