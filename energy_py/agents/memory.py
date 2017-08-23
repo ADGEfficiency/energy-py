@@ -78,7 +78,6 @@ class Agent_Memory(Agent_Memory_Visualizer):
 
         #  iterate across the array values & corresponding space object
         for value, spc in itertools.zip_longest(array, space):
-
             if spc.type == 'continuous':
                 scaled = scaler_fctn(value,
                                      spc.low,
@@ -90,7 +89,6 @@ class Agent_Memory(Agent_Memory_Visualizer):
                 idx = np.where(dis_space == value)
                 scaled[idx] = 1
                 assert np.sum(scaled) == 1
-
             else:
                 assert 1 == 0
 
@@ -158,14 +156,12 @@ class Agent_Memory(Agent_Memory_Visualizer):
                 episode_experiences.append(exp)
                 indicies.append(idx)
 
-        print('calculating discounted returns')
         #  we reverse our experience list so we can do an efficient backup
         episode_experiences.reverse()
         #  blank array to hold the returns
         rtns = np.zeros(len(episode_experiences))
         scaled_episode_experiences = []
         for j, exp in enumerate(episode_experiences):
-            print('discounting calcs for {} of {}'.format(j,len(episode_experiences)))
             if j == 0:
                 total_return = 0
             else:
@@ -186,7 +182,6 @@ class Agent_Memory(Agent_Memory_Visualizer):
 
         for k, idx in enumerate(indicies):
             self.scaled_experiences[idx] = scaled_episode_experiences[k]
-
 
         assert len(self.experiences) == len(self.scaled_experiences)
 

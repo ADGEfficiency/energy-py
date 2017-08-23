@@ -37,10 +37,6 @@ class REINFORCE_Agent(Base_Agent):
         #  passing the environment to the Base_Agent class
         super().__init__(env, epsilon_decay_steps)
 
-        self.action_space = self.env.action_space
-
-        self.observation_dim = len(env.observation_space)
-        self.num_actions     = len(env.action_space)
         self.learning_rate   = learning_rate
         self.batch_size      = batch_size
 
@@ -114,7 +110,7 @@ class REINFORCE_Agent(Base_Agent):
             #  creating the training step
             self.optimizer = tf.train.AdamOptimizer(self.learning_rate)
             self.train_step = self.optimizer.minimize(self.loss)
-        
+
         return None
 
     def _act(self, observation, session, epsilon):
@@ -148,7 +144,7 @@ class REINFORCE_Agent(Base_Agent):
                                                      self.observation_space,
                                                      self.memory.normalize)
 
-        scaled_observation = scaled_observation.reshape(-1, self.observation_dim)
+        scaled_observation = scaled_observation.reshape(1, -1)
 
         #  generating an action from the policy network
         action = session.run(self.action, {self.observation : scaled_observation})

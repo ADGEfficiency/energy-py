@@ -17,6 +17,9 @@ class Base_Agent(object):
 
     def __init__(self, env, epsilon_decay_steps=10000, memory_length=int(1e6), discount_rate=0.99, verbose=0):
         self.env = env
+        self.action_space = self.env.action_space
+        self.observation_dim = len(env.observation_space)
+        self.num_actions     = len(env.action_space)
 
         self.memory_length = memory_length
         self.discount_rate = discount_rate
@@ -82,7 +85,7 @@ class Base_Agent(object):
         assert not np.any(np.isnan(observations))
         assert not np.any(np.isnan(actions))
         assert not np.any(np.isnan(discounted_returns))
-
+        print('epsilon is {}'.format(self.epsilon_greedy.epsilon))
         if self.verbose > 0:
             print('Learning')
             print('observations are {}'.format(observations))
