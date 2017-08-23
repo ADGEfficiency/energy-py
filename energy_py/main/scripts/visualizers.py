@@ -47,7 +47,7 @@ class Visualizer(object):
                     path=None):
 
         fig = self.make_time_series_fig(df, cols, xlabel, ylabel, xlim, ylim)
-        if self.path:
+        if path:
             self.save_fig(fig, path)
         return fig
 
@@ -80,7 +80,7 @@ class Visualizer(object):
             start = df.index[0]
             end = df.index[-1]
 
-        ax.set_xlim(xlim)
+        ax.set_xlim([start, end])
 
         return fig
 
@@ -157,14 +157,20 @@ class Agent_Memory_Visualizer(Visualizer):
         print('agent memory is making dataframes')
         assert len(self.experiences) == len(self.scaled_experiences)
 
-        ep, stp, obs, act, rew, scl_rew, dis_ret = [], [], [], [], [], [], []
+        ep, stp, obs, act, rew, nxt_obs = [], [], [], [], [], []
+        scl_obs, scl_act, scl_rew, scl_nxt_obs, dis_ret = [], [], [], [], []
         for exp, scaled_exp in itertools.zip_longest(self.experiences, self.scaled_experiences):
             ep.append(exp.episode)
             stp.append(exp.step)
             obs.append(exp.observation)
             act.append(exp.action)
             rew.append(exp.reward)
+            nxt_obs.append(exp.next_observation)
+
+            scl_obs.append(scaled_exp.observation)
+            scl_act.append(scaled_exp.action)
             scl_rew.append(scaled_exp.reward)
+            scl_nxt_obs.append(scaled_exp.next_observation)
             dis_ret.append(scaled_exp.discounted_return)
 
         df_dict = {
@@ -173,8 +179,13 @@ class Agent_Memory_Visualizer(Visualizer):
                    'observation':obs,
                    'action':act,
                    'reward':rew,
+                   'next_observation':nxt_obs,
                    'scaled_reward':scl_rew,
-                   'discounted_return':dis_ret
+                   'discounted_return':dis_ret,
+                   'scaled_observation':scl_obs,
+                   'scaled_action':scl_act,
+                   'scaled_reward':scl_rew,
+                   'scaled_next_observation':scl_nxt_obs,
                    }
 
         dataframe_steps = pd.DataFrame.from_dict(df_dict)
@@ -224,14 +235,14 @@ class Eternity_Visualizer(Visualizer):
         self.env_info = self.env.output_results()
 
         self.figures = collections.defaultdict(list)
-        self.env_figures = self.env.visualizer.figures
+        self.env_figures = self.env.episode_visualizer.figures
 
         self.state_ts = self.env.state_ts
         self.observation_ts = self.env.observation_ts
 
         #  use the index from the state_ts for the other len(total_steps) dataframes
         index = pd.to_datetime(self.state_ts.index)
-        dfs = [self.agent_memory['dataframe_steps'],self.env_info['dataframe']]
+        dfs = [self.env_info['dataframe']]
 
         for df in dfs:
             df.index = index
@@ -252,9 +263,9 @@ class Eternity_Visualizer(Visualizer):
         #  the Eternity_Visualizer
 
         #  TODO similar thing for agent!
-        for make_fig_fctn, fig_name in self.env_figures.items():
-            self.figures[fig_name] = make_fig_fctn(self.env_info,
-                                                   self.base_path_env)
+        # for make_fig_fctn, fig_name in self.env_figures.items():
+        #     self.figures[fig_name] = make_fig_fctn(self.env_info,
+        #                                            self.base_path_env)
 
         self.figures['elect_cost'] = self.make_figure(df=self.env_info['dataframe'],
                                                       cols=['BAU_cost_[$/5min]',
@@ -262,7 +273,7 @@ class Eternity_Visualizer(Visualizer):
                                                             'electricity_price'],
                                                       ylabel='Cost to deliver electricity [$/5min]',
                                                       xlabel='Time',
-                                                      ylim='last_week'
+                                                      xlim='last_week',
                                                       path=os.path.join(self.base_path_env,'electricity_cost_fig_{}.png'.format(self.episode)))
 
         self.figures['returns'] = self.make_figure(df=self.agent_memory['dataframe_episodic'],

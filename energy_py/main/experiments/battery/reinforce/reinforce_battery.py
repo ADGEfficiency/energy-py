@@ -11,7 +11,7 @@ import tensorflow as tf
 from energy_py.agents.policy_based.reinforce import REINFORCE_Agent
 from energy_py.envs.battery.battery_env import Battery_Env
 from energy_py.main.scripts.experiment_blocks import run_single_episode
-
+from energy_py.main.scripts.visualizers import Eternity_Visualizer
 args = sys.argv
 
 EPISODES = int(args[1])
@@ -21,17 +21,16 @@ print('running {} episodes of length {}'.format(EPISODES, EPISODE_LENGTH))
 
 env = Battery_Env(lag            = 0,
                   episode_length = EPISODE_LENGTH,
-                  power_rating   = 2,      #  in MW
-                  capacity       = 2,      #  in MWh
-                  initial_charge = 2,
-                  ts_mode        = 'from_start',
-                  verbose        = 0)     
-
+                  episode_start  = 0,
+                  power_rating   = 2,  #  in MW
+                  capacity       = 4,  #  in MWh
+                  verbose        = 1)
+print('made env')
 agent = REINFORCE_Agent(env,
                         epsilon_decay_steps = EPISODE_LENGTH * EPISODES / 2,
                         learning_rate = 0.1,
                         batch_size = 64)
-
+print('made agent')
 #  creating the TensorFlow session for this experiment
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
@@ -49,6 +48,6 @@ with tf.Session() as sess:
         #  train the model
         loss = agent.learn(observations, actions, returns, sess)
 
-    #  finally output resutls from the environment and agent
-    env_outputs = agent.env.output_results()
-    agent_outputs = agent.memory.output_results()
+#  finally collect data from the agent & environment
+global_history = Eternity_Visualizer(episode, agent, env)
+outputs = global_history.output_results()
