@@ -1,4 +1,4 @@
-## Readme for the Battery Environment
+## battery environment readme
 
 The action for this env is
 ```

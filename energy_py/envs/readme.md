@@ -1,4 +1,4 @@
-## readme for all energy_py ENVS
+## energy_py environments readme
 
 All energy_py enviromnents take the following as inputs
 ```
