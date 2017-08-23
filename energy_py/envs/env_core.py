@@ -19,11 +19,23 @@ class Base_Env(object):
         _step
         _reset
 
-    2 - set the following attributes
+    2 - set the following attributes in 
         action_space
         observation_space
         reward_range (defaults to -inf, +inf)
+
+    Args:
+        episode_visualizer (Visualizer) : object used to create outputs
+
+        episode_length
+        
+        episode_start
+
+        verbose
+
+    These arguments are passed from the child environment class to Base_Env through super()
     """
+
 
     def __init__(self, episode_visualizer, episode_length, episode_start, verbose):
         self.episode_visualizer_obj = episode_visualizer
@@ -48,8 +60,6 @@ class Base_Env(object):
     def load_state(self, csv_path, lag):
         """
         loads state infomation from a csv
-
-        length = 2016 defaults to one week at 5 minuute time frequency
         """
 
         #  loading time series data
@@ -163,7 +173,5 @@ class Base_Env(object):
         """
         #  initalize the visualizer object with the current environment info
         self.episode_visualizer = self.episode_visualizer_obj(env_info=self.info, state_ts=self.state_ts, episode=self.episode)
-        #  runs the main visualizer method
-        _ = self.episode_visualizer.output_results()
-        #  continues on into environment specific code for the output_results method
-        return self._output_results()
+        #  returns the main visualizer method
+        return self.episode_visualizer.output_results()

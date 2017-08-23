@@ -9,7 +9,6 @@ from energy_py.main.scripts.spaces import Continuous_Space, Discrete_Space
 from energy_py.main.scripts.visualizers import Env_Episode_Visualizer
 from energy_py.main.scripts.utils import ensure_dir
 
-
 class Battery_Visualizer(Env_Episode_Visualizer):
     """
     A class to create charts for the Battery environment.
@@ -39,9 +38,6 @@ class Battery_Visualizer(Env_Episode_Visualizer):
         return self.outputs
 
 
-
-
-
 class Battery_Env(Base_Env):
     """
     An environment that simulates storage of electricity in a battery.
@@ -49,14 +45,17 @@ class Battery_Env(Base_Env):
 
     Args:
         lag                     (int)   : lag between observation & state
-        episode_length          (int)   : length of the episdode
 
-        power_rating            (float) : rate of battery to charge or discharge [MWe]
+
+        episode_length          (int)   : length of the episode
+                                (string): 'maximum' = run entire legnth
+        episode_start           (int)   : the integer index to start the episode
+
+        power_rating            (float) : maximum rate of battery charge or discharge [MWe]
         capacity                (float) : amount of electricity that can be stored [MWh]
         round_trip_eff          (float) : round trip efficiency of storage
-                                          how much of the stored electricity we
-                                          can later extract
         initial_charge          (float) : inital amount of electricity stored [MWh]
+
         verbose                 (int)   : controls env print statements
     """
     def __init__(self, lag,
@@ -123,7 +122,9 @@ class Battery_Env(Base_Env):
         #  two actions
         #   1 -  how much to charge [MWh]
         #   2 -  how much to discharge [MWh]
-        #  use two actions to keep the logprob of an action being negative
+
+        #  use two actions to keep the action space positive
+        #  is useful for policy gradient where we take log(action)
         self.action_space = [Continuous_Space(low  = 0,
                                               high = self.power_rating),
                              Continuous_Space(low  = 0,
@@ -140,11 +141,10 @@ class Battery_Env(Base_Env):
         #  we loop over the columns of the observation times series dataframe
         self.observation_space = []
         for name, col in self.observation_ts.iteritems():
-            print(name)
             if str(name[:2]) == 'D_':
                 obs_space = Discrete_Space(col.min(), col.max(), 1)
             elif str(name[:2]) == 'C_':
-                obs_space = Continuous_Space(col.min(), col.max(), 1)
+                obs_space = Continuous_Space(col.min(), col.max())
             else:
                 print('state.csv is not labelled correctly')
                 assert 1 == 0
@@ -195,7 +195,9 @@ class Battery_Env(Base_Env):
         """
 
         #  setting the decimal context
-        #  make use of decimal so that tht energy balance works
+        #  make use of decimal so that that the energy balance works
+        #  had floating point number issues when always using floats
+        #  room for improvement here!
         decimal.getcontext().prec = 6
 
         #  pulling out the state infomation
@@ -309,12 +311,6 @@ class Battery_Env(Base_Env):
 
         return self.observation, reward, self.done, self.info
 
-    def _output_results(self):
-        """
-        Running environment specific output functions.
-        """
-        return self.episode_visualizer.outputs
-
     def update_info(self, episode,
                           steps,
                           state,
@@ -360,3 +356,6 @@ class Battery_Env(Base_Env):
         self.info['net_stored'].append(net_stored)
 
         return self.info
+
+
+
