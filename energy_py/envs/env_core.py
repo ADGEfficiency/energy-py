@@ -19,7 +19,7 @@ class Base_Env(object):
         _step
         _reset
 
-    2 - set the following attributes in 
+    2 - set the following attributes in
         action_space
         observation_space
         reward_range (defaults to -inf, +inf)
@@ -28,7 +28,7 @@ class Base_Env(object):
         episode_visualizer (Visualizer) : object used to create outputs
 
         episode_length
-        
+
         episode_start
 
         verbose
@@ -37,10 +37,8 @@ class Base_Env(object):
     """
 
 
-    def __init__(self, episode_visualizer, episode_length, episode_start, verbose):
+    def __init__(self, episode_visualizer, verbose):
         self.episode_visualizer_obj = episode_visualizer
-        self.episode_length = episode_length
-        self.episode_start = episode_start
         self.verbose = verbose
 
         self.info       = collections.defaultdict(list)
@@ -57,66 +55,17 @@ class Base_Env(object):
     observation_space = None  #  list of length obs_dim
     reward_space = None       #  single space object
 
-    def load_state(self, csv_path, lag):
+    def reset(self):
         """
-        loads state infomation from a csv
+        Resets the state of the environment and returns an initial observation.
+
+        Returns: observation (np array): the initial observation
         """
-
-        #  loading time series data
-        ts = pd.read_csv(csv_path,
-                         index_col=0,
-                         parse_dates=True)
-        ts_length = ts.shape[0]
-
-        #  changing the episode length if we want to run the whole time series
-        if self.episode_length == 'maximum':
-            self.episode_length = ts_length - 1
-
-        if self.episode_start == 'random':
-            #  indexing the time series for a random time period
-            start = np.random.randint(0, ts_length - self.episode_length)
-
-        else:
-            #  starting at user defined input
-            start = self.episode_start
-
-        #  now we can send the end of the episode
-        end = start + self.episode_length
-
-        #  indexing the dataframe
-        ts = ts.iloc[start:end+1]
-
-        #  now a three block if statement to deal with the lag
-        #  1 - lag is 0
-        #  2 - lag is negative
-        #  3 - lag is positive
-
-        #  if no lag then state = observation
-        if lag == 0:
-            observation_ts = ts.iloc[:, :]
-            state_ts = ts.iloc[:, :]
-
-        #  a negative lag means the agent can only see the past
-        elif lag < 0:
-            #  we shift & cut the observation
-            observation_ts = ts.shift(lag).iloc[:-lag, :]
-            #  we cut the state
-            state_ts = ts.iloc[:-lag, :]
-
-        #  a positive lag means the agent can see the future
-        elif lag > 0:
-            #  we shift & cut the observation
-            observation_ts = ts.shift(lag).iloc[lag:, :]
-            #  we cut the state
-            state_ts = ts.iloc[lag:, :]
-
-        #  checking our two ts are the same shape
-        assert observation_ts.shape == state_ts.shape
         if self.verbose > 0:
-            print('observation time series shape is {}'.format(observation_ts.shape))
-            print('observation time series columns are {}'.format(observation_ts.columns))
-
-        return observation_ts, state_ts
+            print('Reset environment')
+            self.episode = None
+        self.episode_visualizer = None
+        return self._reset()
 
     def step(self, action, episode):
         """
@@ -153,19 +102,6 @@ class Base_Env(object):
         if self.verbose:
             print('step {} - episode {}'.format(self.steps, episode))
         return self._step(action)
-
-    def reset(self):
-        """
-        Resets the state of the environment and returns an initial observation.
-
-        Returns: observation (np array): the initial observation
-        """
-        if self.verbose > 0:
-            print('Reset environment')
-            self.episode = None
-        self.episode_visualizer = None
-        return self._reset()
-
 
     def output_results(self):
         """

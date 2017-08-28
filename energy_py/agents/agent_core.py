@@ -18,8 +18,9 @@ class Base_Agent(object):
     def __init__(self, env, epsilon_decay_steps=10000, memory_length=int(1e6), discount_rate=0.99, verbose=0):
         self.env = env
         self.action_space = self.env.action_space
-        self.observation_dim = len(env.observation_space)
-        self.num_actions     = len(env.action_space)
+        self.observation_space = self.env.observation_space
+        self.num_actions = len(self.action_space)
+        self.observation_dim = len(self.observation_space)
 
         self.memory_length = memory_length
         self.discount_rate = discount_rate
@@ -36,15 +37,6 @@ class Base_Agent(object):
                                    action_space=env.action_space,
                                    reward_space=env.reward_space,
                                    discount_rate=discount_rate)
-
-        #  grabbing the action & observation spaces
-        self.action_space = env.action_space
-        self.observation_space = env.observation_space
-        self.reward_space = env.reward_space
-
-        #  setting the dimensions of the action & observation spaces
-        self.num_actions = len(self.action_space)
-        self.obs_dim = len(self.observation_space)
 
         return None
 

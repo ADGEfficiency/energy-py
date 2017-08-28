@@ -27,8 +27,3 @@ def run_single_episode(episode_number,
     agent.memory.process_episode(episode_number)
     return agent, env, sess
 
-def train_model():
-    pass
-
-def output_results():
-    pass

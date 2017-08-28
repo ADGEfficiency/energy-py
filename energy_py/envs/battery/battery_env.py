@@ -4,7 +4,7 @@ import os
 
 import numpy as np
 
-from energy_py.envs.env_core import Base_Env
+from energy_py.envs.env_ts import Time_Series_Env
 from energy_py.main.scripts.spaces import Continuous_Space, Discrete_Space
 from energy_py.main.scripts.visualizers import Env_Episode_Visualizer
 from energy_py.main.scripts.utils import ensure_dir
@@ -38,7 +38,7 @@ class Battery_Visualizer(Env_Episode_Visualizer):
         return self.outputs
 
 
-class Battery_Env(Base_Env):
+class Battery_Env(Time_Series_Env):
     """
     An environment that simulates storage of electricity in a battery.
     Agent chooses to either charge or discharge.
@@ -71,13 +71,15 @@ class Battery_Env(Base_Env):
 
                        verbose = 0):
 
-        #  calling init method of the parent Base_Env class
-        super().__init__(episode_visualizer, episode_length, episode_start, verbose)
+        import os
+        path = os.path.dirname(os.path.abspath(__file__))
+        path = os.path.join(path, 'state.csv')
+        print(path)
 
-        #  inputs relevant to the RL learning problem
-        self.lag            = lag
-        self.episode_length = episode_length
-        self.episode_start  = episode_start
+        self.csv_path = path
+
+        #  calling init method of the parent Time_Series_Env class
+        super().__init__(episode_visualizer, lag, episode_length, episode_start, self.csv_path, verbose)
 
         #  technical energy inputs
         self.power_rating   = float(power_rating)
@@ -88,90 +90,56 @@ class Battery_Env(Base_Env):
         #  resetting the environment
         self.observation    = self.reset()
 
-    def get_tests(self):
-        return None
-
-    def get_state(self, steps, charge):
-        """
-        Helper function to create the state numpy array
-
-        Args:
-            steps  (int)   : the relevant step for the desired state
-            charge (float) : the charge to be appended to the state array
-        """
-        state_ts = np.array(self.state_ts.iloc[steps, :])
-        state = np.append(state_ts, charge)
-        return state
-
-    def get_observation(self, steps, charge):
-        """
-        Helper function to create the state numpy array
-
-        Args:
-            steps (int) : the relevant step for the desired observation
-        """
-        observation_ts = np.array(self.observation_ts.iloc[steps, :])
-        observation = np.append(observation_ts, charge)
-        return observation
-
     def _reset(self):
         """
         Resets the environment.
         """
-        #  we define our action space
-        #  two actions
-        #   1 -  how much to charge [MWh]
-        #   2 -  how much to discharge [MWh]
 
-        #  use two actions to keep the action space positive
-        #  is useful for policy gradient where we take log(action)
+        """
+        SETTING THE ACTION SPACE
+
+        two actions
+         1 -  how much to charge [MWh]
+         2 -  how much to discharge [MWh]
+
+        use two actions to keep the action space positive
+        is useful for policy gradient where we take log(action)
+        """
         self.action_space = [Continuous_Space(low  = 0,
                                               high = self.power_rating),
                              Continuous_Space(low  = 0,
                                               high = self.power_rating)]
 
-        #  loading the state time series data
-        csv_path = os.path.join(os.path.dirname(__file__), 'state.csv')
-        self.observation_ts, self.state_ts = self.load_state(csv_path,
-                                                             self.lag)
-        if self.verbose:
-            print('state & observation time series')
-        #  defining the observation spaces from the state csv
-        #  these are defined from the loaded csvs
-        #  we loop over the columns of the observation times series dataframe
-        self.observation_space = []
-        for name, col in self.observation_ts.iteritems():
-            if str(name[:2]) == 'D_':
-                obs_space = Discrete_Space(col.min(), col.max(), 1)
-            elif str(name[:2]) == 'C_':
-                obs_space = Continuous_Space(col.min(), col.max())
-            else:
-                print('state.csv is not labelled correctly')
-                assert 1 == 0
-            self.observation_space.append(obs_space)
+        """
+        SETTING THE OBSERVATION SPACE
 
-        #  we also append on an additional observation of the battery charge
-        self.observation_space.append(Continuous_Space(0, self.capacity, 1))
+        the observation space is set in the parent class Time_Series_Env
+        we also append on an additional observation of the battery charge
+        """
+        self.observation_space, self.observation_ts, self.state_ts = self.ts_env_main()
 
-        #  setting the reward
-        #  minimum reward = minimum electricity price * max rate of discharge
-        #  maximum reward = maximum electricity price * max rate of discharge
-        #  I've assumed a minimum of $-2000/MWh & max of $14,000/MWh
+        self.observation_space.append(Continuous_Space(0, self.capacity))
 
-        #  choose to use a fixed range because we can sometimes sample a
-        #  small part of the state into state_ts
+        """
+        SETTING THE REWARD SPACE
 
-        #  we also need the peak customer demand
+        minimum reward = minimum electricity price * max rate of discharge
+        maximum reward = maximum electricity price * max rate of discharge
+
+        we also use the peak customer demand
+        """
+
+        min_price = self.raw_ts.loc[:, 'C_electricity_price_[$/MWh]'].min()
+        min_price = self.raw_ts.loc[:, 'C_electricity_price_[$/MWh]'].max()
         peak_customer_demand = self.state_ts.loc[:, 'C_electricity_demand_[MW]'].max()
         peak_demand = self.power_rating + peak_customer_demand
         self.reward_space = Continuous_Space((-2000 * peak_demand)/12,
-                                             (14000 * peak_demand)/12,
-                                             1)
+                                             (14000 * peak_demand)/12)
 
         #  reseting the step counter, state, observation & done status
         self.steps = 0
-        self.state = self.get_state(steps=self.steps, charge=self.initial_charge)
-        self.observation = self.get_observation(steps=self.steps, charge=self.initial_charge)
+        self.state = self.get_state(steps=self.steps, append=self.initial_charge)
+        self.observation = self.get_observation(steps=self.steps, append=self.initial_charge)
         self.done  = False
 
         initial_charge = self.state[-1]
@@ -270,7 +238,8 @@ class Battery_Env(Base_Env):
             print('losses were {}'.format(losses))
 
         #  check to see if episode is done
-        if self.steps == (self.episode_length ):
+        #  -1 in here because of the zero index
+        if self.steps == (self.episode_length-1):
             self.done = True
             next_state = False
             next_observation = False
@@ -279,8 +248,8 @@ class Battery_Env(Base_Env):
 
         else:
         #  moving onto next step
-            next_state = self.get_state(self.steps, charge=float(new_charge))
-            next_observation = self.get_observation(self.steps, charge=float(new_charge))
+            next_state = self.get_state(self.steps, append=float(new_charge))
+            next_observation = self.get_observation(self.steps, append=float(new_charge))
             self.steps += int(1)
 
         #  saving info
@@ -356,6 +325,3 @@ class Battery_Env(Base_Env):
         self.info['net_stored'].append(net_stored)
 
         return self.info
-
-
-

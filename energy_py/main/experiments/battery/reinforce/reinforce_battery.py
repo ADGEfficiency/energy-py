@@ -24,12 +24,12 @@ env = Battery_Env(lag            = 0,
                   episode_start  = 0,
                   power_rating   = 2,  #  in MW
                   capacity       = 4,  #  in MWh
-                  verbose        = 1)
+                  verbose        = 0)
 print('made env')
 agent = REINFORCE_Agent(env,
                         epsilon_decay_steps = EPISODE_LENGTH * EPISODES / 2,
-                        learning_rate = 0.1,
-                        batch_size = 64)
+                        learning_rate = 0.001,
+                        batch_size = 64 )
 print('made agent')
 #  creating the TensorFlow session for this experiment
 with tf.Session() as sess:
@@ -41,10 +41,8 @@ with tf.Session() as sess:
                                                env,
                                                sess)
 
-        #  now we start the learning process_episode
-        #  this should be a function TODO
         #  get a batch to learn from
-        observations, actions, returns = agent.memory.get_batch(agent.batch_size)
+        observations, actions, returns = agent.memory.get_episode_batch(episode)
         #  train the model
         loss = agent.learn(observations, actions, returns, sess)
 

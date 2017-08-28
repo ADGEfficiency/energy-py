@@ -61,19 +61,19 @@ class REINFORCE_Agent(Base_Agent):
         with tf.variable_scope('prediction'):
             #  make a three layer fully-connected neural network
             with tf.variable_scope('input_layer'):
-                input_layer = fc_layer(self.observation, [self.observation_dim, 500], [500], tf.nn.relu)
+                input_layer = fc_layer(self.observation, [self.observation_dim, self.observation_dim], [self.observation_dim], tf.nn.relu)
 
             with tf.variable_scope('hidden_layer_1'):
-                hidden_layer_1 = fc_layer(input_layer, [500, 1000], [1000], tf.nn.relu)
+                hidden_layer_1 = fc_layer(input_layer, [self.observation_dim, self.observation_dim * 2], [self.observation_dim*2], tf.nn.relu)
 
             with tf.variable_scope('hidden_layer_2'):
-                hidden_layer_2 = fc_layer(hidden_layer_1, [1000, 1000], [1000], tf.nn.relu)
+                hidden_layer_2 = fc_layer(hidden_layer_1, [self.observation_dim*2, self.observation_dim*2], [self.observation_dim*2], tf.nn.relu)
 
-            with tf.variable_scope('hidden_layer_3'):
-                hidden_layer_3 = fc_layer(hidden_layer_2, [1000, 2000], [2000], tf.nn.relu)
+            #with tf.variable_scope('hidden_layer_3'):
+                #hidden_layer_3 = fc_layer(hidden_layer_2, [self.obser, 2000], [2000], tf.nn.relu)
 
             with tf.variable_scope('output_layer'):
-                self.output_layer = fc_layer(hidden_layer_3, [2000, output_dim], [output_dim])
+                self.output_layer = fc_layer(hidden_layer_2, [self.observation_dim*2, output_dim], [output_dim])
 
             #  parameterizing normal distributions
             #  indexes for the output layer
@@ -104,8 +104,12 @@ class REINFORCE_Agent(Base_Agent):
             self.probs = self.norm_dist.prob(self.taken_action)
             self.probs_clipped = tf.clip_by_value(self.probs, 1e-10, 1)
             self.log_probs = tf.log(self.probs_clipped)
-            self.loss = - (self.log_probs * self.discounted_return)
-            self.loss = tf.reduce_mean(self.loss)
+
+            #  we make use of the fact that multiply broadcasts here
+            #  discounted returns is of shape (samples, 1)
+            #  while log_probs is of shape (samples, num_actions)
+            self.loss = tf.multiply(self.log_probs, self.discounted_return)
+            self.loss = -tf.reduce_mean(self.loss)
 
             #  creating the training step
             self.optimizer = tf.train.AdamOptimizer(self.learning_rate)
@@ -141,10 +145,10 @@ class REINFORCE_Agent(Base_Agent):
 
         #  scaling the observation for use in the policy network
         scaled_observation = self.memory.scale_array(observation,
-                                                     self.observation_space,
-                                                     self.memory.normalize)
+                                                     self.observation_space)
 
-        scaled_observation = scaled_observation.reshape(1, -1)
+        scaled_observation = scaled_observation.reshape(-1, self.observation_dim)
+        assert scaled_observation.shape[0] == 1
 
         #  generating an action from the policy network
         action = session.run(self.action, {self.observation : scaled_observation})

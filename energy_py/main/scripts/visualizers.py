@@ -245,6 +245,8 @@ class Eternity_Visualizer(Visualizer):
         dfs = [self.env_info['dataframe']]
 
         for df in dfs:
+            print(len(index))
+            print(len(df))
             df.index = index
 
 
@@ -273,7 +275,7 @@ class Eternity_Visualizer(Visualizer):
                                                             'electricity_price'],
                                                       ylabel='Cost to deliver electricity [$/5min]',
                                                       xlabel='Time',
-                                                      xlim='last_week',
+                                                      xlim='all',
                                                       path=os.path.join(self.base_path_env,'electricity_cost_fig_{}.png'.format(self.episode)))
 
         self.figures['returns'] = self.make_figure(df=self.agent_memory['dataframe_episodic'],

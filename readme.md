@@ -8,8 +8,7 @@ The goal of the project is to provide a collection of reinforcement learning age
 
 **v2.0 was a complete rework of the entire project.**  v1.0 had agents & environments that are not yet ported into v2.0.  
 
-This project is built and maintained by Adam Green - adam.green@adgefficiency.com.
-
+This project is built and maintained by Adam Green - adam.green@adgefficiency.com.  I write about energy & machine learning at [adgefficiency.com](http://adgefficiency.com/).
 ### Installation
 Below I use Anaconda to create a Python 3.5 virtual environment.  You can of course use your own environment manager.
 

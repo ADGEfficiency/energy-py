@@ -64,7 +64,24 @@ class Agent_Memory(Agent_Memory_Visualizer):
             normalized = (value - low) / max_range
         return np.array(normalized)
 
-    def scale_array(self, array, space, scaler_fctn=normalize):
+    def make_dummy_array(self, value, space):
+        """
+        Helper function
+        Creates an array of dummy variables
+
+        Not needed anymore
+        """
+        #  pull out the discrete_space space array
+        discrete_space = space.discrete_space
+        #  create an array of zeros
+        scaled = np.zeros(discrete_space.shape)
+        #  set to 1 where this value occurs
+        scaled[np.where(discrete_space == value)] = 1
+        #  quick check that we only have one dummy variable
+        assert np.sum(scaled) == 1
+        return scaled
+
+    def scale_array(self, array, space):
         """
         Helper function for scale_experience()
         Uses the space & a given function to scale an array
@@ -78,17 +95,14 @@ class Agent_Memory(Agent_Memory_Visualizer):
 
         #  iterate across the array values & corresponding space object
         for value, spc in itertools.zip_longest(array, space):
-            if spc.type == 'continuous':
-                scaled = scaler_fctn(value,
+            if spc.type == 'continuous':  #  normalize continuous variables
+                scaled = self.normalize(value,
                                      spc.low,
                                      spc.high)
 
-            elif spc.type == 'discrete':
-                dis_space = spc.discrete_space
-                scaled = np.zeros(dis_space.shape)
-                idx = np.where(dis_space == value)
-                scaled[idx] = 1
-                assert np.sum(scaled) == 1
+            elif spc.type == 'discrete':  #  shouldn't need to do anything
+                #  check value is already dummy
+                assert (value == 0) or (value == 1)
             else:
                 assert 1 == 0
 
@@ -99,12 +113,12 @@ class Agent_Memory(Agent_Memory_Visualizer):
 
         return scaled_array
 
-    def scale_reward(self, reward, space, scaler_fctn=normalize):
+    def scale_reward(self, reward, space):
         """
         Helper function for scale_experience()
         Uses a space to scale the reward
         """
-        return scaler_fctn(reward, space.low, space.high)
+        return self.normalize(reward, space.low, space.high)
 
     def scale_experience(self, exp, discounted_return=None):
         """
@@ -114,16 +128,12 @@ class Agent_Memory(Agent_Memory_Visualizer):
         Discounted return is an optimal arg so that the scaled_exp array can
         be created at any time
         """
-        scaled_obs = self.scale_array(exp.observation, self.observation_space, self.normalize)
-
-        if exp.next_observation is False:
-            scaled_reward = self.scale_reward(0, self.reward_space, self.normalize)
-        else:
-            scaled_reward = self.scale_reward(exp.reward, self.reward_space, self.normalize)
+        scaled_obs = self.scale_array(exp.observation, self.observation_space)
+        scaled_reward = self.scale_reward(exp.reward, self.reward_space)
 
         #  making a named tuple for the scaled experience
         scaled_exp = self.Scaled_Experience(scaled_obs,
-                                            None,
+                                            exp.action,
                                             scaled_reward,
                                             None,
                                             exp.step,
@@ -143,13 +153,16 @@ class Agent_Memory(Agent_Memory_Visualizer):
         return None
 
     def process_episode(self, episode_number):
+
         """
         Calculates the discounted returns
 
-        Should only be done once a episode is finished - TODO a check
-
+        Inefficient as we loop over the entire episode list.
         """
         print('agent memory is processing episode experience')
+
+        #  gather the scaled experiences from the last episode
+        #  we want to get access to the scaled reward
         episode_experiences, indicies, idx = [], [], 0
         for idx, exp in enumerate(self.scaled_experiences, 0):
             if exp.episode == episode_number:
@@ -158,25 +171,31 @@ class Agent_Memory(Agent_Memory_Visualizer):
 
         #  we reverse our experience list so we can do an efficient backup
         episode_experiences.reverse()
+
         #  blank array to hold the returns
         rtns = np.zeros(len(episode_experiences))
         scaled_episode_experiences = []
+
         for j, exp in enumerate(episode_experiences):
+
             if j == 0:
-                total_return = 0
+                total_return = exp.reward
+
             else:
                 total_return = exp.reward + self.discount_rate * rtns[j-1]
 
             rtns[j] = total_return
 
             scaled_exp = self.Scaled_Experience(exp.observation,
-                                                None,
+                                                exp.action,
                                                 exp.reward,
-                                                None,
+                                                exp.next_observation,
                                                 exp.step,
                                                 exp.episode,
                                                 total_return)
+
             scaled_episode_experiences.append(scaled_exp)
+
         #  now we use our original indicies to reindex
         scaled_episode_experiences.reverse()
 
@@ -187,12 +206,12 @@ class Agent_Memory(Agent_Memory_Visualizer):
 
         return None
 
-    def get_batch(self, batch_size):
+    def get_random_batch(self, batch_size):
         """
         Gets a random batch of experiences.
         """
-
         sample_size = min(batch_size, len(self.scaled_experiences))
+
         #  limiting the scaled_experiences list to the memory length
         memory = self.experiences[-self.memory_length:]
         scaled_memory = self.scaled_experiences[-self.memory_length:]
@@ -203,13 +222,36 @@ class Agent_Memory(Agent_Memory_Visualizer):
         indicies = np.random.randint(low=0,
                                      high=len(memory),
                                      size=sample_size)
+
         #  randomly sample from the memory & returns
         memory_batch = [memory[i] for i in indicies]
         scaled_memory_batch = [scaled_memory[i] for i in indicies]
 
-        observations = np.array([exp.observation for exp in scaled_memory_batch]).reshape(-1, len(self.observation_space))
+        observations = np.array([exp.observation for exp in scaled_memory_batch]).reshape(-1, self.observation_dim)
         actions = np.array([exp.action for exp in memory_batch]).reshape(-1, len(self.action_space))
         returns = np.array([exp.discounted_return for exp in scaled_memory_batch]).reshape(-1, 1)
+
+        assert observations.shape[0] == actions.shape[0]
+        assert observations.shape[0] == returns.shape[0]
+
+        return observations, actions, returns
+
+    def get_episode_batch(self, episode_number):
+        """
+        Gets the experiences for a given episode.
+
+        Quite inefficient as we loop over the entire scaled experiences list.
+        """
+        scl_episode_experiences = []
+
+        for scl_exp in self.scaled_experiences:
+            if scl_exp.episode == episode_number:
+                scl_episode_experiences.append(scl_exp)
+                assert scl_exp.episode == episode_number
+
+        observations = np.array([exp.observation for exp in scl_episode_experiences]).reshape(-1, len(self.observation_space))
+        actions = np.array([exp.action for exp in scl_episode_experiences]).reshape(-1, len(self.action_space))
+        returns = np.array([exp.discounted_return for exp in scl_episode_experiences]).reshape(-1, 1)
 
         assert observations.shape[0] == actions.shape[0]
         assert observations.shape[0] == returns.shape[0]
