@@ -102,7 +102,6 @@ class Agent_Memory(Agent_Memory_Visualizer):
 
             elif spc.type == 'discrete':  #  shouldn't need to do anything
                 #  check value is already dummy
-                print(value)
                 assert (value == 0) or (value == 1)
             else:
                 assert 1 == 0
@@ -159,8 +158,11 @@ class Agent_Memory(Agent_Memory_Visualizer):
         Calculates the discounted returns
 
         Inefficient as we loop over the entire episode list.
+
+        TODO some sort of check that episode is actually over
         """
-        print('agent memory is processing episode experience')
+        if self.verbose > 0:
+            print('agent memory is processing episode experience')
 
         #  gather the scaled experiences from the last episode
         #  we want to get access to the scaled reward
