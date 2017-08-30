@@ -21,14 +21,14 @@ print('running {} episodes of length {}'.format(EPISODES, EPISODE_LENGTH))
 
 env = Battery_Env(lag            = 0,
                   episode_length = EPISODE_LENGTH,
-                  episode_start  = 0,
+                  episode_start  = 'random',
                   power_rating   = 2,  #  in MW
                   capacity       = 4,  #  in MWh
                   verbose        = 0)
 print('made env')
 agent = REINFORCE_Agent(env,
                         epsilon_decay_steps = EPISODE_LENGTH * EPISODES / 2,
-                        learning_rate = 0.001,
+                        learning_rate = 0.1,
                         batch_size = 64 )
 print('made agent')
 #  creating the TensorFlow session for this experiment
