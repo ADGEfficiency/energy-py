@@ -102,6 +102,7 @@ class Agent_Memory(Agent_Memory_Visualizer):
 
             elif spc.type == 'discrete':  #  shouldn't need to do anything
                 #  check value is already dummy
+                print(value)
                 assert (value == 0) or (value == 1)
             else:
                 assert 1 == 0
