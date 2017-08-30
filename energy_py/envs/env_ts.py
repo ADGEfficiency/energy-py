@@ -20,6 +20,7 @@ class Time_Series_Env(Base_Env):
 
         super().__init__(episode_visualizer, verbose)
 
+        self.raw_ts = self.load_ts_from_csv(self.csv_path)
 
     def ts_env_main(self):
         """
@@ -27,8 +28,6 @@ class Time_Series_Env(Base_Env):
 
         Envisioned that this will be run during the _reset of the child class.
         """
-
-        self.raw_ts = self.load_ts_from_csv(self.csv_path)
 
         #  creating the observation space list
         observation_space = self.make_env_obs_space(self.raw_ts)
@@ -40,6 +39,7 @@ class Time_Series_Env(Base_Env):
 
         #  use these to index the time series for this episode
         ep_ts = self.raw_ts.iloc[start:end]
+        print('episode starting at  {}'.format(ep_ts.index[0]))
 
         #  now we make our state and observation dataframes
         observation_ts, state_ts = self.make_state_observation_ts(ep_ts, self.lag)
@@ -55,7 +55,7 @@ class Time_Series_Env(Base_Env):
                              index_col=0)
 
         print('length of time series is '+str(raw_ts.shape[0]))
-        print('cols of time series is '+str(raw_ts.shape[1]))
+        print('cols of time series are '+str(raw_ts.columns))
 
         return raw_ts
 
@@ -68,8 +68,8 @@ class Time_Series_Env(Base_Env):
             episode_length = ts_length - 1
 
         if episode_start == 'random':
-            end_int_idx = raw_ts_length - episode_length
-            start = np.random.randint*(0, end_int_idx)
+            end_int_idx = ts_length - episode_length
+            start = np.random.randint(0, end_int_idx)
 
         #  now we can set the end of the episode
         end = start + episode_length
@@ -126,7 +126,6 @@ class Time_Series_Env(Base_Env):
         assert observation_ts.shape == state_ts.shape
         if self.verbose > 0:
             print('observation time series shape is {}'.format(observation_ts.shape))
-            print('observation time series columns are {}'.format(observation_ts.columns))
 
         return observation_ts, state_ts
 
