@@ -141,6 +141,8 @@ class REINFORCE_Agent(Base_Agent):
     def greedy_action(self, observation, session):
         """
         Helper function for _act
+
+        Can probably go into core agent
         """
 
         #  scaling the observation for use in the policy network
@@ -158,6 +160,7 @@ class REINFORCE_Agent(Base_Agent):
     def random_action(self):
         """
         Helper function for _act
+        Can probably go into core agent
         """
         if self.verbose > 0:
             print('acting randomly')
@@ -170,18 +173,14 @@ class REINFORCE_Agent(Base_Agent):
         assert len(self.action_space) == action.shape[0]
         return action
 
-
     def _learn(self, observations, actions, discounted_returns, session):
 
         feed_dict = {self.observation : observations,
                      self.taken_action : actions,
                      self.discounted_return : discounted_returns}
 
-        _, loss, taken_actions, output_layer  = session.run([self.train_step, self.loss, self.taken_action, self.output_layer], feed_dict)
+        _, loss = session.run([self.train_step, self.loss], feed_dict)
         self.memory.losses.append(loss)
 
-        # print('output_layer {}'.format(output_layer))
-        # print('taken actions is {}'.format(taken_actions))
-        # print('log_prob is {}'.format(log_probs))
-        print('loss is {}'.format(loss))
+        print('loss is {} - discounted returns were'.format(loss, np.sum(discounted_returns)))
         return loss
