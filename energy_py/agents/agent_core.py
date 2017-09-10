@@ -15,7 +15,8 @@ class Base_Agent(object):
         learn
     """
 
-    def __init__(self, env, epsilon_decay_steps=10000, memory_length=int(1e6), discount_rate=0.99, verbose=0):
+    def __init__(self, env, epsilon_decay_steps=10000, memory_length=int(1e6),
+                 discount_rate=0.95, verbose=0):
         self.env = env
         self.action_space = self.env.action_space
         self.observation_space = self.env.observation_space

@@ -1,7 +1,4 @@
 """
-This script contains an agent based on the REINFORCE algorithm.
-ref = ???
-
 REINFORCE is a Monte Carlo policy gradient algorithm.
 
 REINFORCE is high variance (due to the nature of Monte Carlo
@@ -12,7 +9,7 @@ REINFORCE is a low bias algorithm as we don't bootstrap.
 This algorithm requires lots of episodes to run:
 - policy gradient only makes small updates
 - Monte Carlo is high variance (so takes a while for the expectation to converge)
-- we only update once per episode
+- we only update once per episode - only learn from samples once
 
 """
 
@@ -108,8 +105,8 @@ class REINFORCE_Agent(Base_Agent):
             #  we make use of the fact that multiply broadcasts here
             #  discounted returns is of shape (samples, 1)
             #  while log_probs is of shape (samples, num_actions)
-            self.loss = tf.multiply(self.log_probs, self.discounted_return)
-            self.loss = -tf.reduce_mean(self.loss)
+            loss = tf.multiply(self.log_probs, -self.discounted_return)
+            self.loss = tf.reduce_mean(loss)
 
             #  creating the training step
             self.optimizer = tf.train.AdamOptimizer(self.learning_rate)
@@ -182,5 +179,6 @@ class REINFORCE_Agent(Base_Agent):
         _, loss = session.run([self.train_step, self.loss], feed_dict)
         self.memory.losses.append(loss)
 
-        print('loss is {} - discounted returns were'.format(loss, np.sum(discounted_returns)))
+        print('loss is {} - mean discounted returns were {}'.format(float(loss), np.mean(discounted_returns)))
+        
         return loss

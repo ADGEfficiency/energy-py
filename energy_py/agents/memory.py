@@ -161,9 +161,6 @@ class Agent_Memory(Agent_Memory_Visualizer):
 
         TODO some sort of check that episode is actually over
         """
-        if self.verbose > 0:
-            print('agent memory is processing episode experience')
-
         #  gather the scaled experiences from the last episode
         #  we want to get access to the scaled reward
         episode_experiences, indicies, idx = [], [], 0
