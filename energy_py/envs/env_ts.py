@@ -40,7 +40,7 @@ class Time_Series_Env(Base_Env):
         #  use these to index the time series for this episode
         ep_ts = self.raw_ts.iloc[start:end]
         print('episode starting at  {}'.format(ep_ts.index[0]))
-
+        print(ep_ts.iloc[:,0].describe())
         #  now we make our state and observation dataframes
         observation_ts, state_ts = self.make_state_observation_ts(ep_ts, self.lag)
 
