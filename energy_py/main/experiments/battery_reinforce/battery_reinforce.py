@@ -28,7 +28,7 @@ env = Battery_Env(lag            = 0,
 print('made env')
 agent = REINFORCE_Agent(env,
                         epsilon_decay_steps = EPISODE_LENGTH * EPISODES / 2,
-                        learning_rate = 0.1,
+                        learning_rate = 0.01,
                         batch_size = 64 )
 print('made agent')
 #  creating the TensorFlow session for this experiment
