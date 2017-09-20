@@ -6,62 +6,74 @@ from energy_py.main.scripts.spaces import Continuous_Space, Discrete_Space
 
 class Time_Series_Env(Base_Env):
     """
-    The base environment class for time series environments.
+    The base environment class for time series environments
 
     Most energy problems are time series problems - hence the need for a
-    specific environment.
+    class to give functionality
     """
 
-    def __init__(self, episode_visualizer, lag, episode_length, episode_start, csv_path, verbose):
-        self.lag = lag
+    def __init__(self, episode_visualizer,
+                       lag,
+                       episode_length,
+                       episode_start,
+                       state_path,
+                       observation_path,
+                       verbose):
+
+        # self.lag = lag
         self.episode_start = episode_start
         self.episode_length = episode_length
-        self.csv_path = csv_path
+        self.state_path = state_path
+        self.observation_path = observation_path
+
+        #  load up the infomation from the csvs once
+        self.raw_state_ts = self.load_ts_from_csv(self.state_path)
+        self.raw_observation_ts = self.load_ts_from_csv(self.observation_path)
 
         super().__init__(episode_visualizer, verbose)
 
-        self.raw_ts = self.load_ts_from_csv(self.csv_path)
-
-    def ts_env_main(self):
+    def get_state_obs(self):
         """
-        The master function for the Time_Series_Env class.
+        The master function for the Time_Series_Env class
 
-        Envisioned that this will be run during the _reset of the child class.
+        Envisioned that this will be run during the _reset of the child class
+
+        This is to allow different time periods to be sampled
         """
 
         #  creating the observation space list
-        observation_space = self.make_env_obs_space(self.raw_ts)
+        observation_space = self.make_env_obs_space(self.raw_state_ts)
 
         #  now grab the start & end indicies
-        start, end = self.get_ts_row_idx(self.raw_ts.shape[0],
-                                    self.episode_length,
-                                    self.episode_start)
+        start, end = self.get_ts_row_idx(self.raw_state_ts.shape[0],
+                                         self.episode_length,
+                                         self.episode_start)
 
-        #  use these to index the time series for this episode
-        ep_ts = self.raw_ts.iloc[start:end]
-        print('episode starting at  {}'.format(ep_ts.index[0]))
-        print(ep_ts.iloc[:,0].describe())
-        #  now we make our state and observation dataframes
-        observation_ts, state_ts = self.make_state_observation_ts(ep_ts, self.lag)
+
+        state_ts = self.raw_state_ts.iloc[start:end, :]
+        observation_ts = self.raw_observation_ts.iloc[start:end, :]
+        assert observation_ts.shape == state_ts.shape
+
+        print('episode starting at  {}'.format(state_ts.index[0]))
+        if self.verbose:
+            print(state_ts.iloc[:,0].describe())
 
         return observation_space, observation_ts, state_ts
 
-    def load_ts_from_csv(self, csv_path):
+    def load_ts_from_csv(self, path):
         """
         Loads a CSV
         """
         #  loading the raw time series data
-        raw_ts = pd.read_csv(csv_path,
-                             index_col=0)
-
+        raw_ts = pd.read_csv(path, index_col=0)
         print('length of time series is '+str(raw_ts.shape[0]))
         print('cols of time series are '+str(raw_ts.columns))
-
         return raw_ts
 
     def get_ts_row_idx(self, ts_length, episode_length, episode_start):
         """
-
+        Gets the integer indicies for selecting the episode
+        time period
         """
         start = episode_start
         if episode_length == 'maximum':
@@ -77,6 +89,7 @@ class Time_Series_Env(Base_Env):
 
     def make_env_obs_space(self, ts):
         """
+        Creates the observation space list
         """
         observation_space = []
 
@@ -98,36 +111,36 @@ class Time_Series_Env(Base_Env):
         assert len(observation_space) == ts.shape[1]
 
         return observation_space
-
-    def make_state_observation_ts(self, ts, lag):
-        """
-        Takes the processed time series and deals with the lags
-        """
-
-        #  offset = 0 -> state == observation
-        if lag == 0:
-            observation_ts = ts.iloc[:,:]
-            state_ts = ts.iloc[:,:]
-
-        #  offset = negative -> agent can only see past
-        elif offset < 0:
-            #  shift & cut observation
-            observation_ts = ts.shift(lag).iloc[:-lag, :]
-            #  we cut the state
-            state_ts = ts.iloc[lag:, :]
-
-        #  offset = positive -> agent can see the future
-        elif offset > 0:
-            #  shift & cut observation
-            observation_ts = ts.shift(lag).iloc[lag:, :]
-            #  cut the state
-            state_ts = ts.iloc[lag:, :]
-
-        assert observation_ts.shape == state_ts.shape
-        if self.verbose > 0:
-            print('observation time series shape is {}'.format(observation_ts.shape))
-
-        return observation_ts, state_ts
+    #
+    # def make_state_observation_ts(self, ts, lag):
+    #     """
+    #     Takes the processed time series and deals with the lags
+    #     """
+    #
+    #     #  offset = 0 -> state == observation
+    #     if lag == 0:
+    #         observation_ts = ts.iloc[:,:]
+    #         state_ts = ts.iloc[:,:]
+    #
+    #     #  offset = negative -> agent can only see past
+    #     elif offset < 0:
+    #         #  shift & cut observation
+    #         observation_ts = ts.shift(lag).iloc[:-lag, :]
+    #         #  we cut the state
+    #         state_ts = ts.iloc[lag:, :]
+    #
+    #     #  offset = positive -> agent can see the future
+    #     elif offset > 0:
+    #         #  shift & cut observation
+    #         observation_ts = ts.shift(lag).iloc[lag:, :]
+    #         #  cut the state
+    #         state_ts = ts.iloc[lag:, :]
+    #
+    #     assert observation_ts.shape == state_ts.shape
+    #     if self.verbose > 0:
+    #         print('observation time series shape is {}'.format(observation_ts.shape))
+    #
+    #     return observation_ts, state_ts
 
     def get_state(self, steps, append=[]):
         """
