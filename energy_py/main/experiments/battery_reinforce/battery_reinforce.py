@@ -9,7 +9,7 @@ import sys
 import argparse
 import tensorflow as tf
 
-from energy_py.agents.policy_based.reinforce import REINFORCE_Agent
+from energy_py.agents.reinforce import REINFORCE_Agent
 from energy_py.envs.battery.battery_env import Battery_Env
 from energy_py.main.scripts.experiment_blocks import run_single_episode
 from energy_py.main.scripts.visualizers import Eternity_Visualizer
