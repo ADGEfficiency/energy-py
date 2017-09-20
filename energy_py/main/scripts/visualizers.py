@@ -130,16 +130,16 @@ class Env_Episode_Visualizer(Visualizer):
         """
         not sure if this should be here!
         """
-        RL_cost = sum(self.env_info['RL_cost_[$/5min]'])
-        BAU_cost = sum(self.env_info['BAU_cost_[$/5min]'])
+        rl_cost = sum(self.env_info['rl_cost_[$/5min]'])
+        bau_cost = sum(self.env_info['bau_cost_[$/5min]'])
         steps = self.outputs['dataframe'].loc[:, 'steps']
         steps = steps.iloc[-1]
 
-        saving = BAU_cost-RL_cost
+        saving = bau_cost-rl_cost
 
         print('Episode {} ran for {} steps'.format(self.episode, steps))
-        print('RL cost was {}'.format(RL_cost))
-        print('BAU cost was {}'.format(BAU_cost))
+        print('RL cost was {}'.format(rl_cost))
+        print('BAU cost was {}'.format(bau_cost))
         print('Savings were {}'.format(saving))
 
         #  TODO should take env time step into account
@@ -284,8 +284,8 @@ class Eternity_Visualizer(Visualizer):
         #                                            self.base_path_env)
 
         self.figures['elect_cost'] = self.make_figure(df=self.env_info['dataframe'],
-                                                      cols=['BAU_cost_[$/5min]',
-                                                            'RL_cost_[$/5min]',
+                                                      cols=['bau_cost_[$/5min]',
+                                                            'rl_cost_[$/5min]',
                                                             'electricity_price'],
                                                       ylabel='Cost to deliver electricity [$/5min]',
                                                       xlabel='Time',
