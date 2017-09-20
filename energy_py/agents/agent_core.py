@@ -79,7 +79,7 @@ class Base_Agent(object):
         assert not np.any(np.isnan(observations))
         assert not np.any(np.isnan(actions))
         assert not np.any(np.isnan(discounted_returns))
-        print('epsilon is {}'.format(self.epsilon_greedy.epsilon))
+        print('epsilon is {:.3f}'.format(self.epsilon_greedy.epsilon))
         if self.verbose > 0:
             print('Learning')
             print('observations are {}'.format(observations))
@@ -116,7 +116,7 @@ class Epsilon_Greedy(object):
     def __init__(self, decay_steps,
                        epsilon_start = 1.0,
                        epsilon_end   = 0.1,
-                       epsilon_test  = 0.05,  #  default not at zero to test generalization
+                       epsilon_test  = 0.0,  #  default not at zero to test generalization
                        mode          = 'learning',
                        verbose       = 0):
 
@@ -145,7 +145,7 @@ class Epsilon_Greedy(object):
         if self.verbose:
             print('mode is {}'.format(self.mode))
             print('steps taken {}'.format(self.steps))
-            print('epsilon {}'.format(self.epsilon))
+            print('epsilon {:.3f}'.format(self.epsilon))
 
         if self.mode == 'testing':
             self.epsilon = self.epsilon_test
@@ -157,6 +157,5 @@ class Epsilon_Greedy(object):
             self.epsilon = self.epsilon_end
 
         self.steps += 1
-
 
         return self.epsilon
