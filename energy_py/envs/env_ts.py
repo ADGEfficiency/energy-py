@@ -111,36 +111,6 @@ class Time_Series_Env(Base_Env):
         assert len(observation_space) == ts.shape[1]
 
         return observation_space
-    #
-    # def make_state_observation_ts(self, ts, lag):
-    #     """
-    #     Takes the processed time series and deals with the lags
-    #     """
-    #
-    #     #  offset = 0 -> state == observation
-    #     if lag == 0:
-    #         observation_ts = ts.iloc[:,:]
-    #         state_ts = ts.iloc[:,:]
-    #
-    #     #  offset = negative -> agent can only see past
-    #     elif offset < 0:
-    #         #  shift & cut observation
-    #         observation_ts = ts.shift(lag).iloc[:-lag, :]
-    #         #  we cut the state
-    #         state_ts = ts.iloc[lag:, :]
-    #
-    #     #  offset = positive -> agent can see the future
-    #     elif offset > 0:
-    #         #  shift & cut observation
-    #         observation_ts = ts.shift(lag).iloc[lag:, :]
-    #         #  cut the state
-    #         state_ts = ts.iloc[lag:, :]
-    #
-    #     assert observation_ts.shape == state_ts.shape
-    #     if self.verbose > 0:
-    #         print('observation time series shape is {}'.format(observation_ts.shape))
-    #
-    #     return observation_ts, state_ts
 
     def get_state(self, steps, append=[]):
         """

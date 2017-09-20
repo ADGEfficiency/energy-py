@@ -15,11 +15,11 @@ class Base_Env(object):
         reset
 
     To implement an environment:
-    1 - override the following methods in your child:
-        _step
-        _reset
+      - override the following methods in your child:
+        _step()
+        _reset()
 
-    2 - set the following attributes in
+      - set the following attributes
         action_space
         observation_space
         reward_range (defaults to -inf, +inf)
@@ -27,15 +27,9 @@ class Base_Env(object):
     Args:
         episode_visualizer (Visualizer) : object used to create outputs
 
-        episode_length
-
-        episode_start
-
         verbose
 
-    These arguments are passed from the child environment class to Base_Env through super()
     """
-
 
     def __init__(self, episode_visualizer, verbose):
         self.episode_visualizer_obj = episode_visualizer
@@ -83,7 +77,6 @@ class Base_Env(object):
         - self.state = next_state[1]
 
         step() returns the observation - not the state!
-        This is to allow the state to remain hidden (if desired by the modeller).
 
         Args:
             action  (object): an action provided by the environment
