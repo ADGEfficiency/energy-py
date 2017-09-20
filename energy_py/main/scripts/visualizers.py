@@ -6,6 +6,7 @@ import itertools
 import os
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
 from energy_py.main.scripts.utils import ensure_dir
@@ -21,6 +22,19 @@ class Visualizer(object):
     def __init__(self):
         self.base_path = None
         self.outputs   = collections.defaultdict(list)
+
+    def normalize(self, value, low, high):
+        """
+        Generic Helper function
+        Normalizes a value using a given lower & upper bound
+        """
+        #  if statement to catch the constant value case
+        if low == high:
+            normalized = 0
+        else:
+            max_range = high - low
+            normalized = (value - low) / max_range
+        return np.array(normalized)
 
     def _output_results(self, action): raise NotImplementedError
 
@@ -155,23 +169,23 @@ class Agent_Memory_Visualizer(Visualizer):
         """
         #  create lists on a step by step basis
         print('agent memory is making dataframes')
-        assert len(self.experiences) == len(self.scaled_experiences)
+        assert len(self.experiences) == len(self.machine_experiences)
 
         ep, stp, obs, act, rew, nxt_obs = [], [], [], [], [], []
-        scl_obs, scl_act, scl_rew, scl_nxt_obs, dis_ret = [], [], [], [], []
-        for exp, scaled_exp in itertools.zip_longest(self.experiences, self.scaled_experiences):
-            ep.append(exp.episode)
-            stp.append(exp.step)
-            obs.append(exp.observation)
-            act.append(exp.action)
-            rew.append(exp.reward)
-            nxt_obs.append(exp.next_observation)
+        mach_obs, mach_act, mach_rew, mach_nxt_obs, dis_ret = [], [], [], [], []
+        for exp, mach_exp in itertools.zip_longest(self.experiences, self.machine_experiences):
+            obs.append(exp[0])
+            act.append(exp[1])
+            rew.append(exp[2])
+            nxt_obs.append(exp[3])
+            stp.append(exp[4])
+            ep.append(exp[5])
 
-            scl_obs.append(scaled_exp.observation)
-            scl_act.append(scaled_exp.action)
-            scl_rew.append(scaled_exp.reward)
-            scl_nxt_obs.append(scaled_exp.next_observation)
-            dis_ret.append(scaled_exp.discounted_return)
+            mach_obs.append(mach_exp[0])
+            mach_act.append(mach_exp[1])
+            mach_rew.append(mach_exp[2])
+            mach_nxt_obs.append(mach_exp[3])
+            dis_ret.append(mach_exp[6])
 
         df_dict = {
                    'episode':ep,
@@ -180,12 +194,12 @@ class Agent_Memory_Visualizer(Visualizer):
                    'action':act,
                    'reward':rew,
                    'next_observation':nxt_obs,
-                   'scaled_reward':scl_rew,
+                   'scaled_reward':mach_rew,
                    'discounted_return':dis_ret,
-                   'scaled_observation':scl_obs,
-                   'scaled_action':scl_act,
-                   'scaled_reward':scl_rew,
-                   'scaled_next_observation':scl_nxt_obs,
+                   'scaled_observation':mach_obs,
+                   'scaled_action':mach_act,
+                   'scaled_reward':mach_rew,
+                   'scaled_next_observation':mach_nxt_obs,
                    }
 
         dataframe_steps = pd.DataFrame.from_dict(df_dict)

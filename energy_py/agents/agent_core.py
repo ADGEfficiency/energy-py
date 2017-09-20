@@ -46,6 +46,7 @@ class Base_Agent(object):
     def _act(self, observation): raise NotImplementedError
     def _learn(self, observation): raise NotImplementedError
     def _load_brain(self): raise NotImplementedError
+    def _save_brain(self): raise NotImplementedError
     def _output_results(self): raise NotImplementedError
 
     def reset(self):
@@ -92,9 +93,13 @@ class Base_Agent(object):
         """
         return self._load_brain()
 
+    def save_brain(self):
+        """
+        """
+        return self._load_brain()
+
     def output_results(self):
         """
-        Keeping this simple for now
         """
         self.memory.output_results
         return self.memory.outputs
