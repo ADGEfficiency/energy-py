@@ -20,7 +20,6 @@ demand data.  Note that this environment works on a 5 minute frequency.
 We add in some additional datetime features to help our model learn.
 """
 
-import
 import pandas as pd
 
 #  read in the raw data
