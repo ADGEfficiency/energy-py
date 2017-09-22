@@ -14,6 +14,6 @@ All environments have an:
 - observation_space : list of spaces objects (one per observation dimension)
 - reward_range      : a single space object with upper & lower bounds for the reward
 
-The base class for environmnets is Base_Env.
+The base class for all environments is Base_Env.
 
 The child class for time series environments is Time_Series_Env.
