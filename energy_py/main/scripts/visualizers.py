@@ -23,10 +23,15 @@ class Visualizer(object):
         self.base_path = None
         self.outputs   = collections.defaultdict(list)
 
+    def _output_results(self, action): raise NotImplementedError
+
     def normalize(self, value, low, high):
         """
-        Generic Helper function
+        Generic helper function
         Normalizes a value using a given lower & upper bound
+
+        This is in here because Memory inherits from this class
+        Thinking best about how to reorganize this
         """
         #  if statement to catch the constant value case
         if low == high:
@@ -35,8 +40,6 @@ class Visualizer(object):
             max_range = high - low
             normalized = (value - low) / max_range
         return np.array(normalized)
-
-    def _output_results(self, action): raise NotImplementedError
 
     def output_results(self):
         """
@@ -51,57 +54,104 @@ class Visualizer(object):
         """
         return self._output_results()
 
-    def make_figure(self,
-                    df,
-                    cols,
-                    xlabel,
-                    ylabel,
-                    xlim='all',
-                    ylim=[],
-                    path=None):
-
-        fig = self.make_time_series_fig(df, cols, xlabel, ylabel, xlim, ylim)
-        if path:
-            self.save_fig(fig, path)
-        return fig
-
-    def make_time_series_fig(self, df, cols, xlabel, ylabel,  xlim='all', ylim=[]):
+    def make_time_series_fig(self, df,
+                                   cols,
+                                   xlabel,
+                                   ylabel,
+                                   xlim='all',
+                                   ylim=[],
+                                   path=None):
         """
         makes a time series figure from a dataframe and specified columns
         """
 
-        #  make the figure & axes objects
-        fig, ax = plt.subplots(1, 1, figsize = (20, 20))
+        fig, ax = plt.subplots(1, 1, figsize=(20, 20))
         for col in cols:
+
             data = df.loc[:, col].astype(float)
             data.plot(kind='line', ax=ax, label=col)
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
-        plt.legend()
 
-        if ylim:
-            ax.set_ylim(ylim)
+            if ylim:
+                ax.set_ylim(ylim)
 
-        if xlim == 'last_week':
-            start = df.index[-7 * 24 * 12]
-            end = df.index[-1]
+            plt.xlabel(xlabel)
+            plt.ylabel(ylabel)
+            plt.legend()
 
-        if xlim == 'last_month':
-            start = df.index[-30 * 24 * 12]
-            end = df.index[-1]
+            if xlim == 'last_week':
+                start = df.index[-7 * 24 * 12]
+                end = df.index[-1]
 
-        if xlim == 'all':
-            start = df.index[0]
-            end = df.index[-1]
+            if xlim == 'last_month':
+                start = df.index[-30 * 24 * 12]
+                end = df.index[-1]
 
-        ax.set_xlim([start, end])
+            if xlim == 'all':
+                start = df.index[0]
+                end = df.index[-1]
+
+            ax.set_xlim([start, end])
+
+        if path:
+            ensure_dir(path)
+            fig.savefig(path)
 
         return fig
 
-    def save_fig(self, fig, path):
-        ensure_dir(path)
-        fig.savefig(path)
+    def make_panel_fig(self, df,
+                             panels,
+                             xlabels,
+                             ylabels,
+                             shape,
+                             xlim='all',
+                             ylims=[],
+                             path=None):
+        """
+        makes a panel of time series figures
+        """
 
+        assert len(panels) == len(xlabels)
+        assert len(panels) == len(ylabels)
+        assert shape[0] * shape[1] == len(panels)
+
+        fig, axes = plt.subplots(nrows=shape[0],
+                                 ncols=shape[1],
+                                 figsize=(20, 20),
+                                 sharex=True)
+
+        for i, (ax, panel) in enumerate(zip(axes.flatten(),
+                                            panels)):
+
+            for col in panel:
+                data = df.loc[:, col].astype(float)
+                data.plot(kind='line', ax=ax, label=col)
+
+                if ylims:
+                    ax.set_ylim(ylims[i])
+
+                ax.set_xlabel(xlabels[i])
+                ax.set_ylabel(ylabels[i])
+                ax.legend()
+
+                if xlim == 'last_week':
+                    start = df.index[-7 * 24 * 12]
+                    end = df.index[-1]
+
+                if xlim == 'last_month':
+                    start = df.index[-30 * 24 * 12]
+                    end = df.index[-1]
+
+                if xlim == 'all':
+                    start = df.index[0]
+                    end = df.index[-1]
+
+                ax.set_xlim([start, end])
+
+        if path:
+            ensure_dir(path)
+            fig.savefig(path)
+
+        return fig
 
 class Env_Episode_Visualizer(Visualizer):
     """
@@ -207,6 +257,16 @@ class Agent_Memory_Visualizer(Visualizer):
         dataframe_episodic = dataframe_steps.groupby(by=['episode'],
                                                   axis=0).sum()
 
+        max_reward = dataframe_episodic.loc[:, 'reward'].cummax()
+        dataframe_episodic.loc[:, 'cum_max_reward'] = max_reward
+
+        window = max(int(dataframe_episodic.shape[0] * 0.1), 2)
+        rolling = dataframe_episodic.loc[:, 'reward'].rolling(window=window,
+                                                              min_periods=1,
+                                                              center=False)
+        dataframe_episodic.loc[:, 'rolling_mean'] = rolling.mean()
+        print(dataframe_episodic.tail(10))
+
         if self.losses:
             dataframe_episodic.loc[:, 'loss'] = self.losses
 
@@ -283,7 +343,7 @@ class Eternity_Visualizer(Visualizer):
         #     self.figures[fig_name] = make_fig_fctn(self.env_info,
         #                                            self.base_path_env)
 
-        self.figures['elect_cost'] = self.make_figure(df=self.env_info['dataframe'],
+        self.figures['elect_cost'] = self.make_time_series_fig(df=self.env_info['dataframe'],
                                                       cols=['bau_cost_[$/5min]',
                                                             'rl_cost_[$/5min]',
                                                             'electricity_price'],
@@ -292,14 +352,28 @@ class Eternity_Visualizer(Visualizer):
                                                       xlim='all',
                                                       path=os.path.join(self.base_path_env,'electricity_cost_fig_{}.png'.format(self.episode)))
 
-        self.figures['returns'] = self.make_figure(df=self.agent_memory['dataframe_episodic'],
+        self.figures['returns'] = self.make_time_series_fig(df=self.agent_memory['dataframe_episodic'],
                                                       cols=['reward'],
                                                       ylabel='Undiscounted total reward per episode',
                                                       xlabel='Episode',
                                                       path=os.path.join(self.base_path_agent, 'return_per_episode.png'))
 
+        self.figures['panel'] = self.make_panel_fig(df=self.agent_memory['dataframe_episodic'],
+                                                    panels=[['reward', 'cum_max_reward'],
+                                                            ['loss'],
+                                                            ['rolling_mean']],
+                                                    xlabels=['Episode',
+                                                             'Episode',
+                                                             'Episode'],
+                                                    ylabels=['Total reward per episode',
+                                                             'Loss',
+                                                             'Rolling average reward per episode'],
+                                                    shape=(3, 1),
+                                                    xlim='all',
+                                                    path=os.path.join(self.base_path_agent, 'panel.png'))
+
         if self.agent.memory.losses:
-            self.figures['loss'] = self.make_figure(df=self.agent_memory['dataframe_episodic'],
+            self.figures['loss'] = self.make_time_series_fig(df=self.agent_memory['dataframe_episodic'],
                                                           cols=['loss'],
                                                           ylabel='Loss',
                                                           xlabel='Episode',
