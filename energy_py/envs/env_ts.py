@@ -52,7 +52,7 @@ class Time_Series_Env(Base_Env):
 
         state_ts = self.raw_state_ts.iloc[start:end, :]
         observation_ts = self.raw_observation_ts.iloc[start:end, :]
-        assert observation_ts.shape == state_ts.shape
+        assert observation_ts.shape[0] == state_ts.shape[0]
 
         print('episode starting at  {}'.format(state_ts.index[0]))
         if self.verbose:
@@ -66,8 +66,6 @@ class Time_Series_Env(Base_Env):
         """
         #  loading the raw time series data
         raw_ts = pd.read_csv(path, index_col=0)
-        print('length of time series is '+str(raw_ts.shape[0]))
-        print('cols of time series are '+str(raw_ts.columns))
         return raw_ts
 
     def get_ts_row_idx(self, ts_length, episode_length, episode_start):
