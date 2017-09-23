@@ -178,6 +178,7 @@ class REINFORCE_Agent(Base_Agent):
 
         _, loss = session.run([self.train_step, self.loss], feed_dict)
         self.memory.losses.append(loss)
+        self.memory.epsilons.append(self.epsilon_greedy.epsilon)
 
         print('loss is {:.8f} - mean discounted returns were {:.4f}'.format(float(loss), np.mean(discounted_returns)))
 

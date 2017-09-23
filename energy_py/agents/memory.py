@@ -70,7 +70,10 @@ class Agent_Memory(Agent_Memory_Visualizer):
         """
         self.experiences = []
         self.machine_experiences = []
+
+        #  TODO a cleaner way to keep track of these statistics
         self.losses = []
+        self.epsilons = []
 
     def make_dummy_array(self, value, space):
         """
