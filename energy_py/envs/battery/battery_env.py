@@ -172,7 +172,10 @@ class Battery_Env(Time_Series_Env):
 
         #  pulling out the state infomation
         electricity_price = self.state[0]
-        electricity_demand = self.state[1]
+        electricity_demand = 10  # fixed here for simplicity
+        """
+        review the whole electricity_demand thing - do I even need it
+        """
         old_charge = decimal.Decimal(self.state[-1])
 
         #  checking the actions are valid
