@@ -38,8 +38,13 @@ env = Battery_Env(lag            = 0,
                   initial_charge = 50,  #  in % of capacity
                   verbose        = 0)
 
+"""
+can probably pull the 4/5 out as the true input
+for the episode decay input
+"""
+
 agent = REINFORCE_Agent(env,
-                        epsilon_decay_steps = EPISODE_LENGTH * EPISODES / 2,
+                        epsilon_decay_steps = EPISODE_LENGTH * EPISODES * 4 / 5,
                         learning_rate = LEARNING_RATE,
                         batch_size = 64)
 
