@@ -25,6 +25,7 @@ import pandas as pd
 #  read in the raw data
 print('reading in state.csv')
 state = pd.read_csv('state.csv', index_col=0, header=0, parse_dates=True)
+print('read state.csv')
 
 #  checking that we only have continuous variables in our state csv
 #  will integrate dummy variables in state eventually
@@ -32,11 +33,13 @@ state = pd.read_csv('state.csv', index_col=0, header=0, parse_dates=True)
 agent_horizion = 8 * 12  #  12 5 min periods per hour
 dfs = []
 for col in state.columns:
+    print(col)
+    print(col[:2])
     assert str(col[:2]) == 'C_'
-
     fc = pd.concat([state.loc[:,col].shift(-i) for i in
                     range(agent_horizion)],axis=1)
     dfs.append(fc)
+print('finishing making horizions')
 
 def make_datetime_features(index):
     #  make some datetime features
