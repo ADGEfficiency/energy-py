@@ -265,6 +265,8 @@ class Agent_Memory_Visualizer(Visualizer):
                                                               min_periods=1,
                                                               center=False)
         dataframe_episodic.loc[:, 'rolling_mean'] = rolling.mean()
+
+        dataframe_episodic.loc[:, 'epsilon'] = self.epsilons
         print(dataframe_episodic.tail(10))
 
         if self.losses:
@@ -361,16 +363,31 @@ class Eternity_Visualizer(Visualizer):
         self.figures['panel'] = self.make_panel_fig(df=self.agent_memory['dataframe_episodic'],
                                                     panels=[['reward', 'cum_max_reward'],
                                                             ['loss'],
-                                                            ['rolling_mean']],
+                                                            ['rolling_mean'],
+                                                            ['epsilon']],
                                                     xlabels=['Episode',
+                                                             'Episode',
                                                              'Episode',
                                                              'Episode'],
                                                     ylabels=['Total reward per episode',
                                                              'Loss',
-                                                             'Rolling average reward per episode'],
-                                                    shape=(3, 1),
+                                                             'Rolling average reward per episode',
+                                                             'Epislon'],
+                                                    shape=(2, 2),
                                                     xlim='all',
                                                     path=os.path.join(self.base_path_agent, 'panel.png'))
+
+        self.figures['last_ep'] = self.make_panel_fig(df=self.env_info['dataframe'],
+                                                    panels=[['rate'],
+                                                            ['electricity_price']],
+                                                    xlabels=['Episode',
+                                                             'Episode'],
+                                                    ylabels=['Net rate of charge/discharge',
+                                                             'Electricity price [$/MWh]'],
+                                                    shape=(2, 1),
+                                                    xlim='all',
+                                                    path=os.path.join(self.base_path_agent, 'last_ep.png'))
+
 
         if self.agent.memory.losses:
             self.figures['loss'] = self.make_time_series_fig(df=self.agent_memory['dataframe_episodic'],
