@@ -5,8 +5,9 @@ Module for Base_Agent & helper classes.
 import numpy as np
 
 from energy_py.agents.memory import Agent_Memory
+from energy_py.main.scripts.utils import Utils
 
-class Base_Agent(object):
+class Base_Agent(Utils):
     """
     the energy_py base agent class
 
@@ -15,29 +16,27 @@ class Base_Agent(object):
         learn
     """
 
-    def __init__(self, env, epsilon_decay_steps=10000, memory_length=int(1e6),
-                 discount_rate=0.95, verbose=0):
+    def __init__(self, env, discount, epsilon_decay_steps=0,
+                 memory_length=int(1e6), verbose=False):
+
+        super().__init__(verbose)
+
         self.env = env
+        self.discount = discount
         self.action_space = self.env.action_space
         self.observation_space = self.env.observation_space
         self.num_actions = len(self.action_space)
         self.observation_dim = len(self.observation_space)
 
         self.memory_length = memory_length
-        self.discount_rate = discount_rate
-        self.epsilon_decay_steps = epsilon_decay_steps
-        self.verbose = verbose
-
-        #  object to use to decay epsilon for action selection
-        self.epsilon_greedy = Epsilon_Greedy(decay_steps=self.epsilon_decay_steps,
-                                             verbose=0)
 
         #  object to hold all of the agents experience
         self.memory = Agent_Memory(memory_length=self.memory_length,
                                    observation_space=env.observation_space,
                                    action_space=env.action_space,
                                    reward_space=env.reward_space,
-                                   discount_rate=discount_rate)
+                                   discount=discount,
+                                   verbose=self.verbose)
 
         return None
 
@@ -54,39 +53,23 @@ class Base_Agent(object):
         """
         #  reset the objects set in the Base_Agent init
         self.memory.reset()
-        self.epsilon_greedy.reset()
+        self.e_greedy.reset()
 
         return self._reset()
 
-    def act(self, observation,
-                  session = None,
-                  epsilon = None):
+    def act(self, **kwargs):
         """
         Main function for agent to take action.
 
         Calls the ._act method (which can be overidden in the agent child class)
         """
-        epsilon = self.epsilon_greedy.get_epsilon()
 
-        return self._act(observation, session, epsilon)
+        return self._act(**kwargs)
 
-    def learn(self, observations       = None,
-                    actions            = None,
-                    discounted_returns = None,
-                    session            = None):
+    def learn(self, **kwargs):
         """
         """
-        assert not np.any(np.isnan(observations))
-        assert not np.any(np.isnan(actions))
-        assert not np.any(np.isnan(discounted_returns))
-        print('epsilon is {:.3f}'.format(self.epsilon_greedy.epsilon))
-        if self.verbose > 0:
-            print('Learning')
-            print('observations are {}'.format(observations))
-            print('actions are {}'.format(actions))
-            print('discounted_returns are {}'.format(discounted_returns))
-
-        return self._learn(observations, actions, discounted_returns, session)
+        return self._learn(**kwargs)
 
     def load_brain(self):
         """
@@ -96,13 +79,57 @@ class Base_Agent(object):
     def save_brain(self):
         """
         """
-        return self._load_brain()
+        return self._save_brain()
 
     def output_results(self):
         """
         """
-        self.memory.output_results
-        return self.memory.outputs
+        return self.memory.output_results()
+
+    def all_state_actions(self, action_space, observation):
+        """
+        All possible combinations actions for a single observation
+
+        Used by Q-Learning for both acting and learning
+            acting = argmax Q(s,a) for all possible a to select action
+            learning = argmax Q(s',a) for all possible a to create Bellman target
+
+        action_combinations = act_dim[0] * act_dim[1] ... * act_dim[n]
+                              (across the action_space)
+
+        args
+            action_space    : a list of Space objects
+            observation     : np array (1, observation_dim)
+
+        returns
+            state_acts      : np array (action_combinations,
+                                        observation_dim + num_actions)
+            actions         : np array (action_combinations,
+                                        num_actions)
+        """
+        self.verbose_print('creating state action combinations')
+        #  get the discrete action space for all action dimensions
+        #  list is used to we can use itertools.product below
+        disc_action_spaces = [list(space.discretize()) for space in action_space]
+
+        #  create every possible combination of actions
+        #  this creates the unscaled actions
+        actions = [act for act in itertools.product(*disc_action_spaces)]
+
+        #  scale the actions
+        scaled_actions = [scale_array(act, action_space, normalize) for act in actions]
+
+        #  create an array with one obs per possible action combinations
+        #  reshape into (num_actions, observation_dim)
+        observations = np.tile(observation, actions.shape[0])
+        observations = observations.reshape(actions.shape[0], observation.shape[1])
+
+        #  concat the observations & actions
+        #  used scaled actions
+        state_acts = np.concatenate([observations, scaled_actions], axis=1)
+        assert actions.shape[0] == state_acts.shape[0]
+        return state_acts, actions
+
 
 
 class Epsilon_Greedy(object):
@@ -158,4 +185,4 @@ class Epsilon_Greedy(object):
 
         self.steps += 1
 
-        return self.epsilon
+        return float(self.epsilon)

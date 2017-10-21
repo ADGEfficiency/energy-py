@@ -46,17 +46,19 @@ There are many reinforcement learning libraries that offer higher quality implem
 
 ### Project structure
 
+All classes inherit from the Utils class, which contains useful generic functionality.
+
 Environments are created by inheriting from the [Base_Env](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/envs/env_core.py) class.  
 
 Agents are created by inheriting from the [Base_Agent](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/agent_core.py) class.  
 
 **Environments**
 
-[Electric battery charging & discharging](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/envs/battery)
+The current focus is on building the [battery environment](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/envs/battery).  THis is for two reasons - first a battery is site agnostic so the environment can be built without site knowledge.  The second is that electric batteries are key to enabling intermittent renewables to compete with dispatchable renewables.
 
-[A cooling flexibility action (in progress)](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/envs/precool)
-
-Combined heat and power plant (to be ported over from energy_py v1.0)
+In the future I plan to add more environments that allow agents to optimize clean energy systems:
+- [A cooling flexibility action (in progress)](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/envs/precool)
+- Combined heat and power plants (to be ported over from energy_py v1.0)
 
 **Agents**
 

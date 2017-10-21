@@ -67,9 +67,10 @@ class Continuous_Space(Space):
         high (float) : an array with the maximum bound for each
     """
 
-    def __init__(self, low, high):
+    def __init__(self, low, high, step=1):
         self.low  = float(low)
         self.high = float(high)
+        self.step = int(step)
         self.type = 'continuous'
 
     def _sample(self):
@@ -77,3 +78,6 @@ class Continuous_Space(Space):
 
     def _contains(self, x):
         return (x >= self.low) and (x <= self.high)
+
+    def _discretize(self):
+        return np.arange(self.low, self.high + self.step, self.step).reshape(-1)

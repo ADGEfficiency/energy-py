@@ -9,58 +9,52 @@ import os
 import numpy as np
 import pandas as pd
 
-from energy_py.main.scripts.utils import ensure_dir
-from energy_py.main.scripts.visualizers import Agent_Memory_Visualizer
+from energy_py.main.scripts.utils import Utils
 
 
-class Agent_Memory(Agent_Memory_Visualizer):
+class Agent_Memory(Utils):
     """
-    Inherits from Visualizer!
-
     Purpose of this class is to
         store the experiences of the agent
         process experiences for use by the agent to act or learn from
 
     The memory of the agent is two lists of experience numpy arrays
-        self.experiences
-        self.machine_experiences
+        self.experiences = data as observed
+        self.machine_experiences = data for use by neural networks
 
     The two experience numpy arrays hold the following data
-        experience = (observation, 0
-                      action,
-                      reward,
-                      next_observation,
-                      step,
-                      episode) 5
+        experience = (observation,          0
+                      action,               1
+                      reward,               2
+                      next_observation,     3
+                      step,                 4
+                      episode)              5
 
-        machine_experience = (observation, 0
-                              action,
-                              reward,
-                              next_observation,
-                              step,
-                              episode,
+        machine_experience = (observation,       0
+                              action,            1
+                              reward,            2
+                              next_observation,  3
+                              step,              4
+                              episode,           5
                               discounted_return) 6
 
-    experience = as observed
-
-    machine experience = data for use in training neural networks
-                       = data to learn from
-
-    The machine_experience 'discounted_return' is a Monte Carlo return
+      the discounted_return is the Monte Carlo return
     """
 
     def __init__(self, memory_length,
                        observation_space,
                        action_space,
                        reward_space,
-                       discount_rate=0.99):
+                       discount,
+                       verbose=False):
 
         super().__init__()
         self.memory_length = memory_length
         self.observation_space = observation_space
         self.action_space = action_space
         self.reward_space = reward_space
-        self.discount_rate = discount_rate
+        self.discount = discount
+        self.verbose = verbose
 
         self.reset()
 
@@ -75,82 +69,45 @@ class Agent_Memory(Agent_Memory_Visualizer):
         self.losses = []
         self.epsilons = []
 
-    def make_dummy_array(self, value, space):
+    def make_machine_experience(self, exp, normalize_reward):
         """
-        Helper function
-        Creates an array of dummy variables
-
-        Not needed anymore
-        """
-        #  pull out the discrete_space space array
-        discrete_space = space.discrete_space
-        #  create an array of zeros
-        scaled = np.zeros(discrete_space.shape)
-        #  set to 1 where this value occurs
-        scaled[np.where(discrete_space == value)] = 1
-        #  quick check that we only have one dummy variable
-        assert np.sum(scaled) == 1
-        return scaled
-
-
-    def scale_array(self, array, space):
-        """
-        Helper function for make_machine_experience()
-        Uses the space & a given function to scale an array
-        Default scaler is to normalize
-
-        Used to scale the observation and action
-
-        can probably move this into a parent
-        """
-
-        #  empty numpy array
-        scaled_array = np.array([])
-
-        #  iterate across the array values & corresponding space object
-        for value, spc in itertools.zip_longest(array, space):
-            if spc.type == 'continuous':
-                # normalize continuous variables
-                scaled = self.normalize(value, spc.low, spc.high)
-            elif spc.type == 'discrete':
-                #  shouldn't need to do anything
-                #  check value is already dummy
-                assert (value == 0) or (value == 1)
-            else:
-                assert 1 == 0
-
-            #  appending the scaled value onto the scaled array
-            scaled_array = np.append(scaled_array, scaled).reshape(-1)
-
-        return scaled_array
-
-    def make_machine_experience(self, exp, normalize_reward=True):
-        """
-
         Helper function for add_experience
         Scales a given experience tuple
 
-        Discounted return is an optimal arg so that the scaled_exp array can
-        be created at any time
-
+        Discounted return not updated here as we don't know it yet!
+        i.e. this function is used within episode
         """
         scaled_obs = self.scale_array(exp[0],
                                       self.observation_space)
 
-        reward = exp[2]
+        scaled_action = self.scale_array(exp[1],
+                                      self.action_space)
+
         if normalize_reward:
             reward = self.normalize(exp[2],
                                     self.reward_space.low,
                                     self.reward_space.high)
+            reward = reward.reshape(1, 1)
+
+        else:
+            reward = exp[2]
+
+        #  this if statement is needed because for the terminal state
+        #  the next observation = False
+        if exp[3] == 'terminal':
+            scaled_next_obs = exp[3]
+        else:
+            scaled_next_obs = self.scale_array(exp[3],
+                                               self.observation_space)
 
         #  making an array for the scaled experience
         scaled_exp = np.array([scaled_obs,
-                              exp[1],
-                              reward,
-                              None,
-                              exp[4],
-                              exp[5],
-                              None])  # the Monte Carlo discounted return
+                               scaled_action,
+                               reward,
+                               scaled_next_obs,
+                               exp[4],  # step
+                               exp[5],  # episode number
+                               None])   # the Monte Carlo return
         return scaled_exp
 
     def add_experience(self, observation, action, reward, next_observation, step, episode):
@@ -167,12 +124,13 @@ class Agent_Memory(Agent_Memory_Visualizer):
 
         #  make the machine experience array
         m_exp = self.make_machine_experience(exp, normalize_reward=False)
+
         #  add experiences to the memory
         self.experiences.append(exp)
         self.machine_experiences.append(m_exp)
         return None
 
-    def finish_episode(self, episode_number):
+    def finish_episode(self, episode_number, normalize_return):
         """
         perhaps this should occur in the agent?
         agent might want to do other stuff at end of episode
@@ -180,6 +138,7 @@ class Agent_Memory(Agent_Memory_Visualizer):
 
         all_experiences = np.array(self.machine_experiences)
         assert all_experiences.shape[0] == len(self.machine_experiences)
+
         #  use boolean indexing to get experiences from last episode
         episode_mask = [all_experiences[:, 5] == episode_number]
         episode_experiences = all_experiences[episode_mask]
@@ -189,23 +148,27 @@ class Agent_Memory(Agent_Memory_Visualizer):
         returns, rewards = [], []
         for exp in episode_experiences[::-1]:
             r = exp[2]
-            R = r + self.discount_rate * R  # the Bellman equation
+            R = r + self.discount * R  # the Bellman equation
             returns.insert(0, R)
             rewards.append(r)
 
-        total_reward = sum(rewards)
-        max_reward = max(rewards)
-
         #  now we normalize the episode returns
         rtns = np.array(returns)
-        rtns = (rtns - rtns.mean()) / (rtns.std())
 
-        #  now we have the normalized episode returns
+        self.verbose_print('episode {}'.format(episode_number),
+                           'total returns before scaling {:.2f}'.format(rtns.sum()),
+                           'mean returns before scaling {:.2f}'.format(rtns.mean()),
+                           'stdv returns before scaling {:.2f}'.format(rtns.std()))
+
+        if normalize_return:
+            rtns = (rtns - rtns.mean()) / (rtns.std())
+
+        #  now we have the episode returns
         #  we can fill in the returns each experience in machine_experience
-        #  (for this episode)
-
+        #  for this episode
         new_exps = []
-        for exp, rtn in itertools.zip_longest(episode_experiences, rtns):
+        assert len(episode_experiences) == len(rtns)
+        for exp, rtn in zip(episode_experiences, rtns):
             exp[6] = rtn
             new_exps.append(exp)
 
@@ -216,68 +179,152 @@ class Agent_Memory(Agent_Memory_Visualizer):
         end = episode_indicies[-1] + 1
         self.machine_experiences[start:end] = new_exps
 
-        print('Ep {} total reward is {:.2f} max reward is {:.2f}'.format(episode_number,
-                                                        total_reward,
-                                                        max_reward))
         return None
 
-    def get_episode_batch(self, episode_number):
+    def get_episode_batch(self, episode_number, scaled_actions):
         """
         Gets the experiences for a given episode.
-
-        Quite inefficient as we loop over the entire scaled experiences list.
         """
-        scl_episode_experiences = []
 
-        for scl_exp in self.machine_experiences:
-            if scl_exp[5] == episode_number:
-                scl_episode_experiences.append(scl_exp)
-                assert scl_exp[5] == episode_number
+        all_experiences = np.array(self.machine_experiences)
+        assert all_experiences.shape[0] == len(self.machine_experiences)
+
+        #  use boolean indexing to get experiences from last episode
+        episode_mask = [all_experiences[:, 5] == episode_number]
+        episode_experiences = all_experiences[episode_mask]
 
         observations = np.array(
-            [exp[0] for exp in scl_episode_experiences]).reshape(-1, len(self.observation_space))
-        actions = np.array(
-            [exp[1] for exp in scl_episode_experiences]).reshape(-1, len(self.action_space))
+            [exp[0] for exp in episode_experiences]).reshape(-1, len(self.observation_space))
+
         returns = np.array(
-            [exp[6] for exp in scl_episode_experiences]).reshape(-1, 1)
+            [exp[6] for exp in episode_experiences]).reshape(-1, 1)
+
+        #  if we require unscaled actions then we need to use the experiences list
+        #  this will be needed for policy gradients where we need the logprob of the
+        #  action taken
+        if scaled_actions:
+            actions = np.array([exp[1] for exp in episode_experiences]).reshape(-1, len(self.action_space))
+        else:
+            unscaled_exp = np.array(self.experiences)[episode_mask]
+            actions = np.array([exp[1] for exp in unscaled_exp]).reshape(-1, len(self.action_space))
 
         assert observations.shape[0] == actions.shape[0]
         assert observations.shape[0] == returns.shape[0]
 
+        assert not np.any(np.isnan(observations))
+        assert not np.any(np.isnan(actions))
+        assert not np.any(np.isnan(returns))
+
         return observations, actions, returns
 
-    def get_random_batch(self, batch_size):
+    def get_random_batch(self, batch_size, save_batch=True):
         """
-        Gets a random batch of experiences.
+        Gets a random batch of experiences
+        Uses machine_experiences
 
-        can def do this better - and maybe share code with get_episode_batch
         """
         sample_size = min(batch_size, len(self.machine_experiences))
 
-        #  limiting the scaled_experiences list to the memory length
-        memory = self.experiences[-self.memory_length:]
-        scaled_memory = self.machine_experiences[-self.memory_length:]
+        #  limiting to the memory length
+        mach_memory = self.machine_experiences[-self.memory_length:]
 
-        assert len(memory) == len(scaled_memory
-                                  )
+        assert len(memory) == len(scaled_memory)
+
         #  indicies for the batch
         indicies = np.random.randint(low=0,
                                      high=len(memory),
                                      size=sample_size)
 
         #  randomly sample from the memory & returns
-        memory_batch = [memory[i] for i in indicies]
-        scaled_memory_batch = [scaled_memory[i] for i in indicies]
+        mach_exp_batch = [mach_memory[i] for i in indicies]
 
-        obs = [exp[0] for exp in scaled_memory_batch]
-        acts = [exp[1] for exp in memory_batch]
-        rtns = [exp[6] for exp in scaled_memory_batch]
+        obs = [exp[0] for exp in mach_exp_batch]
+        acts = [exp[1] for exp in mach_exp_batch]
+        rwrds = [exp[2] for exp in mach_exp_batch]
+        next_obs = [exp[3] for exp in mach_exp_batch]
 
-        observations = np.array(obs).reshape(-1, len(self.observation_space))
-        actions = np.array(acts).reshape(-1, len(self.action_space))
-        returns = np.array(rtns).reshape(-1, 1)
+        observations = np.array(obs).reshape(batch_size, len(self.observation_space))
+        actions = np.array(acts).reshape(batch_size, len(self.action_space))
+        rewards = np.array(rwrds).reshape(batch_size, 1)
+        next_observations = np.array(next_obs).reshape(batch_size, len(self.observation_space))
 
         assert observations.shape[0] == actions.shape[0]
         assert observations.shape[0] == returns.shape[0]
+        assert observations.shape[0] == rewards.shape[0]
+        assert observations.shape[0] == next_observations.shape[0]
 
-        return observations, actions, returns
+        assert not np.any(np.isnan(observations))
+        assert not np.any(np.isnan(actions))
+        assert not np.any(np.isnan(rewards))
+        assert not np.any(np.isnan(next_observations))
+
+        if save_batch:
+            self.verbose_print('saving training batch to disk')
+        return observations, actions, rewards, next_observations
+
+    def output_results(self):
+        """
+        Creates two dataframes
+        'dataframe_steps'    = dataframe on a step frequency
+        'dataframe_episodic' = dataframe on a episodic frequency
+        """
+        #  create lists on a step by step basis
+        print('agent memory is making dataframes')
+        assert len(self.experiences) == len(self.machine_experiences)
+
+        ep, stp, obs, act, rew, nxt_obs = [], [], [], [], [], []
+        mach_obs, mach_act, mach_rew, mach_nxt_obs, dis_ret = [], [], [], [], []
+        for exp, mach_exp in itertools.zip_longest(self.experiences, self.machine_experiences):
+            obs.append(exp[0])
+            act.append(exp[1])
+            rew.append(exp[2])
+            nxt_obs.append(exp[3])
+            stp.append(exp[4])
+            ep.append(exp[5])
+
+            mach_obs.append(mach_exp[0])
+            mach_act.append(mach_exp[1])
+            mach_rew.append(mach_exp[2])
+            mach_nxt_obs.append(mach_exp[3])
+            dis_ret.append(mach_exp[6])
+
+        df_dict = {
+                   'episode':ep,
+                   'step':stp,
+                   'observation':obs,
+                   'action':act,
+                   'reward':rew,
+                   'next_observation':nxt_obs,
+                   'scaled_reward':mach_rew,
+                   'discounted_return':dis_ret,
+                   'scaled_observation':mach_obs,
+                   'scaled_action':mach_act,
+                   'scaled_reward':mach_rew,
+                   'scaled_next_observation':mach_nxt_obs,
+                   }
+
+        dataframe_steps = pd.DataFrame.from_dict(df_dict)
+
+        dataframe_episodic = dataframe_steps.groupby(by=['episode'],
+                                                  axis=0).sum()
+
+        max_reward = dataframe_episodic.loc[:, 'reward'].cummax()
+        dataframe_episodic.loc[:, 'cum_max_reward'] = max_reward
+
+        window = max(int(dataframe_episodic.shape[0] * 0.1), 2)
+        rolling = dataframe_episodic.loc[:, 'reward'].rolling(window=window,
+                                                              min_periods=1,
+                                                              center=False)
+        dataframe_episodic.loc[:, 'rolling_mean'] = rolling.mean()
+
+        # dataframe_episodic.loc[:, 'epsilon'] = self.epsilons
+
+        if self.losses:
+            dataframe_episodic.loc[:, 'loss'] = self.losses
+
+        dataframe_steps.set_index('episode', drop=True, inplace=True)
+
+        output_dict = {'dataframe_steps' : dataframe_steps,
+                       'dataframe_episodic' : dataframe_episodic}
+
+        return output_dict

@@ -9,7 +9,9 @@ import sys
 import argparse
 import tensorflow as tf
 
-from energy_py.agents.reinforce.agent import REINFORCE_Agent
+from energy_py.agents.reinforce.monte_carlo import MC_Reinforce
+from energy_py.agents.function_approximators.tensorflow import GaussianPolicy
+
 from energy_py.envs.battery.battery_env import Battery_Env
 from energy_py.main.scripts.experiment_blocks import run_single_episode
 from energy_py.main.scripts.visualizers import Eternity_Visualizer
@@ -28,28 +30,31 @@ EPISODES = args.episodes
 EPISODE_LENGTH = args.episode_length
 LEARNING_RATE = args.learning_rate
 
-print('running {} episodes of length {}'.format(EPISODES, EPISODE_LENGTH))
+OUTPUT_RESULTS = 50  #  output results every n episodes
 
+print('running {} episodes of length {}'.format(EPISODES, EPISODE_LENGTH))
+print('learning rate is {}'.format(LEARNING_RATE))
+
+#  first we create our environment
 env = Battery_Env(lag            = 0,
                   episode_length = EPISODE_LENGTH,
                   episode_start  = 10000,
                   power_rating   = 2,  #  in MW
                   capacity       = 4,  #  in MWh
-                  initial_charge = 50,  #  in % of capacity
-                  verbose        = 0)
+                  initial_charge = 0,  #  in % of capacity
+                  verbose        = False)
 
-"""
-can probably pull the 4/5 out as the true input
-for the episode decay input
-"""
-
-agent = REINFORCE_Agent(env,
-                        epsilon_decay_steps = EPISODE_LENGTH * EPISODES * 4 / 5,
+#  now we create our agent with a Gaussian policy
+agent = MC_Reinforce(env,
+                        GaussianPolicy,
+                        model_dict={'layers' : [100, 100, 100]},
                         learning_rate = LEARNING_RATE,
-                        batch_size = 64)
+                        discount = 0.99,
+                        verbose=True)
 
 #  creating the TensorFlow session for this experiment
 with tf.Session() as sess:
+    #  initalizing TensorFlow variables
     sess.run(tf.global_variables_initializer())
 
     for episode in range(1, EPISODES):
@@ -59,17 +64,18 @@ with tf.Session() as sess:
                                                sess)
 
         #  get a batch to learn from
-        observations, actions, returns = agent.memory.get_episode_batch(episode)
+        #  note that we don't scale actions as we need to take logprob(action)
+        observations, actions, returns = agent.memory.get_episode_batch(episode,
+                                                                        scaled_actions=False)
         #  train the model
-        loss = agent.learn(observations, actions, returns, sess)
+        loss = agent.learn(observations=observations,
+                           actions=actions,
+                           discounted_returns=returns,
+                           session=sess)
 
-    #  now run one zero exploration episode
-    agent.epsilon_greedy.mode = 'testing'
-    agent, env, sess = run_single_episode(episode,
-                                           agent,
-                                           env,
-                                           sess)
 
-#  finally collect data from the agent & environment
-global_history = Eternity_Visualizer(episode, agent, env)
-outputs = global_history.output_results()
+        if episode % OUTPUT_RESULTS == 0:
+            #  collect data from the agent & environment
+            global_history = Eternity_Visualizer(episode, agent, env,
+                                                 results_path='reinforce_results/')
+            outputs = global_history.output_results(save_data=False)

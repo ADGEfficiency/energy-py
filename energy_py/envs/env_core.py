@@ -5,7 +5,9 @@ import numpy as np
 import pandas as pd
 
 
-class Base_Env(object):
+from energy_py.main.scripts.utils import Utils
+
+class Base_Env(Utils):
     """
     the energy_py base environment class
     inspired by the gym.Env class
@@ -24,15 +26,11 @@ class Base_Env(object):
         observation_space
         reward_range (defaults to -inf, +inf)
 
-    Args:
-        episode_visualizer (Visualizer) : object used to create outputs
-
-        verbose
-
+    args:
+        verbose : boolean : controls printing
     """
 
-    def __init__(self, episode_visualizer, verbose):
-        self.episode_visualizer_obj = episode_visualizer
+    def __init__(self, verbose):
         self.verbose = verbose
 
         self.info       = collections.defaultdict(list)
@@ -58,7 +56,8 @@ class Base_Env(object):
         if self.verbose > 0:
             print('Reset environment')
             self.episode = None
-        self.episode_visualizer = None
+
+        self.outputs = {}
         return self._reset()
 
     def step(self, action, episode):
@@ -78,11 +77,11 @@ class Base_Env(object):
 
         step() returns the observation - not the state!
 
-        Args:
+        args
             action  (object): an action provided by the environment
             episode (int): the current episode number
 
-        Returns:
+        returns:
             observation (np array): agent's observation of the current environment
             reward (np float) : amount of reward returned after previous action
             done (boolean): whether the episode has ended, in which case further step() calls will return undefined results
@@ -97,10 +96,5 @@ class Base_Env(object):
         return self._step(action)
 
     def output_results(self):
-        """
-        Initializes the visalizer object.
-        """
-        #  initalize the visualizer object with the current environment info
-        self.episode_visualizer = self.episode_visualizer_obj(env_info=self.info, state_ts=self.state_ts, episode=self.episode)
-        #  returns the main visualizer method
-        return self.episode_visualizer.output_results()
+        self.outputs['dataframe'] = pd.DataFrame.from_dict(self.info)
+        return self._output_results()

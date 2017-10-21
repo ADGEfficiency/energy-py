@@ -2,7 +2,8 @@
 
 The action for this env is
 ```
-action = np.array(charge, discharge)
+action = np.array([charge, discharge])
+         shape = (1,2)
 ```
 
 The net effect of these two actions on the battery is calculated by
@@ -10,13 +11,9 @@ The net effect of these two actions on the battery is calculated by
 net_charge = charge - discharge
 ```
 
-The reward is the difference in the cost to supply electricity to site of the business as usual (bau) and reinforcement learning cases.
+The reward is the net effect of the battery on the site import/export
 ```
-bau_cost = site_electricity_demand * electricity_price
-
-rl_cost = (site_electricity_demand + gross_battery_rate) * electricity_price
-
-reward = bau_cost - rl_cost
+reward = -(gross_rate / 12) * electricity_price
 ```
 
 ## Basic usage

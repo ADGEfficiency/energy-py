@@ -1,39 +1,10 @@
 import collections
-import decimal
 import os
 
 import numpy as np
 
 from energy_py.envs.env_ts import Time_Series_Env
 from energy_py.main.scripts.spaces import Continuous_Space, Discrete_Space
-from energy_py.main.scripts.visualizers import Env_Episode_Visualizer
-from energy_py.main.scripts.utils import ensure_dir
-
-class Battery_Visualizer(Env_Episode_Visualizer):
-    """
-    A class to create charts for the Battery environment.
-    """
-
-    def __init__(self, env_info, state_ts, episode):
-        super().__init__(env_info, state_ts, episode)
-
-    def _output_results(self):
-        """
-        The main visulizer function
-        """
-        #  make the main dataframe
-        self.outputs['dataframe'] = self.make_dataframe()
-
-        def make_technical_fig(env_outputs_df, env_outputs_path):
-            fig = self.make_figure(df=env_outputs_df,
-                                   cols=['rate', 'new_charge'],
-                                   xlabel='Time',
-                                   ylabel='Electricity [MW or MWh]',
-                                   path=os.path.join(env_outputs_path, 'technical_fig_{}.png'.format(self.episode)))
-            return fig
-
-        self.figures = {'technical_fig':make_technical_fig}
-        return self.outputs
 
 
 class Battery_Env(Time_Series_Env):
@@ -42,20 +13,19 @@ class Battery_Env(Time_Series_Env):
     Agent chooses to either charge or discharge.
 
     Args:
-        lag                     (int)   : lag between observation & state
+        lag             :   int     : lag between observation & state
+        episode_length  :   int     : length of the episode
+                        :   string  : 'maximum' = run entire legnth
+        episode_start   :   int     : the integer index to start the episode
+        power_rating    :   float   : maximum rate of battery charge
+                                      or discharge [MWe]
+        capacity        :   float   : amount of electricity that can be stored
+                                      [MWh]
+        round_trip_eff  :   float   : round trip efficiency of storage [%]
+        initial_charge  :   int     : inital amount of electricity stored
+                                    : as a percent of capacity [%]
 
-
-        episode_length          (int)   : length of the episode
-                                (string): 'maximum' = run entire legnth
-        episode_start           (int)   : the integer index to start the episode
-
-        power_rating            (float) : maximum rate of battery charge or discharge [MWe]
-        capacity                (float) : amount of electricity that can be stored [MWh]
-        round_trip_eff          (float) : round trip efficiency of storage
-        initial_charge          (int)   : inital amount of electricity stored
-                                          as a percent of capacity [%]
-
-        verbose                 (int)   : controls env print statements
+        verbose         :   int     : controls env print statements
     """
     def __init__(self, lag,
                        episode_length,
@@ -66,17 +36,14 @@ class Battery_Env(Time_Series_Env):
                        round_trip_eff = 0.9,
                        initial_charge = 0,
 
-                       episode_visualizer = Battery_Visualizer,
-
-                       verbose = 0):
+                       verbose = False):
 
         path = os.path.dirname(os.path.abspath(__file__))
         state_path = os.path.join(path, 'state.csv')
         observation_path = os.path.join(path, 'observation.csv')
 
         #  calling init method of the parent Time_Series_Env class
-        super().__init__(episode_visualizer,
-                         lag,
+        super().__init__(lag,
                          episode_length,
                          episode_start,
                          state_path,
@@ -105,7 +72,7 @@ class Battery_Env(Time_Series_Env):
          2 -  how much to discharge [MWh]
 
         use two actions to keep the action space positive
-        is useful for policy gradient where we take log(action)
+        is useful for policy gradient where we take log(probability of action)
         """
         self.action_space = [Continuous_Space(low  = 0,
                                               high = self.power_rating),
@@ -156,27 +123,27 @@ class Battery_Env(Time_Series_Env):
 
     def _step(self, action):
         """
-        Args:
-            action (np.array)         :
-            where - action[0] (float) : rate to charge this time step
-            where - action[1] (float) : rate to discharge this time step
+        args
+            action : np.array (1, 2)
+                [0][0] = charging
+                [0][1] = discharging
 
-            TODO needs protection against zero demand
+        returns
+            self.observation
+            reward
+            self.done
+            self.info
         """
-
-        #  setting the decimal context
-        #  make use of decimal so that that the energy balance works
-        #  had floating point number issues when always using floats
-        #  room for improvement here!
-        decimal.getcontext().prec = 6
 
         #  pulling out the state infomation
         electricity_price = self.state[0]
-        electricity_demand = 10  # fixed here for simplicity
-        """
-        review the whole electricity_demand thing - do I even need it
-        """
-        old_charge = decimal.Decimal(self.state[-1])
+        old_charge = self.state[-1]
+
+        #  our action is sent to the environment as (1, num_actions)
+        assert action.shape == (1, 2)
+
+        #  we pull out the action here to make the code below cleaner
+        action = action[0]
 
         #  checking the actions are valid
         for i, act in enumerate(action):
@@ -185,83 +152,70 @@ class Battery_Env(Time_Series_Env):
 
         #  calculate the net effect of the two actions
         #  also convert from MW to MWh/5 min by /12
-        net_charge = float(action[0] - action[1]) / 12
-        net_charge = decimal.Decimal(net_charge)
+        net_charge = (action[0] - action[1]) / 12
 
         #  we first check to make sure this charge is within our capacity limits
         unbounded_new_charge = old_charge + net_charge
-        bounded_new_charge = max(min(unbounded_new_charge, decimal.Decimal(self.capacity)), decimal.Decimal(0))
+        bounded_new_charge = max(min(unbounded_new_charge, self.capacity), 0)
 
-        #  now we check to see this new charge is within our power rating
-        #  note the * 12 is to convert from MWh/5min to MW
-        #  here I am assuming that the power_rating is independent of charging/discharging
-        unbounded_rate = (bounded_new_charge - old_charge) * 12
-        rate = max(min(unbounded_rate, self.power_rating), -self.power_rating)
+        #  we can now calculate the gross rate of charge or discharge
+        gross_rate = (bounded_new_charge - old_charge) * 12
 
-        #  finally we account for round trip efficiency
-        losses = 0
-        gross_rate = decimal.Decimal(rate)
-
+        #  now we account for losses / the round trip efficiency
         if gross_rate > 0:
-            losses = gross_rate * (1 - decimal.Decimal(self.round_trip_eff)) / 12
+            #  we lose electricity when we charge
+            losses = gross_rate * (1 - self.round_trip_eff) / 12
+        else:
+            #  we don't lose anything when we discharge
+            losses = 0
 
+        #  we can now calculate the new charge of the battery after losses
         new_charge = old_charge + gross_rate / 12 - losses
+        #  this allows us to calculate how much electricity we actually store
         net_stored = new_charge - old_charge
-        rate = net_stored * 12
+        #  and to calculate our actual rate of charge or discharge
+        net_rate = net_stored * 12
 
-        # TODO more work on balances
         #  set a tolerance for the energy balances
-        tolerance = 1e-4
-
+        tolerance = 1e-10
+        #  energy balance
         assert (new_charge) - (old_charge + net_stored) < tolerance
-        assert (rate) - (12 * net_stored) < tolerance
-
-        #  we then change our rate back into a floating point number
-        rate = float(rate)
-
-        #  calculate the business as usual cost
-        #  business as usual (bau) depends on
-        #  - site demand
-        #  - electricity price
-        bau_cost = (electricity_demand / 12) * electricity_price
+        #  check that our net_rate and net_stored are consistent
+        assert (net_rate) - (12 * net_stored) < tolerance
 
         #  now we can calculate the reward
-        #  reward depends on both
-        #  - how much electricity the site is demanding
-        #  - what our battery is doing (on a gross basis!)
-        #  - electricity price
-        adjusted_demand = float(electricity_demand) + float(gross_rate)
-        rl_cost = (adjusted_demand / 12) * electricity_price
-        reward = float(bau_cost) - float(rl_cost)
+        #  the reward is simply the cost to charge
+        #  or the benefit from discharging
+        #  note that we use the gross rate, this is the effect on the site
+        #  import/export
+        reward = -(gross_rate / 12) * electricity_price
 
-        if self.verbose > 0:
-            print('step is {}'.format(self.steps))
-            print('action was {}'.format(action))
-            print('old charge was {}'.format(old_charge))
-            print('new charge is {}'.format(new_charge))
-            print('rate is {}'.format(rate))
-            print('losses were {}'.format(losses))
-
-            print('bau cost is {}'.format(bau_cost))
-            print('rl cost is {}'.format(rl_cost))
-            print('reward is {}'.format(reward))
+        self.verbose_print('step is {}'.format(self.steps),
+                           'action was {}'.format(action),
+                           'old charge was {} MWh'.format(old_charge),
+                           'new charge is {} MWh'.format(new_charge),
+                           'gross rate is {} MW'.format(gross_rate),
+                           'losses were {} MWh'.format(losses),
+                           'net rate is {} MW'.format(net_rate),
+                           'reward is {} $/5min'.format(reward))
 
         #  check to see if episode is done
         #  -1 in here because of the zero index
         if self.steps == (self.episode_length-1):
             self.done = True
-            next_state = False
-            next_observation = False
+            next_state = 'terminal'
+            next_observation = 'terminal'
             reward = 0
-            if self.verbose > 0:
-                print('Ep {} done - total reward {}'.format(self.episode,
-                                                            sum(self.info['rewards'])))
 
+            total_ep_reward = sum(self.info['reward'])
+
+            self.verbose_print('Episode {} done'.format(self.episode),
+                               'total reward {}'.format(total_ep_reward))
         else:
         #  moving onto next step
             next_state = self.get_state(self.steps, append=float(new_charge))
             next_observation = self.get_observation(self.steps, append=float(new_charge))
-            self.steps += int(1)
+            self.steps += 1
 
         #  saving info
         self.info = self.update_info(episode            = self.episode,
@@ -273,14 +227,9 @@ class Battery_Env(Time_Series_Env):
                                      next_state         = next_state,
                                      next_observation   = next_observation,
 
-                                     bau_cost           = bau_cost,
-                                     rl_cost            = rl_cost,
-
                                      electricity_price  = electricity_price,
-                                     electricity_demand = electricity_demand,
-                                     rate               = rate,
+                                     gross_rate         = gross_rate,
                                      losses             = losses,
-                                     adjusted_demand    = adjusted_demand,
                                      new_charge         = new_charge,
                                      old_charge         = old_charge,
                                      net_stored         = net_stored)
@@ -300,14 +249,9 @@ class Battery_Env(Time_Series_Env):
                           next_state,
                           next_observation,
 
-                          bau_cost,
-                          rl_cost,
-
                           electricity_price,
-                          electricity_demand,
-                          rate,
+                          gross_rate,
                           losses,
-                          adjusted_demand,
                           new_charge,
                           old_charge,
                           net_stored):
@@ -323,16 +267,26 @@ class Battery_Env(Time_Series_Env):
         self.info['next_state'].append(next_state)
         self.info['next_observation'].append(next_observation)
 
-        self.info['bau_cost_[$/5min]'].append(bau_cost)
-        self.info['rl_cost_[$/5min]'].append(rl_cost)
-
         self.info['electricity_price'].append(electricity_price)
-        self.info['electricity_demand'].append(electricity_demand)
-        self.info['rate'].append(rate)
+        self.info['gross_rate'].append(gross_rate)
         self.info['losses'].append(losses)
-        self.info['adjusted_demand'].append(adjusted_demand)
         self.info['new_charge'].append(new_charge)
         self.info['old_charge'].append(old_charge)
         self.info['net_stored'].append(net_stored)
 
         return self.info
+
+    def _output_results(self):
+        """
+        """
+
+        def make_technical_fig(env_outputs_df, env_outputs_path):
+            fig = self.make_figure(df=env_outputs_df,
+                                   cols=['rate', 'new_charge'],
+                                   xlabel='Time',
+                                   ylabel='Electricity [MW or MWh]',
+                                   path=os.path.join(env_outputs_path, 'technical_fig_{}.png'.format(self.episode)))
+            return fig
+
+        self.figures = {'technical_fig':make_technical_fig}
+        return self.outputs

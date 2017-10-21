@@ -18,6 +18,7 @@ setup(name='energy_py',
 
       packages=['energy_py',
                 'energy_py.agents',
+                'energy_py.agents.function_approximators',
                 'energy_py.agents.naive',
                 'energy_py.agents.Q_learning',
                 'energy_py.agents.reinforce',

@@ -12,8 +12,7 @@ class Time_Series_Env(Base_Env):
     class to give functionality
     """
 
-    def __init__(self, episode_visualizer,
-                       lag,
+    def __init__(self, lag,
                        episode_length,
                        episode_start,
                        state_path,
@@ -30,7 +29,7 @@ class Time_Series_Env(Base_Env):
         self.raw_state_ts = self.load_ts_from_csv(self.state_path)
         self.raw_observation_ts = self.load_ts_from_csv(self.observation_path)
 
-        super().__init__(episode_visualizer, verbose)
+        super().__init__(verbose)
 
     def get_state_obs(self):
         """

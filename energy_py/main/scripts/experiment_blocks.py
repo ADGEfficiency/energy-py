@@ -4,7 +4,8 @@
 def run_single_episode(episode_number,
                        agent,
                        env,
-                       sess=None):
+                       sess=None,
+                       normalize_return=True):
     """
     Helper function to run through a single episode
     """
@@ -15,7 +16,7 @@ def run_single_episode(episode_number,
     #  while loop runs through a single episode
     while done is False:
         #  select an action
-        action = agent.act(observation, sess)
+        action = agent.act(observation=observation, session=sess)
         #  take one step through the environment
         next_observation, reward, done, info = env.step(action, episode_number)
         #  store the expWWerience
@@ -24,5 +25,5 @@ def run_single_episode(episode_number,
         observation = next_observation
 
     #  now episode is done - process the episode in the agent memory
-    agent.memory.finish_episode(episode_number)
+    agent.memory.finish_episode(episode_number, normalize_return)
     return agent, env, sess
