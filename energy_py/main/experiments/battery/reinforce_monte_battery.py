@@ -8,10 +8,10 @@ import sys
 import argparse
 import tensorflow as tf
 
-from energy_py.agents.reinforce.monte_carlo import MC_Reinforce
-from energy_py.agents.function_approximators.tensorflow import GaussianPolicy
+from energy_py.agents import MC_Reinforce
+from energy_py.agents.function_approximators import TF_GaussianPolicy
 
-from energy_py.envs.battery.battery_env import Battery_Env
+from energy_py.envs import Battery_Env
 from energy_py.main.scripts.experiment_blocks import run_single_episode
 from energy_py.main.scripts.visualizers import Eternity_Visualizer
 
@@ -46,6 +46,7 @@ env = Battery_Env(lag            = 0,
 #  now we create our agent with a Gaussian policy
 agent = MC_Reinforce(env,
                      policy=GaussianPolicy,
+                     baseline=[],
                      learning_rate=LEARNING_RATE,
                      discount=0.99,
                      verbose=True)

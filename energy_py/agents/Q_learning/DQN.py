@@ -1,4 +1,4 @@
-from energy_py.agents.agent_core import Base_Agent
+from energy_py.agents import Base_Agent
 
 class Q_Learner(Base_Agent):
     """
@@ -63,7 +63,7 @@ class Q_Learner(Base_Agent):
 
         else:
             self.verbose_print('acting according to Q_actor')
-            
+
             #  create all possible combinations of our single observation
             #  and our n-dimensional action space
             state_acts, acts = self.all_state_acts(self.action_space,

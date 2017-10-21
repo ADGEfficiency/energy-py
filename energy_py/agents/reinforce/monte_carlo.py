@@ -1,7 +1,7 @@
-import numpy as np
+-*import numpy as np
 import tensorflow as tf
 
-from energy_py.agents.agent_core import Base_Agent
+from energy_py.agents import Base_Agent
 
 
 class MC_Reinforce(Base_Agent):
@@ -93,7 +93,7 @@ class MC_Reinforce(Base_Agent):
                                    observations,
                                    actions,
                                    discounted_returns)
-                                   
+
         self.memory.losses.append(loss)
 
         self.verbose_print('loss is {:.8f}'.format(loss))

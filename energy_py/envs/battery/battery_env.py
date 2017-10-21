@@ -3,7 +3,7 @@ import os
 
 import numpy as np
 
-from energy_py.envs.env_ts import Time_Series_Env
+from energy_py.envs import Time_Series_Env
 from energy_py.main.scripts.spaces import Continuous_Space, Discrete_Space
 
 
