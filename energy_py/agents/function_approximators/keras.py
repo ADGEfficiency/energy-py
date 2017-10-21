@@ -33,12 +33,12 @@ class KerasFunctionApproximator(object):
         model.compile(loss=loss_function, optimizer=optimizer)
         return model
 
-class Keras_V(KerasFunctionApproximator):
+class Keras_ValueFunction(KerasFunctionApproximator):
     """
-    The class for a value function V(s)
+    The class for a Keras value function V(s).
 
-    The value function represents the future expected discounted reward
-    after leaving state s
+    The value function approximates the future expected discounted reward
+    after leaving state s.
     """
     def __init__(self, model_dict):
 
@@ -47,15 +47,15 @@ class Keras_V(KerasFunctionApproximator):
 
     def improve(self, states,
                       targets):
-        history = self.model.fit(x=states, y=targets)
+        history = self.model.fit(x=states, y=targe ts)
         return history
 
-class Keras_Q(KerasFunctionApproximator):
+class Keras_ActionValueFunction(KerasFunctionApproximator):
     """
-    The class for the action-value function Q(s,a)
+    The class for the action-value function Q(s,a).
 
-    The value function represents the future expected discounted reward
-    after leaving state s, taking action a
+    The value function approximates the future expected discounted reward
+    after leaving state s, taking action a.
     """
 
     def predict(self, state_action):
@@ -65,12 +65,3 @@ class Keras_Q(KerasFunctionApproximator):
                       targets):
         history = self.model.fit(x=states, y=targets)
         return history
-
-if __name__ == 'main':
-
-    Q = Keras_Q(model_dict={model_type:'feedforward',
-                            input_dim:10,
-                            output_dim:1,
-                            layers:[100, 100, 100],
-                            optimizer:Adam()}
-                )

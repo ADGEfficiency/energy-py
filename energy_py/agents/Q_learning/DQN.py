@@ -57,12 +57,13 @@ class Q_Learner(Base_Agent):
         self.verbose_print('epsilon is {:.3f}'.format(epsilon))
 
         if epsilon > np.random.uniform():
+
             self.verbose_print('acting randomly')
-            #  sampling randomly across the action space
             action = [space.sample() for space in self.action_space]
 
         else:
             self.verbose_print('acting according to Q_actor')
+            
             #  create all possible combinations of our single observation
             #  and our n-dimensional action space
             state_acts, acts = self.all_state_acts(self.action_space,
@@ -70,6 +71,7 @@ class Q_Learner(Base_Agent):
 
             #  get predictions from the action_value function Q
             Q_estimates = [Q_actor.predict(sa) for sa in state_acts]
+
             #  select the action with the highest Q
             #  note that we index the unscaled action
             #  as this action is sent directly to the environment

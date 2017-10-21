@@ -1,7 +1,6 @@
 """
-This experiment script uses a REINFORCE agent to control the battery environment.
-
-Experiment runs through the entire length of the state time series CSV.
+This experiment script uses the Monte Carlo REINFORCE agent
+to control the battery environment.
 """
 
 import sys
@@ -46,11 +45,10 @@ env = Battery_Env(lag            = 0,
 
 #  now we create our agent with a Gaussian policy
 agent = MC_Reinforce(env,
-                        GaussianPolicy,
-                        model_dict={'layers' : [100, 100, 100]},
-                        learning_rate = LEARNING_RATE,
-                        discount = 0.99,
-                        verbose=True)
+                     policy=GaussianPolicy,
+                     learning_rate=LEARNING_RATE,
+                     discount=0.99,
+                     verbose=True)
 
 #  creating the TensorFlow session for this experiment
 with tf.Session() as sess:

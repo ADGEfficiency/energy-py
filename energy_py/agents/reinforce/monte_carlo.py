@@ -3,32 +3,37 @@ import tensorflow as tf
 
 from energy_py.agents.agent_core import Base_Agent
 
+
 class MC_Reinforce(Base_Agent):
     """
     Monte Carlo implementation of REINFORCE
 
     args
+        env             : energy_py environment
+        discount        : float
+        policy          : energy_py policy approximator
+        baseline        : usually an energy_py value function
+        learning rate   : float
+        verbose         : boolean
 
-    returns
+    REINFORCE is high variance - due to the nature of Monte Carlo sampling.
 
-    REINFORCE is high variance - due to the nature of Monte Carlo sampling
-
-    REINFORCE is a low bias algorithm - no bootstrapping
+    REINFORCE is a low bias algorithm - no bootstrapping.
 
     This algorithm requires lots of episodes to run:
     - policy gradient only makes small updates
-    - Monte Carlo is high variance (so takes a while for the expectation to converge)
+    - Monte Carlo is high variance (takes a while for expectation to converge)
     - we only update once per episode
     - only learn from samples once
 
     Reference = Williams (1992)
     """
     def __init__(self, env,
-                       policy,
-                       model_dict,
                        discount,
-                       learning_rate = 0.01,
-                       verbose = False):
+                       policy,
+                       baseline=[],
+                       learning_rate=0.01,
+                       verbose=False):
 
         #  passing the environment to the Base_Agent class
         super().__init__(env, discount, verbose)
@@ -84,10 +89,11 @@ class MC_Reinforce(Base_Agent):
         discounted_returns = kwargs.pop('discounted_returns')
         session = kwargs.pop('session')
 
-        loss = self.policy.improve_policy(session,
-                                          observations,
-                                          actions,
-                                          discounted_returns)
+        loss = self.policy.improve(session,
+                                   observations,
+                                   actions,
+                                   discounted_returns)
+                                   
         self.memory.losses.append(loss)
 
         self.verbose_print('loss is {:.8f}'.format(loss))
