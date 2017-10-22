@@ -41,13 +41,14 @@ class Keras_ValueFunction(KerasFunctionApproximator):
     after leaving state s.
     """
     def __init__(self, model_dict):
+        pass
 
     def predict(self, state):
         return self.model.predict(state)
 
     def improve(self, states,
                       targets):
-        history = self.model.fit(x=states, y=targe ts)
+        history = self.model.fit(x=states, y=targets)
         return history
 
 class Keras_ActionValueFunction(KerasFunctionApproximator):
@@ -57,6 +58,8 @@ class Keras_ActionValueFunction(KerasFunctionApproximator):
     The value function approximates the future expected discounted reward
     after leaving state s, taking action a.
     """
+    def __init__(self, model_dict):
+        pass
 
     def predict(self, state_action):
         return self.model.predict(state_action)

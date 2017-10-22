@@ -1,4 +1,4 @@
--*import numpy as np
+import numpy as np
 import tensorflow as tf
 
 from energy_py.agents import Base_Agent
@@ -39,10 +39,9 @@ class MC_Reinforce(Base_Agent):
         super().__init__(env, discount, verbose)
 
         #  setup the policy
-        self.policy = policy(self.action_space,
-                             self.observation_space,
-                             learning_rate,
-                             model_dict)
+        self.policy = policy(action_space=self.action_space,
+                             observation_space=self.observation_space,
+                             learning_rate=learning_rate)
 
         self.learning_rate   = learning_rate
 

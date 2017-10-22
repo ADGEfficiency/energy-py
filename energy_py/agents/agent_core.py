@@ -4,7 +4,7 @@ Module for Base_Agent & helper classes.
 
 import numpy as np
 
-from energy_py.agents import Agent_Memory
+from energy_py.agents.memory import Agent_Memory
 from energy_py.main.scripts.utils import Utils
 
 class Base_Agent(Utils):

@@ -12,7 +12,7 @@ class Battery_Env(Time_Series_Env):
     An environment that simulates storage of electricity in a battery.
     Agent chooses to either charge or discharge.
 
-    Args:
+    args
         lag             :   int     : lag between observation & state
         episode_length  :   int     : length of the episode
                         :   string  : 'maximum' = run entire legnth
@@ -42,6 +42,8 @@ class Battery_Env(Time_Series_Env):
         state_path = os.path.join(path, 'state.csv')
         observation_path = os.path.join(path, 'observation.csv')
 
+        print('state path is'.format(path))
+
         #  calling init method of the parent Time_Series_Env class
         super().__init__(lag,
                          episode_length,
@@ -62,6 +64,9 @@ class Battery_Env(Time_Series_Env):
     def _reset(self):
         """
         Resets the environment.
+            
+        returns
+            observation : np.array : the initial observation
         """
 
         """
@@ -123,16 +128,17 @@ class Battery_Env(Time_Series_Env):
 
     def _step(self, action):
         """
-        args
-            action : np.array (1, 2)
-                [0][0] = charging
-                [0][1] = discharging
+        One step through the environment.
 
+        args
+            action      : np.array (1, 2)
+                          [0][0] = charging
+                          [0][1] = discharging
         returns
-            self.observation
-            reward
-            self.done
-            self.info
+            observation : np.array (1, len(self.observation_space)
+            reward      : float
+            done        : boolean
+            info        : dictionary
         """
 
         #  pulling out the state infomation
@@ -279,14 +285,7 @@ class Battery_Env(Time_Series_Env):
     def _output_results(self):
         """
         """
-
-        def make_technical_fig(env_outputs_df, env_outputs_path):
-            fig = self.make_figure(df=env_outputs_df,
-                                   cols=['rate', 'new_charge'],
-                                   xlabel='Time',
-                                   ylabel='Electricity [MW or MWh]',
-                                   path=os.path.join(env_outputs_path, 'technical_fig_{}.png'.format(self.episode)))
-            return fig
-
-        self.figures = {'technical_fig':make_technical_fig}
+        self.outputs['dataframe'].loc[:,'rolling_rate']=self.outputs['dataframe'].loc[:,'gross_rate'].rolling(window=10,
+                                                                                                         min_periods=1,
+                                                                                                         center=False)
         return self.outputs

@@ -1,8 +1,6 @@
 import numpy as np
 import tensorflow as tf
 
-from energy_py.main.scripts.tensorflow_machinery import fc_layer
-
 
 def fc_layer(input_tensor, wt_shape, bias_shape, activation=[]):
     """
@@ -18,9 +16,11 @@ def fc_layer(input_tensor, wt_shape, bias_shape, activation=[]):
         output      : output layer of the feedforward neural network
     """
     #
-    wt_init = tf.random_uniform_initializer(minval=-0.003, maxval=-0.003)
+    wt_init = tf.random_uniform_initializer(minval=-0.01, maxval=0.01)
+    #wt_init = tf.random_normal_initializer()
+
     #  set min bias to 0.01 to get all relus to fire
-    bias_init = tf.constant_initializer(0.01)
+    bias_init = tf.constant_initializer(0)
 
     W = tf.get_variable('W', wt_shape, initializer=wt_init)
     b = tf.get_variable('b', bias_shape, initializer=bias_init)
@@ -37,8 +37,7 @@ class TF_FunctionApproximator(object):
     """
     The base class for TensorFlow energy_py function approximators.
     """
-    def __init__(self, action_space,
-                       observation_space):
+    def __init__(self, **kwargs):
 
         self.action_space = kwargs.pop('action_space')
         self.observation_space = kwargs.pop('observation_space')
@@ -103,7 +102,7 @@ class TF_GaussianPolicy(TF_FunctionApproximator):
 
             #  clip the stdev so that stdev is not zero
             #  TODO not sure what the minimum bound for this should be
-            stdevs = tf.clip_by_value(stdevs, 0.1, tf.reduce_max(stdevs))
+            stdevs = tf.clip_by_value(stdevs, 0.5, tf.reduce_max(stdevs))
             self.norm_dist = tf.contrib.distributions.Normal(loc=means, scale=stdevs)
 
             #  selecting an action by sampling from the distribution
@@ -128,8 +127,8 @@ class TF_GaussianPolicy(TF_FunctionApproximator):
             #  we make use of the fact that multiply broadcasts here
             #  discounted returns is of shape (samples, 1)
             #  while log_probs is of shape (samples, num_actions)
-            loss = tf.multiply(self.log_probs, -self.discounted_return)
-            self.loss = tf.sum(loss)
+            loss = -tf.multiply(self.log_probs, self.discounted_return)
+            self.loss = tf.reduce_sum(loss)
 
             #  creating the training step
             self.optimizer = tf.train.AdamOptimizer(self.learning_rate)

@@ -30,7 +30,7 @@ print('read state.csv')
 #  checking that we only have continuous variables in our state csv
 #  will integrate dummy variables in state eventually
 
-agent_horizion = 8 * 12  #  12 5 min periods per hour
+agent_horizion = 48 * 12  #  12 5 min periods per hour
 dfs = []
 for col in state.columns:
     print(col)

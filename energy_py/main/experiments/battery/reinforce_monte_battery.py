@@ -17,38 +17,52 @@ from energy_py.main.scripts.visualizers import Eternity_Visualizer
 
 #  can probably make this into an episode block
 parser = argparse.ArgumentParser(description='battery REINFORCE experiment')
-parser.add_argument('--episodes', type=int, default=10,
+parser.add_argument('--ep', type=int, default=10,
                     help='number of episodes to run (default: 10)')
-parser.add_argument('--episode_length', type=int, default=48,
+parser.add_argument('--len', type=int, default=48,
                     help='length of a single episode (default: 48)')
-parser.add_argument('--learning_rate', type=float, default=0.01,
+parser.add_argument('--lr', type=float, default=0.01,
                     help='agent optimizer learning rate (default: 0.01)')
+parser.add_argument('--gamma', type=float, default=0.999,
+                    help='discount rate (default: 0.999)')
+parser.add_argument('--out', type=int, default=50,
+                    help='output results every n episodes (default: 50')
 args = parser.parse_args()
 
-EPISODES = args.episodes
-EPISODE_LENGTH = args.episode_length
-LEARNING_RATE = args.learning_rate
+EPISODES = args.ep
+EPISODE_LENGTH = args.len
+LEARNING_RATE = args.lr
+DISCOUNT = args.gamma
+OUTPUT_RESULTS = args.out
 
-OUTPUT_RESULTS = 50  #  output results every n episodes
+import csv
+def save_args(args, path):
+    with open(path, 'w') as outfile:
+        writer = csv.writer(outfile)
+        for k, v in vars(args).items():
+            print('{} : {}'.format(k, v))
+            writer.writerow([k] + [v])
+    return writer
 
-print('running {} episodes of length {}'.format(EPISODES, EPISODE_LENGTH))
-print('learning rate is {}'.format(LEARNING_RATE))
+writer = save_args(args,
+                   path='reinforce_results/args.txt')
 
 #  first we create our environment
 env = Battery_Env(lag            = 0,
                   episode_length = EPISODE_LENGTH,
-                  episode_start  = 10000,
+                  episode_start  = 200000,
                   power_rating   = 2,  #  in MW
-                  capacity       = 4,  #  in MWh
-                  initial_charge = 0,  #  in % of capacity
+                  capacity       = 2,  #  in MWh
+                  initial_charge = 100,  #  in % of capacity
+                  round_trip_eff = 1.0, #  in % - 80-90% in practice
                   verbose        = False)
 
 #  now we create our agent with a Gaussian policy
 agent = MC_Reinforce(env,
-                     policy=GaussianPolicy,
+                     discount=DISCOUNT,
+                     policy=TF_GaussianPolicy,
                      baseline=[],
                      learning_rate=LEARNING_RATE,
-                     discount=0.99,
                      verbose=True)
 
 #  creating the TensorFlow session for this experiment

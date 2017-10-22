@@ -161,7 +161,9 @@ class Agent_Memory(Utils):
                            'stdv returns before scaling {:.2f}'.format(rtns.std()))
 
         if normalize_return:
-            rtns = (rtns - rtns.mean()) / (rtns.std())
+            rtns = rtns / rtns.std()
+            #rtns = (rtns - rtns.mean()) / (rtns.std())
+            #rtns = (rtns - rtns.min()) / (rtns.max() - rtns.min())
 
         #  now we have the episode returns
         #  we can fill in the returns each experience in machine_experience
@@ -198,6 +200,10 @@ class Agent_Memory(Utils):
 
         returns = np.array(
             [exp[6] for exp in episode_experiences]).reshape(-1, 1)
+        
+        #  deal with the case of zero reward for all sampls
+        if np.any(np.isnan(returns)):
+            returns = np.zeros(shape=returns.shape)
 
         #  if we require unscaled actions then we need to use the experiences list
         #  this will be needed for policy gradients where we need the logprob of the
