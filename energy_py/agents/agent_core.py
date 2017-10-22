@@ -1,6 +1,7 @@
 """
 Module for Base_Agent & helper classes.
 """
+import itertools
 
 import numpy as np
 
@@ -16,8 +17,8 @@ class Base_Agent(Utils):
         learn
     """
 
-    def __init__(self, env, discount, epsilon_decay_steps=0,
-                 memory_length=int(1e6), verbose=False):
+    def __init__(self, env, discount, verbose, epsilon_decay_steps=0,
+                 memory_length=int(1e6)):
 
         super().__init__(verbose)
 
@@ -63,12 +64,13 @@ class Base_Agent(Utils):
 
         Calls the ._act method (which can be overidden in the agent child class)
         """
-
+        self.verbose_print('acting')
         return self._act(**kwargs)
 
     def learn(self, **kwargs):
         """
         """
+        self.verbose_print('learning')
         return self._learn(**kwargs)
 
     def load_brain(self):
@@ -107,27 +109,29 @@ class Base_Agent(Utils):
             actions         : np array (action_combinations,
                                         num_actions)
         """
-        self.verbose_print('creating state action combinations')
         #  get the discrete action space for all action dimensions
         #  list is used to we can use itertools.product below
-        disc_action_spaces = [list(space.discretize()) for space in action_space]
+        disc_action_spaces = [space.discretize(length=20) for space in action_space]
 
         #  create every possible combination of actions
         #  this creates the unscaled actions
-        actions = [act for act in itertools.product(*disc_action_spaces)]
+        actions = np.array([act for act in itertools.product(*disc_action_spaces)])
 
         #  scale the actions
-        scaled_actions = [scale_array(act, action_space, normalize) for act in actions]
+        scaled_actions = np.array([self.scale_array(act, action_space) for act
+                                   in actions]).reshape(actions.shape)
 
         #  create an array with one obs per possible action combinations
         #  reshape into (num_actions, observation_dim)
         observations = np.tile(observation, actions.shape[0])
-        observations = observations.reshape(actions.shape[0], observation.shape[1])
+        observations = observations.reshape(actions.shape[0],
+                                            self.observation_dim) 
 
         #  concat the observations & actions
         #  used scaled actions
         state_acts = np.concatenate([observations, scaled_actions], axis=1)
         assert actions.shape[0] == state_acts.shape[0]
+
         return state_acts, actions
 
 

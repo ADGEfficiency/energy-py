@@ -1,7 +1,3 @@
-"""
-
-"""
-
 import collections
 import itertools
 import os
@@ -48,7 +44,7 @@ class Agent_Memory(Utils):
                        discount,
                        verbose=False):
 
-        super().__init__()
+        super().__init__(verbose)
         self.memory_length = memory_length
         self.observation_space = observation_space
         self.action_space = action_space
@@ -66,7 +62,7 @@ class Agent_Memory(Utils):
         self.machine_experiences = []
 
         #  TODO a cleaner way to keep track of these statistics
-        self.losses = []
+        self.losses = [0] #  in case we print results before we train
         self.epsilons = []
 
     def make_machine_experience(self, exp, normalize_reward):
@@ -94,7 +90,7 @@ class Agent_Memory(Utils):
 
         #  this if statement is needed because for the terminal state
         #  the next observation = False
-        if exp[3] == 'terminal':
+        if exp[3].all() == -999999:
             scaled_next_obs = exp[3]
         else:
             scaled_next_obs = self.scale_array(exp[3],
@@ -110,7 +106,8 @@ class Agent_Memory(Utils):
                                None])   # the Monte Carlo return
         return scaled_exp
 
-    def add_experience(self, observation, action, reward, next_observation, step, episode):
+    def add_experience(self, observation, action, reward, next_observation,
+                       step, episode, normalize_reward=True):
         """
         Adds a single step of experience to the two experiences lists
         """
@@ -123,14 +120,14 @@ class Agent_Memory(Utils):
                        episode])
 
         #  make the machine experience array
-        m_exp = self.make_machine_experience(exp, normalize_reward=False)
+        m_exp = self.make_machine_experience(exp, normalize_reward)
 
         #  add experiences to the memory
         self.experiences.append(exp)
         self.machine_experiences.append(m_exp)
         return None
 
-    def finish_episode(self, episode_number, normalize_return):
+    def calc_returns(self, episode_number, normalize_return):
         """
         perhaps this should occur in the agent?
         agent might want to do other stuff at end of episode
@@ -223,7 +220,7 @@ class Agent_Memory(Utils):
 
         return observations, actions, returns
 
-    def get_random_batch(self, batch_size, save_batch=True):
+    def get_random_batch(self, batch_size, save_batch=False):
         """
         Gets a random batch of experiences
         Uses machine_experiences
@@ -234,11 +231,9 @@ class Agent_Memory(Utils):
         #  limiting to the memory length
         mach_memory = self.machine_experiences[-self.memory_length:]
 
-        assert len(memory) == len(scaled_memory)
-
         #  indicies for the batch
         indicies = np.random.randint(low=0,
-                                     high=len(memory),
+                                     high=len(mach_memory),
                                      size=sample_size)
 
         #  randomly sample from the memory & returns
@@ -249,13 +244,17 @@ class Agent_Memory(Utils):
         rwrds = [exp[2] for exp in mach_exp_batch]
         next_obs = [exp[3] for exp in mach_exp_batch]
 
-        observations = np.array(obs).reshape(batch_size, len(self.observation_space))
-        actions = np.array(acts).reshape(batch_size, len(self.action_space))
-        rewards = np.array(rwrds).reshape(batch_size, 1)
-        next_observations = np.array(next_obs).reshape(batch_size, len(self.observation_space))
+        observations = np.array(obs).reshape(sample_size,
+                                             len(self.observation_space))
 
+        actions = np.array(acts).reshape(sample_size, len(self.action_space))
+
+        rewards = np.array(rwrds).reshape(sample_size, 1)
+
+
+        next_observations = np.array(next_obs).reshape(sample_size,
+                                                       len(self.observation_space))
         assert observations.shape[0] == actions.shape[0]
-        assert observations.shape[0] == returns.shape[0]
         assert observations.shape[0] == rewards.shape[0]
         assert observations.shape[0] == next_observations.shape[0]
 
@@ -266,6 +265,7 @@ class Agent_Memory(Utils):
 
         if save_batch:
             self.verbose_print('saving training batch to disk')
+            #  TODO
         return observations, actions, rewards, next_observations
 
     def output_results(self):
@@ -325,12 +325,12 @@ class Agent_Memory(Utils):
 
         # dataframe_episodic.loc[:, 'epsilon'] = self.epsilons
 
-        if self.losses:
-            dataframe_episodic.loc[:, 'loss'] = self.losses
+        training_history = pd.DataFrame(self.losses,  columns=['loss'])
 
         dataframe_steps.set_index('episode', drop=True, inplace=True)
 
         output_dict = {'dataframe_steps' : dataframe_steps,
-                       'dataframe_episodic' : dataframe_episodic}
+                       'dataframe_episodic' : dataframe_episodic,
+                       'training_history'   : training_history}
 
         return output_dict

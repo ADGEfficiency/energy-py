@@ -1,15 +1,14 @@
 """
-This experiment script uses the Monte Carlo REINFORCE agent
+This experiment script uses the DQN agent
 to control the battery environment.
 """
 
 import sys
 
 import argparse
-import tensorflow as tf
 
-from energy_py.agents import MC_Reinforce
-from energy_py.agents.function_approximators import TF_GaussianPolicy
+from energy_py.agents import DQN
+from energy_py.agents.function_approximators import Keras_ActionValueFunction
 
 from energy_py.envs import Battery_Env
 from energy_py.main.scripts.experiment_blocks import run_single_episode
@@ -21,17 +20,18 @@ parser.add_argument('--ep', type=int, default=10,
                     help='number of episodes to run (default: 10)')
 parser.add_argument('--len', type=int, default=48,
                     help='length of a single episode (default: 48)')
-parser.add_argument('--lr', type=float, default=0.01,
-                    help='agent optimizer learning rate (default: 0.01)')
+parser.add_argument('--bs', type=int, default=64,
+                    help='batch size (default: 64)')
 parser.add_argument('--gamma', type=float, default=0.999,
                     help='discount rate (default: 0.999)')
 parser.add_argument('--out', type=int, default=50,
                     help='output results every n episodes (default: 50')
+
 args = parser.parse_args()
 
 EPISODES = args.ep
 EPISODE_LENGTH = args.len
-LEARNING_RATE = args.lr
+BATCH_SIZE = args.bs
 DISCOUNT = args.gamma
 OUTPUT_RESULTS = args.out
 
@@ -45,7 +45,7 @@ def save_args(args, path):
     return writer
 
 writer = save_args(args,
-                   path='reinforce_results/args.txt')
+                   path='DQN_results/args.txt')
 
 #  first we create our environment
 env = Battery_Env(lag            = 0,
@@ -57,38 +57,48 @@ env = Battery_Env(lag            = 0,
                   round_trip_eff = 1.0, #  in % - 80-90% in practice
                   verbose        = False)
 
-#  now we create our agent with a Gaussian policy
-agent = MC_Reinforce(env,
-                     discount=DISCOUNT,
-                     policy=TF_GaussianPolicy,
-                     baseline=[],
-                     learning_rate=LEARNING_RATE,
-                     verbose=True)
+#  create two action value functions Q(s,a)
+Q_actor = Keras_ActionValueFunction
+Q_target = Keras_ActionValueFunction
 
-#  creating the TensorFlow session for this experiment
-with tf.Session() as sess:
-    #  initalizing TensorFlow variables
-    sess.run(tf.global_variables_initializer())
+#  now we create our agent
+agent = DQN(env,
+            Q_actor,
+            Q_target,
+            discount=DISCOUNT,
+            epsilon_decay_steps=EPISODES*env.state_ts.shape[0],
+            verbose=True)
 
-    for episode in range(1, EPISODES):
-        agent, env, sess = run_single_episode(episode,
-                                               agent,
-                                               env,
-                                               sess)
+for episode in range(1, EPISODES):
+
+    #  initialize before starting episode
+    done, step = False, 0
+    observation = env.reset(episode)
+
+    #  while loop runs through a single episode
+    while done is False:
+        #  select an action
+        action = agent.act(observation=observation)
+        #  take one step through the environment
+        next_observation, reward, done, info = env.step(action)
+        #  store the experience
+        agent.memory.add_experience(observation, action, reward, next_observation, step, episode)
+        step += 1
+        observation = next_observation
 
         #  get a batch to learn from
-        #  note that we don't scale actions as we need to take logprob(action)
-        observations, actions, returns = agent.memory.get_episode_batch(episode,
-                                                                        scaled_actions=False)
-        #  train the model
-        loss = agent.learn(observations=observations,
-                           actions=actions,
-                           discounted_returns=returns,
-                           session=sess)
+        obs, actions, rewards, next_obs = agent.memory.get_random_batch(batch_size=BATCH_SIZE)
 
+    #  train the model
+    if episode > 100:
+        loss = agent.learn(observations=obs,
+                           actions=actions,
+                           rewards=rewards,
+                           next_observations=next_obs,
+                           episode=episode)
 
         if episode % OUTPUT_RESULTS == 0:
             #  collect data from the agent & environment
             global_history = Eternity_Visualizer(episode, agent, env,
-                                                 results_path='reinforce_results/')
+                                                 results_path='DQN_results/')
             outputs = global_history.output_results(save_data=False)

@@ -209,23 +209,21 @@ class Eternity_Visualizer(Visualizer):
         #     self.figures[fig_name] = make_fig_fctn(self.env_info,
         #                                            self.base_path_episodes)
 
-        self.figures['returns'] = self.make_time_series_fig(df=self.agent_memory['dataframe_episodic'],
-                                                      cols=['reward'],
-                                                      ylabel='Undiscounted total reward per episode',
-                                                      xlabel='Episode',
-                                                      path=os.path.join(self.base_path_agent, 'return_per_episode.png'))
+        self.figures['returns'] = self.make_time_series_fig(df=self.agent_memory['training_history'],
+                                                      cols=['loss'],
+                                                      ylabel='Loss function after each training step',
+                                                      xlabel='Training step',
+                                                      path=os.path.join(self.base_path_agent,
+                                                                        'training.png'))
 
         self.figures['panel'] = self.make_panel_fig(df=self.agent_memory['dataframe_episodic'],
                                                     panels=[['reward', 'cum_max_reward'],
-                                                            ['loss'],
                                                             ['rolling_mean']],
                                                     xlabels=['Episode',
-                                                             'Episode',
                                                              'Episode'],
                                                     ylabels=['Total reward per episode',
-                                                             'Loss',
                                                              'Rolling average reward per episode'],
-                                                    shape=(3, 1),
+                                                    shape=(2, 1),
                                                     xlim='all',
                                                     path=os.path.join(self.base_path_agent, 'panel.png'))
 

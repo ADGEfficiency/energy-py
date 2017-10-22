@@ -19,7 +19,6 @@ class Time_Series_Env(Base_Env):
                        observation_path,
                        verbose):
 
-        # self.lag = lag
         self.episode_start = episode_start
         self.episode_length = episode_length
         self.state_path = state_path
@@ -44,18 +43,21 @@ class Time_Series_Env(Base_Env):
         observation_space = self.make_env_obs_space(self.raw_state_ts)
 
         #  now grab the start & end indicies
-        start, end = self.get_ts_row_idx(self.raw_state_ts.shape[0],
+        ts_length = min(self.raw_state_ts.shape[0],
+                        self.raw_observation_ts.shape[0])
+        start, end = self.get_ts_row_idx(ts_length,
                                          self.episode_length,
                                          self.episode_start)
 
-
         state_ts = self.raw_state_ts.iloc[start:end, :]
         observation_ts = self.raw_observation_ts.iloc[start:end, :]
-        assert observation_ts.shape[0] == state_ts.shape[0]
 
-        print('episode starting at  {}'.format(state_ts.index[0]))
-        if self.verbose:
-            print(state_ts.iloc[:,0].describe())
+        assert observation_ts.shape[0] == state_ts.shape[0]
+        print(start, end)
+        print(state_ts.head())
+        print('episode {} starting at {}'.format(self.episode,state_ts.index[0]))
+
+        self.verbose_print(state_ts.iloc[:,0].describe())
 
         return observation_space, observation_ts, state_ts
 
@@ -73,8 +75,9 @@ class Time_Series_Env(Base_Env):
         time period
         """
         start = episode_start
-        if episode_length == 'maximum':
+        if episode_length == 'all':
             episode_length = ts_length - 1
+            self.episode_length = episode_length
 
         if episode_start == 'random':
             end_int_idx = ts_length - episode_length

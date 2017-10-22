@@ -10,7 +10,7 @@ class Utils(object):
     """
     A base class that holds generic functions
     """
-    def __init__(self, verbose=False):
+    def __init__(self, verbose):
         self.verbose = verbose
 
     """

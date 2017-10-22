@@ -31,10 +31,9 @@ class Base_Env(Utils):
     """
 
     def __init__(self, verbose):
-        self.verbose = verbose
+        super().__init__(verbose)
 
         self.info       = collections.defaultdict(list)
-        self.episode    = None
         return None
 
     # Override in ALL subclasses
@@ -47,20 +46,19 @@ class Base_Env(Utils):
     observation_space = None  #  list of length obs_dim
     reward_space = None       #  single space object
 
-    def reset(self):
+    def reset(self, episode):
         """
         Resets the state of the environment and returns an initial observation.
 
         Returns: observation (np array): the initial observation
         """
-        if self.verbose > 0:
-            print('Reset environment')
-            self.episode = None
+        self.episode = episode
+        self.verbose_print('reset environment')
 
         self.outputs = {}
         return self._reset()
 
-    def step(self, action, episode):
+    def step(self, action):
         """
         Run one timestep of the environment's dynamics.
         When end of episode is reached, you are responsible for calling reset().
@@ -87,12 +85,6 @@ class Base_Env(Utils):
             done (boolean): whether the episode has ended, in which case further step() calls will return undefined results
             info (dict): contains auxiliary diagnostic information (helpful for debugging, and sometimes learning)
         """
-        #  update the current episode number
-        self.episode = episode
-        self.episode_visualizer = None
-
-        if self.verbose:
-            print('step {} - episode {}'.format(self.steps, episode))
         return self._step(action)
 
     def output_results(self):

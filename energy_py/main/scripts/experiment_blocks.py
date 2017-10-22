@@ -12,18 +12,18 @@ def run_single_episode(episode_number,
 
     #  initialize before starting episode
     done, step = False, 0
-    observation = env.reset()
+    observation = env.reset(episode_number)
     #  while loop runs through a single episode
     while done is False:
         #  select an action
         action = agent.act(observation=observation, session=sess)
         #  take one step through the environment
-        next_observation, reward, done, info = env.step(action, episode_number)
-        #  store the expWWerience
+        next_observation, reward, done, info = env.step(action)
+        #  store the experience
         agent.memory.add_experience(observation, action, reward, next_observation, step, episode_number)
         step += 1
         observation = next_observation
 
     #  now episode is done - process the episode in the agent memory
-    agent.memory.finish_episode(episode_number, normalize_return)
+    agent.memory.calc_returns(episode_number, normalize_return)
     return agent, env, sess

@@ -42,8 +42,6 @@ class Battery_Env(Time_Series_Env):
         state_path = os.path.join(path, 'state.csv')
         observation_path = os.path.join(path, 'observation.csv')
 
-        print('state path is'.format(path))
-
         #  calling init method of the parent Time_Series_Env class
         super().__init__(lag,
                          episode_length,
@@ -58,8 +56,7 @@ class Battery_Env(Time_Series_Env):
         self.round_trip_eff = float(round_trip_eff)
         self.initial_charge = float((self.capacity * initial_charge) / 100)
 
-        #  resetting the environment
-        self.observation    = self.reset()
+        self.observation    = self.reset(episode='none')
 
     def _reset(self):
         """
@@ -209,9 +206,9 @@ class Battery_Env(Time_Series_Env):
         #  -1 in here because of the zero index
         if self.steps == (self.episode_length-1):
             self.done = True
-            next_state = 'terminal'
-            next_observation = 'terminal'
+            next_state = np.full(shape=self.state.shape, fill_value=-999999)
             reward = 0
+            next_observation = np.full(shape=self.observation.shape, fill_value=-999999)
 
             total_ep_reward = sum(self.info['reward'])
 
