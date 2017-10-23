@@ -27,10 +27,12 @@ class DQN(Base_Agent):
                        Q_target,
                        discount,
                        epsilon_decay_steps=10000,
+                       update_target_net=100,
+                       memory_length=100000,
                        verbose=False):
 
         #  passing the environment to the Base_Agent class
-        super().__init__(env, epsilon_decay_steps, verbose)
+        super().__init__(env, epsilon_decay_steps, memory_length, verbose)
 
         self.Q_actor = Q_actor(self.observation_dim + self.num_actions)
         self.Q_target = Q_target(self.observation_dim + self.num_actions)
@@ -41,6 +43,7 @@ class DQN(Base_Agent):
         self.e_greedy = Epsilon_Greedy(decay_steps=epsilon_decay_steps,
                                        verbose=0)
 
+        self.update_target_net = update_target_net
     def _act(self, **kwargs):
         """
         Act using an epsilon-greedy policy
@@ -169,6 +172,6 @@ class DQN(Base_Agent):
         self.memory.losses.append(hist.history['loss'][-1])
 
         #  copy weights over to target model
-        if episode % 5 == 0:
+        if episode % self.update_target_net == 0:
             self.Q_target.copy_weights(parent=self.Q_actor.model)
         return hist

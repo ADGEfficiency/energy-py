@@ -61,13 +61,23 @@ env = Battery_Env(lag            = 0,
 Q_actor = Keras_ActionValueFunction
 Q_target = Keras_ActionValueFunction
 
+#  set up some hyperparameters using ratios from DeepMind 2015 Atari
+total_steps = EPISODES * env.state_ts.shape[0]
+epsilon_decay_steps = total_steps / 2
+update_target_net = int(total_steps / (env.state_ts.shape[0] * 100))
+memory_length = int(total_steps/10)
+
+print('update target net {}'.format(update_target_net))
+
 #  now we create our agent
 agent = DQN(env,
             Q_actor,
             Q_target,
             discount=DISCOUNT,
-            epsilon_decay_steps=EPISODES*env.state_ts.shape[0],
-            verbose=True)
+            epsilon_decay_steps=epsilon_decay_steps,
+            update_target_net=update_target_net,
+            memory_length=memory_length,
+            verbose=False)
 
 for episode in range(1, EPISODES):
 
