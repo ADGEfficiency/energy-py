@@ -1,6 +1,3 @@
-"""
-Module for Base_Agent & helper classes.
-"""
 import itertools
 
 import numpy as np
@@ -10,27 +7,46 @@ from energy_py.main.scripts.utils import Utils
 
 class Base_Agent(Utils):
     """
-    the energy_py base agent class
+    The energy_py base agent class
 
-    The main methods of this class are:
+    The main methods of this class are
+        reset
         act
         learn
+
+    All agents should override the following methods
+        _reset
+        _act
+        _learn
+
+    Some agents will also override
+        _load_brain
+        _save_brain
+        _output_results
+
+    args
+        env      : energy_py environment
+        discount : float : discount rate (gamma)
+
+    methods
+        all_state_actions : used to create all combinations of state across the
+                            action space
     """
 
-    def __init__(self, env, discount, verbose, epsilon_decay_steps=0,
-                 memory_length=int(1e6)):
-
+    def __init__(self, env, discount, verbose):
+        #  send up verbose up to Utils class
         super().__init__(verbose)
 
         self.env = env
         self.discount = discount
+
+        #  use the env to setup the agent
         self.action_space = self.env.action_space
         self.observation_space = self.env.observation_space
         self.num_actions = len(self.action_space)
         self.observation_dim = len(self.observation_space)
 
-        self.memory_length = memory_length
-
+        #  create a memory for the agent
         #  object to hold all of the agents experience
         self.memory = Agent_Memory(memory_length=self.memory_length,
                                    observation_space=env.observation_space,
@@ -51,45 +67,59 @@ class Base_Agent(Utils):
 
     def reset(self):
         """
+        Resets the agent
         """
         #  reset the objects set in the Base_Agent init
         self.memory.reset()
-        self.e_greedy.reset()
-
         return self._reset()
 
-    def act(self, **kwargs):
+    def act(self, observation):
         """
-        Main function for agent to take action.
+        Action selection by agent
 
-        Calls the ._act method (which can be overidden in the agent child class)
+        args
+            observation (np array) : shape=(1, observation_dim)
+
+        return
+            action (np array) : shape=(1, num_actions)
         """
         self.verbose_print('acting')
-        return self._act(**kwargs)
+        return self._act(observation)
 
     def learn(self, **kwargs):
         """
+        Agent learns from experience
+
+        Use **kwargs for flexibility
+
+        return
+            training_history (object) : info about learning (i.e. loss)
         """
         self.verbose_print('learning')
         return self._learn(**kwargs)
 
     def load_brain(self):
         """
+        Agent can load previously created memories, policies or value functions
         """
         return self._load_brain()
 
     def save_brain(self):
         """
+        Agent can save previously created memories, policies or value functions
         """
         return self._save_brain()
 
     def output_results(self):
         """
+        Save results from the agents memory
         """
         return self.memory.output_results()
 
     def all_state_actions(self, action_space, observation):
         """
+        This is a helper function used by value function based agents
+
         All possible combinations actions for a single observation
 
         Used by Q-Learning for both acting and learning
@@ -102,6 +132,7 @@ class Base_Agent(Utils):
         args
             action_space    : a list of Space objects
             observation     : np array (1, observation_dim)
+                              should be already scaled
 
         returns
             state_acts      : np array (action_combinations,
@@ -124,25 +155,22 @@ class Base_Agent(Utils):
         #  create an array with one obs per possible action combinations
         #  reshape into (num_actions, observation_dim)
         observations = np.tile(observation, actions.shape[0])
-        observations = observations.reshape(actions.shape[0],
-                                            self.observation_dim) 
+        observations = observations.reshape(actions.shape[0], self.observation_dim) 
 
         #  concat the observations & actions
-        #  used scaled actions
         state_acts = np.concatenate([observations, scaled_actions], axis=1)
         assert actions.shape[0] == state_acts.shape[0]
 
         return state_acts, actions
 
 
-
 class Epsilon_Greedy(object):
     """
     A class to perform epsilon greedy action selection.
 
-    Currently decay is done linearly.
+    Decay is done linearly.
 
-    Decay occurs every time the object is used.
+    Decay occurs every time we call get_epsilon.
     """
     def __init__(self, decay_steps,
                        epsilon_start = 1.0,
@@ -164,6 +192,7 @@ class Epsilon_Greedy(object):
 
     def reset(self):
         """
+        Reset the Epsilon_Greedy object
         """
         self.steps   = 0
         self.epsilon = self.epsilon_start
@@ -171,6 +200,10 @@ class Epsilon_Greedy(object):
 
     def get_epsilon(self):
         """
+        Get the current value of epsilon
+
+        returns
+            epsilon (float)
         """
 
         if self.verbose:

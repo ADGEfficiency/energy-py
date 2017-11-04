@@ -15,6 +15,9 @@ class DQN(Base_Agent):
         Q_target            : energy_py action-value function
                               used for creating the target for learning
         epsilon_decay_steps : int
+        update_target_net   : int : steps before target network update
+        memory_length       : int : length of experience replay
+        scale_targets       : bool : whether to scale Q(s,a) when learning
 
     inherits from
         Base_Agent          : the energy_py class used for agents
@@ -29,22 +32,34 @@ class DQN(Base_Agent):
                        epsilon_decay_steps=10000,
                        update_target_net=100,
                        memory_length=100000,
+                       scale_targets=True,
                        verbose=False):
 
+        self.memory_length = memory_length
         #  passing the environment to the Base_Agent class
-        super().__init__(env, epsilon_decay_steps, memory_length, verbose)
+        super().__init__(env, discount, verbose)
 
+        self.epsilon_decay_steps = epsilon_decay_steps
+        self.update_target_net = update_target_net
+        self.scale_targets = scale_targets
+
+        #  make our two action value functions
         self.Q_actor = Q_actor(self.observation_dim + self.num_actions)
         self.Q_target = Q_target(self.observation_dim + self.num_actions)
-
-        self.discount = discount
 
         #  create an object to decay epsilon
         self.e_greedy = Epsilon_Greedy(decay_steps=epsilon_decay_steps,
                                        verbose=0)
 
-        self.update_target_net = update_target_net
-    def _act(self, **kwargs):
+    def _reset(self):
+        """
+        Resets the agent
+        """
+        self.Q_actor.model.reset_weights()
+        self.Q_target.model.reset_weights()
+        self.e_greedy.reset()
+
+    def _act(self, observation):
         """
         Act using an epsilon-greedy policy
 
@@ -54,9 +69,6 @@ class DQN(Base_Agent):
         return
             action      : np array (1, num_actions)
         """
-        #  pull out the relevant kwargs
-        observation = kwargs.pop('observation')
-
         #  because our observation comes directly from the env
         #  we need to scale the observation
         observation = self.scale_array(observation, self.observation_space)
@@ -103,7 +115,7 @@ class DQN(Base_Agent):
             actions             : np array (batch_size, num_actions)
             rewards             : np array (batch_size, 1)
             next_observations   : np array (batch_size, observataion_dim)
-            episode             : int   
+            episode             : int
 
         returns
             history             : list
@@ -123,7 +135,7 @@ class DQN(Base_Agent):
         inputs = np.zeros(shape=(observations.shape[0],
                                  self.observation_dim + self.num_actions))
         targets = []
-        print('starting input & target creation')
+        self.verbose_print('starting input & target creation', level=2)
         for j, (obs, act, rew, next_obs) in enumerate(zip(observations,
                                                           actions, 
                                                           rewards,
@@ -133,8 +145,8 @@ class DQN(Base_Agent):
 
             #  second the targets
             if next_obs.all() == -999999:
-                #  if the current state is terminal
-                #  the return is equal to the reward
+                #  if the next state is terminal
+                #  the return of our current state is equal to the reward
                 #  i.e. Q(s',a) = 0 for all a
                 target = rew
             else:
@@ -146,32 +158,32 @@ class DQN(Base_Agent):
 
                 #  now predict the value of each of the state_actions
                 #  note that we use Q_target here
-                all_preds = []
-                for sa in state_actions:
-                    sa = sa.reshape(-1, state_actions.shape[1])
-                    pred = self.Q_target.predict(sa)
-                    all_preds.append(pred)
-
-                all_preds = np.array(all_preds).reshape(-1)
-
-                #  we take the maximum value across all actions
-                max_Q = np.max(all_preds)
+                max_Q = max([self.Q_target.predict(sa.reshape(-1, state_actions.shape[1]))
+                             for sa in state_actions])
 
                 #  the Bellman equation
                 target = rew + self.discount * max_Q
 
             targets.append(target)
 
+        #  now targets are all done, turn our list into a numpy array
+        #  this is so we can scale using normalization 
         targets = np.array(targets)
 
+        #  scaling the targets by normalizing
+        if self.scale_targets:
+            targets = (targets - targets.min()) / (targets.max() - targets.min())
+
         #  update our Q function
-        print('improving Q_actor')
+        self.verbose_print('improving Q_actor')
         hist = self.Q_actor.improve(state_actions=inputs,
-                                       targets=targets)
+                                    targets=targets)
 
         self.memory.losses.append(hist.history['loss'][-1])
 
         #  copy weights over to target model
         if episode % self.update_target_net == 0:
+            self.verbose_print('updating target network', level=0)
             self.Q_target.copy_weights(parent=self.Q_actor.model)
+
         return hist

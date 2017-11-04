@@ -50,11 +50,21 @@ class KerasFunctionApproximator(object):
         model.add(Activation('linear'))
 
         model.compile(loss='mse', optimizer='Adam')
+
+        self.initial_weights = model.get_weights()
         return model
 
     def copy_weights(self, parent):
         print('copying weights')
         self.model.set_weights(parent.get_weights())
+        return None
+
+    def reset_weights(self):
+        """
+        Resets model to initial weights
+        """
+        print('resetting weights')
+        self.model.set_weights(self.initial_weights) 
         return None
 
 class Keras_ValueFunction(KerasFunctionApproximator):
@@ -70,8 +80,7 @@ class Keras_ValueFunction(KerasFunctionApproximator):
     def predict(self, state):
         return self.model.predict(state)
 
-    def improve(self, states,
-                      targets):
+    def improve(self, states, targets):
         history = self.model.fit(x=states, y=targets, verbose=0)
         return history
 
@@ -83,14 +92,13 @@ class Keras_ActionValueFunction(KerasFunctionApproximator):
     after leaving state s, taking action a.
     """
     def __init__(self, input_dim):
-        self.model = self.build_feedforward({'layers':[100, 100, 100],
+        self.model = self.build_feedforward({'layers':[1000, 1000, 1000],
                                              'input_dim':input_dim,
                                              'output_dim':1})
 
     def predict(self, state_action):
         return self.model.predict(state_action)
 
-    def improve(self, state_actions,
-                      targets):
+    def improve(self, state_actions, targets):
         history = self.model.fit(x=state_actions, y=targets, verbose=0)
         return history

@@ -102,7 +102,7 @@ class TF_GaussianPolicy(TF_FunctionApproximator):
 
             #  clip the stdev so that stdev is not zero
             #  TODO not sure what the minimum bound for this should be
-            stdevs = tf.clip_by_value(stdevs, 0.5, tf.reduce_max(stdevs))
+            stdevs = tf.clip_by_value(stdevs, 0.1, tf.reduce_max(stdevs))
             self.norm_dist = tf.contrib.distributions.Normal(loc=means, scale=stdevs)
 
             #  selecting an action by sampling from the distribution

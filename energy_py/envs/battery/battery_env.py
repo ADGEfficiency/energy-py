@@ -14,27 +14,27 @@ class Battery_Env(Time_Series_Env):
 
     args
         lag             :   int     : lag between observation & state
-        episode_length  :   int     : length of the episode
-                        :   string  : 'maximum' = run entire legnth
+        episode_length  : int / str : length of the episode
+                                      'maximum' = run entire legnth
         episode_start   :   int     : the integer index to start the episode
         power_rating    :   float   : maximum rate of battery charge
                                       or discharge [MWe]
         capacity        :   float   : amount of electricity that can be stored
                                       [MWh]
         round_trip_eff  :   float   : round trip efficiency of storage [%]
-        initial_charge  :   int     : inital amount of electricity stored
+        initial_charge  :   float   : inital amount of electricity stored
                                     : as a percent of capacity [%]
 
         verbose         :   int     : controls env print statements
     """
-    def __init__(self, lag,
-                       episode_length,
-                       episode_start,
+    def __init__(self, lag            = 0,
+                       episode_length = 'maximum',
+                       episode_start  = 0,
 
-                       power_rating,
-                       capacity,
+                       power_rating   = 2,
+                       capacity       = 4,
                        round_trip_eff = 0.9,
-                       initial_charge = 0,
+                       initial_charge = 0.0,
 
                        verbose = False):
 
@@ -51,10 +51,10 @@ class Battery_Env(Time_Series_Env):
                          verbose)
 
         #  technical energy inputs
-        self.power_rating   = float(power_rating)
-        self.capacity       = float(capacity)
-        self.round_trip_eff = float(round_trip_eff)
-        self.initial_charge = float((self.capacity * initial_charge) / 100)
+        self.power_rating   = float(power_rating) # MW
+        self.capacity       = float(capacity) # MWh
+        self.round_trip_eff = float(round_trip_eff) # %
+        self.initial_charge = float(self.capacity * initial_charge) # MWh
 
         self.observation    = self.reset(episode='none')
 
@@ -127,12 +127,16 @@ class Battery_Env(Time_Series_Env):
         """
         One step through the environment.
 
+        Battery is charged or discharged according to
+        the action.
+
         args
-            action      : np.array (1, 2)
+            action      : np.array shape=(1, 2)
                           [0][0] = charging
                           [0][1] = discharging
         returns
-            observation : np.array (1, len(self.observation_space)
+            observation : np.array
+                          shape=(1, len(self.observation_space)
             reward      : float
             done        : boolean
             info        : dictionary
@@ -200,7 +204,8 @@ class Battery_Env(Time_Series_Env):
                            'gross rate is {} MW'.format(gross_rate),
                            'losses were {} MWh'.format(losses),
                            'net rate is {} MW'.format(net_rate),
-                           'reward is {} $/5min'.format(reward))
+                           'reward is {} $/5min'.format(reward),
+                           level=1)
 
         #  check to see if episode is done
         #  -1 in here because of the zero index

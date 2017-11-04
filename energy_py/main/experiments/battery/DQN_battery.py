@@ -13,8 +13,8 @@ from energy_py.agents.function_approximators import Keras_ActionValueFunction
 from energy_py.envs import Battery_Env
 from energy_py.main.scripts.experiment_blocks import run_single_episode
 from energy_py.main.scripts.visualizers import Eternity_Visualizer
+from energy_py import Utils
 
-#  can probably make this into an episode block
 parser = argparse.ArgumentParser(description='battery REINFORCE experiment')
 parser.add_argument('--ep', type=int, default=10,
                     help='number of episodes to run (default: 10)')
@@ -26,7 +26,6 @@ parser.add_argument('--gamma', type=float, default=0.999,
                     help='discount rate (default: 0.999)')
 parser.add_argument('--out', type=int, default=50,
                     help='output results every n episodes (default: 50')
-
 args = parser.parse_args()
 
 EPISODES = args.ep
@@ -35,17 +34,7 @@ BATCH_SIZE = args.bs
 DISCOUNT = args.gamma
 OUTPUT_RESULTS = args.out
 
-import csv
-def save_args(args, path):
-    with open(path, 'w') as outfile:
-        writer = csv.writer(outfile)
-        for k, v in vars(args).items():
-            print('{} : {}'.format(k, v))
-            writer.writerow([k] + [v])
-    return writer
-
-writer = save_args(args,
-                   path='DQN_results/args.txt')
+utils = Utils()
 
 #  first we create our environment
 env = Battery_Env(lag            = 0,
@@ -67,8 +56,11 @@ epsilon_decay_steps = total_steps / 2
 update_target_net = int(total_steps / (env.state_ts.shape[0] * 100))
 memory_length = int(total_steps/10)
 
-print('update target net {}'.format(update_target_net))
-
+writer = utils.save_args(args, path='DQN_results/args.txt',
+                         optional={'total steps':total_steps,
+                                   'epsilon decay steps':epsilon_decay_steps,
+                                   'update_target_net':update_target_net,
+                                   'memory length':memory_length})
 #  now we create our agent
 agent = DQN(env,
             Q_actor,
@@ -100,7 +92,7 @@ for episode in range(1, EPISODES):
         obs, actions, rewards, next_obs = agent.memory.get_random_batch(batch_size=BATCH_SIZE)
 
     #  train the model
-    if episode > 100:
+    if episode >= 5:
         loss = agent.learn(observations=obs,
                            actions=actions,
                            rewards=rewards,
