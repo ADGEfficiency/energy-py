@@ -1,8 +1,8 @@
 ## energy_py v2.0
 
-**energy_py is reinforcement learning for energy systems.** It is a collection of reinforcement learning agents and energy environments built in Python.
+**energy_py is reinforcement learning for energy systems.** It's a collection of agents and environments built in Python.
 
-This goal of this project is to demonstrate the ability of reinforcement learning agents to control virtual energy environments.  Proving the concepts with virtual environments is the first step in using reinforcment learning to control real world energy assets.
+The goal is to demonstrate that reinforcement learning agents can control virtual energy environments.  Proving this virtually is the first step towards using reinforcment learning in real world energy systems.
 
 energy_py supports this goal by providing a collection of reinforcement learning agents, energy environments and tools to run experiments.  
 
@@ -10,18 +10,22 @@ This project is built and maintained by Adam Green - adam.green@adgefficiency.co
 
 ### Basic usage
 ```
-from energy_py.agents.policy_based.reinforce import REINFORCE_Agent
-from energy_py.envs.battery.battery_env import Battery_Env
-from energy_py.main.scripts.experiment_blocks import run_single_episode
+from energy_py.agents import DQN, Keras_ActionValueFunction
+from energy_py.envs import Battery_Env
 
-env = Battery_Env()
-agent = REINFORCE_Agent(env)
+env = Battery_Env(lag            = 0,
+                  episode_length = 2016,
+                  episode_start  = 0,
+                  power_rating   = 2,  #  in MW
+                  capacity       = 2,  #  in MWh
+                  initial_charge = 0,  #  in % of capacity
+                  round_trip_eff = 1.0, #  in % - 80-90% in practice
+                  verbose        = False)
 
-with tf.Session() as sess:
-     agent, env, sess = run_single_episode(episode,
-                                               agent,
-                                               env,
-                                               sess)
+agent = DQN(env,
+            Q_actor=Keras_ActionValueFunction,
+            Q_target=Keras_ActionValueFunction,
+            discount=0.9)
 ```
 
 ### Installation
