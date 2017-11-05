@@ -2,16 +2,14 @@
 This experiment script uses the DQN agent
 to control the battery environment.
 """
-
 import sys
 
 import argparse
 
-from energy_py.agents import DQN
-from energy_py.agents.function_approximators import Keras_ActionValueFunction
+from energy_py.agents import DQN, Keras_ActionValueFunction
 
 from energy_py.envs import Battery_Env
-from energy_py.main.scripts.experiment_blocks import run_single_episode
+from energy_py import run_single_episode
 from energy_py.main.scripts.visualizers import Eternity_Visualizer
 from energy_py import Utils
 
@@ -53,7 +51,7 @@ Q_target = Keras_ActionValueFunction
 #  set up some hyperparameters using ratios from DeepMind 2015 Atari
 total_steps = EPISODES * env.state_ts.shape[0]
 epsilon_decay_steps = total_steps / 2
-update_target_net = int(total_steps / (env.state_ts.shape[0] * 100))
+update_target_net = max(10, int(total_steps / (env.state_ts.shape[0] * 100)))
 memory_length = int(total_steps/10)
 
 writer = utils.save_args(args, path='DQN_results/args.txt',
@@ -69,7 +67,9 @@ agent = DQN(env,
             epsilon_decay_steps=epsilon_decay_steps,
             update_target_net=update_target_net,
             memory_length=memory_length,
-            verbose=False)
+            scale_targets=True,
+            verbose=0,
+            brain_path='DQN_results/brain')
 
 for episode in range(1, EPISODES):
 
@@ -91,16 +91,19 @@ for episode in range(1, EPISODES):
         #  get a batch to learn from
         obs, actions, rewards, next_obs = agent.memory.get_random_batch(batch_size=BATCH_SIZE)
 
-    #  train the model
-    if episode >= 5:
-        loss = agent.learn(observations=obs,
-                           actions=actions,
-                           rewards=rewards,
-                           next_observations=next_obs,
-                           episode=episode)
+        #  train the model
+        if episode >= 0:
+            loss = agent.learn(observations=obs,
+                               actions=actions,
+                               rewards=rewards,
+                               next_observations=next_obs,
+                               episode=episode)
 
-        if episode % OUTPUT_RESULTS == 0:
-            #  collect data from the agent & environment
-            global_history = Eternity_Visualizer(episode, agent, env,
-                                                 results_path='DQN_results/')
-            outputs = global_history.output_results(save_data=False)
+    if episode % OUTPUT_RESULTS == 0:
+        #  collect data from the agent & environment
+        global_history = Eternity_Visualizer(episode, agent, env,
+                                             results_path='DQN_results/')
+        outputs = global_history.output_results(save_data=False)
+
+        agent.save_brain()
+

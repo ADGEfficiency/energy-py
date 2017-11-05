@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 
 from energy_py.agents import Base_Agent, Epsilon_Greedy
@@ -33,11 +35,12 @@ class DQN(Base_Agent):
                        update_target_net=100,
                        memory_length=100000,
                        scale_targets=True,
+                       brain_path=[],
                        verbose=False):
 
         self.memory_length = memory_length
         #  passing the environment to the Base_Agent class
-        super().__init__(env, discount, verbose)
+        super().__init__(env, discount, brain_path, verbose)
 
         self.epsilon_decay_steps = epsilon_decay_steps
         self.update_target_net = update_target_net
@@ -75,32 +78,35 @@ class DQN(Base_Agent):
 
         #  get the current value of epsilon
         epsilon = self.e_greedy.get_epsilon()
-        self.verbose_print('epsilon is {:.3f}'.format(epsilon))
+        self.verbose_print('epsilon is {:.3f}'.format(epsilon), level=2)
 
         if np.random.uniform() < epsilon:
-            self.verbose_print('acting randomly')
+            self.verbose_print('acting randomly', level=2)
             action = [space.sample() for space in self.action_space]
 
         else:
-            self.verbose_print('acting according to Q_actor')
+            self.verbose_print('acting according to Q_actor', level=2)
 
             #  create all possible combinations of our single observation
             #  and our n-dimensional action space
             state_acts, acts = self.all_state_actions(self.action_space,
-                                                   observation)
+                                                      observation)
 
             #  get predictions from the action_value function Q
-            Q_estimates = []
-            for sa in state_acts:
-                Q_estimates.append(self.Q_actor.predict(sa.reshape(1, -1)))
+            Q_estimates = [self.Q_actor.predict(sa.reshape(1,-1))
+                           for sa in state_acts]
 
             #  select the action with the highest Q
             #  note that we index the unscaled action
             #  as this action is sent directly to the environment
             action = acts[np.argmax(Q_estimates)]
 
+            #  save the Q estimates
+            self.memory.agent_stats['acting max Q estimates'].append(np.max(Q_estimates))
+
         action = np.array(action).reshape(1, self.num_actions)
         assert len(self.action_space) == action.shape[1]
+
         return action
 
     def _learn(self, **kwargs):
@@ -131,13 +137,13 @@ class DQN(Base_Agent):
         assert observations.shape[0] == rewards.shape[0]
         assert observations.shape[0] == next_observations.shape[0]
 
-        #  iterate over the experience to create the input and target 
+        #  iterate over the experience to create the input and target
         inputs = np.zeros(shape=(observations.shape[0],
                                  self.observation_dim + self.num_actions))
         targets = []
         self.verbose_print('starting input & target creation', level=2)
         for j, (obs, act, rew, next_obs) in enumerate(zip(observations,
-                                                          actions, 
+                                                          actions,
                                                           rewards,
                                                           next_observations)):
             #  first the inputs
@@ -158,28 +164,35 @@ class DQN(Base_Agent):
 
                 #  now predict the value of each of the state_actions
                 #  note that we use Q_target here
-                max_Q = max([self.Q_target.predict(sa.reshape(-1, state_actions.shape[1]))
+                max_q = max([self.Q_target.predict(sa.reshape(-1, state_actions.shape[1]))
                              for sa in state_actions])
 
                 #  the Bellman equation
-                target = rew + self.discount * max_Q
+                target = rew + self.discount * max_q
 
             targets.append(target)
 
         #  now targets are all done, turn our list into a numpy array
-        #  this is so we can scale using normalization 
+        #  this is so we can scale using normalization
         targets = np.array(targets)
 
         #  scaling the targets by normalizing
         if self.scale_targets:
             targets = (targets - targets.min()) / (targets.max() - targets.min())
 
+        #  reshape targets into 2 dimensions
+        targets = targets.reshape(-1,1)
+
         #  update our Q function
-        self.verbose_print('improving Q_actor')
+        self.verbose_print('Improving Q_actor', level=1)
+        self.verbose_print('input shape {}'.format(inputs.shape), level=2)
+        self.verbose_print('target shape {}'.format(targets.shape), level=2)
+
         hist = self.Q_actor.improve(state_actions=inputs,
                                     targets=targets)
 
-        self.memory.losses.append(hist.history['loss'][-1])
+        self.memory.agent_stats['loss'].append(hist.history['loss'][-1])
+        self.memory.agent_stats['training Q targets'].extend(targets.tolist())
 
         #  copy weights over to target model
         if episode % self.update_target_net == 0:
@@ -187,3 +200,37 @@ class DQN(Base_Agent):
             self.Q_target.copy_weights(parent=self.Q_actor.model)
 
         return hist
+
+    def _load_brain(self):
+        """
+        Loads memory, Q_actor and Q_target
+
+        TODO repeated code, maybe put this into Base_Agent init
+        """
+        brain = ['experiences', 'Q_actor', 'Q_target']
+        paths = {key:os.path.join(self.brain_path, key+'.pickle') for key in brain}
+
+        #  load the experiences into the Agent_Memory object
+        experiences = self.load_pickle(paths['memory'])
+        self.memory.add_experience_list(experiences)
+
+        #  load the action value functions
+        self.Q_actor = self.load_model(paths['Q_actor'])
+        self.Q_target = self.load_model(paths['Q_target'])
+
+    def _save_brain(self):
+        """
+        Saves experiences, Q_actor and Q_target
+        """
+        brain = ['experiences', 'Q_actor', 'Q_target']
+        paths = {key:os.path.join(self.brain_path, key+'.pickle') for key in brain}
+        [self.ensure_dir(path) for key, path in paths.items()]
+
+        #  save the experience list
+        self.dump_pickle(self.memory.experiences, paths['experiences'])
+
+        #  not reccomended to use pickle for Keras models
+        #  so we use h5py to save Keras models
+        self.Q_actor.save_model(paths['Q_actor'])
+        self.Q_target.save_model(paths['Q_target'])
+

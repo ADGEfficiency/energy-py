@@ -1,6 +1,6 @@
 import numpy as np
 
-from energy_py.agents.agent_core import Base_Agent
+from energy_py.agents import Base_Agent
 
 class Naive_Battery_Agent(Base_Agent):
     """

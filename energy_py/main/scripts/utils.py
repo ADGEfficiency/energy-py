@@ -22,7 +22,7 @@ class Utils(object):
         """
         Helper function to print info.
 
-        self.verbose = 0 & level = 0 -> print 
+        self.verbose = 0 & level = 0 -> print
         self.verbose = 0 & level = 1 -> no printing
         self.verbose = 1 & level = 1 -> printing
 
@@ -70,7 +70,7 @@ class Utils(object):
         dictionary
 
         args
-            argparse (object) 
+            argparse (object)
             path (str)        : path to save too
             optional (dict)   : optional dictionary of additional arguments
 
@@ -90,7 +90,7 @@ class Utils(object):
         return writer
 
     """
-    energy_py specific functions 
+    energy_py specific functions
     """
 
     def normalize(self, value, low, high):
@@ -118,7 +118,7 @@ class Utils(object):
         """
         Helper function for make_machine_experience()
         Uses the space & a given function to scale an array
-        Scaling is done by normalization 
+        Scaling is done by normalization
 
         Used to scale the observations and actions
 
@@ -136,6 +136,7 @@ class Utils(object):
         array = array.reshape(-1)
         assert array.shape[0] == len(space)
 
+        scaled_array = np.array([])
         #  iterate across the array values & corresponding space object
         for value, spc in itertools.zip_longest(array, space):
             if spc.type == 'continuous':

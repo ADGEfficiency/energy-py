@@ -33,12 +33,13 @@ class Base_Agent(Utils):
                             action space
     """
 
-    def __init__(self, env, discount, verbose):
+    def __init__(self, env, discount, brain_path, verbose):
         #  send up verbose up to Utils class
         super().__init__(verbose)
 
         self.env = env
         self.discount = discount
+        self.brain_path = brain_path
 
         #  use the env to setup the agent
         self.action_space = self.env.action_space
@@ -54,8 +55,6 @@ class Base_Agent(Utils):
                                    reward_space=env.reward_space,
                                    discount=discount,
                                    verbose=self.verbose)
-
-        return None
 
     #  assign errors for the Base_Agent methods
     def _reset(self): raise NotImplementedError
@@ -83,7 +82,7 @@ class Base_Agent(Utils):
         return
             action (np array) : shape=(1, num_actions)
         """
-        self.verbose_print('acting')
+        self.verbose_print('Agent is acting', level=2)
         return self._act(observation)
 
     def learn(self, **kwargs):
@@ -95,24 +94,26 @@ class Base_Agent(Utils):
         return
             training_history (object) : info about learning (i.e. loss)
         """
-        self.verbose_print('learning')
+        self.verbose_print('Agent is learning', level=1)
         return self._learn(**kwargs)
 
     def load_brain(self):
         """
         Agent can load previously created memories, policies or value functions
         """
+        self.verbose_print('Loading agent brain', level=0)
         return self._load_brain()
 
     def save_brain(self):
         """
         Agent can save previously created memories, policies or value functions
         """
+        self.verbose_print('Saving agent brain', level=0)
         return self._save_brain()
 
     def output_results(self):
         """
-        Save results from the agents memory
+        Agent can load previously created memories, policies or value functions
         """
         return self.memory.output_results()
 

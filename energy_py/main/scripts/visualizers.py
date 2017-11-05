@@ -23,27 +23,24 @@ class Visualizer(Utils):
         self.base_path = None
         self.outputs   = collections.defaultdict(list)
 
-        self.figures = {}
+        self.figs = {}
 
     def output_results(self, save_data):
         """
         The main visualizer function
 
         Purpose is to output results from the object
-
-        Should be overridden in the most child class
-
-        Envionsed this will be called by the env.output_results() fctn
         """
         return self._output_results(save_data)
 
     def make_time_series_fig(self, df,
                                    cols,
-                                   xlabel,
-                                   ylabel,
+                                   xlabel=[],
+                                   ylabel=[],
+                                   legend=False,
                                    xlim='all',
                                    ylim=[],
-                                   path=None):
+                                   path=[]):
         """
         makes a time series figure from a dataframe and specified columns
         """
@@ -57,9 +54,14 @@ class Visualizer(Utils):
             if ylim:
                 ax.set_ylim(ylim)
 
-            plt.xlabel(xlabel)
-            plt.ylabel(ylabel)
-            plt.legend()
+            if xlabel:
+                plt.xlabel(xlabel)
+
+            if ylabel:
+                plt.ylabel(ylabel)
+
+            if legend:
+                plt.legend()
 
             if xlim == 'last_week':
                 start = df.index[-7 * 24 * 12]
@@ -209,14 +211,7 @@ class Eternity_Visualizer(Visualizer):
         #     self.figures[fig_name] = make_fig_fctn(self.env_info,
         #                                            self.base_path_episodes)
 
-        self.figures['returns'] = self.make_time_series_fig(df=self.agent_memory['training_history'],
-                                                      cols=['loss'],
-                                                      ylabel='Loss function after each training step',
-                                                      xlabel='Training step',
-                                                      path=os.path.join(self.base_path_agent,
-                                                                        'training.png'))
-
-        self.figures['panel'] = self.make_panel_fig(df=self.agent_memory['dataframe_episodic'],
+        self.figs['panel'] = self.make_panel_fig(df=self.agent_memory['dataframe_episodic'],
                                                     panels=[['reward', 'cum_max_reward'],
                                                             ['rolling_mean']],
                                                     xlabels=['Episode',
@@ -224,10 +219,9 @@ class Eternity_Visualizer(Visualizer):
                                                     ylabels=['Total reward per episode',
                                                              'Rolling average reward per episode'],
                                                     shape=(2, 1),
-                                                    xlim='all',
                                                     path=os.path.join(self.base_path_agent, 'panel.png'))
 
-        self.figures['last_ep'] = self.make_panel_fig(df=self.env_info['dataframe'],
+        self.figs['last_ep'] = self.make_panel_fig(df=self.env_info['dataframe'],
                                                     panels=[['gross_rate'],
                                                             ['new_charge'],
                                                             ['electricity_price']],
@@ -238,8 +232,20 @@ class Eternity_Visualizer(Visualizer):
                                                              'Battery charge level at end of step [MWh]',
                                                              'Electricity price [$/MWh]'],
                                                     shape=(3, 1),
-                                                    xlim='all',
                                                     path=os.path.join(self.base_path_agent, 'last_ep.png'))
+
+        for var, df in self.agent_memory['agent_stats'].items():
+
+            if var == 'training Q targets':
+                hist, ax = plt.subplots(1, 1, figsize=(20, 20))
+                df.loc[:,var].plot(kind='hist', bins=10, ax=ax)
+                hist.savefig(os.path.join(self.base_path_agent,var+'.png'))
+
+            else:
+                self.figs[var] = self.make_time_series_fig(df=df,
+                                                           cols=[var],
+                                                           path=os.path.join(self.base_path_agent,var+'.png'))
+
 
         if save_data:
             self.write_data_to_disk()

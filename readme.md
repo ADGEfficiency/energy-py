@@ -90,8 +90,8 @@ energy_py is deep learning library agnostic - any framework can be used to [para
 
 It's envionsed that energy_py will be used to run experiments.  Currently three are implemented:
 
-- [Naive agent + battery environment experiment](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/main/experiments/battery/naive/naive_battery.py)
+- [Naive agent + battery](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/main/experiments/battery/naive/naive_battery.py)
 
-- [REINFORCE agent + battery environment experiment](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/main/experiments/battery/reinforce/reinforce_battery.py)
+- [REINFORCE agent + battery](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/main/experiments/battery/reinforce/reinforce_battery.py)
 
-- [DQN + battery environment experiment](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/main/experiments/battery/DQN_battery.py)
+- [DQN + battery](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/main/experiments/battery/DQN_battery.py)

@@ -57,7 +57,6 @@ class KerasFunctionApproximator(object):
     def copy_weights(self, parent):
         print('copying weights')
         self.model.set_weights(parent.get_weights())
-        return None
 
     def reset_weights(self):
         """
@@ -65,7 +64,24 @@ class KerasFunctionApproximator(object):
         """
         print('resetting weights')
         self.model.set_weights(self.initial_weights) 
-        return None
+
+    def save_model(self, path):
+        """
+        Saves the Keras model
+
+        args
+            path (str)
+        """
+        self.model.save(path)
+
+    def load_model(self, path):
+        """
+        Loads a Keras model
+
+        args
+            path (str)
+        """
+        self.model = keras.models.load_model(path)
 
 class Keras_ValueFunction(KerasFunctionApproximator):
     """

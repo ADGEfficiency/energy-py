@@ -5,7 +5,7 @@ import os
 import numpy as np
 import pandas as pd
 
-from energy_py.main.scripts.utils import Utils
+from energy_py import Utils
 
 
 class Agent_Memory(Utils):
@@ -56,22 +56,71 @@ class Agent_Memory(Utils):
 
     def reset(self):
         """
-        Resets the memory object
+        Resets the two experiences lists and agent_stats
         """
         self.experiences = []
         self.machine_experiences = []
+        self.agent_stats = collections.defaultdict(list)
 
-        #  TODO a cleaner way to keep track of these statistics
-        self.losses = [0] #  in case we print results before we train
-        self.epsilons = []
+    def add_experience(self, observation,
+                             action,
+                             reward,
+                             next_observation,
+                             step,
+                             episode,
+                             normalize_reward=True):
+        """
+        Adds a single step of experience to the two experiences lists
+
+        args
+            observation
+            action
+            reward
+            next_observation
+            step
+            episode
+            normalize_reward
+        """
+        #  make the experience array
+        exp = np.array([observation,
+                       action,
+                       reward,
+                       next_observation,
+                       step,
+                       episode])
+
+        #  make the machine experience array
+        m_exp = self.make_machine_experience(exp, normalize_reward)
+
+        #  add experiences to the memory
+        self.experiences.append(exp)
+        self.machine_experiences.append(m_exp)
+
+    def add_experience_list(self, experiences):
+        """
+        Adds a list of experiences into memory
+        New experiences list wipes over any old experiences
+
+        This will be used when loading experiences from disk
+        """
+
+        if len(self.experiences) > 0:
+            print('You are wiping over the agent memory!')
+
+        self.experiences = experiences
+
+        self.machine_experiences = [self.make_machine_experience(exp) 
+                                    for exp in self.experiences]
+
+        assert len(self.experiences) == self.machine_experiences
 
     def make_machine_experience(self, exp, normalize_reward):
         """
-        Helper function for add_experience
+        Helper function 
         Scales a given experience tuple
 
         Discounted return not updated here as we don't know it yet!
-        i.e. this function is used within episode
+        i.e. if the function is used within episode
         """
         scaled_obs = self.scale_array(exp[0],
                                       self.observation_space)
@@ -105,27 +154,6 @@ class Agent_Memory(Utils):
                                exp[5],  # episode number
                                None])   # the Monte Carlo return
         return scaled_exp
-
-    def add_experience(self, observation, action, reward, next_observation,
-                       step, episode, normalize_reward=True):
-        """
-        Adds a single step of experience to the two experiences lists
-        """
-        #  make the experience array
-        exp = np.array([observation,
-                       action,
-                       reward,
-                       next_observation,
-                       step,
-                       episode])
-
-        #  make the machine experience array
-        m_exp = self.make_machine_experience(exp, normalize_reward)
-
-        #  add experiences to the memory
-        self.experiences.append(exp)
-        self.machine_experiences.append(m_exp)
-        return None
 
     def calc_returns(self, episode_number, normalize_return):
         """
@@ -197,7 +225,7 @@ class Agent_Memory(Utils):
 
         returns = np.array(
             [exp[6] for exp in episode_experiences]).reshape(-1, 1)
-        
+
         #  deal with the case of zero reward for all sampls
         if np.any(np.isnan(returns)):
             returns = np.zeros(shape=returns.shape)
@@ -251,9 +279,9 @@ class Agent_Memory(Utils):
 
         rewards = np.array(rwrds).reshape(sample_size, 1)
 
-
         next_observations = np.array(next_obs).reshape(sample_size,
                                                        len(self.observation_space))
+
         assert observations.shape[0] == actions.shape[0]
         assert observations.shape[0] == rewards.shape[0]
         assert observations.shape[0] == next_observations.shape[0]
@@ -270,9 +298,6 @@ class Agent_Memory(Utils):
 
     def output_results(self):
         """
-        Creates two dataframes
-        'dataframe_steps'    = dataframe on a step frequency
-        'dataframe_episodic' = dataframe on a episodic frequency
         """
         #  create lists on a step by step basis
         print('agent memory is making dataframes')
@@ -309,28 +334,37 @@ class Agent_Memory(Utils):
                    'scaled_next_observation':mach_nxt_obs,
                    }
 
-        dataframe_steps = pd.DataFrame.from_dict(df_dict)
+        #  make a dataframe on a step by step basis
+        df_stp = pd.DataFrame.from_dict(df_dict)
 
-        dataframe_episodic = dataframe_steps.groupby(by=['episode'],
-                                                  axis=0).sum()
+        #  make a dataframe on an episodic basis
+        df_ep = df_stp.groupby(by=['episode'], axis=0).sum()
 
-        max_reward = dataframe_episodic.loc[:, 'reward'].cummax()
-        dataframe_episodic.loc[:, 'cum_max_reward'] = max_reward
+        #  set the index on the step df
+        df_stp.set_index('episode', drop=True, inplace=True)
 
-        window = max(int(dataframe_episodic.shape[0] * 0.1), 2)
-        rolling = dataframe_episodic.loc[:, 'reward'].rolling(window=window,
-                                                              min_periods=1,
-                                                              center=False)
-        dataframe_episodic.loc[:, 'rolling_mean'] = rolling.mean()
+        #  add in the maximum cumulative reward
+        df_ep.loc[:, 'cum_max_reward'] = df_ep.loc[:, 'reward'].cummax()
 
-        # dataframe_episodic.loc[:, 'epsilon'] = self.epsilons
+        #  add in the rolling average reward
+        window = max(int(df_ep.shape[0]*0.1),2)
 
-        training_history = pd.DataFrame(self.losses,  columns=['loss'])
+        df_ep.loc[:, 'rolling_mean'] = df_ep.loc[:, 'reward'].rolling(window=window,
+                                                                      min_periods=1,
+                                                                      center=False).mean()
+        #  iterate over the agent_stats dictionary
+        #  this can contain data with different indicies
+        #  so we create one df per data
+        #  and store these dfs in a dictionary
 
-        dataframe_steps.set_index('episode', drop=True, inplace=True)
+        agent_stats = {}
+        for var, data in self.agent_stats.items():
+            print('making data frame for {} from agent_stats'.format(var))
+            agent_stats[var] = pd.DataFrame(data, columns=[var])
 
-        output_dict = {'dataframe_steps' : dataframe_steps,
-                       'dataframe_episodic' : dataframe_episodic,
-                       'training_history'   : training_history}
+
+        output_dict = {'dataframe_steps' : df_stp,
+                       'dataframe_episodic' : df_ep,
+                       'agent_stats'   : agent_stats}
 
         return output_dict

@@ -53,9 +53,8 @@ class Time_Series_Env(Base_Env):
         observation_ts = self.raw_observation_ts.iloc[start:end, :]
 
         assert observation_ts.shape[0] == state_ts.shape[0]
-        print(start, end)
-        print(state_ts.head())
-        print('episode {} starting at {}'.format(self.episode,state_ts.index[0]))
+        self.verbose_print(state_ts.head(), level=2)
+        print('Ep {} starting at {}'.format(self.episode,state_ts.index[0]))
 
         self.verbose_print(state_ts.iloc[:,0].describe())
 
