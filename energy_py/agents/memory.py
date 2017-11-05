@@ -42,6 +42,7 @@ class Agent_Memory(Utils):
                        action_space,
                        reward_space,
                        discount,
+                       normalize_reward=True,
                        verbose=False):
 
         super().__init__(verbose)
@@ -50,7 +51,7 @@ class Agent_Memory(Utils):
         self.action_space = action_space
         self.reward_space = reward_space
         self.discount = discount
-        self.verbose = verbose
+        self.normalize_reward = normalize_reward
 
         self.reset()
 
@@ -67,8 +68,7 @@ class Agent_Memory(Utils):
                              reward,
                              next_observation,
                              step,
-                             episode,
-                             normalize_reward=True):
+                             episode):
         """
         Adds a single step of experience to the two experiences lists
 
@@ -90,7 +90,7 @@ class Agent_Memory(Utils):
                        episode])
 
         #  make the machine experience array
-        m_exp = self.make_machine_experience(exp, normalize_reward)
+        m_exp = self.make_machine_experience(exp)
 
         #  add experiences to the memory
         self.experiences.append(exp)
@@ -112,9 +112,9 @@ class Agent_Memory(Utils):
         self.machine_experiences = [self.make_machine_experience(exp) 
                                     for exp in self.experiences]
 
-        assert len(self.experiences) == self.machine_experiences
+        assert len(self.experiences) == len(self.machine_experiences)
 
-    def make_machine_experience(self, exp, normalize_reward):
+    def make_machine_experience(self, exp):
         """
         Helper function 
         Scales a given experience tuple
@@ -128,7 +128,7 @@ class Agent_Memory(Utils):
         scaled_action = self.scale_array(exp[1],
                                       self.action_space)
 
-        if normalize_reward:
+        if self.normalize_reward:
             reward = self.normalize(exp[2],
                                     self.reward_space.low,
                                     self.reward_space.high)

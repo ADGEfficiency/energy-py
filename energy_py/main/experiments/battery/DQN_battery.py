@@ -70,7 +70,7 @@ agent = DQN(env,
             scale_targets=True,
             verbose=0,
             brain_path='DQN_results/brain')
-
+agent.load_brain()
 for episode in range(1, EPISODES):
 
     #  initialize before starting episode

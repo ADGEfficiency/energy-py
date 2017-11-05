@@ -207,30 +207,30 @@ class DQN(Base_Agent):
 
         TODO repeated code, maybe put this into Base_Agent init
         """
-        brain = ['experiences', 'Q_actor', 'Q_target']
-        paths = {key:os.path.join(self.brain_path, key+'.pickle') for key in brain}
+        brain = ['experiences.pickle', 'Q_actor.h5', 'Q_target.h5']
+        paths = {key:os.path.join(self.brain_path, key) for key in brain}
 
         #  load the experiences into the Agent_Memory object
-        experiences = self.load_pickle(paths['memory'])
+        experiences = self.load_pickle(paths['experiences.pickle'])
         self.memory.add_experience_list(experiences)
 
         #  load the action value functions
-        self.Q_actor = self.load_model(paths['Q_actor'])
-        self.Q_target = self.load_model(paths['Q_target'])
+        self.Q_actor.load_model(paths['Q_actor.h5'])
+        self.Q_target.load_model(paths['Q_target.h5'])
 
     def _save_brain(self):
         """
         Saves experiences, Q_actor and Q_target
         """
-        brain = ['experiences', 'Q_actor', 'Q_target']
-        paths = {key:os.path.join(self.brain_path, key+'.pickle') for key in brain}
+        brain = ['experiences.pickle', 'Q_actor.h5', 'Q_target.h5']
+        paths = {key:os.path.join(self.brain_path, key) for key in brain}
         [self.ensure_dir(path) for key, path in paths.items()]
 
         #  save the experience list
-        self.dump_pickle(self.memory.experiences, paths['experiences'])
+        self.dump_pickle(self.memory.experiences, paths['experiences.pickle'])
 
         #  not reccomended to use pickle for Keras models
         #  so we use h5py to save Keras models
-        self.Q_actor.save_model(paths['Q_actor'])
-        self.Q_target.save_model(paths['Q_target'])
+        self.Q_actor.save_model(paths['Q_actor.h5'])
+        self.Q_target.save_model(paths['Q_target.h5'])
 

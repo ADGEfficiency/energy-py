@@ -1,7 +1,7 @@
 import numpy as np
 
 from keras.layers import Dense, Activation
-from keras.models import Sequential
+import keras.models
 
 
 def huber_loss(y_true, y_pred):
@@ -34,7 +34,7 @@ class KerasFunctionApproximator(object):
         output_dim = model_dict['output_dim']
 
         #  setup the model & input layer
-        model = Sequential()
+        model = keras.models.Sequential()
         model.add(Dense(units=layers[0],
                         input_dim=input_dim,
                         init='uniform'))
