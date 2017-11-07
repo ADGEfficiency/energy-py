@@ -117,7 +117,42 @@ class Base_Agent(Utils):
         """
         return self.memory.output_results()
 
-    def all_state_actions(self, action_space, observation):
+    def setup_all_state_actions(self, spc_len):
+        """
+        Creating the combination of all actions with a single obervation is 
+        one of the reasons value function methods are expensive.
+
+        This function is designed to run once on init, doing the things that
+        only need to be done once for state_action creation.
+
+        args
+            spc_len (int) : the length of the discrteizied action space
+
+        returns
+            scaled_actions (np.array) : an array of the scaled actions
+                                        shape=(spc_len, num_actions)
+        """
+        self.verbose_print('Setting up self.scaled_actions')
+
+        #  get the discrete action space for all action dimensions
+        #  list is used to we can use itertools.product below
+        disc_action_spaces = [space.discretize(length=spc_len) for space in self.action_space]
+        self.verbose_print('discrete action space is {}'.format(disc_action_spaces))
+
+        #  create every possible combination of actions
+        #  this creates the unscaled actions
+        self.actions = np.array([act for act in itertools.product(*disc_action_spaces)])
+
+        #  scale the actions
+        scaled_actions = np.array([self.scale_array(act, self.action_space) for act
+                                   in self.actions]).reshape(self.actions.shape)
+
+        self.verbose_print('scaled_actions shape is {}'.format(scaled_actions.shape))
+        self.verbose_print('scaled_actions are {}'.format(scaled_actions))
+        assert self.actions.shape[0] == scaled_actions.shape[0]
+        return scaled_actions
+
+    def all_state_actions(self, observation):
         """
         This is a helper function used by value function based agents
 
@@ -130,39 +165,30 @@ class Base_Agent(Utils):
         action_combinations = act_dim[0] * act_dim[1] ... * act_dim[n]
                               (across the action_space)
 
+        Note that the method setup_all_state_actions should be run prior to 
+        this function (should be run during child agent __init__)
+
         args
-            action_space    : a list of Space objects
             observation     : np array (1, observation_dim)
                               should be already scaled
 
         returns
             state_acts      : np array (action_combinations,
                                         observation_dim + num_actions)
-            actions         : np array (action_combinations,
+            self.actions    : np array (action_combinations,
                                         num_actions)
         """
-        #  get the discrete action space for all action dimensions
-        #  list is used to we can use itertools.product below
-        disc_action_spaces = [space.discretize(length=20) for space in action_space]
-
-        #  create every possible combination of actions
-        #  this creates the unscaled actions
-        actions = np.array([act for act in itertools.product(*disc_action_spaces)])
-
-        #  scale the actions
-        scaled_actions = np.array([self.scale_array(act, action_space) for act
-                                   in actions]).reshape(actions.shape)
-
         #  create an array with one obs per possible action combinations
         #  reshape into (num_actions, observation_dim)
-        observations = np.tile(observation, actions.shape[0])
-        observations = observations.reshape(actions.shape[0], self.observation_dim) 
+        observations = np.tile(observation, self.scaled_actions.shape[0])
+        observations = observations.reshape(self.scaled_actions.shape[0], self.observation_dim)
 
         #  concat the observations & actions
-        state_acts = np.concatenate([observations, scaled_actions], axis=1)
-        assert actions.shape[0] == state_acts.shape[0]
+        state_acts = np.concatenate([observations, self.scaled_actions], axis=1)
 
-        return state_acts, actions
+        assert state_acts.shape[0] == self.scaled_actions.shape[0]
+
+        return state_acts, self.actions
 
 
 class Epsilon_Greedy(object):
@@ -196,7 +222,7 @@ class Epsilon_Greedy(object):
         if self.steps < self.decay_steps:
             self._epsilon = self.linear_coeff * self.steps + self.epsilon_start
         else:
-            self._epsilon = self.epsilon_end 
+            self._epsilon = self.epsilon_end
 
         self.steps += 1
         return float(self._epsilon)

@@ -67,12 +67,12 @@ agent = DQN(env,
             discount=DISCOUNT,
             batch_size=BATCH_SIZE,
             epsilon_decay_steps=epsilon_decay_steps,
-            epsilon_start=0,
+            epsilon_start=1.0,
             update_target_net=update_target_net,
             memory_length=memory_length,
             scale_targets=True,
             brain_path='DQN_results/brain',
-            load_agent_brain=True,
+            load_agent_brain=False,
             verbose=VERBOSE)
 
 for episode in range(1, EPISODES):

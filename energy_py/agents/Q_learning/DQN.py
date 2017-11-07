@@ -47,6 +47,9 @@ class DQN(Base_Agent):
         self.update_target_net = update_target_net
         self.scale_targets = scale_targets
 
+        #  setup self.scaled_actions (used by all_state_actions method)
+        self.scaled_actions = self.setup_all_state_actions(spc_len=20)
+
         #  model dict gets passed into the Action-Value function objects
         model_dict = {'type' : 'feedforward',
                       'input_dim' : self.observation_dim + self.num_actions,
@@ -102,8 +105,7 @@ class DQN(Base_Agent):
 
             #  create all possible combinations of our single observation
             #  and our n-dimensional action space
-            state_acts, acts = self.all_state_actions(self.action_space,
-                                                      observation)
+            state_acts, acts = self.all_state_actions(observation)
 
             #  get predictions from the action_value function Q
             Q_estimates = [self.Q_actor.predict(sa.reshape(1,-1))
@@ -173,8 +175,7 @@ class DQN(Base_Agent):
                 #  for non terminal states
                 #  get all possible combinations of our next state
                 #  across the action space
-                state_actions, _ = self.all_state_actions(self.action_space,
-                                                          next_obs)
+                state_actions, _ = self.all_state_actions(next_obs)
 
                 #  now predict the value of each of the state_actions
                 #  note that we use Q_target here
