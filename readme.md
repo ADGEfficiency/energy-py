@@ -6,7 +6,7 @@ Proving that reinforcement learning agents can control virtual energy environmen
 
 energy_py supports this goal by providing a collection of reinforcement learning agents, energy environments and tools to run experiments.  
 
-This project is built and maintained by Adam Green - adam.green@adgefficiency.com.  I write about energy & machine learning at [adgefficiency.com](http://adgefficiency.com/).
+This project is built and maintained by Adam Green - [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  I write about energy & machine learning at [adgefficiency.com](http://adgefficiency.com/).
 
 ### Basic usage
 ```
@@ -66,9 +66,9 @@ Environments are created by inheriting from the [Base_Env](https://github.com/AD
 
 **Environments**
 
-The main focus is on building the [battery environment](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/envs/battery).  This is for two reasons - first a battery is site agnostic so the environment can be built without site knowledge.  The second is that electric batteries are key to enabling intermittent renewables to compete with dispatchable renewables.
+Currently the main focus is on building the [battery environment](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/envs/battery).  This is for two reasons - first a battery is site agnostic so the environment can be built without site knowledge.  The second is that electric batteries will be key to increasing the penetration of intermittent renewables.
 
-I am also working on a [cooling flexibility action](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/envs/precool) and have previously implemented a combined heat and power plant as a reinforcement learning environment in energy_py v1.0.
+I am also working on a [cooling flexibility action](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/envs/precool) and have previously implemented a Combined Heat and Power plant as a reinforcement learning environment in energy_py v1.0.
 
 **Agents**
 
@@ -84,11 +84,11 @@ I plan to make energy_py environments fully agent agnostic - so that agents buil
 
 **Function approximators**
 
-energy_py is deep learning library agnostic - any framework can be used to [parameterize either policies or value functions](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/agents/function_approximators).  
+energy_py is deep learning library agnostic - any framework can be used to [parameterize either policies or value functions](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/agents/function_approximators).  Classes are used to allow flexibility in combining different function approximator with different agents.
 
 ### Experiments
 
-It's envionsed that energy_py will be used to run experiments.  Currently three are implemented:
+energy_py can be used to run experiments.  Currently three are implemented:
 
 - [Naive agent + battery](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/main/experiments/battery/naive/naive_battery.py)
 
