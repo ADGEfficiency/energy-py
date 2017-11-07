@@ -1,6 +1,6 @@
 ## energy_py v2.0
 
-**energy_py is reinforcement learning for energy systems.** It's a collection of agents and environments built in Python.
+**energy_py is reinforcement learning for energy systems.**
 
 Proving that reinforcement learning agents can control virtual energy environments is the first step towards using reinforcement learning to optimize real world energy systems.
 
