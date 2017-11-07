@@ -2,7 +2,7 @@ from energy_py.agents.base_agent import Base_Agent, Epsilon_Greedy
 from energy_py.agents.memory import Agent_Memory
 
 from energy_py.agents.naive.naive_battery import Naive_Battery_Agent
-from energy_py.agents.reinforce.monte_carlo import MC_Reinforce
+from energy_py.agents.policy_gradients.monte_carlo import MC_Reinforce
 from energy_py.agents.Q_learning.DQN import DQN
 
 from energy_py.agents.function_approximators.keras import Keras_ValueFunction

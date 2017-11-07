@@ -1,22 +1,6 @@
 """
 This script creates the 'observation.csv' from the 'state.csv'
 
-Should only be run once so not hyperoptimized code.
-
-Main point is the creation of dummy variables from the time series info.
-
-Assumed that all other variables are continuous.
-
-The raw data for the 'electricity_price' is the historical price of
-electricity in the South Australian NEMWEB market.
-
-The data was provided by AEMO here - http://www.nemweb.com.au/REPORTS/
-
-The 'electricity_demand' is modelled at a constant 10 MW.
-
-It is envisoned that the user will input their own electricity price and
-demand data.  Note that this environment works on a 5 minute frequency.
-
 We add in some additional datetime features to help our model learn.
 """
 
@@ -30,15 +14,15 @@ print('read state.csv')
 #  checking that we only have continuous variables in our state csv
 #  will integrate dummy variables in state eventually
 
-agent_horizion = 20 #  12 5 min periods per hour
-dfs = []
-for col in state.columns:
-    print(col)
-    print(col[:2])
-    assert str(col[:2]) == 'C_'
-    fc = pd.concat([state.loc[:,col].shift(-i) for i in
-                    range(agent_horizion)],axis=1)
-    dfs.append(fc)
+agent_horizion = 5 #  12 5 min periods per hour
+
+#  lag out the price column
+price = state.loc[:, 'C_electricity_price_[$/MWh]']
+forecast = pd.concat([price.shift(-i) for i in range(agent_horizion)], axis=1)
+print(forecast)
+
+dfs = [forecast]
+
 print('finishing making horizions')
 
 def make_datetime_features(index):
@@ -62,6 +46,10 @@ def make_datetime_features(index):
         dummy.index = index
         dummies.append(dummy)
     return dummies
+
+make_dt_features = False
+if make_dt_features:
+    dfs.append(make_datetime_features(forecast.index))
 
 observation = pd.concat(dfs, axis=1)
 observation.dropna(axis=0, inplace=True)

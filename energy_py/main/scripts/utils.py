@@ -39,16 +39,19 @@ class Utils(object):
             [print(a) for a in args]
         return None
 
-    def dump_pickle(self, obj, name):
+    @staticmethod
+    def dump_pickle(obj, name):
         with open(name, 'wb') as handle:
             pickle.dump(obj, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    def load_pickle(self, name):
+    @staticmethod
+    def load_pickle(name):
         with open(name, 'rb') as handle:
             obj = pickle.load(handle)
         return obj
 
-    def ensure_dir(self, file_path):
+    @staticmethod
+    def ensure_dir(file_path):
         """
         Check that a directory exists
         If it doesn't - make it
@@ -57,14 +60,16 @@ class Utils(object):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-    def get_upper_path(self, string):
+    @staticmethod
+    def get_upper_path(string):
         owd = os.getcwd()  #  save original working directory
-        os.chdir(string)  #  move back two directories
+        os.chdir(string)  #  move based on the input string
         base = os.getcwd()  #  get new wd
         os.chdir(owd)  #  reset wd
         return base
 
-    def save_args(self, argparse, path, optional={}):
+    @staticmethod
+    def save_args(argparse, path, optional={}):
         """
         Saves args from an argparse object and from an optional
         dictionary
@@ -93,7 +98,8 @@ class Utils(object):
     energy_py specific functions
     """
 
-    def normalize(self, value, low, high):
+    @staticmethod
+    def normalize(value, low, high):
         """
         Generic helper function
         Normalizes a value using a given lower & upper bound

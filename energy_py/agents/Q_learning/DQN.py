@@ -12,10 +12,9 @@ class DQN(Base_Agent):
 
     args
         env                 : energy_py environment
-        Q_actor             : energy_py action-value function
-                              used for acting & learning
-        Q_target            : energy_py action-value function
-                              used for creating the target for learning
+        Q                   : energy_py Action-Value Function Q(s,a)
+        discount
+        batch_size
         epsilon_decay_steps : int
         update_target_net   : int : steps before target network update
         memory_length       : int : length of experience replay
@@ -28,31 +27,45 @@ class DQN(Base_Agent):
     Reference = Mnih et. al (2013), Mnih et. al (2015)
     """
     def __init__(self, env,
-                       Q_actor,
-                       Q_target,
+                       Q,
                        discount,
+                       batch_size,
                        epsilon_decay_steps=10000,
+                       epsilon_start=1.0,
                        update_target_net=100,
                        memory_length=100000,
                        scale_targets=True,
                        brain_path=[],
+                       load_agent_brain=True,
                        verbose=False):
 
-        self.memory_length = memory_length
         #  passing the environment to the Base_Agent class
-        super().__init__(env, discount, brain_path, verbose)
+        super().__init__(env, discount, brain_path,
+                         memory_length, verbose)
 
         self.epsilon_decay_steps = epsilon_decay_steps
         self.update_target_net = update_target_net
         self.scale_targets = scale_targets
 
+        #  model dict gets passed into the Action-Value function objects
+        model_dict = {'type' : 'feedforward',
+                      'input_dim' : self.observation_dim + self.num_actions,
+                      'layers'    : [25],
+                      'output_dim': 1,
+                      'lr'        : 0.001,
+                      'batch_size': 32,
+                      'epochs'    : 1}
+
         #  make our two action value functions
-        self.Q_actor = Q_actor(self.observation_dim + self.num_actions)
-        self.Q_target = Q_target(self.observation_dim + self.num_actions)
+        self.Q_actor = Q(model_dict)
+        self.Q_target = Q(model_dict)
 
         #  create an object to decay epsilon
         self.e_greedy = Epsilon_Greedy(decay_steps=epsilon_decay_steps,
-                                       verbose=0)
+                                       epsilon_start=epsilon_start)
+
+        if load_agent_brain:
+            self.load_brain()
 
     def _reset(self):
         """
@@ -77,15 +90,15 @@ class DQN(Base_Agent):
         observation = self.scale_array(observation, self.observation_space)
 
         #  get the current value of epsilon
-        epsilon = self.e_greedy.get_epsilon()
+        epsilon = self.e_greedy.epsilon
         self.verbose_print('epsilon is {:.3f}'.format(epsilon), level=2)
+        self.memory.agent_stats['epsilon'].append(epsilon)
 
         if np.random.uniform() < epsilon:
             self.verbose_print('acting randomly', level=2)
             action = [space.sample() for space in self.action_space]
 
         else:
-            self.verbose_print('acting according to Q_actor', level=2)
 
             #  create all possible combinations of our single observation
             #  and our n-dimensional action space
@@ -100,6 +113,7 @@ class DQN(Base_Agent):
             #  note that we index the unscaled action
             #  as this action is sent directly to the environment
             action = acts[np.argmax(Q_estimates)]
+            self.verbose_print('acting according to Q_actor - max Q(s,a)={}'.format(np.max(Q_estimates), level=2))
 
             #  save the Q estimates
             self.memory.agent_stats['acting max Q estimates'].append(np.max(Q_estimates))
@@ -175,6 +189,7 @@ class DQN(Base_Agent):
         #  now targets are all done, turn our list into a numpy array
         #  this is so we can scale using normalization
         targets = np.array(targets)
+        mean_unscaled_targets = np.mean(targets)
 
         #  scaling the targets by normalizing
         if self.scale_targets:
@@ -184,7 +199,7 @@ class DQN(Base_Agent):
         targets = targets.reshape(-1,1)
 
         #  update our Q function
-        self.verbose_print('Improving Q_actor', level=1)
+        self.verbose_print('Improving Q_actor - avg unscaled target={}'.format(mean_unscaled_targets), level=1)
         self.verbose_print('input shape {}'.format(inputs.shape), level=2)
         self.verbose_print('target shape {}'.format(targets.shape), level=2)
 
@@ -194,12 +209,14 @@ class DQN(Base_Agent):
         self.memory.agent_stats['loss'].append(hist.history['loss'][-1])
         self.memory.agent_stats['training Q targets'].extend(targets.tolist())
 
-        #  copy weights over to target model
-        if episode % self.update_target_net == 0:
-            self.verbose_print('updating target network', level=0)
-            self.Q_target.copy_weights(parent=self.Q_actor.model)
-
         return hist
+
+    def update_target_network(self):
+
+        #  copy weights over to target model
+        self.verbose_print('updating target network', level=0)
+        self.Q_target.copy_weights(parent=self.Q_actor.model)
+
 
     def _load_brain(self):
         """

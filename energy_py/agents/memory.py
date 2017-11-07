@@ -42,8 +42,8 @@ class Agent_Memory(Utils):
                        action_space,
                        reward_space,
                        discount,
-                       normalize_reward=True,
-                       verbose=False):
+                       verbose,
+                       normalize_reward=True):
 
         super().__init__(verbose)
         self.memory_length = memory_length
@@ -79,8 +79,9 @@ class Agent_Memory(Utils):
             next_observation
             step
             episode
-            normalize_reward
         """
+        self.verbose_print('adding experience for ep {} step {}'.format(episode, step))
+
         #  make the experience array
         exp = np.array([observation,
                        action,
@@ -116,17 +117,15 @@ class Agent_Memory(Utils):
 
     def make_machine_experience(self, exp):
         """
-        Helper function 
+        Helper function
         Scales a given experience tuple
 
-        Discounted return not updated here as we don't know it yet!
+        Discounted return not updated here as we might not know it yet!
         i.e. if the function is used within episode
         """
-        scaled_obs = self.scale_array(exp[0],
-                                      self.observation_space)
-
-        scaled_action = self.scale_array(exp[1],
-                                      self.action_space)
+        #  scale the observation and action 
+        scaled_obs = self.scale_array(exp[0], self.observation_space)
+        scaled_action = self.scale_array(exp[1], self.action_space)
 
         if self.normalize_reward:
             reward = self.normalize(exp[2],

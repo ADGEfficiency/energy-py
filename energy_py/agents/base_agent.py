@@ -33,7 +33,7 @@ class Base_Agent(Utils):
                             action space
     """
 
-    def __init__(self, env, discount, brain_path, verbose):
+    def __init__(self, env, discount, brain_path, memory_length, verbose):
         #  send up verbose up to Utils class
         super().__init__(verbose)
 
@@ -49,7 +49,7 @@ class Base_Agent(Utils):
 
         #  create a memory for the agent
         #  object to hold all of the agents experience
-        self.memory = Agent_Memory(memory_length=self.memory_length,
+        self.memory = Agent_Memory(memory_length=memory_length,
                                    observation_space=env.observation_space,
                                    action_space=env.action_space,
                                    reward_space=env.reward_space,
@@ -175,10 +175,7 @@ class Epsilon_Greedy(object):
     """
     def __init__(self, decay_steps,
                        epsilon_start = 1.0,
-                       epsilon_end   = 0.1,
-                       epsilon_test  = 0.0,  #  default not at zero to test generalization
-                       mode          = 'learning',
-                       verbose       = 0):
+                       epsilon_end   = 0.1):
 
         #  we calculate a linear coefficient to decay with
         self.linear_coeff = (epsilon_end - epsilon_start) / decay_steps
@@ -186,41 +183,24 @@ class Epsilon_Greedy(object):
         self.decay_steps   = decay_steps
         self.epsilon_start = epsilon_start
         self.epsilon_end   = epsilon_end
-        self.epsilon_test  = epsilon_test
-        self.verbose       = verbose
 
         self.reset()
 
     def reset(self):
-        """
-        Reset the Epsilon_Greedy object
-        """
-        self.steps   = 0
-        self.epsilon = self.epsilon_start
-        self.mode    = 'training'
+        self.steps = 0
+        self._epsilon = self.epsilon_start
+        print('starting epsilon at {}'.format(self.epsilon_start))
 
-    def get_epsilon(self):
-        """
-        Get the current value of epsilon
-
-        returns
-            epsilon (float)
-        """
-
-        if self.verbose:
-            print('mode is {}'.format(self.mode))
-            print('steps taken {}'.format(self.steps))
-            print('epsilon {:.3f}'.format(self.epsilon))
-
-        if self.mode == 'testing':
-            self.epsilon = self.epsilon_test
-
-        elif self.steps < self.decay_steps:
-            self.epsilon = self.linear_coeff * self.steps + self.epsilon_start
-
+    @property
+    def epsilon(self):
+        if self.steps < self.decay_steps:
+            self._epsilon = self.linear_coeff * self.steps + self.epsilon_start
         else:
-            self.epsilon = self.epsilon_end
+            self._epsilon = self.epsilon_end 
 
         self.steps += 1
+        return float(self._epsilon)
 
-        return float(self.epsilon)
+    @epsilon.setter
+    def epsilon(self, value):
+        self._epsilon = float(value)
