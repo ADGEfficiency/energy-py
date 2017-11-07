@@ -13,6 +13,7 @@ from energy_py import run_single_episode
 from energy_py.main.scripts.visualizers import Eternity_Visualizer
 from energy_py import Utils
 
+#  use argparse to collect command line arguments
 parser = argparse.ArgumentParser(description='battery REINFORCE experiment')
 parser.add_argument('--ep', type=int, default=10,
                     help='number of episodes to run (default: 10)')
@@ -28,6 +29,7 @@ parser.add_argument('--v', type=int, default=0,
                     help='controls printing (default: 0')
 args = parser.parse_args()
 
+#  pull out the command line args
 EPISODES = args.ep
 EPISODE_LENGTH = args.len
 BATCH_SIZE = args.bs
@@ -35,7 +37,7 @@ DISCOUNT = args.gamma
 OUTPUT_RESULTS = args.out
 VERBOSE = args.v
 
-utils = Utils()
+#utils = Utils()
 
 #  first we create our environment
 env = Battery_Env(lag            = 0,
@@ -93,10 +95,13 @@ for episode in range(1, EPISODES):
         observation = next_observation
 
         #  get a batch to learn from
-        obs, actions, rewards, next_obs = agent.memory.get_random_batch(batch_size=BATCH_SIZE)
+        obs, actions, rewards, next_obs = agent.memory.get_random_batch(BATCH_SIZE)
 
         #  train the model
-        if episode >= 1:
+        #  can't train before memory > batch_size
+        #  usually spend a few episodes without learning
+        #  to smooth distribution of data in memory (a bit!)
+        if episode >= 2:
             loss = agent.learn(observations=obs,
                                actions=actions,
                                rewards=rewards,

@@ -53,7 +53,7 @@ class DQN(Base_Agent):
         #  model dict gets passed into the Action-Value function objects
         model_dict = {'type' : 'feedforward',
                       'input_dim' : self.observation_dim + self.num_actions,
-                      'layers'    : [25],
+                      'layers'    : [25, 25],
                       'output_dim': 1,
                       'lr'        : 0.001,
                       'batch_size': 32,
@@ -115,7 +115,7 @@ class DQN(Base_Agent):
             #  note that we index the unscaled action
             #  as this action is sent directly to the environment
             action = acts[np.argmax(Q_estimates)]
-            self.verbose_print('acting according to Q_actor - max Q(s,a)={}'.format(np.max(Q_estimates), level=2))
+            self.verbose_print('acting according to Q_actor - max Q(s,a)={0:.3f}'.format(np.max(Q_estimates), level=2))
 
             #  save the Q estimates
             self.memory.agent_stats['acting max Q estimates'].append(np.max(Q_estimates))
@@ -157,7 +157,7 @@ class DQN(Base_Agent):
         inputs = np.zeros(shape=(observations.shape[0],
                                  self.observation_dim + self.num_actions))
         targets = []
-        self.verbose_print('starting input & target creation', level=2)
+        self.verbose_print('starting input & target creation', level=1)
         for j, (obs, act, rew, next_obs) in enumerate(zip(observations,
                                                           actions,
                                                           rewards,
@@ -169,7 +169,7 @@ class DQN(Base_Agent):
             if next_obs.all() == -999999:
                 #  if the next state is terminal
                 #  the return of our current state is equal to the reward
-                #  i.e. Q(s',a) = 0 for all a
+                #  i.e. Q(s',a) = 0 for any a
                 target = rew
             else:
                 #  for non terminal states
@@ -190,7 +190,9 @@ class DQN(Base_Agent):
         #  now targets are all done, turn our list into a numpy array
         #  this is so we can scale using normalization
         targets = np.array(targets)
-        mean_unscaled_targets = np.mean(targets)
+        #  save the unscaled targets so we can visualize later
+        self.memory.agent_stats['unscaled Q targets'].extend(targets.tolist())
+        self.verbose_print('Improving Q_actor - avg unscaled target={0:.3f}'.format(np.mean(targets), level=1))
 
         #  scaling the targets by normalizing
         if self.scale_targets:
@@ -200,28 +202,26 @@ class DQN(Base_Agent):
         targets = targets.reshape(-1,1)
 
         #  update our Q function
-        self.verbose_print('Improving Q_actor - avg unscaled target={}'.format(mean_unscaled_targets), level=1)
-        self.verbose_print('input shape {}'.format(inputs.shape), level=2)
-        self.verbose_print('target shape {}'.format(targets.shape), level=2)
+        self.verbose_print('Input shape {}'.format(inputs.shape), level=2)
+        self.verbose_print('Target shape {}'.format(targets.shape), level=2)
+        hist = self.Q_actor.improve(state_actions=inputs, targets=targets)
 
-        hist = self.Q_actor.improve(state_actions=inputs,
-                                    targets=targets)
-
+        #  save loss and the training targets for visualization later
         self.memory.agent_stats['loss'].append(hist.history['loss'][-1])
         self.memory.agent_stats['training Q targets'].extend(targets.tolist())
 
         return hist
 
     def update_target_network(self):
-
-        #  copy weights over to target model
-        self.verbose_print('updating target network', level=0)
+        """
+        Copies weights from Q_actor into Q_target
+        """
+        self.verbose_print('Updating Q_target by copying weights from Q_actor', level=0)
         self.Q_target.copy_weights(parent=self.Q_actor.model)
-
 
     def _load_brain(self):
         """
-        Loads memory, Q_actor and Q_target
+        Loads experiences, Q_actor and Q_target
 
         TODO repeated code, maybe put this into Base_Agent init
         """

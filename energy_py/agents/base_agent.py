@@ -181,7 +181,9 @@ class Base_Agent(Utils):
         #  create an array with one obs per possible action combinations
         #  reshape into (num_actions, observation_dim)
         observations = np.tile(observation, self.scaled_actions.shape[0])
+        print(observations.shape)
         observations = observations.reshape(self.scaled_actions.shape[0], self.observation_dim)
+        print(observations.shape)
 
         #  concat the observations & actions
         state_acts = np.concatenate([observations, self.scaled_actions], axis=1)
