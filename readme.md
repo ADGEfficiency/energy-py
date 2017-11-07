@@ -2,7 +2,7 @@
 
 **energy_py is reinforcement learning for energy systems.** It's a collection of agents and environments built in Python.
 
-The goal is to demonstrate that reinforcement learning agents can control virtual energy environments.  Proving this virtually is the first step towards using reinforcment learning in real world energy systems.
+Proving that reinforcement learning agents can control virtual energy environments is the first step towards using reinforcement learning to optimize real world energy systems.
 
 energy_py supports this goal by providing a collection of reinforcement learning agents, energy environments and tools to run experiments.  
 
