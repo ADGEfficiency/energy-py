@@ -37,7 +37,6 @@ DISCOUNT = args.gamma
 OUTPUT_RESULTS = args.out
 VERBOSE = args.v
 
-#utils = Utils()
 
 #  first we create our environment
 env = Battery_Env(lag            = 0,
@@ -56,6 +55,7 @@ update_target_net = max(10, int(total_steps / (env.state_ts.shape[0] * 100)))
 memory_length = int(total_steps/10)
 
 #  save the hyperparameters
+utils = Utils()
 _ = utils.save_args(args,
                     path='DQN_results/args.txt',
                     optional={'total steps':total_steps,

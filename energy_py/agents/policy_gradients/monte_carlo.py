@@ -67,7 +67,10 @@ class MC_Reinforce(Base_Agent):
         assert scaled_observation.shape[0] == 1
 
         #  generating an action from the policy network
-        action = self.policy.get_action(session, scaled_observation)
+        means, stdevs, action = self.policy.get_action(session, scaled_observation)
+        print(means)
+        print(stdevs)
+
         return action.reshape(-1, self.num_actions)
 
     def _learn(self, **kwargs):
@@ -93,7 +96,7 @@ class MC_Reinforce(Base_Agent):
                                    actions,
                                    discounted_returns)
 
-        self.memory.losses.append(loss)
+        self.memory.agent_stats['losses'].append(loss)
 
         self.verbose_print('loss is {:.8f}'.format(loss))
 

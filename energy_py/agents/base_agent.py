@@ -33,7 +33,7 @@ class Base_Agent(Utils):
                             action space
     """
 
-    def __init__(self, env, discount, brain_path, memory_length, verbose):
+    def __init__(self, env, discount, brain_path, memory_length=100000, verbose=0):
         #  send up verbose up to Utils class
         super().__init__(verbose)
 
@@ -49,11 +49,11 @@ class Base_Agent(Utils):
 
         #  create a memory for the agent
         #  object to hold all of the agents experience
-        self.memory = Agent_Memory(memory_length=memory_length,
-                                   observation_space=env.observation_space,
+        self.memory = Agent_Memory(observation_space=env.observation_space,
                                    action_space=env.action_space,
                                    reward_space=env.reward_space,
                                    discount=discount,
+                                   memory_length=memory_length,
                                    verbose=self.verbose)
 
     #  assign errors for the Base_Agent methods
@@ -72,7 +72,7 @@ class Base_Agent(Utils):
         self.memory.reset()
         return self._reset()
 
-    def act(self, observation):
+    def act(self, **kwargs):
         """
         Action selection by agent
 
@@ -83,7 +83,7 @@ class Base_Agent(Utils):
             action (np array) : shape=(1, num_actions)
         """
         self.verbose_print('Agent is acting', level=2)
-        return self._act(observation)
+        return self._act(**kwargs)
 
     def learn(self, **kwargs):
         """
@@ -181,9 +181,7 @@ class Base_Agent(Utils):
         #  create an array with one obs per possible action combinations
         #  reshape into (num_actions, observation_dim)
         observations = np.tile(observation, self.scaled_actions.shape[0])
-        print(observations.shape)
         observations = observations.reshape(self.scaled_actions.shape[0], self.observation_dim)
-        print(observations.shape)
 
         #  concat the observations & actions
         state_acts = np.concatenate([observations, self.scaled_actions], axis=1)

@@ -12,6 +12,7 @@ from energy_py.agents import MC_Reinforce
 from energy_py.agents.function_approximators import TF_GaussianPolicy
 
 from energy_py.envs import Battery_Env
+from energy_py import Utils
 from energy_py.main.scripts.experiment_blocks import run_single_episode
 from energy_py.main.scripts.visualizers import Eternity_Visualizer
 
@@ -35,17 +36,9 @@ LEARNING_RATE = args.lr
 DISCOUNT = args.gamma
 OUTPUT_RESULTS = args.out
 
-import csv
-def save_args(args, path):
-    with open(path, 'w') as outfile:
-        writer = csv.writer(outfile)
-        for k, v in vars(args).items():
-            print('{} : {}'.format(k, v))
-            writer.writerow([k] + [v])
-    return writer
-
-writer = save_args(args,
-                   path='reinforce_results/args.txt')
+utils = Utils()
+_ = utils.save_args(args,
+                    path='MC_results/args.txt')
 
 #  first we create our environment
 env = Battery_Env(lag            = 0,
@@ -90,5 +83,5 @@ with tf.Session() as sess:
         if episode % OUTPUT_RESULTS == 0:
             #  collect data from the agent & environment
             global_history = Eternity_Visualizer(episode, agent, env,
-                                                 results_path='reinforce_results/')
+                                                 results_path='MC_results/')
             outputs = global_history.output_results(save_data=False)

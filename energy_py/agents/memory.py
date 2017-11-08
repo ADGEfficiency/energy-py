@@ -37,11 +37,11 @@ class Agent_Memory(Utils):
       the discounted_return is the Monte Carlo return
     """
 
-    def __init__(self, memory_length,
-                       observation_space,
+    def __init__(self, observation_space,
                        action_space,
                        reward_space,
                        discount,
+                       memory_length,
                        verbose,
                        normalize_reward=True):
 

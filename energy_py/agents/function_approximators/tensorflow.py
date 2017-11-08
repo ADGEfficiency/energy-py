@@ -97,13 +97,13 @@ class TF_GaussianPolicy(TF_FunctionApproximator):
             stdev_idx = tf.range(start=1, limit=output_dim, delta=2)
 
             #  gather ops
-            means = tf.gather(params=self.output_layer, indices=mean_idx, axis=1)
+            self.means = tf.gather(params=self.output_layer, indices=mean_idx, axis=1)
             stdevs = tf.gather(params=self.output_layer, indices=stdev_idx, axis=1)
 
             #  clip the stdev so that stdev is not zero
             #  TODO not sure what the minimum bound for this should be
-            stdevs = tf.clip_by_value(stdevs, 0.1, tf.reduce_max(stdevs))
-            self.norm_dist = tf.contrib.distributions.Normal(loc=means, scale=stdevs)
+            self.stdevs = tf.clip_by_value(stdevs, 0.1, tf.reduce_max(stdevs))
+            self.norm_dist = tf.contrib.distributions.Normal(loc=self.means, scale=self.stdevs)
 
             #  selecting an action by sampling from the distribution
             self.action = self.norm_dist.sample(1)
@@ -138,7 +138,7 @@ class TF_GaussianPolicy(TF_FunctionApproximator):
 
     def get_action(self, session, observation):
         #  generating an action from the policy network
-        action = session.run(self.action, {self.observation : observation})
+        means, stdevs, action = session.run(self.means, self.stdevs, self.action, {self.observation : observation})
         action = action.reshape(self.num_actions)
         return action
 
