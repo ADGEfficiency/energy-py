@@ -28,22 +28,16 @@ class MC_Reinforce(Base_Agent):
 
     Reference = Williams (1992)
     """
-    def __init__(self, env,
-                       discount,
-                       policy,
-                       baseline=[],
-                       learning_rate=0.01,
-                       verbose=False):
-
+    def __init__(self, **kwargs):
         #  passing the environment to the Base_Agent class
-        super().__init__(env, discount, verbose)
-
-        #  setup the policy
+        super().__init__(**kwargs)
+        self.lr = kwargs.pop('lr')
+        #  pull out the policy object
+        policy = kwargs.pop('policy')
         self.policy = policy(action_space=self.action_space,
                              observation_space=self.observation_space,
-                             learning_rate=learning_rate)
+                             lr=self.lr)
 
-        self.learning_rate   = learning_rate
 
     def _act(self, **kwargs):
         """
@@ -65,16 +59,16 @@ class MC_Reinforce(Base_Agent):
         scaled_observation = scaled_observation.reshape(-1, self.observation_dim)
         assert scaled_observation.shape[0] == 1
 
-        self.verbose_print('observation {}'.format(observation))
-        self.verbose_print('scaled observation {}'.format(scaled_observation))
-        self.verbose_print('action {}'.format(action))
-
         #  generating an action from the policy network
         action, output = self.policy.get_action(session, scaled_observation)
 
-        self.memory.agent_stats['means'].append(output['means'])
-        self.verbose_print('means are {}'.format(output['means']))
-        self.verbose_print('stdevs are {}'.format(output['stdevs']))
+        #print('observation {}'.format(observation))
+        #print('scaled observation {}'.format(scaled_observation))
+        #print('action {}'.format(action))
+
+        #self.memory.agent_stats['means'].extend(output['means'])
+        #self.verbose_print('means are {}'.format(output['means']), level=1)
+        #self.verbose_print('stdevs are {}'.format(output['stdevs']), level=1)
 
         return action.reshape(-1, self.num_actions)
 

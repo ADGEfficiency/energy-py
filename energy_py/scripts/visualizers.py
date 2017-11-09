@@ -240,6 +240,8 @@ class Eternity_Visualizer(Visualizer):
                 hist.savefig(os.path.join(self.base_path_agent,var+'.png'))
 
             else:
+                print(var)
+                print(series.head())
                 self.figs[var] = self.make_time_series_fig(series,
                                                            path=os.path.join(self.base_path_agent,var+'.png'))
 

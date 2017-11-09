@@ -59,7 +59,7 @@ class TF_GaussianPolicy(TF_FunctionApproximator):
     """
     def __init__(self, **kwargs):
 
-        self.learning_rate = kwargs.pop('learning_rate')
+        self.lr= kwargs.pop('lr')
 
         super().__init__(**kwargs)
 
@@ -131,7 +131,7 @@ class TF_GaussianPolicy(TF_FunctionApproximator):
             self.loss = tf.reduce_sum(loss)
 
             #  creating the training step
-            self.optimizer = tf.train.AdamOptimizer(self.learning_rate)
+            self.optimizer = tf.train.AdamOptimizer(self.lr)
             self.train_step = self.optimizer.minimize(self.loss)
 
         return self.train_step

@@ -26,6 +26,9 @@ parser.add_argument('--gamma', type=float, default=0.999,
                     help='discount rate (default: 0.999)')
 parser.add_argument('--out', type=int, default=50,
                     help='output results every n episodes (default: 50')
+parser.add_argument('--v', type=int, default=1,
+                    help='controls printing (default: 1')
+
 args = parser.parse_args()
 
 EPISODES = args.ep
@@ -33,6 +36,7 @@ EPISODE_LENGTH = args.len
 LEARNING_RATE = args.lr
 DISCOUNT = args.gamma
 OUTPUT_RESULTS = args.out
+VERBOSE = args.v
 
 utils = Utils()
 _ = utils.save_args(args,
@@ -46,15 +50,18 @@ env = Battery_Env(lag            = 0,
                   capacity       = 2,  #  in MWh
                   initial_charge = 0,  #  in % of capacity
                   round_trip_eff = 1.0, #  in % - 80-90% in practice
-                  verbose        = False)
+                  verbose        = 0)
 
 #  now we create our agent with a Gaussian policy
-agent = MC_Reinforce(env,
+agent = MC_Reinforce(env=env,
                      discount=DISCOUNT,
                      policy=TF_GaussianPolicy,
-                     baseline=[],
-                     learning_rate=LEARNING_RATE,
-                     verbose=True)
+                     lr=LEARNING_RATE,
+                     brain_path='MC_results/brain',
+                     verbose=VERBOSE)
+
+print('verbosity is {}'.format(VERBOSE))
+print('verbosity is {}'.format(agent.verbose))
 
 #  creating the TensorFlow session for this experiment
 with tf.Session() as sess:

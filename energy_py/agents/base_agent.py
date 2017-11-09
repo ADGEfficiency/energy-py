@@ -33,28 +33,30 @@ class Base_Agent(Utils):
                             action space
     """
 
-    def __init__(self, env, discount, brain_path, memory_length=100000, verbose=0):
+    def __init__(self, memory_length=10000,**kwargs):
         #  send up verbose up to Utils class
+        verbose = kwargs.pop('verbose')
         super().__init__(verbose)
 
-        self.env = env
-        self.discount = discount
-        self.brain_path = brain_path
+        self.env = kwargs.pop('env')
+        self.discount = kwargs.pop('discount')
+        self.brain_path = kwargs.pop('brain_path')
 
         #  use the env to setup the agent
         self.action_space = self.env.action_space
         self.observation_space = self.env.observation_space
+        self.reward_space = self.env.reward_space
         self.num_actions = len(self.action_space)
         self.observation_dim = len(self.observation_space)
 
         #  create a memory for the agent
         #  object to hold all of the agents experience
-        self.memory = Agent_Memory(observation_space=env.observation_space,
-                                   action_space=env.action_space,
-                                   reward_space=env.reward_space,
-                                   discount=discount,
+        self.memory = Agent_Memory(observation_space=self.observation_space,
+                                   action_space=self.action_space,
+                                   reward_space=self.reward_space,
+                                   discount=self.discount,
                                    memory_length=memory_length,
-                                   verbose=self.verbose)
+                                   verbose=verbose)
 
     #  assign errors for the Base_Agent methods
     def _reset(self): raise NotImplementedError
