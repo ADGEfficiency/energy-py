@@ -33,7 +33,7 @@ class Base_Agent(Utils):
                             action space
     """
 
-    def __init__(self, memory_length=10000,**kwargs):
+    def __init__(self, memory_length=10000, **kwargs):
         #  send up verbose up to Utils class
         verbose = kwargs.pop('verbose')
         super().__init__(verbose)
@@ -121,7 +121,7 @@ class Base_Agent(Utils):
 
     def setup_all_state_actions(self, spc_len):
         """
-        Creating the combination of all actions with a single obervation is 
+        Creating the combination of all actions with a single obervation is
         one of the reasons value function methods are expensive.
 
         This function is designed to run once on init, doing the things that
@@ -167,7 +167,7 @@ class Base_Agent(Utils):
         action_combinations = act_dim[0] * act_dim[1] ... * act_dim[n]
                               (across the action_space)
 
-        Note that the method setup_all_state_actions should be run prior to 
+        Note that the method setup_all_state_actions should be run prior to
         this function (should be run during child agent __init__)
 
         args

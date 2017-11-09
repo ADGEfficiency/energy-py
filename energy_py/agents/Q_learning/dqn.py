@@ -26,25 +26,19 @@ class DQN(Base_Agent):
     Based on the DeepMind Atari work
     Reference = Mnih et. al (2013), Mnih et. al (2015)
     """
-    def __init__(self, env,
-                       Q,
-                       discount,
-                       batch_size,
-                       epsilon_decay_steps=10000,
+    def __init__(self, epsilon_decay_steps=10000,
                        epsilon_start=1.0,
-                       update_target_net=100,
-                       memory_length=100000,
                        scale_targets=True,
-                       brain_path=[],
-                       load_agent_brain=True,
-                       verbose=False):
+                       **kwargs):
 
         #  passing the environment to the Base_Agent class
-        super().__init__(env, discount, brain_path,
-                         memory_length, verbose)
+        super().__init__(**kwargs)
 
-        self.epsilon_decay_steps = epsilon_decay_steps
-        self.update_target_net = update_target_net
+        Q = kwargs.pop('Q')
+        batch_size = kwargs.pop('batch_size')
+        load_agent_brain = kwargs.pop('load_agent_brain')
+
+        self.update_target_net = kwargs.pop('update_target_net')
         self.scale_targets = scale_targets
 
         #  setup self.scaled_actions (used by all_state_actions method)
@@ -56,7 +50,7 @@ class DQN(Base_Agent):
                       'layers'    : [25, 25],
                       'output_dim': 1,
                       'lr'        : 0.001,
-                      'batch_size': 32,
+                      'batch_size': batch_size,
                       'epochs'    : 1}
 
         #  make our two action value functions
@@ -251,4 +245,3 @@ class DQN(Base_Agent):
         #  so we use h5py to save Keras models
         self.Q_actor.save_model(paths['Q_actor.h5'])
         self.Q_target.save_model(paths['Q_target.h5'])
-

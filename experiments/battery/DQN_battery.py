@@ -64,7 +64,7 @@ _ = utils.save_args(args,
                               'memory length':memory_length})
 
 #  now we create our agent
-agent = DQN(env,
+agent = DQN(env=env,
             Q=Keras_ActionValueFunction,
             discount=DISCOUNT,
             batch_size=BATCH_SIZE,
@@ -118,4 +118,3 @@ for episode in range(1, EPISODES):
         outputs = global_history.output_results(save_data=False)
 
         agent.save_brain()
-

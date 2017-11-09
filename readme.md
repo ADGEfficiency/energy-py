@@ -6,7 +6,7 @@ Proving that reinforcement learning agents can control virtual energy environmen
 
 energy_py supports this goal by providing a **collection of reinforcement learning agents, energy environments and tools to run experiments.** 
 
-This project is built and maintained by Adam Green - [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  I write about energy & machine learning at [adgefficiency.com](http://adgefficiency.com/).
+This project is built and maintained by Adam Green - [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  I write about energy & machine learning at [adgefficiency.com](http://adgefficiency.com/).  I also teach a one day introduction to reinforcement class at [Data Science Retreat.]('https://github.com/ADGEfficiency/DSR_RL')
 
 ### Basic usage
 ```

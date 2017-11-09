@@ -16,8 +16,8 @@ def fc_layer(input_tensor, wt_shape, bias_shape, activation=[]):
         output      : output layer of the feedforward neural network
     """
     #
-    wt_init = tf.random_uniform_initializer(minval=-0.01, maxval=0.01)
-    #wt_init = tf.random_normal_initializer()
+    #wt_init = tf.random_uniform_initializer(minval=-0.01, maxval=0.01)
+    wt_init = tf.random_normal_initializer()
 
     #  set min bias to 0.01 to get all relus to fire
     bias_init = tf.constant_initializer(0)

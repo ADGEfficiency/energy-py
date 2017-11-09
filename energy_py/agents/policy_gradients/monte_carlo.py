@@ -66,7 +66,11 @@ class MC_Reinforce(Base_Agent):
         #print('scaled observation {}'.format(scaled_observation))
         #print('action {}'.format(action))
 
-        #self.memory.agent_stats['means'].extend(output['means'])
+        for i, mean in enumerate(output['means'].flatten()):
+            self.memory.agent_stats['mean {}'.format(i)].append(mean)
+
+        self.memory.agent_stats['scaled_obs'].extend(list(scaled_observation.flatten()))
+        self.memory.agent_stats['action'].extend(list(action.flatten()))
         #self.verbose_print('means are {}'.format(output['means']), level=1)
         #self.verbose_print('stdevs are {}'.format(output['stdevs']), level=1)
 
