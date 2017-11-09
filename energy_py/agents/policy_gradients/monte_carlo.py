@@ -60,16 +60,21 @@ class MC_Reinforce(Base_Agent):
         session = kwargs.pop('session')
 
         #  scaling the observation for use in the policy network
-        scaled_observation = self.memory.scale_array(observation,
-                                                     self.observation_space)
+        scaled_observation = self.memory.scale_array(observation, self.observation_space)
 
         scaled_observation = scaled_observation.reshape(-1, self.observation_dim)
         assert scaled_observation.shape[0] == 1
 
+        self.verbose_print('observation {}'.format(observation))
+        self.verbose_print('scaled observation {}'.format(scaled_observation))
+        self.verbose_print('action {}'.format(action))
+
         #  generating an action from the policy network
-        means, stdevs, action = self.policy.get_action(session, scaled_observation)
-        print(means)
-        print(stdevs)
+        action, output = self.policy.get_action(session, scaled_observation)
+
+        self.memory.agent_stats['means'].append(output['means'])
+        self.verbose_print('means are {}'.format(output['means']))
+        self.verbose_print('stdevs are {}'.format(output['stdevs']))
 
         return action.reshape(-1, self.num_actions)
 
@@ -91,13 +96,16 @@ class MC_Reinforce(Base_Agent):
         discounted_returns = kwargs.pop('discounted_returns')
         session = kwargs.pop('session')
 
+        self.verbose_print('observations {}'.format(observations))
+        self.verbose_print('actions {}'.format(actions))
+        self.verbose_print('discounted_returns {}'.format(discounted_returns))
+
         loss = self.policy.improve(session,
                                    observations,
                                    actions,
                                    discounted_returns)
 
         self.memory.agent_stats['losses'].append(loss)
-
         self.verbose_print('loss is {:.8f}'.format(loss))
 
         return loss

@@ -12,9 +12,7 @@ from energy_py.agents import MC_Reinforce
 from energy_py.agents.function_approximators import TF_GaussianPolicy
 
 from energy_py.envs import Battery_Env
-from energy_py import Utils
-from energy_py.main.scripts.experiment_blocks import run_single_episode
-from energy_py.main.scripts.visualizers import Eternity_Visualizer
+from energy_py import run_single_episode, Eternity_Visualizer, Utils
 
 #  can probably make this into an episode block
 parser = argparse.ArgumentParser(description='battery REINFORCE experiment')

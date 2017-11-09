@@ -359,7 +359,7 @@ class Agent_Memory(Utils):
         agent_stats = {}
         for var, data in self.agent_stats.items():
             print('making data frame for {} from agent_stats'.format(var))
-            agent_stats[var] = pd.DataFrame(data, columns=[var])
+            agent_stats[var] = pd.Series(data)
 
 
         output_dict = {'dataframe_steps' : df_stp,

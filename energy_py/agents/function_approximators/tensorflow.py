@@ -138,9 +138,14 @@ class TF_GaussianPolicy(TF_FunctionApproximator):
 
     def get_action(self, session, observation):
         #  generating an action from the policy network
-        means, stdevs, action = session.run(self.means, self.stdevs, self.action, {self.observation : observation})
-        action = action.reshape(self.num_actions)
-        return action
+        results = session.run([self.means, self.stdevs, self.action], {self.observation : observation})
+
+        #  TODO there must be a a better way
+        output = {'means' : results[0],
+                  'stdevs': results[1],
+                  'action': results[2]}
+
+        return output['action'].reshape(self.num_actions), output
 
     def improve(self, session,
                              observations,

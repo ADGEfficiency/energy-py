@@ -4,7 +4,7 @@ import os
 import numpy as np
 
 from energy_py.envs import Time_Series_Env
-from energy_py.main.scripts.spaces import Continuous_Space, Discrete_Space
+from energy_py.scripts.spaces import Continuous_Space, Discrete_Space
 
 
 class Battery_Env(Time_Series_Env):

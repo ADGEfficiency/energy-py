@@ -191,7 +191,7 @@ class DQN(Base_Agent):
         #  this is so we can scale using normalization
         targets = np.array(targets)
         #  save the unscaled targets so we can visualize later
-        self.memory.agent_stats['unscaled Q targets'].extend(targets.tolist())
+        self.memory.agent_stats['unscaled Q targets'].extend(list(targets.flatten()))
         self.verbose_print('Improving Q_actor - avg unscaled target={0:.3f}'.format(np.mean(targets), level=1))
 
         #  scaling the targets by normalizing
@@ -208,7 +208,7 @@ class DQN(Base_Agent):
 
         #  save loss and the training targets for visualization later
         self.memory.agent_stats['loss'].append(hist.history['loss'][-1])
-        self.memory.agent_stats['training Q targets'].extend(targets.tolist())
+        self.memory.agent_stats['training Q targets'].extend(list(targets.flatten()))
 
         return hist
 

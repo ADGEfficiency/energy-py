@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 
-from energy_py.main.scripts.utils import Utils
+from energy_py import Utils
 
 class Base_Env(Utils):
     """

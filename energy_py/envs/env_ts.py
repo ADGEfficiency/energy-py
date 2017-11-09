@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from energy_py.envs import Base_Env
-from energy_py.main.scripts.spaces import Continuous_Space, Discrete_Space
+from energy_py.scripts.spaces import Continuous_Space, Discrete_Space
 
 class Time_Series_Env(Base_Env):
     """

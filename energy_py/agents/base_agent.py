@@ -3,7 +3,7 @@ import itertools
 import numpy as np
 
 from energy_py.agents.memory import Agent_Memory
-from energy_py.main.scripts.utils import Utils
+from energy_py import Utils
 
 class Base_Agent(Utils):
     """

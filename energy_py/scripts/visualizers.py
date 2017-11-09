@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from energy_py.main.scripts.utils import Utils
+from energy_py.scripts.utils import Utils
 
 
 class Visualizer(Utils):
@@ -33,8 +33,7 @@ class Visualizer(Utils):
         """
         return self._output_results(save_data)
 
-    def make_time_series_fig(self, df,
-                                   cols,
+    def make_time_series_fig(self, series,
                                    xlabel=[],
                                    ylabel=[],
                                    legend=False,
@@ -42,40 +41,39 @@ class Visualizer(Utils):
                                    ylim=[],
                                    path=[]):
         """
-        makes a time series figure from a dataframe and specified columns
+        makes a time series figure from a pd.Series and specified columns
         """
 
         fig, ax = plt.subplots(1, 1, figsize=(20, 20))
-        for col in cols:
 
-            data = df.loc[:, col].astype(float)
-            data.plot(kind='line', ax=ax, label=col)
+        data = series.astype(float)
+        data.plot(kind='line', ax=ax)
 
-            if ylim:
-                ax.set_ylim(ylim)
+        if ylim:
+            ax.set_ylim(ylim)
 
-            if xlabel:
-                plt.xlabel(xlabel)
+        if xlabel:
+            plt.xlabel(xlabel)
 
-            if ylabel:
-                plt.ylabel(ylabel)
+        if ylabel:
+            plt.ylabel(ylabel)
 
-            if legend:
-                plt.legend()
+        if legend:
+            plt.legend()
 
-            if xlim == 'last_week':
-                start = df.index[-7 * 24 * 12]
-                end = df.index[-1]
+        if xlim == 'last_week':
+            start = series.index[-7 * 24 * 12]
+            end = series.index[-1]
 
-            if xlim == 'last_month':
-                start = df.index[-30 * 24 * 12]
-                end = df.index[-1]
+        if xlim == 'last_month':
+            start = series.index[-30 * 24 * 12]
+            end = series.index[-1]
 
-            if xlim == 'all':
-                start = df.index[0]
-                end = df.index[-1]
+        if xlim == 'all':
+            start = series.index[0]
+            end = series.index[-1]
 
-            ax.set_xlim([start, end])
+        ax.set_xlim([start, end])
 
         if path:
             self.ensure_dir(path)
@@ -234,16 +232,15 @@ class Eternity_Visualizer(Visualizer):
                                                     shape=(3, 1),
                                                     path=os.path.join(self.base_path_agent, 'last_ep.png'))
 
-        for var, df in self.agent_memory['agent_stats'].items():
+        for var, series in self.agent_memory['agent_stats'].items():
 
             if var == 'training Q targets':
                 hist, ax = plt.subplots(1, 1, figsize=(20, 20))
-                df.loc[:,var].plot(kind='hist', bins=10, ax=ax)
+                series.plot(kind='hist', bins=10, ax=ax)
                 hist.savefig(os.path.join(self.base_path_agent,var+'.png'))
 
             else:
-                self.figs[var] = self.make_time_series_fig(df=df,
-                                                           cols=[var],
+                self.figs[var] = self.make_time_series_fig(series,
                                                            path=os.path.join(self.base_path_agent,var+'.png'))
 
 

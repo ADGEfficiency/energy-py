@@ -3,7 +3,7 @@ This script creates the 'observation.csv' from the 'state.csv'
 
 We add in some additional datetime features to help our model learn.
 """
-
+import numpy as np
 import pandas as pd
 
 #  read in the raw data
@@ -18,9 +18,8 @@ agent_horizion = 5 #  12 5 min periods per hour
 
 #  lag out the price column
 price = state.loc[:, 'C_electricity_price_[$/MWh]']
-forecast = pd.concat([price.shift(-i) for i in range(agent_horizion)], axis=1)
-print(forecast)
-
+forecast = pd.concat([price.shift(-i) for i in range(agent_horizion)], axis=1).dropna()
+forecast.index = pd.to_datetime(forecast.index)
 dfs = [forecast]
 
 print('finishing making horizions')
@@ -49,12 +48,12 @@ def make_datetime_features(index):
 
 make_dt_features = False
 if make_dt_features:
-    dfs.append(make_datetime_features(forecast.index))
+    dfs.extend(make_datetime_features(forecast.index))
 
 observation = pd.concat(dfs, axis=1)
 observation.dropna(axis=0, inplace=True)
-
+observation['counter'] = np.arange(observation.shape[0])
 print(observation.head(5))
-#  save the observation CSV
+
 print('saving observation.csv')
 observation.to_csv('observation.csv')
