@@ -2,7 +2,7 @@ import numpy as np
 
 from energy_py.agents import Base_Agent
 
-class Naive_Battery_Agent(Base_Agent):
+class NaiveBatteryAgent(Base_Agent):
     """
     This naive agent takes actions used predefined rules.
 
@@ -63,4 +63,5 @@ class Naive_Battery_Agent(Base_Agent):
     def _load_brain(self):
         print('I am an agent based on a human desgined heuristic')
         print('I have no brain')
+        #  TODO could get this to load a rule from disk
         return None

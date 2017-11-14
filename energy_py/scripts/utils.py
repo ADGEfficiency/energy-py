@@ -11,7 +11,7 @@ class Utils(object):
     """
     A base class that holds generic functions
     """
-    def __init__(self, verbose=0):
+    def __init__(self, verbose=0, **kwargs):
         self.verbose = verbose
 
     """

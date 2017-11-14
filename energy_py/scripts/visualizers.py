@@ -44,7 +44,7 @@ class Visualizer(Utils):
         makes a time series figure from a pd.Series and specified columns
         """
 
-        fig, ax = plt.subplots(1, 1, figsize=(20, 20))
+        fig, ax = plt.subplots(1, 1)
 
         data = series.astype(float)
         data.plot(kind='line', ax=ax)
@@ -99,7 +99,6 @@ class Visualizer(Utils):
 
         fig, axes = plt.subplots(nrows=shape[0],
                                  ncols=shape[1],
-                                 figsize=(20, 20),
                                  sharex=True)
 
         for i, (ax, panel) in enumerate(zip(axes.flatten(),
@@ -235,7 +234,7 @@ class Eternity_Visualizer(Visualizer):
         for var, series in self.agent_memory['agent_stats'].items():
 
             if var == 'training Q targets':
-                hist, ax = plt.subplots(1, 1, figsize=(20, 20))
+                hist, ax = plt.subplots(1, 1)
                 series.plot(kind='hist', bins=10, ax=ax)
                 hist.savefig(os.path.join(self.base_path_agent,var+'.png'))
 

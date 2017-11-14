@@ -8,6 +8,8 @@ from energy_py.agents.Q_learning.dqn import DQN
 from energy_py.agents.function_approximators.keras import Keras_ValueFunction
 from energy_py.agents.function_approximators.keras import Keras_ActionValueFunction
 
+from energy_py.agents.function_approximators.tensorflow import TF_GaussianPolicy
+
 __all__ = ['Base_Agent',
            'Epsilon_Greedy',
            'Agent_Memory',
@@ -15,4 +17,5 @@ __all__ = ['Base_Agent',
            'MC_Reinforce',
            'DQN',
            'Keras_ValueFunction',
-           'Keras_ActionValueFunction']
+           'Keras_ActionValueFunction',
+           'TF_GaussianPolicy']

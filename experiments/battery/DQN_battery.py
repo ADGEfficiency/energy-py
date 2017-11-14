@@ -6,12 +6,10 @@ import sys
 
 import argparse
 
+from energy_py import run_single_episode, Eternity_Visualizer, Utils
 from energy_py.agents import DQN, Keras_ActionValueFunction
-
 from energy_py.envs import Battery_Env
-from energy_py import run_single_episode
-from energy_py.scripts.visualizers import Eternity_Visualizer
-from energy_py import Utils
+
 
 #  use argparse to collect command line arguments
 parser = argparse.ArgumentParser(description='battery REINFORCE experiment')
@@ -36,7 +34,6 @@ BATCH_SIZE = args.bs
 DISCOUNT = args.gamma
 OUTPUT_RESULTS = args.out
 VERBOSE = args.v
-
 
 #  first we create our environment
 env = Battery_Env(lag            = 0,
@@ -105,8 +102,7 @@ for episode in range(1, EPISODES):
             loss = agent.learn(observations=obs,
                                actions=actions,
                                rewards=rewards,
-                               next_observations=next_obs,
-                               episode=episode)
+                               next_observations=next_obs)
 
     if episode % update_target_net == 0:
         agent.update_target_network()

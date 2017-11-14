@@ -33,10 +33,9 @@ class Base_Agent(Utils):
                             action space
     """
 
-    def __init__(self, memory_length=10000, **kwargs):
+    def __init__(self, env, discount, brain_path=[], memory_length=10000, **kwargs):
         #  send up verbose up to Utils class
-        verbose = kwargs.pop('verbose')
-        super().__init__(verbose)
+        super().__init__(**kwargs)
 
         self.env = kwargs.pop('env')
         self.discount = kwargs.pop('discount')

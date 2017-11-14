@@ -15,9 +15,10 @@ class DQN(Base_Agent):
         Q                   : energy_py Action-Value Function Q(s,a)
         discount
         batch_size
-        epsilon_decay_steps : int
-        update_target_net   : int : steps before target network update
         memory_length       : int : length of experience replay
+        epsilon_decay_steps : int
+        epsilon_start       : int
+        update_target_net   : int : steps before target network update
         scale_targets       : bool : whether to scale Q(s,a) when learning
 
     inherits from
@@ -26,8 +27,15 @@ class DQN(Base_Agent):
     Based on the DeepMind Atari work
     Reference = Mnih et. al (2013), Mnih et. al (2015)
     """
-    def __init__(self, epsilon_decay_steps=10000,
+    def __init__(self, env,
+                       Q,
+                       discount,
+                       batch_size,
+                       memory_length,
+                       brain_path,
+                       epsilon_decay_steps=10000,
                        epsilon_start=1.0,
+                       update_target_net=1000,
                        scale_targets=True,
                        **kwargs):
 
@@ -131,7 +139,6 @@ class DQN(Base_Agent):
             actions             : np array (batch_size, num_actions)
             rewards             : np array (batch_size, 1)
             next_observations   : np array (batch_size, observataion_dim)
-            episode             : int
 
         returns
             history             : list
@@ -140,7 +147,6 @@ class DQN(Base_Agent):
         actions = kwargs.pop('actions')
         rewards = kwargs.pop('rewards')
         next_observations = kwargs.pop('next_observations')
-        episode = kwargs.pop('episode')
 
         #  check that we have equal number of all of our inputs
         assert observations.shape[0] == actions.shape[0]
@@ -150,7 +156,7 @@ class DQN(Base_Agent):
         #  iterate over the experience to create the input and target
         inputs = np.zeros(shape=(observations.shape[0],
                                  self.observation_dim + self.num_actions))
-        targets = []
+        targets = np.array([])
         self.verbose_print('starting input & target creation', level=1)
         for j, (obs, act, rew, next_obs) in enumerate(zip(observations,
                                                           actions,
@@ -160,6 +166,7 @@ class DQN(Base_Agent):
             inputs[j] = np.append(obs, act)
 
             #  second the targets
+            #  TODO this is a bit hacky (maybe have s'='TERMINAL' or something?)
             if next_obs.all() == -999999:
                 #  if the next state is terminal
                 #  the return of our current state is equal to the reward
@@ -179,18 +186,20 @@ class DQN(Base_Agent):
                 #  the Bellman equation
                 target = rew + self.discount * max_q
 
-            targets.append(target)
+            targets = np.append(targets, target)
 
-        #  now targets are all done, turn our list into a numpy array
-        #  this is so we can scale using normalization
-        targets = np.array(targets)
         #  save the unscaled targets so we can visualize later
         self.memory.agent_stats['unscaled Q targets'].extend(list(targets.flatten()))
         self.verbose_print('Improving Q_actor - avg unscaled target={0:.3f}'.format(np.mean(targets), level=1))
 
         #  scaling the targets by normalizing
         if self.scale_targets:
-            targets = (targets - targets.min()) / (targets.max() - targets.min())
+            #  normalizing
+            #  targets = (targets - targets.min()) / (targets.max() - targets.min())
+
+            #  scaling using standard deviation
+            #  intentionally choose not to shift mean
+            targets = targets / targets.std()
 
         #  reshape targets into 2 dimensions
         targets = targets.reshape(-1,1)
