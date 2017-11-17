@@ -1,10 +1,10 @@
 import numpy as np
 import tensorflow as tf
 
-from energy_py.agents import Base_Agent
+from energy_py.agents import BaseAgent
 
 
-class MC_Reinforce(Base_Agent):
+class MC_Reinforce(BaseAgent):
     """
     Monte Carlo implementation of REINFORCE
 

@@ -13,7 +13,7 @@ environment are determinstic.
 Code below runs a single episode & saves results.
 """
 
-from energy_py.agents.naive.naive_battery import Naive_Battery_Agent
+from energy_py.agents import NaiveBatteryAgent
 from energy_py.envs.battery.battery_env import Battery_Env
 from energy_py.main.scripts.experiment_blocks import run_single_episode
 from energy_py.main.scripts.visualizers import Eternity_Visualizer

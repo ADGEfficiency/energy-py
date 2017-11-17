@@ -1,11 +1,12 @@
 import itertools
+import os
 
 import numpy as np
 
 from energy_py.agents.memory import Agent_Memory
 from energy_py import Utils
 
-class Base_Agent(Utils):
+class BaseAgent(Utils):
     """
     The energy_py base agent class
 
@@ -33,13 +34,16 @@ class Base_Agent(Utils):
                             action space
     """
 
-    def __init__(self, env, discount, brain_path=[], memory_length=10000, **kwargs):
-        #  send up verbose up to Utils class
-        super().__init__(**kwargs)
+    def __init__(self, env, discount, brain_path, memory_length=10000,
+            verbose=1):
 
-        self.env = kwargs.pop('env')
-        self.discount = kwargs.pop('discount')
-        self.brain_path = kwargs.pop('brain_path')
+        self.env = env
+        self.discount = discount
+        self.brain_path = brain_path
+
+        #  send up verbose up to Utils class
+        super().__init__(verbose)
+
 
         #  use the env to setup the agent
         self.action_space = self.env.action_space
@@ -103,6 +107,10 @@ class Base_Agent(Utils):
         Agent can load previously created memories, policies or value functions
         """
         self.verbose_print('Loading agent brain', level=0)
+
+        memory_path = os.path.join(self.brain_path, 'memory.pickle')
+        self.memory = self.load_pickle(memory_path)
+
         return self._load_brain()
 
     def save_brain(self):
@@ -110,6 +118,11 @@ class Base_Agent(Utils):
         Agent can save previously created memories, policies or value functions
         """
         self.verbose_print('Saving agent brain', level=0)
+
+        #  we save the agent memory
+        memory_path = os.path.join(self.brain_path, 'memory.pickle')
+        self.dump_pickle(self.memory, memory_path)
+
         return self._save_brain()
 
     def output_results(self):
@@ -192,7 +205,7 @@ class Base_Agent(Utils):
         return state_acts, self.actions
 
 
-class Epsilon_Greedy(object):
+class EpsilonGreedy(object):
     """
     A class to perform epsilon greedy action selection.
 

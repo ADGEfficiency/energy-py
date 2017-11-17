@@ -2,10 +2,10 @@ import os
 
 import numpy as np
 
-from energy_py.agents import Base_Agent, Epsilon_Greedy
+from energy_py.agents import BaseAgent, EpsilonGreedy
 
 
-class DQN(Base_Agent):
+class DQN(BaseAgent):
     """
     energy_py implementation of DQN
     aka Q-learning with experience replay & target network
@@ -37,16 +37,17 @@ class DQN(Base_Agent):
                        epsilon_start=1.0,
                        update_target_net=1000,
                        scale_targets=True,
-                       **kwargs):
+                       load_agent_brain=False,
+                       verbose=1):
 
         #  passing the environment to the Base_Agent class
-        super().__init__(**kwargs)
+        super().__init__(env, discount, brain_path)
 
-        Q = kwargs.pop('Q')
-        batch_size = kwargs.pop('batch_size')
-        load_agent_brain = kwargs.pop('load_agent_brain')
+        Q = Q
+        batch_size = batch_size
+        load_agent_brain = load_agent_brain
 
-        self.update_target_net = kwargs.pop('update_target_net')
+        self.update_target_net = update_target_net
         self.scale_targets = scale_targets
 
         #  setup self.scaled_actions (used by all_state_actions method)
@@ -66,8 +67,8 @@ class DQN(Base_Agent):
         self.Q_target = Q(model_dict)
 
         #  create an object to decay epsilon
-        self.e_greedy = Epsilon_Greedy(decay_steps=epsilon_decay_steps,
-                                       epsilon_start=epsilon_start)
+        self.e_greedy = EpsilonGreedy(decay_steps=epsilon_decay_steps,
+                                      epsilon_start=epsilon_start)
 
         if load_agent_brain:
             self.load_brain()
@@ -215,42 +216,34 @@ class DQN(Base_Agent):
 
         return hist
 
-    def update_target_network(self):
-        """
-        Copies weights from Q_actor into Q_target
-        """
-        self.verbose_print('Updating Q_target by copying weights from Q_actor', level=0)
-        self.Q_target.copy_weights(parent=self.Q_actor.model)
-
     def _load_brain(self):
         """
         Loads experiences, Q_actor and Q_target
 
         TODO repeated code, maybe put this into Base_Agent init
         """
-        brain = ['experiences.pickle', 'Q_actor.h5', 'Q_target.h5']
-        paths = {key:os.path.join(self.brain_path, key) for key in brain}
-
-        #  load the experiences into the Agent_Memory object
-        experiences = self.load_pickle(paths['experiences.pickle'])
-        self.memory.add_experience_list(experiences)
 
         #  load the action value functions
-        self.Q_actor.load_model(paths['Q_actor.h5'])
-        self.Q_target.load_model(paths['Q_target.h5'])
+        Q_actor_path = os.path.join(self.brain_path, 'Q_actor.h5')
+        self.Q_actor.load_model(Q_actor_path)
+        self.Q_target = self.Q_actor
 
     def _save_brain(self):
         """
         Saves experiences, Q_actor and Q_target
         """
-        brain = ['experiences.pickle', 'Q_actor.h5', 'Q_target.h5']
-        paths = {key:os.path.join(self.brain_path, key) for key in brain}
-        [self.ensure_dir(path) for key, path in paths.items()]
-
-        #  save the experience list
-        self.dump_pickle(self.memory.experiences, paths['experiences.pickle'])
+        #  add the acting Q network
+        #  we don't add the target network - we just use the acting network
+        #  to initialize Q_target when we load_brain
 
         #  not reccomended to use pickle for Keras models
         #  so we use h5py to save Keras models
-        self.Q_actor.save_model(paths['Q_actor.h5'])
-        self.Q_target.save_model(paths['Q_target.h5'])
+        Q_actor_path = os.path.join(self.brain_path, 'Q_actor.h5')
+        self.Q_actor.save_model(Q_actor_path)
+
+    def update_target_network(self):
+        """
+        Copies weights from Q_actor into Q_target
+        """
+        self.verbose_print('Updating Q_target by copying weights from Q_actor', level=0)
+        self.Q_target.copy_weights(parent=self.Q_actor.model)

@@ -71,7 +71,7 @@ agent = DQN(env=env,
             memory_length=memory_length,
             scale_targets=True,
             brain_path='DQN_results/brain',
-            load_agent_brain=False,
+            load_agent_brain=True,
             verbose=VERBOSE)
 
 for episode in range(1, EPISODES):

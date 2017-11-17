@@ -1,8 +1,8 @@
 import numpy as np
 
-from energy_py.agents import Base_Agent
+from energy_py.agents import BaseAgent
 
-class NaiveBatteryAgent(Base_Agent):
+class NaiveBatteryAgent(BaseAgent):
     """
     This naive agent takes actions used predefined rules.
 
