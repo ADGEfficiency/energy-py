@@ -25,6 +25,8 @@ parser.add_argument('--out', type=int, default=50,
                     help='output results every n episodes (default: 50')
 parser.add_argument('--v', type=int, default=0,
                     help='controls printing (default: 0')
+parser.add_argument('--l', type=bool, default=0,
+                    help='controls loading agent brain (default: True')
 args = parser.parse_args()
 
 #  pull out the command line args
@@ -34,6 +36,7 @@ BATCH_SIZE = args.bs
 DISCOUNT = args.gamma
 OUTPUT_RESULTS = args.out
 VERBOSE = args.v
+LOAD_BRAIN = args.l
 
 #  first we create our environment
 env = Battery_Env(lag            = 0,
@@ -71,7 +74,7 @@ agent = DQN(env=env,
             memory_length=memory_length,
             scale_targets=True,
             brain_path='DQN_results/brain',
-            load_agent_brain=True,
+            load_agent_brain=LOAD_BRAIN,
             verbose=VERBOSE)
 
 for episode in range(1, EPISODES):
