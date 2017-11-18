@@ -32,21 +32,7 @@ def fc_layer(input_tensor, wt_shape, bias_shape, activation=[]):
         output = matmul
     return output
 
-
-class TF_FunctionApproximator(object):
-    """
-    The base class for TensorFlow energy_py function approximators.
-    """
-    def __init__(self, **kwargs):
-
-        self.action_space = kwargs.pop('action_space')
-        self.observation_space = kwargs.pop('observation_space')
-
-        self.num_actions =  len(self.action_space)
-        self.observation_dim = len(self.observation_space)
-
-
-class TF_GaussianPolicy(TF_FunctionApproximator):
+class TFGaussianPolicy(object):
     """
     A Gaussian policy approximated using a TensorFlow neural network.
 
@@ -59,7 +45,12 @@ class TF_GaussianPolicy(TF_FunctionApproximator):
     """
     def __init__(self, **kwargs):
 
+        self.action_space = kwargs.pop('action_space')
+        self.observation_space = kwargs.pop('observation_space')
         self.lr= kwargs.pop('lr')
+
+        self.observation_dim = len(self.observation_space)
+        self.num_actions =  len(self.action_space)
 
         super().__init__(**kwargs)
 
@@ -161,44 +152,202 @@ class TF_GaussianPolicy(TF_FunctionApproximator):
         return loss
 
 
-class TF_ValueFunction(TF_FunctionApproximator):
+class TF_V(object):
     """
-    The class for a TensoFlow value function V(s).
+    The class for a TensorFlow value function approximating V(s).
 
     The value function approximates the expected discounted reward
     after leaving state s.
 
     args
-        action_space        : list of energy_py Space objects
-        observation_space   : list of energy_py Space objects
+        observation_space (list) : list of energy_py space objects
+        lr (float) : learning rate
+        layers (list) : list of nodes per layer 
     """
     def __init__(self, **kwargs):
 
+        self.observation_space = kwargs.pop('observation_space')
+        self.lr = kwargs.pop('lr')
         self.layers = kwargs.pop('layers')
-
         super().__init__(**kwargs)
 
+        self.observation_dim = len(self.observation_space)
+
+        #  create the tf graph for prediction and learning
         self.prediction = make_prediction_graph()
+        self.train_step = self.make_learning_graph()
 
     def make_prediction_graph(self):
+        """
+        Creates the prediction part of the graph
+        Predicting V(s) for the observed state
+        """
         with tf.variable_scope('prediction'):
+            #  create placeholder variable for the observation
+            self.obs = tf.placeholder(tf.float32,
+                                              [None, self.observation_dim],
+                                              'observation')
+
             with tf.variable_scope('input_layer'):
-                layer = fc_layer(self.observation, [self.observation_dim, layers[0]], [layers[0]], tf.nn.relu)
+                layer = fc_layer(self.obs, 
+                                 [self.observation_dim, layers[0]], 
+                                 [layers[0]], 
+                                 tf.nn.relu)
 
             with tf.variable_scope('hidden_layers'):
                 for i, nodes in enumerate(self.layers[:-1]):
-                    layer = fc_layer(layer, [nodes, self.layers[i+1]], [self.layers[i+1]], tf.nn.relu)
+                    layer = fc_layer(layer, 
+                                     [nodes, self.layers[i+1]], 
+                                     [self.layers[i+1]], 
+                                     tf.nn.relu)
 
             with tf.variable_scope('output_layer'):
-                self.prediction = fc_layer(layer, [self.layers[i+1], 1], [1])
+                #  single output node to predict V(s)
+                self.prediction = fc_layer(layer, 
+                                           [self.layers[i+1], 1],
+                                           [1])
 
-        return self.prediction
+    def make_learning_graph(self):
+        """
+        Part of the graph used to improve the value function
 
-    def predict(self, state):
+        Minimizing the squared difference between the prediction and target
+        """
+        with tf.variable_scope('learning'):
+            #  placeholder for the target
+            self.target = tf.placeholder(tf.float32, [none, 1], 'target')
+            self.optimizer = tf.train.AdamOptimizer(self.lr)
+            
+            self.error = tf.subtract(self.prediction, target)
+            self.loss = tf.square(self.error)
+            self.train_step = self.optimizer.minimize(self.loss)
 
-        return
+    def predict(self, sess, observation):
+        """
+        Predicting V(s) for the given observation
 
-    def improve(self, states,
-                      targets):
+        args
+            sess (tf.Session) : the current TensorFlow session
+            observation (np.array) : 
+        """
+        return sess.run(self.prediction, {self.obs: observation})
 
-        return
+    def improve(self, sess, observation, target):
+        """
+        Improving V(s) for the given observation
+        The target is created externally to this object 
+        Most commonly the target will be a Bellman approximation
+        V(s) = r + yV(s')
+
+        args
+            sess (tf.Session) : the current TensorFlow session
+            observation (np.array) : 
+            target (np.float) : 
+        """
+        fd = {self.obs: observation, self.target: target}
+        _, error, loss = sess.run([self.train_step, self.error, self.loss], 
+                                  feed_dict=fd)
+        return error, loss
+
+
+    class TF_Q(object):
+    """
+    The class for a TensorFlow action-value function approximating Q(s,a)
+
+    The action-value function approximates the expected discounted reward
+    after taking action a in state s.
+
+    args
+        observation_space (list) : list of energy_py space objects
+        action_space (list) : list of energy_py space objects
+        lr (float) : learning rate
+        layers (list) : list of nodes per layer 
+    """
+    def __init__(self, **kwargs):
+
+        self.observation_space = kwargs.pop('observation_space')
+        self.action_space = kwargs.pop('action_space')
+        self.lr = kwargs.pop('lr')
+        self.layers = kwargs.pop('layers')
+        super().__init__(**kwargs)
+
+        self.obs_act_dim = len(self.observation_space) + len(self.action_space)
+
+        #  create the tf graph for prediction and learning
+        self.prediction = make_prediction_graph()
+        self.train_step = self.make_learning_graph()
+
+
+    def make_prediction_graph(self):
+        """
+        Creates the prediction part of the graph
+        Predicting V(s) for the observed state
+
+        pretty much identical tto V(s) - probably can rewrite with single function
+        """
+        with tf.variable_scope('prediction'):
+            #  create placeholder variable for the observation
+            self.obs_act = tf.placeholder(tf.float32,
+                                              [None, self.obs_act_dim],
+                                              'observation_action')
+
+            with tf.variable_scope('input_layer'):
+                layer = fc_layer(self.obs_act, 
+                                 [self.obs_act_dim, layers[0]], 
+                                 [layers[0]], 
+                                 tf.nn.relu)
+
+            with tf.variable_scope('hidden_layers'):
+                for i, nodes in enumerate(self.layers[:-1]):
+                    layer = fc_layer(layer, 
+                                     [nodes, self.layers[i+1]], 
+                                     [self.layers[i+1]], 
+                                     tf.nn.relu)
+
+            with tf.variable_scope('output_layer'):
+                #  single output node to predict Q(s,a)
+                self.prediction = fc_layer(layer, 
+                                           [self.layers[i+1], 1],
+                                           [1])
+
+    def make_learning_graph(self):
+        """
+        Part of the graph used to improve the value function
+
+        Minimizing the squared difference between the prediction and target
+        """
+        with tf.variable_scope('learning'):
+            #  placeholder for the target
+            self.target = tf.placeholder(tf.float32, [none, 1], 'target')
+            self.optimizer = tf.train.AdamOptimizer(self.lr)
+            
+            self.error = tf.subtract(self.prediction, target)
+            self.loss = tf.square(self.error)
+            self.train_step = self.optimizer.minimize(self.loss)
+
+    def predict(self, sess, observation_action):
+        """
+        Predicting Q(s,a) for the given observation
+
+        args
+            sess (tf.Session) : the current TensorFlow session
+            observation_action (np.array) : 
+        """
+        return sess.run(self.prediction, {self.obs_act: observation_action})
+
+    def improve(self, sess, observation_action, target):
+        """
+        Improving V(s) for the given observation
+        The target is created externally to this object 
+        Most commonly the target will be a Bellman approximation
+        V(s) = r + yV(s')
+
+        args
+            sess (tf.Session) : the current TensorFlow session
+            observation (np.array) : 
+            target (np.float) : 
+        """
+        fd = {self.obs_act: observation_action, self.target: target}
+        _, error, loss = sess.run([self.train_step, self.error, self.loss], 
+                                  feed_dict=fd)
+        return error, loss
