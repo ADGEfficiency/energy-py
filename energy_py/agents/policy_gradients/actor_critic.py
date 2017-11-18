@@ -91,7 +91,9 @@ class ActorCritic(BaseAgent):
 
         #  first we update the critic
         #  create a target using the Bellman Equation
-        target = rew + self.discount * self.critic.predict(session, next_obs)
+        bellman = rew + self.discount * self.critic.predict(session, next_obs)
+        target = bellman - self.critic.predict(session, obs)
+
         #  then we improve the critic using the target
         error, critic_loss = self.critic.improve(session, obs, target)
 
@@ -102,7 +104,7 @@ class ActorCritic(BaseAgent):
                                          actions,
                                          error)
 
-        #  make a little output dict to iterate over for saving and printing
+        #  output dict to iterate over for saving and printing
         output = {'error': error,
                   'critic_loss': critic_loss,
                   'actor_loss': actor_loss}
