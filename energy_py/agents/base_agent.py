@@ -6,6 +6,7 @@ import numpy as np
 from energy_py.agents.memory import Agent_Memory
 from energy_py import Utils
 
+
 class BaseAgent(Utils):
     """
     The energy_py base agent class
@@ -35,7 +36,7 @@ class BaseAgent(Utils):
     """
 
     def __init__(self, env, discount, brain_path, memory_length=10000,
-            verbose=1):
+                 verbose=1):
 
         self.env = env
         self.discount = discount
@@ -43,7 +44,6 @@ class BaseAgent(Utils):
 
         #  send up verbose up to Utils class
         super().__init__(verbose)
-
 
         #  use the env to setup the agent
         self.action_space = self.env.action_space
@@ -63,10 +63,15 @@ class BaseAgent(Utils):
 
     #  assign errors for the Base_Agent methods
     def _reset(self): raise NotImplementedError
+
     def _act(self, observation): raise NotImplementedError
+
     def _learn(self, observation): raise NotImplementedError
+
     def _load_brain(self): raise NotImplementedError
+
     def _save_brain(self): raise NotImplementedError
+
     def _output_results(self): raise NotImplementedError
 
     def reset(self):
@@ -150,21 +155,21 @@ class BaseAgent(Utils):
 
         #  get the discrete action space for all action dimensions
         #  list is used to we can use itertools.product below
-        disc_action_spaces = [space.discretize(length=spc_len) for space in self.action_space]
-        self.verbose_print('discrete action space is {}'.format(disc_action_spaces))
+        disc_act_spcs = [spc.discretize(spc_len) for spc in self.action_space]
+        self.verbose_print('discrete action space is {}'.format(disc_act_spcs))
 
         #  create every possible combination of actions
         #  this creates the unscaled actions
-        self.actions = np.array([act for act in itertools.product(*disc_action_spaces)])
+        self.actions = np.array([a for a in itertools.product(*disc_act_spcs)])
 
         #  scale the actions
-        scaled_actions = np.array([self.scale_array(act, self.action_space) for act
-                                   in self.actions]).reshape(self.actions.shape)
+        scld_acts = np.array([self.scale_array(act, self.action_space) for act
+                              in self.actions]).reshape(self.actions.shape)
 
-        self.verbose_print('scaled_actions shape is {}'.format(scaled_actions.shape))
-        self.verbose_print('scaled_actions are {}'.format(scaled_actions))
-        assert self.actions.shape[0] == scaled_actions.shape[0]
-        return scaled_actions
+        self.verbose_print('scaled_actions shape is {}'.format(scld_acts.shape))
+        self.verbose_print('scaled_actions are {}'.format(scld_acts))
+        assert self.actions.shape[0] == scld_acts.shape[0]
+        return scld_acts
 
     def all_state_actions(self, observation):
         """
@@ -174,7 +179,7 @@ class BaseAgent(Utils):
 
         Used by Q-Learning for both acting and learning
             acting = argmax Q(s,a) for all possible a to select action
-            learning = argmax Q(s',a) for all possible a to create Bellman target
+            learning = argmax Q(s',a) for all possible a (Bellman target)
 
         action_combinations = act_dim[0] * act_dim[1] ... * act_dim[n]
                               (across the action_space)
@@ -194,11 +199,11 @@ class BaseAgent(Utils):
         """
         #  create an array with one obs per possible action combinations
         #  reshape into (num_actions, observation_dim)
-        observations = np.tile(observation, self.scaled_actions.shape[0])
-        observations = observations.reshape(self.scaled_actions.shape[0], self.observation_dim)
+        obs = np.tile(observation, self.scaled_actions.shape[0])
+        obs = obs.reshape(self.scaled_actions.shape[0], self.observation_dim)
 
         #  concat the observations & actions
-        state_acts = np.concatenate([observations, self.scaled_actions], axis=1)
+        state_acts = np.concatenate([obs, self.scaled_actions], axis=1)
 
         assert state_acts.shape[0] == self.scaled_actions.shape[0]
 
@@ -213,16 +218,17 @@ class EpsilonGreedy(object):
 
     Decay occurs every time we call get_epsilon.
     """
-    def __init__(self, decay_steps,
-                       epsilon_start = 1.0,
-                       epsilon_end   = 0.1):
+    def __init__(self, 
+                 decay_steps,
+                 epsilon_start=1.0,
+                 epsilon_end=0.1):
 
         #  we calculate a linear coefficient to decay with
         self.linear_coeff = (epsilon_end - epsilon_start) / decay_steps
 
-        self.decay_steps   = decay_steps
+        self.decay_steps = decay_steps
         self.epsilon_start = epsilon_start
-        self.epsilon_end   = epsilon_end
+        self.epsilon_end = epsilon_end
 
         self.reset()
 
