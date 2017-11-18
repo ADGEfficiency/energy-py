@@ -3,7 +3,7 @@ import os
 
 import numpy as np
 
-from energy_py.agents.memory import Agent_Memory
+from energy_py.agents.memory import AgentMemory
 from energy_py import Utils
 
 
@@ -54,12 +54,12 @@ class BaseAgent(Utils):
 
         #  create a memory for the agent
         #  object to hold all of the agents experience
-        self.memory = Agent_Memory(observation_space=self.observation_space,
-                                   action_space=self.action_space,
-                                   reward_space=self.reward_space,
-                                   discount=self.discount,
-                                   memory_length=memory_length,
-                                   verbose=verbose)
+        self.memory = AgentMemory(observation_space=self.observation_space,
+                                  action_space=self.action_space,
+                                  reward_space=self.reward_space,
+                                  discount=self.discount,
+                                  memory_length=memory_length,
+                                  verbose=verbose)
 
     #  assign errors for the Base_Agent methods
     def _reset(self): raise NotImplementedError

@@ -8,7 +8,7 @@ import pandas as pd
 from energy_py import Utils
 
 
-class Agent_Memory(Utils):
+class AgentMemory(Utils):
     """
     Purpose of this class is to
         store the experiences of the agent

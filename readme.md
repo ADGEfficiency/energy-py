@@ -62,7 +62,7 @@ energy_py was built using Keras 2.0.8 & TensorFlow 1.3.0.
 
 All classes inherit from the [Utils](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/main/scripts/utils.py) class, which contains useful generic functionality.
 
-Environments are created by inheriting from the [Base_Env](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/envs/env_core.py) class.  Agents are created by inheriting from the [Base_Agent](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/agent_core.py) class.  Another key object is the [Agent Memory](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/memory.py) which holds and process agent experience.  
+Environments are created by inheriting from the [Base_Env](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/envs/env_core.py) class.  Agents are created by inheriting from the [BaseAgent](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/agent_core.py) class.  Another key object is the [AgentMemory](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/memory.py) which holds and process agent experience.  
 
 **Environments**
 
