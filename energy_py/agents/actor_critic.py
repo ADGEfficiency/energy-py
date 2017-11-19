@@ -4,7 +4,7 @@ from energy_py.agents import BaseAgent
 class ActorCritic(BaseAgent):
     """
     A simple Actor-Critic agent
-    
+
     Parameterize two functions
         actor using an energy_py policy approximator
         critic using an energy_py value function approximator
@@ -31,13 +31,13 @@ class ActorCritic(BaseAgent):
         #  passing the environment to the Base_Agent class
         super().__init__(env, discount, verbose)
 
-        #  setup the policy
+        #  create the actor
         self.actor = policy(action_space=self.action_space,
                             observation_space=self.observation_space,
                             learning_rate=learning_rate)
 
         #  create our critic
-        #  the critic is a critic of the current policy (ie on-policy)
+        #  critic of the current policy (ie on-policy)
         self.critic = value_function(observation_space=self.observation_space,
                                      lr=learning_rate,
                                      layers=[100, 100])
@@ -57,13 +57,11 @@ class ActorCritic(BaseAgent):
         session = kwargs.pop('session')
 
         #  scaling the observation for use in the policy network
-        scaled_obs = self.memory.scale_array(observation,
-                                             self.observation_space)
-
-        scaled_obs = scaled_obs.reshape(1, self.observation_dim)
+        scl_obs = self.memory.scale_array(observation, self.observation_space)
+        scl_obs = scl_obs.reshape(1, self.observation_dim)
 
         #  generating an action from the policy network
-        action = self.policy.get_action(session, scaled_obs)
+        action = self.policy.get_action(session, scl_obs)
 
         return action.reshape(1, self.num_actions)
 
@@ -90,22 +88,22 @@ class ActorCritic(BaseAgent):
         session = kwargs.pop('session')
 
         #  first we update the critic
-        #  create a target using the Bellman Equation
+        #  create a target using a Bellman estimate
         bellman = rew + self.discount * self.critic.predict(session, next_obs)
         target = bellman - self.critic.predict(session, obs)
 
         #  then we improve the critic using the target
-        error, critic_loss = self.critic.improve(session, obs, target)
+        td_error, critic_loss = self.critic.improve(session, obs, target)
 
         #  now we can update the actor
         #  we use the temporal difference error from the critic
         actor_loss = self.policy.improve(session,
                                          obs,
                                          actions,
-                                         error)
+                                         td_error)
 
         #  output dict to iterate over for saving and printing
-        output = {'error': error,
+        output = {'td_error': td_error,
                   'critic_loss': critic_loss,
                   'actor_loss': actor_loss}
 

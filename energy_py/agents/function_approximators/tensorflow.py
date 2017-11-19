@@ -32,7 +32,7 @@ def fc_layer(input_tensor, wt_shape, bias_shape, activation=[]):
         output = matmul
     return output
 
-class TFGaussianPolicy(object):
+class GaussianPolicy(object):
     """
     A Gaussian policy approximated using a TensorFlow neural network.
 
@@ -152,7 +152,7 @@ class TFGaussianPolicy(object):
         return loss
 
 
-class TF_V(object):
+class TensorflowV(object):
     """
     The class for a TensorFlow value function approximating V(s).
 
@@ -250,7 +250,7 @@ class TF_V(object):
         return error, loss
 
 
-    class TF_Q(object):
+    class TensorflowQ(object):
     """
     The class for a TensorFlow action-value function approximating Q(s,a)
 

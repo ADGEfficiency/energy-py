@@ -124,7 +124,7 @@ class KerasFunctionApproximator(object):
         print('Loading Keras model')
         self.model = keras.models.load_model(path)
 
-class Keras_ValueFunction(KerasFunctionApproximator):
+class KerasV(KerasFunctionApproximator):
     """
     The class for a Keras value function V(s).
 
@@ -145,7 +145,7 @@ class Keras_ValueFunction(KerasFunctionApproximator):
                               epochs=self.self.model_dict['epochs'],
                               verbose=1)
 
-class Keras_ActionValueFunction(KerasFunctionApproximator):
+class KerasQ(KerasFunctionApproximator):
     """
     The class for the action-value function Q(s,a).
 

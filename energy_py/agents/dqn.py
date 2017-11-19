@@ -27,20 +27,21 @@ class DQN(BaseAgent):
     Based on the DeepMind Atari work
     Reference = Mnih et. al (2013), Mnih et. al (2015)
     """
-    def __init__(self, env,
-                       Q,
-                       discount,
-                       batch_size,
-                       memory_length,
-                       brain_path,
-                       epsilon_decay_steps=10000,
-                       epsilon_start=1.0,
-                       update_target_net=1000,
-                       scale_targets=True,
-                       load_agent_brain=False,
-                       verbose=1):
+    def __init__(self, 
+                 env,
+                 Q,
+                 discount,
+                 batch_size,
+                 memory_length,
+                 brain_path,
+                 epsilon_decay_steps=10000,
+                 epsilon_start=1.0,
+                 update_target_net=1000,
+                 scale_targets=True,
+                 load_agent_brain=False,
+                 verbose=1):
 
-        #  passing the environment to the Base_Agent class
+        #  passing the environment to the BaseAgent class
         super().__init__(env, discount, brain_path)
 
         Q = Q

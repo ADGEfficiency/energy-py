@@ -1,19 +1,23 @@
-from energy_py.agents.base_agent import BaseAgent, EpsilonGreedy
-from energy_py.agents.memory import Agent_Memory
+from energy_py.agents.agent import BaseAgent, EpsilonGreedy
+from energy_py.agents.memory import Memory
 
-from energy_py.agents.policy_gradients.monte_carlo import MC_Reinforce
+from energy_py.agents.reinforce import REINFORCE
 from energy_py.agents.Q_learning.dqn import DQN
 
-from energy_py.agents.function_approximators.keras import Keras_ValueFunction
-from energy_py.agents.function_approximators.keras import Keras_ActionValueFunction
+from energy_py.agents.function_approximators.keras import KerasV
+from energy_py.agents.function_approximators.keras import KerasQ
 
-from energy_py.agents.function_approximators.tensorflow import TF_GaussianPolicy
+from energy_py.agents.function_approximators.tensorflow import GaussianPolicy
+from energy_py.agents.function_approximators.tensorflow import TensorflowV
+from energy_py.agents.function_approximators.tensorflow import TensorflowQ
 
 __all__ = ['BaseAgent',
            'EpsilonGreedy',
            'Agent_Memory',
-           'MC_Reinforce',
+           'REINFORCE',
            'DQN',
-           'Keras_ValueFunction',
-           'Keras_ActionValueFunction',
-           'TF_GaussianPolicy']
+           'KerasV',
+           'KerasQ',
+           'GaussianPolicy',
+           'TensorflowV',
+           'TensorflowQ']

@@ -4,15 +4,15 @@ import tensorflow as tf
 from energy_py.agents import BaseAgent
 
 
-class MC_Reinforce(BaseAgent):
+class REINFORCE(BaseAgent):
     """
     Monte Carlo implementation of REINFORCE
+    No baseline - true Monte Carlo returns used
 
     args
         env             : energy_py environment
         discount        : float
         policy          : energy_py policy approximator
-        baseline        : usually an energy_py value function
         learning rate   : float
         verbose         : boolean
 
