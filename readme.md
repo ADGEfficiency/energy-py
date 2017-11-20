@@ -10,15 +10,15 @@ This project is built and maintained by Adam Green - [adam.green@adgefficiency.c
 
 ### Basic usage
 ```
-from energy_py.agents import DQN, Keras_ActionValueFunction
-from energy_py.envs import Battery_Env
+from energy_py.agents import DQN, KerasQ
+from energy_py.envs import BatteryEnv
 
-env = Battery_Env(power_rating=2, #  in MW
-                  capacity=2)     # in MWh
+env = BatteryEnv(power_rating=2, # in MW
+                  capacity=2)    # in MWh
 
 agent = DQN(env,
             discount=0.9,
-            Q=KerasQ,
+            Q=KerasQ,           # Keras model to approximate Q(s,a)
             batch_size=64,
             brain_path='/brain')
 
