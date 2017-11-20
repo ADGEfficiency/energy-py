@@ -14,7 +14,7 @@ from energy_py.agents import DQN, Keras_ActionValueFunction
 from energy_py.envs import Battery_Env
 
 env = Battery_Env(power_rating=2, #  in MW
-                  capacity=2) # in MWh
+                  capacity=2)     # in MWh
 
 agent = DQN(env,
             discount=0.9,
