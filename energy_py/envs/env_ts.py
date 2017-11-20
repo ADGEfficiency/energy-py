@@ -1,10 +1,12 @@
+import logging
+
 import numpy as np
 import pandas as pd
 
-from energy_py.envs import Base_Env
+from energy_py.envs import BaseEnv
 from energy_py.scripts.spaces import Continuous_Space, Discrete_Space
 
-class Time_Series_Env(Base_Env):
+class TimeSeriesEnv(BaseEnv):
     """
     The base environment class for time series environments
 
@@ -12,12 +14,13 @@ class Time_Series_Env(Base_Env):
     class to give functionality
     """
 
-    def __init__(self, lag,
-                       episode_length,
-                       episode_start,
-                       state_path,
-                       observation_path,
-                       verbose):
+    def __init__(self, 
+                 lag,
+                 episode_length,
+                 episode_start,
+                 state_path,
+                 observation_path):
+
 
         self.episode_start = episode_start
         self.episode_length = episode_length
@@ -25,10 +28,12 @@ class Time_Series_Env(Base_Env):
         self.observation_path = observation_path
 
         #  load up the infomation from the csvs once
+        #  we do this before we init the BaseEnv so we can reset in
+        #  the BaseEnv class
         self.raw_state_ts = self.load_ts_from_csv(self.state_path)
         self.raw_observation_ts = self.load_ts_from_csv(self.observation_path)
 
-        super().__init__(verbose)
+        super().__init__()
 
     def get_state_obs(self):
         """
@@ -53,10 +58,9 @@ class Time_Series_Env(Base_Env):
         observation_ts = self.raw_observation_ts.iloc[start:end, :]
 
         assert observation_ts.shape[0] == state_ts.shape[0]
-        self.verbose_print(state_ts.head(), level=2)
-        print('Ep {} starting at {}'.format(self.episode,state_ts.index[0]))
-
-        self.verbose_print(state_ts.iloc[:,0].describe())
+        logging.info('Ep {} starting at {}'.format(self.episode,
+                                                        state_ts.index[0]))
+        logging.debug(state_ts.iloc[:,0].describe())
 
         return observation_space, observation_ts, state_ts
 
@@ -74,7 +78,7 @@ class Time_Series_Env(Base_Env):
         time period
         """
         start = episode_start
-        if episode_length == 'all':
+        if episode_length == 'maximum':
             episode_length = ts_length - 1
             self.episode_length = episode_length
 

@@ -5,12 +5,14 @@ import collections
 import itertools
 import os
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
 from energy_py.scripts.utils import Utils
 
+matplotlib.rcParams['agg.path.chunksize'] = 10000
 
 class Visualizer(Utils):
     """
@@ -44,7 +46,7 @@ class Visualizer(Utils):
         makes a time series figure from a pd.Series and specified columns
         """
 
-        fig, ax = plt.subplots(1, 1)
+        fig, ax = plt.subplots(1, 1, figsize=(20, 20))
 
         data = series.astype(float)
         data.plot(kind='line', ax=ax)
@@ -99,6 +101,7 @@ class Visualizer(Utils):
 
         fig, axes = plt.subplots(nrows=shape[0],
                                  ncols=shape[1],
+                                 figsize=(20, 20),
                                  sharex=True)
 
         for i, (ax, panel) in enumerate(zip(axes.flatten(),
@@ -244,6 +247,8 @@ class Eternity_Visualizer(Visualizer):
                 self.figs[var] = self.make_time_series_fig(series,
                                                            path=os.path.join(self.base_path_agent,var+'.png'))
 
+        for name, fig in self.figs.items():
+            plt.close(fig)
 
         if save_data:
             self.write_data_to_disk()

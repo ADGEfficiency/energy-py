@@ -2,12 +2,13 @@
 This experiment script uses the DQN agent
 to control the battery environment.
 """
+import logging
 
 import argparse
 
 from energy_py import Eternity_Visualizer, Utils
-from energy_py.agents import DQN, Keras_ActionValueFunction
-from energy_py.envs import Battery_Env
+from energy_py.agents import DQN, KerasQ
+from energy_py.envs import BatteryEnv
 
 
 #  use argparse to collect command line arguments
@@ -37,15 +38,28 @@ OUTPUT_RESULTS = args.out
 VERBOSE = args.v
 LOAD_BRAIN = args.l
 
+LOG_PATH = 'dqn_results/logs.log'
+
+#  using a single root logger for all modules                               
+#  can do better but just happy to have this working at the moment!         
+logging.basicConfig(level=logging.INFO)                                     
+                                                                                 
+logFormatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+rootLogger = logging.getLogger()                                            
+
+fileHandler = logging.FileHandler(LOG_PATH)                                 
+fileHandler.setFormatter(logFormatter)                                      
+rootLogger.addHandler(fileHandler)    
+
+
 #  first we create our environment
-env = Battery_Env(lag=0,
+env = BatteryEnv(lag=0,
                   episode_length=EPISODE_LENGTH,
                   episode_start=0,
                   power_rating=2,  # in MW
                   capacity=2,  # in MWh
                   initial_charge=0,  # in % of capacity
-                  round_trip_eff=1.0,  # in % - 80-90% in practice
-                  verbose=False)
+                  round_trip_eff=1.0)  # in % - 80-90% in practice
 
 #  set up some hyperparameters using ratios from DeepMind 2015 Atari
 total_steps = EPISODES * env.state_ts.shape[0]
@@ -56,7 +70,7 @@ memory_length = int(total_steps/10)
 #  save the hyperparameters
 utils = Utils()
 _ = utils.save_args(args,
-                    path='DQN_results/args.txt',
+                    path='dqn_results/args.txt',
                     optional={'total steps': total_steps,
                               'epsilon decay steps': epsilon_decay_steps,
                               'update_target_net': update_target_net,
@@ -64,7 +78,7 @@ _ = utils.save_args(args,
 
 #  now we create our agent
 agent = DQN(env=env,
-            Q=Keras_ActionValueFunction,
+            Q=KerasQ,
             discount=DISCOUNT,
             batch_size=BATCH_SIZE,
             epsilon_decay_steps=epsilon_decay_steps,
@@ -72,9 +86,8 @@ agent = DQN(env=env,
             update_target_net=update_target_net,
             memory_length=memory_length,
             scale_targets=True,
-            brain_path='DQN_results/brain',
-            load_agent_brain=LOAD_BRAIN,
-            verbose=VERBOSE)
+            brain_path='dqn_results/brain',
+            load_agent_brain=LOAD_BRAIN)
 
 for episode in range(1, EPISODES):
 

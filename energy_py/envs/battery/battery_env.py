@@ -1,13 +1,14 @@
 import collections
+import logging
 import os
 
 import numpy as np
 
-from energy_py.envs import Time_Series_Env
+from energy_py.envs import TimeSeriesEnv
 from energy_py.scripts.spaces import Continuous_Space, Discrete_Space
 
 
-class Battery_Env(Time_Series_Env):
+class BatteryEnv(TimeSeriesEnv):
     """
     An environment that simulates storage of electricity in a battery.
     Agent chooses to either charge or discharge.
@@ -27,36 +28,32 @@ class Battery_Env(Time_Series_Env):
 
         verbose         :   int     : controls env print statements
     """
-    def __init__(self, lag            = 0,
-                       episode_length = 'maximum',
-                       episode_start  = 0,
-
-                       power_rating   = 2,
-                       capacity       = 4,
-                       round_trip_eff = 0.9,
-                       initial_charge = 0.0,
-
-                       verbose = False):
+    def __init__(self, 
+                 lag=0,
+                 episode_length='maximum',
+                 episode_start=0,
+                 power_rating=2,
+                 capacity=4,
+                 round_trip_eff=0.9,
+                 initial_charge=0.0):
 
         path = os.path.dirname(os.path.abspath(__file__))
         state_path = os.path.join(path, 'state.csv')
         observation_path = os.path.join(path, 'observation.csv')
 
-        #  calling init method of the parent Time_Series_Env class
-        super().__init__(lag,
-                         episode_length,
-                         episode_start,
-                         state_path,
-                         observation_path,
-                         verbose)
-
         #  technical energy inputs
-        self.power_rating   = float(power_rating) # MW
-        self.capacity       = float(capacity) # MWh
+        self.power_rating = float(power_rating) # MW
+        self.capacity = float(capacity) # MWh
         self.round_trip_eff = float(round_trip_eff) # %
         self.initial_charge = float(self.capacity * initial_charge) # MWh
 
-        self.observation    = self.reset(episode='none')
+        #  calling init method of the parent Time_Series_Env class
+        super().__init__(
+                         lag,
+                         episode_length,
+                         episode_start,
+                         state_path,
+                         observation_path)
 
     def _reset(self):
         """
@@ -142,6 +139,7 @@ class Battery_Env(Time_Series_Env):
             info        : dictionary
         """
 
+        logging.info('Episode {} - Step {}'.format(self.episode, self.steps))
         #  pulling out the state infomation
         electricity_price = self.state[0]
         old_charge = self.state[-1]
@@ -197,15 +195,14 @@ class Battery_Env(Time_Series_Env):
         #  import/export
         reward = -(gross_rate / 12) * electricity_price
 
-        self.verbose_print('step is {}'.format(self.steps),
-                           'action was {}'.format(action),
-                           'old charge was {} MWh'.format(old_charge),
-                           'new charge is {} MWh'.format(new_charge),
-                           'gross rate is {} MW'.format(gross_rate),
-                           'losses were {} MWh'.format(losses),
-                           'net rate is {} MW'.format(net_rate),
-                           'reward is {} $/5min'.format(reward),
-                           level=1)
+        logging.debug('step is {}'.format(self.steps))
+                           # 'action was {}'.format(action)
+                           # 'old charge was {} MWh'.format(old_charge),
+                           # 'new charge is {} MWh'.format(new_charge),
+                           # 'gross rate is {} MW'.format(gross_rate),
+                           # 'losses were {} MWh'.format(losses),
+                           # 'net rate is {} MW'.format(net_rate),
+                           # 'reward is {} $/5min'.format(reward))
 
         #  check to see if episode is done
         #  -1 in here because of the zero index
@@ -217,8 +214,9 @@ class Battery_Env(Time_Series_Env):
 
             total_ep_reward = sum(self.info['reward'])
 
-            self.verbose_print('Episode {} done'.format(self.episode),
-                               'total reward {}'.format(total_ep_reward))
+            logging.info('Episode {} done'.format(self.episode))
+            logging.info('Undiscounted total reward {}'.format(total_ep_reward))
+
         else:
         #  moving onto next step
             next_state = self.get_state(self.steps, append=float(new_charge))
@@ -226,21 +224,21 @@ class Battery_Env(Time_Series_Env):
             self.steps += 1
 
         #  saving info
-        self.info = self.update_info(episode            = self.episode,
-                                     steps              = self.steps,
-                                     state              = self.state,
-                                     observation        = self.observation,
-                                     action             = action,
-                                     reward             = reward,
-                                     next_state         = next_state,
-                                     next_observation   = next_observation,
+        self.info = self.update_info(episode=self.episode,
+                                     steps=self.steps,
+                                     state=self.state,
+                                     observation=self.observation,
+                                     action=action,
+                                     reward=reward,
+                                     next_state=next_state,
+                                     next_observation=next_observation,
 
-                                     electricity_price  = electricity_price,
-                                     gross_rate         = gross_rate,
-                                     losses             = losses,
-                                     new_charge         = new_charge,
-                                     old_charge         = old_charge,
-                                     net_stored         = net_stored)
+                                     electricity_price=electricity_price,
+                                     gross_rate=gross_rate,
+                                     losses=losses,
+                                     new_charge=new_charge,
+                                     old_charge=old_charge,
+                                     net_stored=net_stored)
 
         #  moving to next time step
         self.state = next_state

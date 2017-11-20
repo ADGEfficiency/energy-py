@@ -1,4 +1,5 @@
 import collections
+import logging
 import os
 
 import numpy as np
@@ -7,7 +8,7 @@ import pandas as pd
 
 from energy_py import Utils
 
-class Base_Env(Utils):
+class BaseEnv(Utils):
     """
     the energy_py base environment class
     inspired by the gym.Env class
@@ -30,10 +31,9 @@ class Base_Env(Utils):
         verbose : boolean : controls printing
     """
 
-    def __init__(self, verbose):
-        super().__init__(verbose)
-
-        self.info       = collections.defaultdict(list)
+    def __init__(self):
+        super().__init__()
+        self.observation = self.reset(episode='none')
         return None
 
     # Override in ALL subclasses
@@ -53,8 +53,9 @@ class Base_Env(Utils):
         Returns: observation (np array): the initial observation
         """
         self.episode = episode
-        self.verbose_print('reset environment')
+        logging.info('Reset environment')
 
+        self.info = collections.defaultdict(list)
         self.outputs = {}
         return self._reset()
 

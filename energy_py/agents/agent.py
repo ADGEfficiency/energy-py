@@ -1,9 +1,10 @@
 import itertools
+import logging
 import os
 
 import numpy as np
 
-from energy_py.agents.memory import AgentMemory
+from energy_py.agents.memory import Memory
 from energy_py import Utils
 
 
@@ -35,31 +36,35 @@ class BaseAgent(Utils):
                             action space
     """
 
-    def __init__(self, env, discount, brain_path, memory_length=10000,
-                 verbose=1):
+    def __init__(self, 
+                 env, 
+                 discount, 
+                 brain_path, 
+                 process_reward, 
+                 process_return):
 
         self.env = env
         self.discount = discount
         self.brain_path = brain_path
 
-        #  send up verbose up to Utils class
-        super().__init__(verbose)
-
         #  use the env to setup the agent
         self.action_space = self.env.action_space
         self.observation_space = self.env.observation_space
         self.reward_space = self.env.reward_space
+
         self.num_actions = len(self.action_space)
         self.observation_dim = len(self.observation_space)
 
         #  create a memory for the agent
         #  object to hold all of the agents experience
-        self.memory = AgentMemory(observation_space=self.observation_space,
-                                  action_space=self.action_space,
-                                  reward_space=self.reward_space,
-                                  discount=self.discount,
-                                  memory_length=memory_length,
-                                  verbose=verbose)
+        self.memory = Memory(self.observation_space,
+                             self.action_space,
+                             self.reward_space,
+                             self.discount,
+
+                             memory_length=100000,
+                             process_reward=process_reward,
+                             process_return=process_return)
 
     #  assign errors for the Base_Agent methods
     def _reset(self): raise NotImplementedError
@@ -92,7 +97,7 @@ class BaseAgent(Utils):
         return
             action (np array) : shape=(1, num_actions)
         """
-        self.verbose_print('Agent is acting', level=2)
+        logging.debug('Agent is acting')
         return self._act(**kwargs)
 
     def learn(self, **kwargs):
@@ -104,15 +109,14 @@ class BaseAgent(Utils):
         return
             training_history (object) : info about learning (i.e. loss)
         """
-        self.verbose_print('Agent is learning', level=1)
+        logging.debug('Agent is learning')
         return self._learn(**kwargs)
 
     def load_brain(self):
         """
         Agent can load previously created memories, policies or value functions
         """
-        self.verbose_print('Loading agent brain', level=0)
-
+        logging.info('Loading agent brain')
         memory_path = os.path.join(self.brain_path, 'memory.pickle')
         self.memory = self.load_pickle(memory_path)
 
@@ -122,7 +126,7 @@ class BaseAgent(Utils):
         """
         Agent can save previously created memories, policies or value functions
         """
-        self.verbose_print('Saving agent brain', level=0)
+        logging.info('Saving agent brain')
 
         #  we save the agent memory
         memory_path = os.path.join(self.brain_path, 'memory.pickle')
@@ -151,12 +155,11 @@ class BaseAgent(Utils):
             scaled_actions (np.array) : an array of the scaled actions
                                         shape=(spc_len, num_actions)
         """
-        self.verbose_print('Setting up self.scaled_actions')
+        logging.info('Setting up self.scaled_actions')
 
         #  get the discrete action space for all action dimensions
         #  list is used to we can use itertools.product below
         disc_act_spcs = [spc.discretize(spc_len) for spc in self.action_space]
-        self.verbose_print('discrete action space is {}'.format(disc_act_spcs))
 
         #  create every possible combination of actions
         #  this creates the unscaled actions
@@ -166,8 +169,7 @@ class BaseAgent(Utils):
         scld_acts = np.array([self.scale_array(act, self.action_space) for act
                               in self.actions]).reshape(self.actions.shape)
 
-        self.verbose_print('scaled_actions shape is {}'.format(scld_acts.shape))
-        self.verbose_print('scaled_actions are {}'.format(scld_acts))
+        logging.info('scaled_actions shape is {}'.format(scld_acts.shape))
         assert self.actions.shape[0] == scld_acts.shape[0]
         return scld_acts
 
@@ -217,8 +219,10 @@ class EpsilonGreedy(object):
     Decay is done linearly.
 
     Decay occurs every time we call get_epsilon.
+
+    TODO update with logger
     """
-    def __init__(self, 
+    def __init__(self,
                  decay_steps,
                  epsilon_start=1.0,
                  epsilon_end=0.1):

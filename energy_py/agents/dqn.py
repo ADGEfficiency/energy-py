@@ -1,3 +1,4 @@
+import logging
 import os
 
 import numpy as np
@@ -29,20 +30,24 @@ class DQN(BaseAgent):
     """
     def __init__(self, 
                  env,
-                 Q,
                  discount,
+
+                 Q,
                  batch_size,
-                 memory_length,
                  brain_path,
+
+                 memory_length=100000,
                  epsilon_decay_steps=10000,
                  epsilon_start=1.0,
                  update_target_net=1000,
                  scale_targets=True,
                  load_agent_brain=False,
-                 verbose=1):
+                 
+                 process_reward=False,
+                 process_return=False):
 
         #  passing the environment to the BaseAgent class
-        super().__init__(env, discount, brain_path)
+        super().__init__(env, discount, brain_path, process_reward, process_return)
 
         Q = Q
         batch_size = batch_size
@@ -98,11 +103,10 @@ class DQN(BaseAgent):
 
         #  get the current value of epsilon
         epsilon = self.e_greedy.epsilon
-        self.verbose_print('epsilon is {:.3f}'.format(epsilon), level=2)
         self.memory.agent_stats['epsilon'].append(epsilon)
 
         if np.random.uniform() < epsilon:
-            self.verbose_print('acting randomly', level=2)
+            logging.info('epsilon {:.3f} - acting randomly'.format(epsilon))
             action = [space.sample() for space in self.action_space]
 
         else:
@@ -119,10 +123,11 @@ class DQN(BaseAgent):
             #  note that we index the unscaled action
             #  as this action is sent directly to the environment
             action = acts[np.argmax(Q_estimates)]
-            self.verbose_print('acting according to Q_actor - max Q(s,a)={0:.3f}'.format(np.max(Q_estimates), level=2))
+            max_Q = np.max(Q_estimates)
+            logging.info('epsilon {:.3f} - using Q_actor - max(Q_est)={:.3f}'.format(epsilon, max_Q))
 
             #  save the Q estimates
-            self.memory.agent_stats['acting max Q estimates'].append(np.max(Q_estimates))
+            self.memory.agent_stats['acting max Q estimates'].append(max_Q)
 
         action = np.array(action).reshape(1, self.num_actions)
         assert len(self.action_space) == action.shape[1]
@@ -159,7 +164,7 @@ class DQN(BaseAgent):
         inputs = np.zeros(shape=(observations.shape[0],
                                  self.observation_dim + self.num_actions))
         targets = np.array([])
-        self.verbose_print('starting input & target creation', level=1)
+        logging.info('starting input & target creation')
         for j, (obs, act, rew, next_obs) in enumerate(zip(observations,
                                                           actions,
                                                           rewards,
@@ -192,7 +197,7 @@ class DQN(BaseAgent):
 
         #  save the unscaled targets so we can visualize later
         self.memory.agent_stats['unscaled Q targets'].extend(list(targets.flatten()))
-        self.verbose_print('Improving Q_actor - avg unscaled target={0:.3f}'.format(np.mean(targets), level=1))
+        logging.info('Improving Q_actor - avg unscaled target={0:.3f}'.format(np.mean(targets)))
 
         #  scaling the targets by normalizing
         if self.scale_targets:
@@ -207,8 +212,8 @@ class DQN(BaseAgent):
         targets = targets.reshape(-1,1)
 
         #  update our Q function
-        self.verbose_print('Input shape {}'.format(inputs.shape), level=2)
-        self.verbose_print('Target shape {}'.format(targets.shape), level=2)
+        logging.info('Input shape {}'.format(inputs.shape))
+        logging.info('Target shape {}'.format(targets.shape))
         hist = self.Q_actor.improve(state_actions=inputs, targets=targets)
 
         #  save loss and the training targets for visualization later
@@ -246,5 +251,5 @@ class DQN(BaseAgent):
         """
         Copies weights from Q_actor into Q_target
         """
-        self.verbose_print('Updating Q_target by copying weights from Q_actor', level=0)
+        logging.info('Updating Q_target by copying weights from Q_actor')
         self.Q_target.copy_weights(parent=self.Q_actor.model)

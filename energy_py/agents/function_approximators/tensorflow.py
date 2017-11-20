@@ -250,7 +250,7 @@ class TensorflowV(object):
         return error, loss
 
 
-    class TensorflowQ(object):
+class TensorflowQ(object):
     """
     The class for a TensorFlow action-value function approximating Q(s,a)
 

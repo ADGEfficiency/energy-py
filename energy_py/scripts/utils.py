@@ -11,33 +11,12 @@ class Utils(object):
     """
     A base class that holds generic functions
     """
-    def __init__(self, verbose=0, **kwargs):
-        self.verbose = verbose
+    def __init__(self):
+        pass
 
     """
     Useful Python functions:
     """
-
-    def verbose_print(self, *args, level=1):
-        """
-        Helper function to print info.
-
-        self.verbose = 0 & level = 0 -> print
-        self.verbose = 0 & level = 1 -> no printing
-        self.verbose = 1 & level = 1 -> printing
-
-        level=0 -> always print
-        level=1 -> normal print level
-        level=2 -> debugging
-
-        args
-            *args : arguments to be printed
-            level : the level of the args
-
-        """
-        if self.verbose >= level:
-            [print(a) for a in args]
-        return None
 
     @staticmethod
     def dump_pickle(obj, name):

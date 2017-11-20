@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import tensorflow as tf
 
@@ -10,15 +12,14 @@ class REINFORCE(BaseAgent):
     No baseline - true Monte Carlo returns used
 
     args
-        env             : energy_py environment
-        discount        : float
-        policy          : energy_py policy approximator
-        learning rate   : float
-        verbose         : boolean
+        env (energy_py environment)
+        discount (float) 
+        brain_path (str) : directory where brain lives
+        policy (energy_py policy approximator)
+        learning rate (float)
 
-    REINFORCE is high variance - due to the nature of Monte Carlo sampling.
-
-    REINFORCE is a low bias algorithm - no bootstrapping.
+    Monte Carlo REINFORCE is high variance and low bias
+    Variance can be reduced through the use of a baseline TODO 
 
     This algorithm requires lots of episodes to run:
     - policy gradient only makes small updates
@@ -28,16 +29,23 @@ class REINFORCE(BaseAgent):
 
     Reference = Williams (1992)
     """
-    def __init__(self, **kwargs):
-        #  passing the environment to the Base_Agent class
-        super().__init__(**kwargs)
-        self.lr = kwargs.pop('lr')
-        #  pull out the policy object
-        policy = kwargs.pop('policy')
+    def __init__(self,
+                 env,
+                 discount,
+                 brain_path,
+
+                 policy,
+                 lr,
+                 process_reward,
+                 process_return):
+
+        super().__init__(env, discount, brain_path,
+                         process_reward, process_return)
+        
+        #  create the policy function approximator
         self.policy = policy(action_space=self.action_space,
                              observation_space=self.observation_space,
-                             lr=self.lr)
-
+                             lr=lr)
 
     def _act(self, **kwargs):
         """
@@ -62,17 +70,17 @@ class REINFORCE(BaseAgent):
         #  generating an action from the policy network
         action, output = self.policy.get_action(session, scaled_observation)
 
-        #print('observation {}'.format(observation))
-        #print('scaled observation {}'.format(scaled_observation))
-        #print('action {}'.format(action))
-
         for i, mean in enumerate(output['means'].flatten()):
             self.memory.agent_stats['mean {}'.format(i)].append(mean)
 
+        logging.debug('scaled_obs {}'.format(scaled_observation))
+        logging.debug('action {}'.format(action))
+
         self.memory.agent_stats['scaled_obs'].extend(list(scaled_observation.flatten()))
         self.memory.agent_stats['action'].extend(list(action.flatten()))
-        #self.verbose_print('means are {}'.format(output['means']), level=1)
-        #self.verbose_print('stdevs are {}'.format(output['stdevs']), level=1)
+
+        logging.debug('means are {}'.format(output['means']))
+        logging.debug('stdevs are {}'.format(output['stdevs']))
 
         return action.reshape(-1, self.num_actions)
 
@@ -94,9 +102,9 @@ class REINFORCE(BaseAgent):
         discounted_returns = kwargs.pop('discounted_returns')
         session = kwargs.pop('session')
 
-        self.verbose_print('observations {}'.format(observations))
-        self.verbose_print('actions {}'.format(actions))
-        self.verbose_print('discounted_returns {}'.format(discounted_returns))
+        logging.debug('observations {}'.format(observations))
+        logging.debug('actions {}'.format(actions))
+        logging.debug('discounted_returns {}'.format(discounted_returns))
 
         loss = self.policy.improve(session,
                                    observations,
@@ -104,6 +112,6 @@ class REINFORCE(BaseAgent):
                                    discounted_returns)
 
         self.memory.agent_stats['losses'].append(loss)
-        self.verbose_print('loss is {:.8f}'.format(loss))
+        logging.info('loss is {:.8f}'.format(loss))
 
         return loss
