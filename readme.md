@@ -13,19 +13,20 @@ This project is built and maintained by Adam Green - [adam.green@adgefficiency.c
 from energy_py.agents import DQN, Keras_ActionValueFunction
 from energy_py.envs import Battery_Env
 
-env = Battery_Env(lag            = 0,
-                  episode_length = 2016,
-                  episode_start  = 0,
-                  power_rating   = 2,  #  in MW
-                  capacity       = 2,  #  in MWh
-                  initial_charge = 0,  #  in % of capacity
-                  round_trip_eff = 1.0, #  in % - 80-90% in practice
-                  verbose        = False)
+env = Battery_Env(power_rating=2, #  in MW
+                  capacity=2) # in MWh
 
 agent = DQN(env,
-            Q_actor=Keras_ActionValueFunction,
-            Q_target=Keras_ActionValueFunction,
-            discount=0.9)
+            discount=0.9,
+            Q=KerasQ,
+            batch_size=64,
+            brain_path='/brain')
+
+obs = env.reset()
+action = agent.act(observation=obs)
+next_obs, reward, done, info = env.step(action)
+agent.memory.add_experience(obs, action, reward, next_obs, step, episode)
+
 ```
 
 ### Installation
