@@ -10,7 +10,7 @@ This project is built and maintained by Adam Green - [adam.green@adgefficiency.c
 
 I write about energy & machine learning at [adgefficiency.com](http://adgefficiency.com/).  
 
-I teach a one day introduction to reinforcement class at [Data Science Retreat.]('https://github.com/ADGEfficiency/DSR_RL').
+I teach a one day introduction to reinforcement class at [Data Science Retreat](https://github.com/ADGEfficiency/DSR_RL).
 
 ### Basic usage
 ```
