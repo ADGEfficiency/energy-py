@@ -46,7 +46,7 @@ def make_datetime_features(index):
         dummies.append(dummy)
     return dummies
 
-make_dt_features = False
+make_dt_features = True
 if make_dt_features:
     dfs.extend(make_datetime_features(forecast.index))
 
