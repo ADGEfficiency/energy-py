@@ -21,12 +21,8 @@ parser.add_argument('--bs', type=int, default=32,
                     help='batch size (default: 32)')
 parser.add_argument('--gamma', type=float, default=0.9,
                     help='discount rate (default: 0.9)')
-parser.add_argument('--out', type=int, default=50,
-                    help='output results every n episodes (default: 50')
-parser.add_argument('--v', type=int, default=0,
-                    help='controls printing (default: 0')
-parser.add_argument('--l', type=bool, default=0,
-                    help='controls loading agent brain (default: True')
+parser.add_argument('--out', type=int, default=10,
+                    help='output results every n episodes (default: 10')
 args = parser.parse_args()
 
 #  pull out the command line args
@@ -35,8 +31,7 @@ EPISODE_LENGTH = args.len
 BATCH_SIZE = args.bs
 DISCOUNT = args.gamma
 OUTPUT_RESULTS = args.out
-VERBOSE = args.v
-LOAD_BRAIN = args.l
+LOAD_BRAIN = False 
 
 LOG_PATH = 'dqn_results/logs.log'
 
@@ -126,7 +121,7 @@ for episode in range(1, EPISODES):
     if episode % OUTPUT_RESULTS == 0:
         #  collect data from the agent & environment
         global_history = Eternity_Visualizer(episode, agent, env,
-                                             results_path='DQN_results/')
+                                             results_path='dqn_results/')
         outputs = global_history.output_results(save_data=False)
 
         agent.save_brain()

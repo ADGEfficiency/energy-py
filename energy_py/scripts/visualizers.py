@@ -234,7 +234,7 @@ class Eternity_Visualizer(Visualizer):
                                                     shape=(3, 1),
                                                     path=os.path.join(self.base_path_agent, 'last_ep.png'))
 
-        for var, series in self.agent_memory['agent_stats'].items():
+        for var, series in self.agent_memory['info'].items():
 
             if var == 'training Q targets':
                 hist, ax = plt.subplots(1, 1)
@@ -242,8 +242,6 @@ class Eternity_Visualizer(Visualizer):
                 hist.savefig(os.path.join(self.base_path_agent,var+'.png'))
 
             else:
-                print(var)
-                print(series.head())
                 self.figs[var] = self.make_time_series_fig(series,
                                                            path=os.path.join(self.base_path_agent,var+'.png'))
 

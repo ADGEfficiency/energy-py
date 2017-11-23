@@ -103,7 +103,7 @@ class DQN(BaseAgent):
 
         #  get the current value of epsilon
         epsilon = self.e_greedy.epsilon
-        self.memory.agent_stats['epsilon'].append(epsilon)
+        self.memory.info['epsilon'].append(epsilon)
 
         if np.random.uniform() < epsilon:
             logging.info('epsilon {:.3f} - acting randomly'.format(epsilon))
@@ -127,7 +127,7 @@ class DQN(BaseAgent):
             logging.info('epsilon {:.3f} - using Q_actor - max(Q_est)={:.3f}'.format(epsilon, max_Q))
 
             #  save the Q estimates
-            self.memory.agent_stats['acting max Q estimates'].append(max_Q)
+            self.memory.info['acting max Q estimates'].append(max_Q)
 
         action = np.array(action).reshape(1, self.num_actions)
         assert len(self.action_space) == action.shape[1]
@@ -196,7 +196,7 @@ class DQN(BaseAgent):
             targets = np.append(targets, target)
 
         #  save the unscaled targets so we can visualize later
-        self.memory.agent_stats['unscaled Q targets'].extend(list(targets.flatten()))
+        self.memory.info['unscaled Q targets'].extend(list(targets.flatten()))
         logging.info('Improving Q_actor - avg unscaled target={0:.3f}'.format(np.mean(targets)))
 
         #  scaling the targets by normalizing
@@ -212,13 +212,13 @@ class DQN(BaseAgent):
         targets = targets.reshape(-1,1)
 
         #  update our Q function
-        logging.info('Input shape {}'.format(inputs.shape))
-        logging.info('Target shape {}'.format(targets.shape))
+        logging.debug('Input shape {}'.format(inputs.shape))
+        logging.debug('Target shape {}'.format(targets.shape))
         hist = self.Q_actor.improve(state_actions=inputs, targets=targets)
 
         #  save loss and the training targets for visualization later
-        self.memory.agent_stats['loss'].append(hist.history['loss'][-1])
-        self.memory.agent_stats['training Q targets'].extend(list(targets.flatten()))
+        self.memory.info['loss'].append(hist.history['loss'][-1])
+        self.memory.info['training Q targets'].extend(list(targets.flatten()))
 
         return hist
 
