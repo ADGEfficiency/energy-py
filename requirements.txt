@@ -1,7 +1,6 @@
 bleach==1.5.0
 certifi==2017.7.27.1
 cycler==0.10.0
-energy-py==2.0
 html5lib==0.9999999
 h5py==2.7.1
 Keras==2.0.8
@@ -9,7 +8,7 @@ Markdown==2.6.9
 matplotlib==2.1.0
 numpy==1.13.3
 pandas==0.21.0
-protobuf==3.5.0
+protobuf>=3.4.0
 pyparsing==2.2.0
 python-dateutil==2.6.1
 pytz==2017.3
