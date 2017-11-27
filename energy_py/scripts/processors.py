@@ -9,53 +9,73 @@ We can also choose to process a batch using statistics only from that batch.
 
 import numpy as np
 
+#  use epsilon to catch div/0 errors
+epsilon = 1e-5
 
 class Standardizer(object):
     """
     We rely on the input shape being (n_samples, state_dim)
     """
-    def __init__(self):
+    def __init__(self, use_history=True, space=[]):
         #  use a list to hold all data this processor has seen
         self.history = []
 
-    def transform(self, batch, use_history=True):
+        #  if we include a space object then we use it to fill up the history
+        #  and we always use history
+        if space:
+            self.history = [space.sample() for i in range(1000)]
+            use_history = True
+
+        self.use_history = use_history
+
+    def transform(self, batch):
         """
-        The SimpleStand:ardizer transforms the data using the mean and standard
-        deviation across the batch it is processing
         """
         #  check that our data is
-        assert len(batch.shape) == 2
+        assert batch.ndim == 2
         #  add the data we are processing onto our history list
         self.history.append(batch)
-        if use_history:
+
+        if self.use_history:
             #  create an array from the list then reshape to (num_samples, dim)
             #  taking advantage of energy_py states/actions being this shape (always len 2)
-            history = np.array(self.history).reshape(-1, batch.shape[1])
+            history = np.concatenate(self.history).reshape(-1, batch.shape[1])
             means, stdevs = history.mean(axis=0), history.std(axis=0)
         else:
             means, stdevs = batch.mean(axis=0), batch.std(axis=0)
 
-        return (batch - means) / stdevs
+        return (batch - means) / (stdevs + epsilon)
 
 
 class Normalizer(object):
     """
     We rely on the input shape being (n_samples, state_dim)
     """
-    def __init__(self):
+    def __init__(self, use_history=True, space=[]):
         #  use a list to hold all data this processor has seen
         self.history = []
 
+        #  if we include a space object we use this and don't ever use history
+        if space:
+            self.mins = np.array([spc.low for spc in space.spaces])
+            self.maxs = np.array([spc.high for spc in space.spaces])
+            use_history = False
+
+        self.use_history = use_history
+
     def transform(self, batch):
         """
-        The SimpleStandardizer transforms the data using the mean and standard
-        deviation across the batch it is processing
         """
-        assert len(batch.shape) == 2
+        assert batch.ndim == 2
         #  add the data we are processing onto our history list
         self.history.append(batch)
-        #  create an array from the list then reshape to (num_samples, dim)
-        #  taking advantage of energy_py states/actions being this shape (always len 2)
-        history = np.array(self.history).reshape(-1, batch.shape[1])
 
-        return (batch - history.mean(axis=0)) / history.std(axis=0)
+        if self.use_history:
+            #  create an array from the list then reshape to (num_samples, dim)
+            #  taking advantage of energy_py states/actions being this shape (always len 2)
+            history = np.concatenate(self.history).reshape(-1, batch.shape[1])
+            self.maxs, self.mins = history.max(axis=0), history.min(axis=0)
+        else:
+            self.maxs, self.mins = batch.max(axis=0), batch.min(axis=0)
+
+        return (batch - self.mins) / (self.maxs - self.mins + epsilon)

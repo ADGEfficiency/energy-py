@@ -39,9 +39,7 @@ class BaseAgent(Utils):
     def __init__(self, 
                  env, 
                  discount, 
-                 brain_path, 
-                 process_reward, 
-                 process_return):
+                 brain_path):
 
         self.env = env
         self.discount = discount
@@ -57,13 +55,12 @@ class BaseAgent(Utils):
 
         #  create a memory for the agent
         #  object to hold all of the agents experience
+        #  TODO does memory need all this now???
         self.memory = Memory(self.observation_space,
                              self.action_space,
                              # self.reward_space,
                              self.discount,
-                             memory_length=100000,
-                             process_reward=process_reward,
-                             process_return=process_return)
+                             memory_length=100000)
 
     #  assign errors for the Base_Agent methods
     def _reset(self): raise NotImplementedError

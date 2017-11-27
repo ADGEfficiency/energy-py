@@ -35,9 +35,7 @@ agent = REINFORCE(env,
                                    DISCOUNT,
                                    BRAIN_PATH,
                                    policy=GaussianPolicy,
-                                   lr=LEARNING_RATE,
-                                   process_reward=None,
-                                   process_return=None)
+                                   lr=LEARNING_RATE)
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
@@ -61,27 +59,20 @@ with tf.Session() as sess:
                                                     max(rewards)))
         #  now episode is over we can learn
         
-        obs, acts, rews = agent.memory.get_episode_batch(episode, scaled_actions=False)
-
-        rtns = agent.memory.calculate_returns(rews)
+        obs, acts, rews = agent.memory.get_episode_batch(episode)
 
         loss = agent.learn(observations=obs,
                            actions=acts,
-                           discounted_returns=rtns,
+                           rewards=rews,
                            session=sess)
 
-        total_rtns = rtns
-        agent.memory.info['total ep returns'].append(total_rtns)
+        total_rew = np.sum(rews)
+        agent.memory.info['total ep rewards'].append(total_rew)
 
-        def print_stats(rtns):
-            print('total {}'.format(np.sum(rtns)))
-            print('mean {}'.format(np.mean(rtns)))
-            print('std {} '.format(np.std(rtns)))
-
-        print('ENV REWARDS')
-        print_stats(rewards)
-        print('RETURNS USED FOR TRAINING')
-        print_stats(rtns)
+        def print_stats(total_rew):
+            print('total {}'.format(np.sum(total_rew)))
+            print('mean {}'.format(np.mean(total_rew)))
+            print('std {} '.format(np.std(total_rew)))
 
         global_history = EternityVisualizer(episode, agent, env=None, results_path=RESULTS_PATH) 
         outputs = global_history.output_results(save_data=False)

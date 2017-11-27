@@ -87,8 +87,8 @@ class GaussianPolicy(object):
 
             #  gather ops
             self.means = tf.gather(params=self.output_layer, indices=mean_idx, axis=1)
-            stdevs = tf.gather(params=self.output_layer, indices=stdev_idx, axis=1)
-            self.stdevs = tf.nn.softplus(stdevs) + 1e-5
+            self.stdevs = tf.gather(params=self.output_layer, indices=stdev_idx, axis=1)
+            #self.stdevs = tf.nn.softplus(stdevs) + 1e-5
             self.norm_dist = tf.contrib.distributions.Normal(loc=self.means, scale=self.stdevs)
 
             #  selecting an action by sampling from the distribution
@@ -109,15 +109,15 @@ class GaussianPolicy(object):
 
     def make_learning_graph(self):
         with tf.variable_scope('learning'):
-            self.taken_action = tf.placeholder(tf.float32, [None, self.num_actions], name='taken_actions')
-            self.discounted_return = tf.placeholder(tf.float32, [None, 1], 'discounted_returns')
+            self.taken_action = tf.placeholder(tf.float32, [None, self.num_actions],'taken_actions')
+            self.returns = tf.placeholder(tf.float32, [None, 1], 'discounted_returns')
 
             self.log_probs = self.norm_dist.log_prob(self.taken_action)
 
             #  we make use of the fact that multiply broadcasts here
             #  discounted returns is of shape (samples, 1)
             #  while log_probs is of shape (samples, num_actions)
-            pg_loss = tf.reduce_mean(-self.log_probs * self.discounted_return)
+            pg_loss = tf.reduce_mean(-self.log_probs * self.returns)
 
             #  add in some cross entropy cost for exploration
             ce_loss = tf.reduce_mean(1e-1 * self.norm_dist.entropy())
@@ -144,14 +144,14 @@ class GaussianPolicy(object):
     def improve(self, session,
                       observations,
                       actions,
-                      discounted_returns):
+                      returns):
 
         assert observations.shape[0] == actions.shape[0]
-        assert actions.shape[0] == discounted_returns.shape[0]
+        assert actions.shape[0] == returns.shape[0]
 
         feed_dict = {self.observation : observations,
                      self.taken_action : actions,
-                     self.discounted_return : discounted_returns}
+                     self.returns : returns}
 
         _, loss = session.run([self.train_step, self.loss], feed_dict)
 
