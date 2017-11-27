@@ -1,5 +1,5 @@
 import csv
-import itertools
+from itertools import zip_longest
 import pickle
 import os
 import time
@@ -107,6 +107,8 @@ class Utils(object):
 
         Used to scale the observations and actions
 
+        Only really setup for continuous spaces TODO
+
         args
             array (np array) : array to be scaled
                                shape=(1, space_length)
@@ -119,21 +121,11 @@ class Utils(object):
                                        shape=(1, space_length)
         """
         array = array.reshape(-1)
-        assert array.shape[0] == len(space)
+        assert array.shape[0] == space.shape[0]
 
         scaled_array = np.array([])
-        #  iterate across the array values & corresponding space object
-        for value, spc in itertools.zip_longest(array, space):
-            if spc.type == 'continuous':
-                # normalize continuous variables
-                scaled = self.normalize(value, spc.low, spc.high)
-            elif spc.type == 'discrete':
-                #  shouldn't need to do anything
-                #  check value is already dummy
-                assert (value == 0) or (value == 1)
-            else:
-                assert 1 == 0
+        for low, high, val in zip_longest(space.low, space.high, array):
+           scaled = self.normalize(low, high, val) 
+           scaled_array = np.append(scaled_array, scaled)
 
-            scaled_array = np.append(scaled_array, scaled)
-
-        return scaled_array.reshape(1, len(space))
+        return scaled_array.reshape(1, space.shape[0])

@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from energy_py.envs import BaseEnv
-from energy_py.scripts.spaces import Continuous_Space, Discrete_Space
+from energy_py.scripts.spaces import ContinuousSpace, DiscreteSpace
 
 class TimeSeriesEnv(BaseEnv):
     """
@@ -101,10 +101,10 @@ class TimeSeriesEnv(BaseEnv):
             label = str(name[:2])
 
             if label == 'D_':
-                obs_space = Discrete_Space(col.min(), col.max(), 1)
+                obs_space = DiscreteSpace(col.min(), col.max(), 1)
 
             elif label == 'C_':
-                obs_space = Continuous_Space(col.min(), col.max())
+                obs_space = ContinuousSpace(col.min(), col.max())
 
             else:
                 print('time series not labelled correctly')

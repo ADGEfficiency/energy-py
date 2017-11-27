@@ -5,7 +5,7 @@ import os
 import numpy as np
 
 from energy_py.envs import TimeSeriesEnv
-from energy_py.scripts.spaces import Continuous_Space, Discrete_Space
+from energy_py.scripts.spaces import ContinuousSpace, GlobalSpace
 
 
 class BatteryEnv(TimeSeriesEnv):
@@ -73,10 +73,8 @@ class BatteryEnv(TimeSeriesEnv):
         use two actions to keep the action space positive
         is useful for policy gradient where we take log(probability of action)
         """
-        self.action_space = [Continuous_Space(low  = 0,
-                                              high = self.power_rating),
-                             Continuous_Space(low  = 0,
-                                              high = self.power_rating)]
+        self.action_space = GlobalSpace([ContinuousSpace(0, self.power_rating),
+                                         ContinuousSpace(0, self.power_rating)])
 
         """
         SETTING THE OBSERVATION SPACE
@@ -84,10 +82,11 @@ class BatteryEnv(TimeSeriesEnv):
         the observation space is set in the parent class Time_Series_Env
         we also append on an additional observation of the battery charge
         """
-        self.observation_space, self.observation_ts, self.state_ts = self.get_state_obs()
+        observation_space, self.observation_ts, self.state_ts = self.get_state_obs()
 
-        self.observation_space.append(Continuous_Space(0, self.capacity))
+        observation_space.append(ContinuousSpace(0, self.capacity))
 
+        self.observation_space = GlobalSpace(observation_space)
         """
         SETTING THE REWARD SPACE
 
@@ -101,8 +100,8 @@ class BatteryEnv(TimeSeriesEnv):
         """
 
         max_price = max(self.state_ts.loc[:, 'C_electricity_price_[$/MWh]'].abs())
-        self.reward_space = Continuous_Space((-max_price * self.power_rating)/12,
-                                             (max_price * self.power_rating)/12)
+        self.reward_space = ContinuousSpace((-max_price * self.power_rating)/12,
+                                            (max_price * self.power_rating)/12)
 
         #  reseting the step counter, state, observation & done status
         self.steps = 0

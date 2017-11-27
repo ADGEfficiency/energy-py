@@ -15,11 +15,7 @@ def fc_layer(input_tensor, wt_shape, bias_shape, activation=[]):
     return
         output      : output layer of the feedforward neural network
     """
-    #
-    #wt_init = tf.random_uniform_initializer(minval=-0.01, maxval=0.01)
-    wt_init = tf.random_normal_initializer()
-
-    #  set min bias to 0.01 to get all relus to fire
+    wt_init = tf.constant_initializer(1)
     bias_init = tf.constant_initializer(0)
 
     W = tf.get_variable('W', wt_shape, initializer=wt_init)
@@ -39,19 +35,17 @@ class GaussianPolicy(object):
     Mean and standard deviation are parameterized for each action.
 
     args
-        action_space        : list of energy_py Space objects
-        observation_space   : list of energy_py Space objects
-        learning rate       : scalar
+        observation_dim (int)
+        num_actions (int)
+        learning rate (float)
     """
     def __init__(self, **kwargs):
 
+        self.lr = kwargs.pop('lr')
+
+        self.observation_dim = kwargs.pop('observation_dim')
+        self.num_actions = kwargs.pop('num_actions')
         self.action_space = kwargs.pop('action_space')
-        self.observation_space = kwargs.pop('observation_space')
-        self.lr= kwargs.pop('lr')
-
-        self.observation_dim = len(self.observation_space)
-        self.num_actions =  len(self.action_space)
-
         super().__init__(**kwargs)
 
         self.action = self.make_acting_graph()
@@ -71,18 +65,22 @@ class GaussianPolicy(object):
         with tf.variable_scope('action_selection'):
             #  make a three layer fully-connected neural network
             with tf.variable_scope('input_layer'):
-                input_layer = fc_layer(self.observation, [observation_dim, 30], [30], tf.nn.relu)
+                input_layer = fc_layer(self.observation, [self.observation_dim, 4], [4], tf.nn.relu)
 
-            with tf.variable_scope('hidden_layer_1'):
-                hidden_layer_1 = fc_layer(input_layer, [30, 30], [30], tf.nn.relu)
+            # with tf.variable_scope('hidden_layer_1'):
+            #     hidden_layer_1 = fc_layer(input_layer, [4, 4], [4], tf.nn.relu)
 
-            with tf.variable_scope('hidden_layer_2'):
-                hidden_layer_2 = fc_layer(hidden_layer_1, [30, 30], [30], tf.nn.relu)
+            # with tf.variable_scope('hidden_layer_2'):
+            #     hidden_layer_2 = fc_layer(hidden_layer_1, [4, 4], [4], tf.nn.relu)
 
             with tf.variable_scope('output_layer'):
-                self.output_layer = fc_layer(hidden_layer_2, [30,  output_dim], [output_dim])
+                self.output_layer = fc_layer(input_layer, [4,  output_dim], [output_dim])
 
             #  parameterizing normal distributions
+            #  one mean & standard deviation per action
+            #  as per TRPO paper we parameterize log(standard deviation)
+            #  see Schulman et. al (2017) Trust Region Policy Optimization
+
             #  indexes for the output layer
             mean_idx = tf.range(start=0, limit=output_dim, delta=2)
             stdev_idx = tf.range(start=1, limit=output_dim, delta=2)
@@ -90,18 +88,21 @@ class GaussianPolicy(object):
             #  gather ops
             self.means = tf.gather(params=self.output_layer, indices=mean_idx, axis=1)
             stdevs = tf.gather(params=self.output_layer, indices=stdev_idx, axis=1)
-
-            #  clip the stdev so that stdev is not zero
-            #  TODO not sure what the minimum bound for this should be
-            self.stdevs = tf.clip_by_value(stdevs, 0.1, tf.reduce_max(stdevs))
+            self.stdevs = tf.nn.softplus(stdevs) + 1e-5
             self.norm_dist = tf.contrib.distributions.Normal(loc=self.means, scale=self.stdevs)
 
             #  selecting an action by sampling from the distribution
-            self.action = self.norm_dist.sample(1)
+            self.action = self.norm_dist.sample()
 
             #  clipping the action
-            lows = np.array([space.low for space in self.action_space])
-            highs = np.array([space.high for space in self.action_space])
+            #  use an exception to catch the single action case
+            try:
+                lows = np.array([space.low for space in self.action_space])
+                highs = np.array([space.high for space in self.action_space])
+            except TypeError:
+                lows = np.array(self.action_space.low)
+                highs = np.array(self.action_space.high)
+
             self.action = tf.clip_by_value(self.action, lows, highs)
 
         return self.action
@@ -112,13 +113,15 @@ class GaussianPolicy(object):
             self.discounted_return = tf.placeholder(tf.float32, [None, 1], 'discounted_returns')
 
             self.log_probs = self.norm_dist.log_prob(self.taken_action)
-            self.log_probs = tf.clip_by_value(self.probs, 1e-10, 1)
 
             #  we make use of the fact that multiply broadcasts here
             #  discounted returns is of shape (samples, 1)
             #  while log_probs is of shape (samples, num_actions)
-            loss = -self.log_probs *  self.discounted_return
-            #self.loss = tf.reduce_sum(loss)
+            pg_loss = tf.reduce_mean(-self.log_probs * self.discounted_return)
+
+            #  add in some cross entropy cost for exploration
+            ce_loss = tf.reduce_mean(1e-1 * self.norm_dist.entropy())
+            self.loss = pg_loss - ce_loss
 
             #  creating the training step
             self.optimizer = tf.train.AdamOptimizer(self.lr)
@@ -127,20 +130,24 @@ class GaussianPolicy(object):
         return self.train_step
 
     def get_action(self, session, observation):
+        assert observation.shape[0] == 1
+
         #  generating an action from the policy network
         results = session.run([self.means, self.stdevs, self.action], {self.observation : observation})
 
-        #  TODO there must be a a better way
         output = {'means' : results[0],
                   'stdevs': results[1],
                   'action': results[2]}
-
+        print(output)
         return output['action'].reshape(self.num_actions), output
 
     def improve(self, session,
-                             observations,
-                             actions,
-                             discounted_returns):
+                      observations,
+                      actions,
+                      discounted_returns):
+
+        assert observations.shape[0] == actions.shape[0]
+        assert actions.shape[0] == discounted_returns.shape[0]
 
         feed_dict = {self.observation : observations,
                      self.taken_action : actions,
@@ -148,7 +155,7 @@ class GaussianPolicy(object):
 
         _, loss = session.run([self.train_step, self.loss], feed_dict)
 
-        return loss
+        return float(loss)
 
 
 class TensorflowV(object):
@@ -170,11 +177,11 @@ class TensorflowV(object):
         self.layers = kwargs.pop('layers')
         super().__init__(**kwargs)
 
-        self.observation_dim = len(self.observation_space)
+        self.observation_dim = self.observation_space.shape[0]
 
         #  create the tf graph for prediction and learning
-        self.prediction = make_prediction_graph()
-        self.train_step = self.make_learning_graph()
+        self.make_prediction_graph()
+        self.make_learning_graph()
 
     def make_prediction_graph(self):
         """
@@ -189,8 +196,8 @@ class TensorflowV(object):
 
             with tf.variable_scope('input_layer'):
                 layer = fc_layer(self.obs, 
-                                 [self.observation_dim, layers[0]], 
-                                 [layers[0]], 
+                                 [self.observation_dim, self.layers[0]], 
+                                 [self.layers[0]], 
                                  tf.nn.relu)
 
             with tf.variable_scope('hidden_layers'):
@@ -214,10 +221,10 @@ class TensorflowV(object):
         """
         with tf.variable_scope('learning'):
             #  placeholder for the target
-            self.target = tf.placeholder(tf.float32, [none, 1], 'target')
+            self.target = tf.placeholder(tf.float32, [None, 1], 'target')
             self.optimizer = tf.train.AdamOptimizer(self.lr)
             
-            self.error = tf.subtract(self.prediction, target)
+            self.error = tf.subtract(self.prediction, self.target)
             self.loss = tf.square(self.error)
             self.train_step = self.optimizer.minimize(self.loss)
 

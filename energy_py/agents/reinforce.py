@@ -43,9 +43,10 @@ class REINFORCE(BaseAgent):
                          process_reward, process_return)
         
         #  create the policy function approximator
-        self.policy = policy(action_space=self.action_space,
-                             observation_space=self.observation_space,
-                             lr=lr)
+        self.policy = policy(num_actions=self.num_actions,
+                             observation_dim=self.observation_dim, 
+                             lr=lr,
+                             action_space=self.action_space)
 
     def _act(self, **kwargs):
         """
@@ -71,13 +72,13 @@ class REINFORCE(BaseAgent):
         action, output = self.policy.get_action(session, scaled_observation)
 
         for i, mean in enumerate(output['means'].flatten()):
-            self.memory.agent_stats['mean {}'.format(i)].append(mean)
+            self.memory.info['mean {}'.format(i)].append(mean)
 
         logging.debug('scaled_obs {}'.format(scaled_observation))
         logging.debug('action {}'.format(action))
 
-        self.memory.agent_stats['scaled_obs'].extend(list(scaled_observation.flatten()))
-        self.memory.agent_stats['action'].extend(list(action.flatten()))
+        self.memory.info['scaled_obs'].extend(list(scaled_observation.flatten()))
+        self.memory.info['action'].extend(list(action.flatten()))
 
         logging.debug('means are {}'.format(output['means']))
         logging.debug('stdevs are {}'.format(output['stdevs']))
@@ -111,7 +112,7 @@ class REINFORCE(BaseAgent):
                                    actions,
                                    discounted_returns)
 
-        self.memory.agent_stats['losses'].append(loss)
+        self.memory.info['losses'].append(loss)
         logging.info('loss is {:.8f}'.format(loss))
 
         return loss

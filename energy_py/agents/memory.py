@@ -52,11 +52,11 @@ class Memory(Utils):
     def __init__(self, 
                  observation_space,
                  action_space,
-                 reward_space,
                  discount,
                  memory_length,
                  process_reward,
-                 process_return):
+                 process_return,
+                 reward_space=None):
 
         super().__init__()
 
@@ -131,12 +131,12 @@ class Memory(Utils):
         scaled_obs = self.scale_array(exp[0], self.observation_space)
         scaled_action = self.scale_array(exp[1], self.action_space)
 
-        if self.process_reward == 'normalize':
+        if self.process_reward == 'normalize' and self.reward_space:
+            print('cant normalize as no space object')
             reward = self.normalize(exp[2],
                                     self.reward_space.low,
                                     self.reward_space.high)
             reward = reward.reshape(1, 1)
-
         else:
             reward = exp[2]
 
@@ -158,7 +158,7 @@ class Memory(Utils):
                                None])   # the Monte Carlo return
         return scaled_exp
 
-    def calculate_returns(self, episode_number):
+    def calculate_returns(self, rewards):
         """
         Calculates the Monte Carlo discounted return for a single episode
 
@@ -174,27 +174,17 @@ class Memory(Utils):
             episode_number (int)
             normalize_return (str): determines method for scaling return
         """
-        #  create array so we can mask later
-        #  note that we take from machine_experiences
-        all_experiences = np.array(self.machine_experiences)
-        assert all_experiences.shape[0] == len(self.machine_experiences)
-
-        #  use boolean indexing to get experiences from last episode
-        episode_mask = [all_experiences[:, 5] == episode_number]
-        episode_experiences = all_experiences[episode_mask]
 
         #  now we can calculate the Monte Carlo discounted return
         #  R = the return from s'
         R, returns = 0, []
         #  note that we reverse the list here
-        for exp in episode_experiences[::-1]:
-            r = exp[2]
+        for r in rewards[::-1]:
             R = r + self.discount * R  # the Bellman equation
             returns.insert(0, R)
 
         #  turn into array, print out some statistics before we scale
         rtns = np.array(returns)
-        logging.info('episode {}'.format(episode_number))
         logging.info('total returns before scl {:.2f}'.format(rtns.sum()))
         logging.info('mean returns before scl {:.2f}'.format(rtns.mean()))
         logging.debug('stdv returns before scl {:.2f}'.format(rtns.std()))
@@ -213,25 +203,7 @@ class Memory(Utils):
         logging.info('total returns after scl {:.2f}'.format(rtns.sum()))
         logging.info('mean returns after scl {:.2f}'.format(rtns.mean()))
 
-        #  now we have the episode returns
-        #  we can fill in the returns each experience in machine_experience
-        #  for this episode
-        new_exps = []
-        assert len(episode_experiences) == len(rtns)
-        for exp, rtn in zip(episode_experiences, rtns):
-            exp[6] = rtn
-            new_exps.append(exp)
-
-        #  idea is to mask an index array
-        idx_array = np.arange(all_experiences.shape[0])
-        assert idx_array.shape[0] == all_experiences.shape[0]
-        episode_indicies = idx_array[episode_mask]
-
-        #  we then use indicies to slice self.machine_experiences with our
-        #  new experiences
-        start = episode_indicies[0]
-        end = episode_indicies[-1] + 1
-        self.machine_experiences[start:end] = new_exps
+        return rtns.reshape(-1,1)
 
     def get_episode_batch(self, episode_number, scaled_actions):
         """
@@ -256,7 +228,7 @@ class Memory(Utils):
         episode_exps = exps[episode_mask]
         episode_mach_exps = mach_exps[episode_mask]
 
-        observations, actions, returns = [], [], []
+        observations, actions, rewards = [], [], []
         for exp, mach_exp in zip(episode_exps, episode_mach_exps): 
             observations.append(mach_exp[0])
 
@@ -268,20 +240,20 @@ class Memory(Utils):
                 act = exp[1]
             actions.append(act)
 
-            returns.append(mach_exp[6])
+            rewards.append(mach_exp[2])
 
-        observations = np.array(observations).reshape(-1, len(self.observation_space))
-        actions = np.array(actions).reshape(-1, len(self.action_space))
-        returns = np.array(returns).reshape(-1, 1)
+        observations = np.array(observations).reshape(-1, self.observation_space.shape[0])
+        actions = np.array(actions).reshape(-1, self.action_space.shape[0])
+        rewards = np.array(rewards).reshape(-1, 1)
 
         assert observations.shape[0] == actions.shape[0]
-        assert observations.shape[0] == returns.shape[0]
+        assert observations.shape[0] == rewards.shape[0]
 
         assert not np.any(np.isnan(observations))
         assert not np.any(np.isnan(actions))
-        assert not np.any(np.isnan(returns))
+        assert not np.any(np.isnan(rewards))
 
-        return observations, actions, returns
+        return observations, actions, rewards
 
     def get_random_batch(self, batch_size, save_batch=False):
         """
@@ -384,7 +356,8 @@ class Memory(Utils):
 
         #  set the index on the step df
         df_stp.set_index('episode', drop=True, inplace=True)
-
+        print(df_stp.head())
+        print(df_ep.head())
         #  add in the maximum cumulative reward
         df_ep.loc[:, 'cum_max_reward'] = df_ep.loc[:, 'reward'].cummax()
 

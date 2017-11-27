@@ -9,7 +9,7 @@ import sys
 import argparse
 import tensorflow as tf
 
-from energy_py import run_single_episode, Eternity_Visualizer, Utils
+from energy_py import run_single_episode, EternityVisualizer, Utils
 from energy_py.agents import REINFORCE, GaussianPolicy
 from energy_py.envs import BatteryEnv
 
@@ -90,8 +90,10 @@ if __name__ == '__main__':
 
             #  get a batch to learn from
             #  note that we don't scale actions as we need to take logprob(action)
-            observations, actions, returns = agent.memory.get_episode_batch(episode,
+            observations, actions, rewards = agent.memory.get_episode_batch(episode,
                                                                             scaled_actions=False)
+            returns = agent.calculate_returns(rewards)
+
             #  train the model
             loss = agent.learn(observations=observations,
                                actions=actions,

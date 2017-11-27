@@ -50,18 +50,17 @@ class BaseAgent(Utils):
         #  use the env to setup the agent
         self.action_space = self.env.action_space
         self.observation_space = self.env.observation_space
-        self.reward_space = self.env.reward_space
+        #  self.reward_space = self.env.reward_space
 
-        self.num_actions = len(self.action_space)
-        self.observation_dim = len(self.observation_space)
+        self.num_actions = sum(self.action_space.shape)
+        self.observation_dim = sum(self.observation_space.shape)
 
         #  create a memory for the agent
         #  object to hold all of the agents experience
         self.memory = Memory(self.observation_space,
                              self.action_space,
-                             self.reward_space,
+                             # self.reward_space,
                              self.discount,
-
                              memory_length=100000,
                              process_reward=process_reward,
                              process_return=process_return)
@@ -69,9 +68,9 @@ class BaseAgent(Utils):
     #  assign errors for the Base_Agent methods
     def _reset(self): raise NotImplementedError
 
-    def _act(self, observation): raise NotImplementedError
+    def _act(self, **kwargs): raise NotImplementedError
 
-    def _learn(self, observation): raise NotImplementedError
+    def _learn(self, **kwargs): raise NotImplementedError
 
     def _load_brain(self): raise NotImplementedError
 
@@ -159,7 +158,7 @@ class BaseAgent(Utils):
 
         #  get the discrete action space for all action dimensions
         #  list is used to we can use itertools.product below
-        disc_act_spcs = [spc.discretize(spc_len) for spc in self.action_space]
+        disc_act_spcs = self.action_space.discretize(spc_len)
 
         #  create every possible combination of actions
         #  this creates the unscaled actions

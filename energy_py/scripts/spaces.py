@@ -4,34 +4,7 @@
 import numpy as np
 
 
-class Space(object):
-    """
-    The base class for observation & action spaces
-
-    Analagous to the 'Space' object used in gym
-    """
-
-    def sample(self):
-        """
-        Uniformly randomly sample a random element of this space.
-        """
-        return self._sample()
-
-    def contains(self, x):
-        """
-        Return boolean specifying if x is a valid
-        member of this space.
-        """
-        return self._contains(x)
-
-    def discretize(self, length):
-        """
-        Method to discretize the action space.
-        """
-        return self._discretize(length)
-
-
-class Discrete_Space(Space):
+class DiscreteSpace(object):
     """
     A single dimension discrete space.
 
@@ -46,17 +19,17 @@ class Discrete_Space(Space):
         self.high = float(high)
         self.type = 'discrete'
 
-    def _sample(self):
+    def sample(self):
         return np.random.choice(self.discrete_space)
 
-    def _contains(self, x):
+    def contains(self, x):
         return np.in1d(x, self.discrete_space)
 
-    def _discretize(self, length):
-        return np.linspace(self.low, self.high, length)
+    def discretize(self, num_discrete):
+        return np.linspace(self.low, self.high, num_discrete)
 
 
-class Continuous_Space(Space):
+class ContinuousSpace(object):
     """
     A single dimension continuous space.
 
@@ -70,11 +43,54 @@ class Continuous_Space(Space):
         self.high = float(high)
         self.type = 'continuous'
 
-    def _sample(self):
+    def sample(self):
         return np.random.uniform(low=self.low, high=self.high)
 
-    def _contains(self, x):
+    def contains(self, x):
         return (x >= self.low) and (x <= self.high)
 
-    def _discretize(self, length):
-        return np.linspace(self.low, self.high, length)
+    def discretize(self, num_discrete):
+        return np.linspace(self.low, self.high, num_discrete)
+
+
+class GlobalSpace(object):
+    """
+    A combination of multiple spaces
+    All energy_py environments use this as the observation.space
+    or action.space object
+
+    Similar to the OpenAI gym Tuple space object
+
+    """
+    def __init__(self, spaces):
+        #  our space is a tuple of the simpler spaces
+        self.spaces = [spc for spc in spaces]
+        self.length = len(self.spaces)
+
+        self.shape = self._get_shape()
+        self.low = self._get_low()
+        self.high = self._get_high()
+
+    def sample(self):
+        #  return an array (1, space_length) 
+        values = [spc.sample() for spc in self.spaces]
+        return np.array(values).reshape(1, self.length)
+
+    def contains(self, x):
+        return all(spc.contains(part) for (spc,part) in zip(self.spaces,x))
+
+    def discretize(self, num_discrete):
+        #  use the same space length for all parts of the action space
+        return [spc.discretize(num_discrete) for spc in self.spaces]
+
+    def _get_shape(self):
+        return (self.length,)
+
+    def _get_low(self):
+        lows = [spc.low for spc in self.spaces]
+        return np.array(lows).reshape(-1)
+
+    def _get_high(self):
+        highs = [spc.high for spc in self.spaces]
+        return np.array(highs).reshape(-1)
+    

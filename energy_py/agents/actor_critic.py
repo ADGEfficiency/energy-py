@@ -1,3 +1,5 @@
+import logging
+
 from energy_py.agents import BaseAgent
 
 
@@ -23,24 +25,27 @@ class ActorCritic(BaseAgent):
     def __init__(self,
                  env,
                  discount,
+                 brain_path,
                  policy,
                  value_function,
-                 learning_rate=0.01,
-                 verbose=False):
+                 lr=0.01,
+                 process_reward=None,
+                 process_return=None):
 
         #  passing the environment to the Base_Agent class
-        super().__init__(env, discount, verbose)
+        super().__init__(env, discount, brain_path, process_reward, process_return)
 
         #  create the actor
         self.actor = policy(action_space=self.action_space,
-                            observation_space=self.observation_space,
-                            learning_rate=learning_rate)
+                            lr=lr,
+                            observation_dim=self.observation_dim,
+                            num_actions=self.num_actions)
 
         #  create our critic
         #  critic of the current policy (ie on-policy)
         self.critic = value_function(observation_space=self.observation_space,
-                                     lr=learning_rate,
-                                     layers=[100, 100])
+                                     lr=lr,
+                                     layers=[10, 10])
 
     def _act(self, **kwargs):
         """
@@ -61,7 +66,7 @@ class ActorCritic(BaseAgent):
         scl_obs = scl_obs.reshape(1, self.observation_dim)
 
         #  generating an action from the policy network
-        action = self.policy.get_action(session, scl_obs)
+        action, _ = self.actor.get_action(session, scl_obs)
 
         return action.reshape(1, self.num_actions)
 
@@ -89,15 +94,15 @@ class ActorCritic(BaseAgent):
 
         #  first we update the critic
         #  create a target using a Bellman estimate
-        bellman = rew + self.discount * self.critic.predict(session, next_obs)
-        target = bellman - self.critic.predict(session, obs)
+        target = rew + self.discount * self.critic.predict(session, next_obs)
+        self.memory.info['value fctn target'].append(target)
 
         #  then we improve the critic using the target
         td_error, critic_loss = self.critic.improve(session, obs, target)
 
         #  now we can update the actor
         #  we use the temporal difference error from the critic
-        actor_loss = self.policy.improve(session,
+        actor_loss = self.actor.improve(session,
                                          obs,
                                          actions,
                                          td_error)
@@ -108,8 +113,8 @@ class ActorCritic(BaseAgent):
                   'actor_loss': actor_loss}
 
         for k, v in output.items():
-            self.memory.agent_stats[k].append(v)
-            self.verbose_print('{} is {:.4f}'.format(k, v))
+            self.memory.info[k].append(v)
+            # logging('{} is {:.4f}'.format(k, v))
 
         #  only calc this so we can return something
         #  makes me think I should do one train op on this loss rather than

@@ -29,7 +29,6 @@ def run_single_episode(episode_number,
         observation = next_observation
 
     #  now episode is done - process the episode in the agent memory
-    agent.memory.calculate_returns(episode_number)
     return agent, env, sess
 
 
