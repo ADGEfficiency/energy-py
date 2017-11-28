@@ -47,32 +47,6 @@ class Utils(object):
         os.chdir(owd)  #  reset wd
         return base
 
-    @staticmethod
-    def save_args(argparse, path, optional={}):
-        """
-        Saves args from an argparse object and from an optional
-        dictionary
-
-        args
-            argparse (object)
-            path (str)        : path to save too
-            optional (dict)   : optional dictionary of additional arguments
-
-        returns
-            writer (object) : csv Writer object
-        """
-        with open(path, 'w') as outfile:
-            writer = csv.writer(outfile)
-            for k, v in vars(argparse).items():
-                print('{} : {}'.format(k, v))
-                writer.writerow([k]+[v])
-
-            if optional:
-                for k, v in optional.items():
-                    print('{} : {}'.format(k, v))
-                    writer.writerow([k]+[v])
-        return writer
-
     """
     energy_py specific functions
     """

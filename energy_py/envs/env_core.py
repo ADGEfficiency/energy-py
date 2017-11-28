@@ -5,12 +5,12 @@ import os
 import numpy as np
 import pandas as pd
 
-
 from energy_py import Utils
+
 
 class BaseEnv(Utils):
     """
-    the energy_py base environment class
+    The parent class for energy_py environments
     inspired by the gym.Env class
 
     The methods of this class are:
@@ -18,17 +18,17 @@ class BaseEnv(Utils):
         reset
 
     To implement an environment:
+      - inherit from this class
+
       - override the following methods in your child:
         _step()
         _reset()
+        _output_results()
 
-      - set the following attributes
+      - set the following attributes:
         action_space
         observation_space
-        reward_range (defaults to -inf, +inf)
 
-    args:
-        verbose : boolean : controls printing
     """
 
     def __init__(self):
@@ -42,9 +42,8 @@ class BaseEnv(Utils):
     def _output_results(self): raise NotImplementedError
 
     #  Set these in ALL subclasses
-    action_space = None       #  list of length num_actions
-    observation_space = None  #  list of length obs_dim
-    reward_space = None       #  single space object
+    action_space = None       
+    observation_space = None 
 
     def reset(self, episode):
         """
@@ -100,7 +99,7 @@ class BaseEnv(Utils):
 
         Use kwargs to give flexibility to the environment as to what to store.
         """
-        for name, data in **kwargs.items():
+        for name, data in kwargs.items():
             self.info[name].append(data)
 
         return self.info

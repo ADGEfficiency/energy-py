@@ -235,17 +235,27 @@ class EternityVisualizer(Visualizer):
         #                                             shape=(3, 1),
         #                                             path=os.path.join(self.base_path_agent, 'last_ep.png'))
 
-        # for var, series in self.agent_memory['info'].items():
+        for var, series in self.agent_memory['info'].items():
 
-        #     if var == 'training Q targets':
-        #         hist, ax = plt.subplots(1, 1)
-        #         series.plot(kind='hist', bins=10, ax=ax)
-        #         hist.savefig(os.path.join(self.base_path_agent,var+'.png'))
+            if var == 'training Q targets':
+                hist, ax = plt.subplots(1, 1)
+                series.plot(kind='hist', bins=10, ax=ax)
+                hist.savefig(os.path.join(self.base_path_agent,var+'.png'))
 
-        #     else:
-        #         self.figs[var] = self.make_time_series_fig(series,
-        #                                                    path=os.path.join(self.base_path_agent,var+'.png'))
+            else:
+                self.figs[var] = self.make_time_series_fig(series,
+                                                           path=os.path.join(self.base_path_agent,var+'.png'))
 
+        for var, series in self.env_info.items():
+
+            if var == 'training Q targets':
+                hist, ax = plt.subplots(1, 1)
+                series.plot(kind='hist', bins=10, ax=ax)
+                hist.savefig(os.path.join(self.base_path_agent,var+'.png'))
+
+            else:
+                self.figs[var] = self.make_time_series_fig(series,
+                                                           path=os.path.join(self.base_path_agent,var+'.png'))
         for name, fig in self.figs.items():
             plt.close(fig)
 

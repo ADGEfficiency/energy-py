@@ -1,10 +1,36 @@
 import logging
+import os
 
 import numpy as np
 import pandas as pd
 
 from energy_py.envs import BaseEnv
 from energy_py.scripts.spaces import ContinuousSpace, DiscreteSpace, GlobalSpace
+
+def make_observation(path, horizion=5):
+    """
+    Creates the state.csv and observation.csv.
+
+    Currently only supports giving the agent a forecast.
+
+    args
+        horizion (int)
+    """
+    print('creating new state.csv and observation.csv')
+    raw_state_path = os.path.join(path, 'raw_state.csv')
+    print(raw_state_path)
+    raw_state = pd.read_csv(raw_state_path, index_col=0, parse_dates=True)
+
+    observations = [raw_state.shift(-i) for i in range(horizion)]
+    observation = pd.concat(observations, axis=1).dropna()
+    #  becuase we dropped na's we now need to realign
+    state, observation = raw_state.align(observation, axis=0, join='inner')
+
+    state_path = os.path.join(path, 'state.csv')
+    obs_path = os.path.join(path, 'observation.csv')
+    state.to_csv(state_path)
+    observation.to_csv(obs_path)
+    return state, observation
 
 class TimeSeriesEnv(BaseEnv):
     """
@@ -17,21 +43,40 @@ class TimeSeriesEnv(BaseEnv):
     def __init__(self, 
                  episode_length,
                  episode_start,
-                 state_path,
-                 observation_path):
+                 data_path):
 
         self.episode_start = episode_start
         self.episode_length = episode_length
-        self.state_path = state_path
-        self.observation_path = observation_path
 
         #  load up the infomation from the csvs once
         #  we do this before we init the BaseEnv so we can reset in
         #  the BaseEnv class
-        self.raw_state_ts = self.load_ts_from_csv(self.state_path)
-        self.raw_observation_ts = self.load_ts_from_csv(self.observation_path)
+        self.raw_state_ts, self.raw_observation_ts = self.load_ts(data_path)
 
         super().__init__()
+
+    def load_ts(self, path):
+        """
+        args
+            state_path (str)
+            observation_path (str)
+
+        returns
+            state (pd.DataFrame)
+            observation (pd.DataFrame)
+        """
+        state_path = os.path.join(path, 'state.csv')
+        obs_path = os.path.join(path, 'observation.csv')
+
+        try:
+            state = pd.read_csv(state_path, index_col=0)
+            observation = pd.read_csv(obs_path, index_col=0)
+
+        except:
+            state, observation = make_observation(path)
+
+        assert state.shape[0] == observation.shape[0]
+        return state, observation 
 
     def get_state_obs(self):
         """
@@ -46,9 +91,7 @@ class TimeSeriesEnv(BaseEnv):
         observation_space = self.make_env_obs_space(self.raw_state_ts)
         observation_space = GlobalSpace(spaces=observation_space)
 
-        #  now grab the start & end indicies
-        ts_length = min(self.raw_state_ts.shape[0],
-                        self.raw_observation_ts.shape[0])
+        ts_length = self.raw_observation_ts.shape[0]
         start, end = self.get_ts_row_idx(ts_length,
                                          self.episode_length,
                                          self.episode_start)
@@ -59,17 +102,9 @@ class TimeSeriesEnv(BaseEnv):
         assert observation_ts.shape[0] == state_ts.shape[0]
         logging.info('Ep {} starting at {}'.format(self.episode,
                                                         state_ts.index[0]))
-        logging.debug(state_ts.iloc[:,0].describe())
 
         return observation_space, observation_ts, state_ts
 
-    def load_ts_from_csv(self, path):
-        """
-        Loads a CSV
-        """
-        #  loading the raw time series data
-        raw_ts = pd.read_csv(path, index_col=0)
-        return raw_ts
 
     def get_ts_row_idx(self, ts_length, episode_length, episode_start):
         """
@@ -127,7 +162,7 @@ class TimeSeriesEnv(BaseEnv):
         """
         ts_info = np.array(self.state_ts.iloc[steps, :])
         ts_info = np.append(ts_info, append)
-        return ts_info.reshape(-1)
+        return ts_info.reshape(1, -1)
 
     def get_observation(self, steps, append=[]):
         """
@@ -141,4 +176,4 @@ class TimeSeriesEnv(BaseEnv):
 
         ts_info = np.append(ts_info, np.array(append))
 
-        return ts_info.reshape(-1)
+        return ts_info.reshape(1, -1)

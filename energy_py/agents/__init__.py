@@ -1,6 +1,8 @@
 from energy_py.agents.agent import BaseAgent, EpsilonGreedy
 from energy_py.agents.memory import Memory
 
+from energy_py.agents.random_agent import RandomAgent
+
 from energy_py.agents.reinforce import REINFORCE
 from energy_py.agents.dqn import DQN
 from energy_py.agents.actor_critic import ActorCritic
@@ -14,7 +16,8 @@ from energy_py.agents.function_approximators.tensorflow import TensorflowQ
 
 __all__ = ['BaseAgent',
            'EpsilonGreedy',
-           'Agent_Memory',
+           'Memory',
+           'RandomAgent',
            'REINFORCE',
            'DQN',
            'KerasV',
