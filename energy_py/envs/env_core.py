@@ -56,7 +56,8 @@ class BaseEnv(Utils):
         logging.info('Reset environment')
 
         self.info = collections.defaultdict(list)
-        self.outputs = {}
+        self.outputs = collections.defaultdict(list) 
+
         return self._reset()
 
     def step(self, action):
@@ -91,3 +92,15 @@ class BaseEnv(Utils):
     def output_results(self):
         self.outputs['dataframe'] = pd.DataFrame.from_dict(self.info)
         return self._output_results()
+
+
+    def update_info(self, **kwargs):
+        """
+        Helper function to update the self.info dictionary.
+
+        Use kwargs to give flexibility to the environment as to what to store.
+        """
+        for name, data in **kwargs.items():
+            self.info[name].append(data)
+
+        return self.info

@@ -14,7 +14,6 @@ class BatteryEnv(TimeSeriesEnv):
     Agent chooses to either charge or discharge.
 
     args
-        lag             :   int     : lag between observation & state
         episode_length  : int / str : length of the episode
                                       'maximum' = run entire legnth
         episode_start   :   int     : the integer index to start the episode
@@ -29,7 +28,6 @@ class BatteryEnv(TimeSeriesEnv):
         verbose         :   int     : controls env print statements
     """
     def __init__(self, 
-                 lag=0,
                  episode_length='maximum',
                  episode_start=0,
                  power_rating=2,
@@ -49,7 +47,6 @@ class BatteryEnv(TimeSeriesEnv):
 
         #  calling init method of the parent Time_Series_Env class
         super().__init__(
-                         lag,
                          episode_length,
                          episode_start,
                          state_path,
@@ -79,14 +76,13 @@ class BatteryEnv(TimeSeriesEnv):
         """
         SETTING THE OBSERVATION SPACE
 
-        the observation space is set in the parent class Time_Series_Env
+        the observation space is set in the parent class TimeSeriesEnv
         we also append on an additional observation of the battery charge
         """
         observation_space, self.observation_ts, self.state_ts = self.get_state_obs()
 
-        observation_space.append(ContinuousSpace(0, self.capacity))
+        observation_space.spaces.append(ContinuousSpace(0, self.capacity))
 
-        self.observation_space = GlobalSpace(observation_space)
         """
         SETTING THE REWARD SPACE
 
@@ -107,15 +103,11 @@ class BatteryEnv(TimeSeriesEnv):
         self.steps = 0
         self.state = self.get_state(steps=self.steps, append=self.initial_charge)
         self.observation = self.get_observation(steps=self.steps, append=self.initial_charge)
-        self.done  = False
+        self.done = False
 
         initial_charge = self.state[-1]
         assert initial_charge <= self.capacity
         assert initial_charge >= 0
-
-        #  resetting the info & outputs dictionaries
-        self.info = collections.defaultdict(list)
-        self.outputs = collections.defaultdict(list)
 
         return self.observation
 
@@ -207,12 +199,10 @@ class BatteryEnv(TimeSeriesEnv):
         #  -1 in here because of the zero index
         if self.steps == (self.episode_length-1):
             self.done = True
-            next_state = np.full(shape=self.state.shape, fill_value=-999999)
-            reward = 0
-            next_observation = np.full(shape=self.observation.shape, fill_value=-999999)
+            next_state = 'Terminal'
+            next_observation = 'Terminal'
 
             total_ep_reward = sum(self.info['reward'])
-
             logging.info('Episode {} done'.format(self.episode))
             logging.info('Undiscounted total reward {}'.format(total_ep_reward))
 
@@ -244,42 +234,6 @@ class BatteryEnv(TimeSeriesEnv):
         self.observation = next_observation
 
         return self.observation, reward, self.done, self.info
-
-    def update_info(self, episode,
-                          steps,
-                          state,
-                          observation,
-                          action,
-                          reward,
-                          next_state,
-                          next_observation,
-
-                          electricity_price,
-                          gross_rate,
-                          losses,
-                          new_charge,
-                          old_charge,
-                          net_stored):
-        """
-        Helper function to update the self.info dictionary
-        """
-        self.info['episode'].append(episode)
-        self.info['steps'].append(steps)
-        self.info['state'].append(state)
-        self.info['observation'].append(observation)
-        self.info['action'].append(action)
-        self.info['reward'].append(reward)
-        self.info['next_state'].append(next_state)
-        self.info['next_observation'].append(next_observation)
-
-        self.info['electricity_price'].append(electricity_price)
-        self.info['gross_rate'].append(gross_rate)
-        self.info['losses'].append(losses)
-        self.info['new_charge'].append(new_charge)
-        self.info['old_charge'].append(old_charge)
-        self.info['net_stored'].append(net_stored)
-
-        return self.info
 
     def _output_results(self):
         """

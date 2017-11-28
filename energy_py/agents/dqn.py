@@ -40,11 +40,7 @@ class DQN(BaseAgent):
                  epsilon_decay_steps=10000,
                  epsilon_start=1.0,
                  update_target_net=1000,
-                 scale_targets=True,
-                 load_agent_brain=False,
-                 
-                 process_reward=False,
-                 process_return=False):
+                 load_agent_brain=False):
 
         #  passing the environment to the BaseAgent class
         super().__init__(env, discount, brain_path, process_reward, process_return)

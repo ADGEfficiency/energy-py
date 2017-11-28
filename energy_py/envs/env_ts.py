@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from energy_py.envs import BaseEnv
-from energy_py.scripts.spaces import ContinuousSpace, DiscreteSpace
+from energy_py.scripts.spaces import ContinuousSpace, DiscreteSpace, GlobalSpace
 
 class TimeSeriesEnv(BaseEnv):
     """
@@ -15,12 +15,10 @@ class TimeSeriesEnv(BaseEnv):
     """
 
     def __init__(self, 
-                 lag,
                  episode_length,
                  episode_start,
                  state_path,
                  observation_path):
-
 
         self.episode_start = episode_start
         self.episode_length = episode_length
@@ -46,6 +44,7 @@ class TimeSeriesEnv(BaseEnv):
 
         #  creating the observation space list
         observation_space = self.make_env_obs_space(self.raw_state_ts)
+        observation_space = GlobalSpace(spaces=observation_space)
 
         #  now grab the start & end indicies
         ts_length = min(self.raw_state_ts.shape[0],
