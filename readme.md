@@ -17,8 +17,7 @@ I teach a one day [introduction to reinforcement learning learning](https://gith
 from energy_py.agents import DQN, KerasQ
 from energy_py.envs import BatteryEnv
 
-env = BatteryEnv(power_rating=2, # in MW
-                  capacity=2)    # in MWh
+env = BatteryEnv()
 
 agent = DQN(env,
             discount=0.9,
