@@ -89,9 +89,18 @@ class BaseEnv(Utils):
         return self._step(action)
 
     def output_results(self):
-        self.outputs['dataframe'] = pd.DataFrame.from_dict(self.info)
-        return self._output_results()
+        """
+        Pulls data out of the environment.
 
+        Grabs data from the self.info dictionary
+        """
+        #  add the self.info dictionary into our outputs dictionary
+        self.outputs['info'] = self.info
+
+        #  make a dataframe from self.info
+        self.outputs['df_env_info'] = pd.DataFrame.from_dict(self.info)
+
+        return self._output_results()
 
     def update_info(self, **kwargs):
         """

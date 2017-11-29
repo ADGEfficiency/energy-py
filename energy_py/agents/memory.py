@@ -73,6 +73,7 @@ class Memory(Utils):
         """
         self.experiences = []
         self.info = collections.defaultdict(list)
+        self.outputs = collections.defaultdict(list)
 
     def add_experience(self, observation,
                              action,
@@ -221,13 +222,15 @@ class Memory(Utils):
         Extract data from the memory
 
         returns
-            output_dict (dict): keys=name, values=pd.Series or pd.DataFrame
+            self.outputs (dict): includes self.info 
         """
-        #  create lists on a step by step basis
-        print('agent memory is making dataframes')
+        self.outputs['info'] = self.info
 
+        #  now we combine self.info into a single dataframe
         ep, stp, obs, act, rew, nxt_obs = [], [], [], [], [], []
         for exp in self.experiences:
+            #  obs, action and next_obs are all arrays
+            
             obs.append(exp[0])
             act.append(exp[1])
             rew.append(exp[2])
@@ -235,45 +238,34 @@ class Memory(Utils):
             stp.append(exp[4])
             ep.append(exp[5])
 
-
         df_dict = {
-                   'episode':ep,
-                   'step':stp,
                    'observation':obs,
                    'action':act,
                    'reward':rew,
                    'next_observation':nxt_obs,
+                   'step':stp,
+                   'episode':ep,
                    }
 
         #  make a dataframe on a step by step basis
         df_stp = pd.DataFrame.from_dict(df_dict)
+        df_stp.set_index('episode', drop=True, inplace=True)
 
         #  make a dataframe on an episodic basis
         df_ep = df_stp.groupby(by=['episode'], axis=0).sum()
 
-        #  set the index on the step df
-        df_stp.set_index('episode', drop=True, inplace=True)
-        print(df_stp.head())
-        print(df_ep.head())
-        #  add in the maximum cumulative reward
-        df_ep.loc[:, 'cum_max_reward'] = df_ep.loc[:, 'reward'].cummax()
+        #  add statistics into the episodic dataframe
+        reward = df_ep.loc[:, 'reward']
+        df_ep.loc[:, 'cum max reward'] = reward.cummax()
+        #  set the window at 10% of the data
+        window = int(df_ep.shape[0]*0.1)
+        df_ep.loc[:, 'rolling mean'] = reward.rolling(window,
+                                                      min_periods=1).mean()
+        df_ep.loc[:, 'rolling std'] = pd.rolling_std(reward, window,
+                                                     min_periods=1)
 
-        #  add in the rolling average reward
-        window = max(int(df_ep.shape[0]*0.1),2)
+        #  saving data in the output_dict
+        self.outputs['df_stp'] = df_stp
+        self.outputs['df_ep'] = df_ep
 
-        df_ep.loc[:, 'rolling_mean'] = df_ep.loc[:, 'reward'].rolling(window=window,
-                                                                      min_periods=1,
-                                                                      center=False).mean()
-        #  iterate over the info dictionary
-        #  this can contain data with different indicies
-        #  so we create one df per data
-        #  and store these dfs in an 'info' dict
-        info = {}
-        for var, data in self.info.items():
-            logging.info('making data frame for {} from info'.format(var))
-            info[var] = pd.Series(data, name=var)
-
-        output_dict = {'dataframe_steps' : df_stp,
-                       'dataframe_episodic' : df_ep,
-                       'info': info}
-        return output_dict
+        return self.outputs 

@@ -2,6 +2,7 @@
 """
 
 import collections
+import logging
 import itertools
 import os
 
@@ -27,13 +28,13 @@ class Visualizer(Utils):
 
         self.figs = {}
 
-    def output_results(self, save_data):
+    def output_results(self, save_data, env_panels=[] ):
         """
         The main visualizer function
 
         Purpose is to output results from the object
         """
-        return self._output_results(save_data)
+        return self._output_results(save_data, env_panels)
 
     def make_time_series_fig(self, series,
                                    xlabel=[],
@@ -47,7 +48,6 @@ class Visualizer(Utils):
         """
 
         fig, ax = plt.subplots(1, 1, figsize=(20, 20))
-
         data = series.astype(float)
         data.plot(kind='line', ax=ax)
 
@@ -85,52 +85,72 @@ class Visualizer(Utils):
 
     def make_panel_fig(self, df,
                              panels,
-                             xlabels,
-                             ylabels,
+                             xlabel,
                              shape,
                              xlim='all',
+                             ylabels=[],
                              ylims=[],
+                             kinds=[],
+                             errors=[],
                              path=None):
         """
         makes a panel of time series figures
         """
-
-        assert len(panels) == len(xlabels)
-        assert len(panels) == len(ylabels)
-        assert shape[0] * shape[1] == len(panels)
+        num_panels = len(panels)
+        print('making panel fig with {} panels - shape {}'.format(num_panels,
+                                                                  shape))
+        xlabels = [xlabel for i in range(num_panels)]
+        assert num_panels == len(xlabels)
+        assert shape[0] * shape[1] == num_panels 
 
         fig, axes = plt.subplots(nrows=shape[0],
                                  ncols=shape[1],
                                  figsize=(20, 20),
                                  sharex=True)
-
         for i, (ax, panel) in enumerate(zip(axes.flatten(),
                                             panels)):
 
             for col in panel:
-                data = df.loc[:, col].astype(float)
-                data.plot(kind='line', ax=ax, label=col)
+                data = df.loc[:, col]
+                
+                if kinds:
+                    kind = kinds[i]
+                else:
+                    kind = 'line'
 
-                if ylims:
+                data.plot(kind=kind, ax=ax, label=col)
+
+                if errors and errors[i]:
+                    x = df.index.values
+                    y = data.values
+                    error = df.loc[:, errors[i]].values.flatten()
+                    ax.fill_between(x, y - error, y + error,
+                                    alpha=0.5)
+
+                if ylims and ylims[i]:
                     ax.set_ylim(ylims[i])
 
                 ax.set_xlabel(xlabels[i])
-                ax.set_ylabel(ylabels[i])
+
+                if ylabels: 
+                    assert num_panels == len(ylabels)
+                    ax.set_ylabel(ylabels[i])
+
                 ax.legend()
 
-                if xlim == 'last_week':
-                    start = df.index[-7 * 24 * 12]
-                    end = df.index[-1]
+                # if xlim == 'last_week':
+                #     start = df.index[-7 * 24 * 12]
+                #     end = df.index[-1]
 
-                if xlim == 'last_month':
-                    start = df.index[-30 * 24 * 12]
-                    end = df.index[-1]
+                # if xlim == 'last_month':
+                #     start = df.index[-30 * 24 * 12]
+                #     end = df.index[-1]
 
-                if xlim == 'all':
-                    start = df.index[0]
-                    end = df.index[-1]
+                # if xlim == 'all':
+                #     start = df.index[0]
+                #     end = df.index[-1]
 
-                ax.set_xlim([start, end])
+                # ax.set_xlim([start, end])
 
         if path:
             self.ensure_dir(path)
@@ -154,110 +174,93 @@ class EternityVisualizer(Visualizer):
         self.agent = agent
         self.episode = episode
 
-        self.base_path_agent = os.path.join(results_path)
-        self.base_path_episodes = os.path.join(results_path, 'episodes')
+        self.results_path = os.path.join(results_path)
 
-        #  pull out the data
-        print('Eternity visualizer is pulling data out of the agent')
-        self.agent_memory = self.agent.memory.output_results()
-        print('Eternity visualizer is pulling data out of the environment')
-        if env:
-            self.env_info = self.env.output_results()
+        print('pulling data out of the environment')
+        self.env_outputs = self.env.output_results()
 
-            self.state_ts = self.env.state_ts
-            self.observation_ts = self.env.observation_ts
+        #  using the index from state_ts to index the env_info dataframe
+        index = self.env_outputs['state_ts'].index
+        self.env_outputs['df_env_info'].index = index
 
-            #  use the index from the state_ts for the other len(total_steps) dataframes
-            idx = pd.to_datetime(self.state_ts.index)
-            dfs = [self.env_info['dataframe']]
+        print('pulling data out of the agent')
+        self.agent_outputs = self.agent.output_results()
 
-            for df in dfs:
-                df.index = idx
+        #  now we grab the .info dictionaries from both agent and env
+        #  and turn them into plots
+        agent_series, agent_figs = self.info_to_plots(self.agent_outputs['info'])
+        self.agent_outputs['series'] = agent_series
+        self.agent_outputs['figs'] = agent_figs
+
+        env_series, env_figs = self.info_to_plots(self.env_outputs['info'])
+        self.env_outputs['series'] = env_series
+        self.env_outputs['figs'] = env_figs
+
+    def info_to_plots(self, info_dict):
+        """
+        Takes the info dictionary and converts the data into pd.Series
+        and into plots (one per Series)
+
+        args
+            info_dict (dict) either env.info or agent.memory.info
+        """
+        data_dict, figs_dict = {}, {}
+
+        for var, data in info_dict.items():
+            
+            #  don't use next state as terminal state is a string
+            if var != 'next_state' and var != 'next_observation':
+
+                if isinstance(data[0], np.ndarray):
+                    logging.info('making df for {} from info dict'.format(var))
+                    length = data[0].shape[1]
+                    data = [array.flatten() for array in data]
+                    names = ['{}_{}'.format(var,i) for i in range(length)]
+                    data = pd.DataFrame.from_items(zip(names, data))
+
+                else:
+                    logging.info('making series for {} from info dict'.format(var))
+                    data = pd.Series(data, name=var)
+
+                data_dict[var] = data 
+                #  then create the figure and save into figs_dict
+                fig_path = os.path.join(self.results_path, var+'.png')
+                figs_dict[var] = self.make_time_series_fig(data, fig_path)
+
+        return data_dict, figs_dict
 
     def write_data_to_disk(self):
-        print('saving env dataframe')
-        save_df(self.env_info['dataframe'],
-                os.path.join(self.base_path_episodes, 'env_history_{}.csv'.format(self.episode)))
+        disk_data = {'df_stp.csv': self.agent_outputs['df_stp'],
+                     'df_ep.csv': self.agent_outputs['df_ep'],
+                     'env_info.csv': self.env_outputs['df_env_info']}
 
-        print('saving state dataframe')
-        save_df(self.state_ts,
-                os.path.join(self.base_path_episodes, 'state_ts_{}.csv'.format(self.episode)))
-
-        print('saving memory steps dataframe')
-        save_df(self.agent_memory['dataframe_steps'],
-                os.path.join(self.base_path_agent, 'agent_df_steps.csv'))
-
-        print('saving memory episodic dataframe')
-        save_df(self.agent_memory['dataframe_episodic'],
-                os.path.join(self.base_path_agent, 'agent_df_episodic.csv'))
-        return None
-
-
-    def _output_results(self, save_data):
-        """
-        Generates results
-        """
-        def save_df(df, path):
+        for path, data in disk_data.items():
+            path = os.path.join(self.results_path, 'csvs', path)
             self.ensure_dir(path)
-            df.to_csv(path)
+            data.to_csv(path)
 
-        print('saving the figures')
-
-        #  iterate over the figure dictionary from the env visualizer
-        #  this exists to allow env specific figures to be collected by
-        #  the Eternity_Visualizer
-
-        #  TODO similar thing for agent!
-        # for make_fig_fctn, fig_name in self.env_figures.items():
-        #     self.figures[fig_name] = make_fig_fctn(self.env_info,
-        #                                            self.base_path_episodes)
-
-        self.figs['panel'] = self.make_panel_fig(df=self.agent_memory['dataframe_episodic'],
-                                                    panels=[['reward', 'cum_max_reward'],
-                                                            ['rolling_mean']],
-                                                    xlabels=['Episode',
-                                                             'Episode'],
+    def _output_results(self, save_data, env_panels):
+        """
+        """
+        self.agent_outputs['figs']['panel'] = self.make_panel_fig(df=self.agent_outputs['df_ep'],
+                                                    panels=[['reward', 'cum max reward'],
+                                                            ['rolling mean']],
+                                                    errors=[[], ['rolling std']],
+                                                    xlabel='Episode',
                                                     ylabels=['Total reward per episode',
-                                                             'Rolling average reward per episode'],
+                                                             'Rolling last 10% of episodes'],
                                                     shape=(2, 1),
-                                                    path=os.path.join(self.base_path_agent, 'panel.png'))
-
-        # self.figs['last_ep'] = self.make_panel_fig(df=self.env_info['dataframe'],
-        #                                             panels=[['gross_rate'],
-        #                                                     ['new_charge'],
-        #                                                     ['electricity_price']],
-        #                                             xlabels=['Episode',
-        #                                                      'Episode',
-        #                                                      'Episode'],
-        #                                             ylabels=['Gross rate of charge/discharge [MW]',
-        #                                                      'Battery charge level at end of step [MWh]',
-        #                                                      'Electricity price [$/MWh]'],
-        #                                             shape=(3, 1),
-        #                                             path=os.path.join(self.base_path_agent, 'last_ep.png'))
-
-        for var, series in self.agent_memory['info'].items():
-
-            if var == 'training Q targets':
-                hist, ax = plt.subplots(1, 1)
-                series.plot(kind='hist', bins=10, ax=ax)
-                hist.savefig(os.path.join(self.base_path_agent,var+'.png'))
-
-            else:
-                self.figs[var] = self.make_time_series_fig(series,
-                                                           path=os.path.join(self.base_path_agent,var+'.png'))
-
-        for var, series in self.env_info.items():
-
-            if var == 'training Q targets':
-                hist, ax = plt.subplots(1, 1)
-                series.plot(kind='hist', bins=10, ax=ax)
-                hist.savefig(os.path.join(self.base_path_agent,var+'.png'))
-
-            else:
-                self.figs[var] = self.make_time_series_fig(series,
-                                                           path=os.path.join(self.base_path_agent,var+'.png'))
-        for name, fig in self.figs.items():
-            plt.close(fig)
+                                                    path=os.path.join(self.results_path, 'panel.png'))
+        if env_panels:
+            self.env_outputs['figs']['last_ep'] = self.make_panel_fig(df=self.env_outputs['df_env_info'],
+                                                        panels=env_panels,                          
+                                                        xlabel='Step',
+                                                        shape=(len(env_panels), 1),
+                                                        ylims=[[0,6],[0,6],[]],
+                                                        kinds=['line', 'line', 'line'],
+                                                        path=os.path.join(self.results_path, 'last_ep.png'))
 
         if save_data:
             self.write_data_to_disk()
+
+        return self.agent_outputs, self.env_outputs

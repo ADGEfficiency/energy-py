@@ -10,7 +10,7 @@ class FlexEnv(TimeSeriesEnv):
                  episode_start=0,
                  flex_size=2, # MW
                  flex_time=6, # num 5 minute periods
-                 relax_time=288): # num 5 min periods
+                 relax_time=12): # num 5 min periods
 
         data_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -105,8 +105,8 @@ class FlexEnv(TimeSeriesEnv):
             self.flex_up += 1
 
         #  if we are in the flex down cycle, continue that
-        if self.flex_down  > 0:
-            self.flex_down  += 1
+        if self.flex_down > 0:
+            self.flex_down += 1
 
         #  if we are in the relaxation period, continue that
         if self.relax > 0:
@@ -123,8 +123,9 @@ class FlexEnv(TimeSeriesEnv):
             self.relax = 1
 
         #  ending the relaxation period
-        if self.relax  > self.relax_time:
-            self.relax  = 0
+        if self.relax > self.relax_time:
+            self.relax = 0
+            self.flex_avail = 1
 
         #  if we are not doing anything but want to start the flex cycle
         total_counters = sum([self.flex_up, self.flex_down, self.relax])
@@ -133,13 +134,15 @@ class FlexEnv(TimeSeriesEnv):
             self.flex_avail = 0
 
         #  now we set reward based on whether we are in a cycle or not
-        reward = 0
+        flex_action = 0 
 
         if self.flex_up > 0:
-            reward = - self.flex_size * electricity_price 
+            flex_action = - self.flex_size
 
         if self.flex_down > 0:
-            reward = self.flex_size * electricity_price
+            flex_action = self.flex_size
+        
+        reward = flex_action * electricity_price
 
         #  check to see if we are done
         if self.steps == (self.episode_length - 1):
@@ -171,7 +174,8 @@ class FlexEnv(TimeSeriesEnv):
                                      flex_up=self.flex_up,
                                      flex_down=self.flex_down,
                                      relax=self.relax,
-                                     flex_avail = self.flex_avail)
+                                     flex_avail=self.flex_avail,
+                                     flex_action=flex_action)
 
         #  moving to the next time step
         self.state = next_state
@@ -187,7 +191,8 @@ class FlexEnv(TimeSeriesEnv):
         Things I will want to do here
         1 - save self.state_ts, self.observation_ts (the sampled episode)
         """
-
+        self.outputs['state_ts'] = self.state_ts
+        self.outputs['observation_ts'] = self.observation_ts
         return self.outputs
 
     def check_counters(self):
