@@ -141,8 +141,9 @@ class FlexEnv(TimeSeriesEnv):
 
         if self.flex_down > 0:
             flex_action = self.flex_size
-        
-        reward = flex_action * electricity_price
+
+        #  reward is negative as we want to reduce cost
+        reward = - flex_action * electricity_price
 
         #  check to see if we are done
         if self.steps == (self.episode_length - 1):
@@ -193,6 +194,17 @@ class FlexEnv(TimeSeriesEnv):
         """
         self.outputs['state_ts'] = self.state_ts
         self.outputs['observation_ts'] = self.observation_ts
+
+        env_panel_fig = {'name': 'last_ep',
+                         'ylims': [[0,6], [], [], []],
+                         'kinds': ['line', 'line', 'line', 'line'],
+                         'panels': [['flex_up', 'flex_down', 'relax'],
+                                    ['flex_avail', 'flex_action'],
+                                    ['electricity_price'],
+                                    ['reward']],
+                         'shape': (4,1)}
+        self.outputs['env_panel_fig'] = env_panel_fig
+        
         return self.outputs
 
     def check_counters(self):

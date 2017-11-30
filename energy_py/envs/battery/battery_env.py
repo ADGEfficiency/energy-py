@@ -238,7 +238,18 @@ class BatteryEnv(TimeSeriesEnv):
     def _output_results(self):
         """
         """
-        self.outputs['dataframe'].loc[:,'rolling_rate']=self.outputs['dataframe'].loc[:,'gross_rate'].rolling(window=10,
-                                                                                                         min_periods=1,
-                                                                                                         center=False)
+        self.outputs['state_ts'] = self.state_ts
+        self.outputs['observation_ts'] = self.observation_ts
+
+        env_panel_fig = {'name': 'last_ep',
+                         'ylabels': ['Gross rate of charge/discharge [MW]',
+                                     'Battery charge at end of step [MWh]',
+                                     'Electricity price [$/MWh]'],
+                         'panels': ['gross_rate',
+                                    'new_charge',
+                                    'electricity_price'],
+                         'shape': (3,1)}
+        self.outputs['env_panel_fig'] = env_panel_fig
+
+
         return self.outputs

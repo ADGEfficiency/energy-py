@@ -74,7 +74,6 @@ def make_paths(name):
         utils.ensure_dir(path)
     return paths
 
-
 def make_logger(log_path):
     #  using a single root logger for all modules                               
     #  can do better but just happy to have this working at the moment!         
