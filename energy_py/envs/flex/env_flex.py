@@ -4,6 +4,7 @@ import os
 from energy_py import DiscreteSpace, GlobalSpace
 from energy_py.envs import TimeSeriesEnv
 
+
 class FlexEnv(TimeSeriesEnv):
     def __init__(self,
                  episode_length='maximum',
@@ -43,7 +44,7 @@ class FlexEnv(TimeSeriesEnv):
 
         self.flex_up = 0
         self.flex_down = 0
-        self.relax  = 0
+        self.relax = 0
         self.flex_avail = 1 # 0=not available, 1=available
         
         """
@@ -60,8 +61,6 @@ class FlexEnv(TimeSeriesEnv):
         self.observation_space = GlobalSpace(spaces)
         
         """
-        Intentionally not choosing to set reward space. 
-       
         Resetting steps, state, observation, done status
         """
         self.steps = 0
@@ -93,6 +92,8 @@ class FlexEnv(TimeSeriesEnv):
         #  grab the action
         assert action.shape == (1,1)
         action = action[0][0]
+        assert action >= self.action_space.spaces[0].low
+        assert action <= self.action_space.spaces[0].high
 
         logging.info('electricity_price is {}'.format(electricity_price))
         logging.info('action is {}'.format(action))

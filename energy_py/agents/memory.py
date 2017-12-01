@@ -62,8 +62,8 @@ class Memory(Utils):
         self.action_space = action_space
         self.discount = discount
 
-        #  memory & processing info:w
-        self.memory_length = memory_length
+        #  memory & processing info
+        self.length = memory_length
 
         self.reset()
 
@@ -179,31 +179,34 @@ class Memory(Utils):
             rewards (np.array)
             next_observations (np.array)
         """
-        sample_size = min(batch_size, len(self.machine_experiences))
+        sample_size = min(batch_size, len(self.experiences))
 
         #  limiting to the memory length
-        mach_memory = self.experiences[-self.memory_length:]
-        assert 1 == 0 #  TODO FIX THIS TO UPDATE FOR NO MACH EXP
+        memory = self.experiences[-self.length:]
+
         #  indicies for the batch
         indicies = np.random.randint(low=0,
-                                     high=len(mach_memory),
+                                     high=len(memory),
                                      size=sample_size)
 
         #  randomly sample from the memory & returns
-        mach_exp_batch = [mach_memory[i] for i in indicies]
+        exp_batch = [memory[i] for i in indicies]
 
-        obs = [exp[0] for exp in mach_exp_batch]
-        acts = [exp[1] for exp in mach_exp_batch]
-        rwrds = [exp[2] for exp in mach_exp_batch]
-        next_obs = [exp[3] for exp in mach_exp_batch]
+        #  iterate over the batch to pull out the data we want
+        obs, acts, rews, next_obs = [], [], [], []
+        for exp in exp_batch:
+            obs.append(exp[0])
+            acts.append(exp[1]) 
+            rews.append(exp[2])
+            next_obs.append(exp[3]) 
 
         #  space lengths used for reshaping
-        obs_space_dim = len(self.observation_space)
-        act_space_dim = len(self.action_space)
+        obs_space_dim = self.observation_space.shape[0]
+        act_space_dim = self.action_space.shape[0]
 
         obs = np.array(obs).reshape(sample_size, obs_space_dim)
         actions = np.array(acts).reshape(sample_size, act_space_dim)
-        rewards = np.array(rwrds).reshape(sample_size, 1)
+        rewards = np.array(rews).reshape(sample_size, 1)
         next_obs = np.array(next_obs).reshape(sample_size, obs_space_dim)
 
         assert obs.shape[0] == actions.shape[0]
@@ -230,7 +233,6 @@ class Memory(Utils):
         ep, stp, obs, act, rew, nxt_obs = [], [], [], [], [], []
         for exp in self.experiences:
             #  obs, action and next_obs are all arrays
-            
             obs.append(exp[0])
             act.append(exp[1])
             rew.append(exp[2])

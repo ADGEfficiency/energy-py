@@ -3,6 +3,7 @@ import os
 
 import numpy as np
 
+from energy_py import Normalizer, Standardizer
 from energy_py.agents import BaseAgent, EpsilonGreedy
 
 
@@ -16,11 +17,6 @@ class DQN(BaseAgent):
         Q                   : energy_py Action-Value Function Q(s,a)
         discount
         batch_size
-        memory_length       : int : length of experience replay
-        epsilon_decay_steps : int
-        epsilon_start       : int
-        update_target_net   : int : steps before target network update
-        scale_targets       : bool : whether to scale Q(s,a) when learning
 
     inherits from
         Base_Agent          : the energy_py class used for agents
@@ -31,28 +27,39 @@ class DQN(BaseAgent):
     def __init__(self, 
                  env,
                  discount,
+                 brain_path,
 
                  Q,
                  batch_size,
-                 brain_path,
+                 total_steps,
 
-                 memory_length=100000,
-                 epsilon_decay_steps=10000,
-                 epsilon_start=1.0,
-                 update_target_net=1000,
                  load_agent_brain=False):
-
-        #  passing the environment to the BaseAgent class
-        super().__init__(env, discount, brain_path, process_reward, process_return)
 
         Q = Q
         batch_size = batch_size
         load_agent_brain = load_agent_brain
 
-        self.update_target_net = update_target_net
-        self.scale_targets = scale_targets
+        """
+        Use DeepMind Atari hyperparameters as a guide
+
+        batch_size = 32
+        replay_memory_size = 1 million
+        target network update freq = 10000
+        replay start size = 50000 (steps of exp used to populate memory)
+        learning rate = 0.00025
+        total frames = 10 million
+        """
+
+        memory_length = int(total_steps * 0.1)
+        self.epsilon_decay_steps = int(total_steps / 2)
+        self.update_target_net = int(total_steps * 0.001)
+        self.initial_random = int(total_steps * 0.0005)
+
+        #  passing the environment to the BaseAgent class
+        super().__init__(env, discount, brain_path, memory_length=memory_length)
 
         #  setup self.scaled_actions (used by all_state_actions method)
+        #  this method is defined in BaseAgent
         self.scaled_actions = self.setup_all_state_actions(spc_len=20)
 
         #  model dict gets passed into the Action-Value function objects
@@ -60,7 +67,7 @@ class DQN(BaseAgent):
                       'input_dim' : self.observation_dim + self.num_actions,
                       'layers'    : [25, 25],
                       'output_dim': 1,
-                      'lr'        : 0.001,
+                      'lr'        : 0.0025,
                       'batch_size': batch_size,
                       'epochs'    : 1}
 
@@ -69,11 +76,14 @@ class DQN(BaseAgent):
         self.Q_target = Q(model_dict)
 
         #  create an object to decay epsilon
-        self.e_greedy = EpsilonGreedy(decay_steps=epsilon_decay_steps,
-                                      epsilon_start=epsilon_start)
+        self.e_greedy = EpsilonGreedy(initial_random=self.initial_random,
+                                      decay_steps=self.epsilon_decay_steps)
 
         if load_agent_brain:
             self.load_brain()
+
+        self.state_processor = Standardizer()
+        self.returns_processor = Normalizer()
 
     def _reset(self):
         """
@@ -95,7 +105,7 @@ class DQN(BaseAgent):
         """
         #  because our observation comes directly from the env
         #  we need to scale the observation
-        observation = self.scale_array(observation, self.observation_space)
+        observation = self.state_processor.transform(observation)
 
         #  get the current value of epsilon
         epsilon = self.e_greedy.epsilon
@@ -103,7 +113,7 @@ class DQN(BaseAgent):
 
         if np.random.uniform() < epsilon:
             logging.info('epsilon {:.3f} - acting randomly'.format(epsilon))
-            action = [space.sample() for space in self.action_space]
+            action = self.action_space.sample() 
 
         else:
 
@@ -126,7 +136,7 @@ class DQN(BaseAgent):
             self.memory.info['acting max Q estimates'].append(max_Q)
 
         action = np.array(action).reshape(1, self.num_actions)
-        assert len(self.action_space) == action.shape[1]
+        assert self.action_space.shape[0] == action.shape[1]
 
         return action
 
@@ -166,11 +176,15 @@ class DQN(BaseAgent):
                                                           rewards,
                                                           next_observations)):
             #  first the inputs
+            print(obs)
+            print(obs.shape)
+            obs = self.state_processor.transform(obs)
+            next_obs = self.state_processor.transform(next_obs)
             inputs[j] = np.append(obs, act)
 
             #  second the targets
             #  TODO this is a bit hacky (maybe have s'='TERMINAL' or something?)
-            if next_obs.all() == -999999:
+            if next_obs == 'terminal':
                 #  if the next state is terminal
                 #  the return of our current state is equal to the reward
                 #  i.e. Q(s',a) = 0 for any a
@@ -196,14 +210,7 @@ class DQN(BaseAgent):
         logging.info('Improving Q_actor - avg unscaled target={0:.3f}'.format(np.mean(targets)))
 
         #  scaling the targets by normalizing
-        if self.scale_targets:
-            #  normalizing
-            #  targets = (targets - targets.min()) / (targets.max() - targets.min())
-
-            #  scaling using standard deviation
-            #  intentionally choose not to shift mean
-            targets = targets / targets.std()
-
+        targets = self.returns_processor(targets)
         #  reshape targets into 2 dimensions
         targets = targets.reshape(-1,1)
 
@@ -221,9 +228,10 @@ class DQN(BaseAgent):
     def _load_brain(self):
         """
         Loads experiences, Q_actor and Q_target
-
-        TODO repeated code, maybe put this into Base_Agent init
         """
+        #  load the epsilon greedy object
+        e_greedy_path = os.path.join(self.brain_path, 'e_greedy.pickle') 
+        self.e_greedy = self.load_pickle(e_greedy_path)
 
         #  load the action value functions
         Q_actor_path = os.path.join(self.brain_path, 'Q_actor.h5')
@@ -234,12 +242,16 @@ class DQN(BaseAgent):
         """
         Saves experiences, Q_actor and Q_target
         """
-        #  add the acting Q network
-        #  we don't add the target network - we just use the acting network
-        #  to initialize Q_target when we load_brain
+        e_greedy_path = os.path.join(self.brain_path, 'e_greedy.pickle') 
+        self.dump_pickle(self.e_greedy, e_greedy_path)
 
-        #  not reccomended to use pickle for Keras models
-        #  so we use h5py to save Keras models
+        """
+        add the acting Q network
+        we don't add the target network - we just use the acting network
+        to initialize Q_target when we load_brain
+        not reccomended to use pickle for Keras models
+        so we use h5py to save Keras models
+        """ 
         Q_actor_path = os.path.join(self.brain_path, 'Q_actor.h5')
         self.Q_actor.save_model(Q_actor_path)
 

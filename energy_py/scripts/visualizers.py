@@ -102,11 +102,11 @@ class EternityVisualizer(Utils):
     def make_panel_fig(self, 
                        df,
                        panels,
-                       xlabel,
                        shape,
                        name,
                        xlim='all',
                        ylabels=[],
+                       xlabel=[],
                        ylims=[],
                        kinds=[],
                        errors=[]):
@@ -116,8 +116,9 @@ class EternityVisualizer(Utils):
         num_panels = len(panels)
         print('making panel fig with {} panels - shape {}'.format(num_panels,
                                                                   shape))
-        xlabels = [xlabel for i in range(num_panels)]
-        assert num_panels == len(xlabels)
+        if xlabel:
+            xlabels = [xlabel for i in range(num_panels)]
+            assert num_panels == len(xlabels)
         assert shape[0] * shape[1] == num_panels 
 
         fig, axes = plt.subplots(nrows=shape[0],
@@ -147,7 +148,8 @@ class EternityVisualizer(Utils):
                 if ylims and ylims[i]:
                     ax.set_ylim(ylims[i])
 
-                ax.set_xlabel(xlabels[i])
+                if xlabel:
+                    ax.set_xlabel(xlabels[i])
 
                 if ylabels: 
                     assert num_panels == len(ylabels)

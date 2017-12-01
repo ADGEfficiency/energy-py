@@ -28,7 +28,7 @@ class DiscreteSpace(object):
         self.low  = int(low)
         self.high = int(high)
         self.type = 'discrete'
-        self.discrete_space = np.arange(self.low, self.high + 1) 
+        self.discrete_space = np.arange(self.low, self.high + 1)
 
     def sample(self):
         return np.random.choice(self.discrete_space)
@@ -36,6 +36,9 @@ class DiscreteSpace(object):
     def contains(self, x):
         return np.in1d(x, self.discrete_space)
 
+    def discretize(self, spc_len):
+        #  note that we don't use the step here
+        return self.discrete_space 
 
 class ContinuousSpace(object):
     """
@@ -66,17 +69,20 @@ class ContinuousSpace(object):
 
 class GlobalSpace(object):
     """
-    A combination of multiple spaces
+    A combination of multiple ContinuousSpace or DiscreteSpace spaces 
+
     All energy_py environments use this as the observation.space
     or action.space object
 
-    Similar to the OpenAI gym Tuple space object
+    Similar to the OpenAI gym TupleSpace object
 
+    args
+        spaces (list): a list of simpler spaces
     """
     def __init__(self, spaces):
-        #  our space is a tuple of the simpler spaces
+        #  our space is a list of the simpler spaces
+        assert type(spaces) is list
         self.spaces = [spc for spc in spaces]
-        self.length = len(self.spaces)
         self.type = 'global'
 
         self.shape = self._get_shape()
@@ -96,7 +102,7 @@ class GlobalSpace(object):
         return [spc.discretize(num_discrete) for spc in self.spaces]
 
     def _get_shape(self):
-        return (self.length,)
+        return (len(self.spaces),)
 
     def _get_low(self):
         lows = [spc.low for spc in self.spaces]

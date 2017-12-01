@@ -5,6 +5,7 @@ used for functionality such as standardization or normalization.
 We can allow the class to collect statistics on the data it has seen so far.
 
 We can also choose to process a batch using statistics only from that batch.
+
 """
 
 import numpy as np
@@ -12,13 +13,49 @@ import numpy as np
 #  use epsilon to catch div/0 errors
 epsilon = 1e-5
 
-class Standardizer(object):
+class Processor(object):
     """
-    We rely on the input shape being (n_samples, state_dim)
+    A base class for Processor objects
+
+    args
+        length (int): the length of the array
+                      this corresponds to the second dimension of the shape
+                      shape = (num_samples, length)
+        use_history (bool): whether to use the history to estimtate parameters
+        global_space (GlobalSpace): used to initialize history
     """
-    def __init__(self, use_history=True, space=[]):
-        #  use a list to hold all data this processor has seen
+    def __init__(self, length, use_history=True, space=[]):
+        self.length = length
         self.history = []
+
+    def transform(self, batch):
+        """
+        Transforms a single array (shape=(length,) 
+        or a batch (shape=(num_samples, length))
+
+        args
+            batch (np.array)
+
+        returns
+            transformed_batch (np.array): shape = (num_samples, length)
+        """
+        #  catch the case where we process a single obs of shape (obs_dim,) 
+        if batch.ndim != 2:
+            batch = batch.reshape(-1, self.length)
+        assert batch.ndim == 2
+
+        #  add the data we are processing onto our history list
+        self.history.append(batch)
+        return _transform(self, batch)
+
+class Standardizer(Processor):
+    """
+    Processor object for performing standardization
+
+    Standardization = scaling for zero mean, unit variance
+    """
+    def __init__(self, length, use_history=True, space=[]):
+        super().__init__(length)
 
         #  if we include a space object then we use it to fill up the history
         #  and we always use history
@@ -28,32 +65,28 @@ class Standardizer(object):
 
         self.use_history = use_history
 
-    def transform(self, batch):
-        """
-        """
-        #  check that our data is
-        assert batch.ndim == 2
-        #  add the data we are processing onto our history list
-        self.history.append(batch)
+    def _transform(self, batch):
 
         if self.use_history:
-            #  create an array from the list then reshape to (num_samples, dim)
-            #  taking advantage of energy_py states/actions being this shape (always len 2)
+            #  create an array from history 
+            #  then reshape to (num_samples, space length)
             history = np.concatenate(self.history).reshape(-1, batch.shape[1])
             means, stdevs = history.mean(axis=0), history.std(axis=0)
+
         else:
             means, stdevs = batch.mean(axis=0), batch.std(axis=0)
 
         return (batch - means) / (stdevs + epsilon)
 
 
-class Normalizer(object):
+class Normalizer(Processor):
     """
-    We rely on the input shape being (n_samples, state_dim)
+    Processor object for performing normalization to range [0,1]
+
+    Normalization = (val - min) / (max - min) 
     """
-    def __init__(self, use_history=True, space=[]):
-        #  use a list to hold all data this processor has seen
-        self.history = []
+    def __init__(self, length, use_history=True, space=[]):
+        super().__init__(length)
 
         #  if we include a space object we use this and don't ever use history
         if space:
@@ -63,13 +96,7 @@ class Normalizer(object):
 
         self.use_history = use_history
 
-    def transform(self, batch):
-        """
-        """
-        assert batch.ndim == 2
-        #  add the data we are processing onto our history list
-        self.history.append(batch)
-
+    def _transform(self, batch):
         if self.use_history:
             #  create an array from the list then reshape to (num_samples, dim)
             #  taking advantage of energy_py states/actions being this shape (always len 2)

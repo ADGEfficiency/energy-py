@@ -7,7 +7,7 @@ from energy_py import Utils
 def expt_args(optional_args=[]):
     """
     args
-        args_list (list) list of dictionaries
+        optional_args (list) list of dictionaries
     """
     parser = argparse.ArgumentParser(description='energy_py experiment argument parser')
     
@@ -28,12 +28,14 @@ def expt_args(optional_args=[]):
                             'default': 10,
                              'help': 'output results every n episodes (default: n=10'}] 
     if optional_args:
-        args_list = default.append(optional_args)
+        args_list.append(optional_args)
+
     for arg in args_list:
         parser.add_argument(arg['name'],
                            type=arg['type'],
                            default=arg['default'],
                            help=arg['help'])
+
     args = parser.parse_args()
     return parser, args
 
@@ -77,7 +79,7 @@ def make_paths(name):
 def make_logger(log_path):
     #  using a single root logger for all modules                               
     #  can do better but just happy to have this working at the moment!         
-    logging.basicConfig(level=logging.INFO)                                     
+    logging.basicConfig(filemode='w', level=logging.INFO)                                     
                                                                                      
     logFormatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     rootLogger = logging.getLogger()                                            

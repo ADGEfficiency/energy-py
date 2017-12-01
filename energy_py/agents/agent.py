@@ -39,7 +39,8 @@ class BaseAgent(Utils):
     def __init__(self, 
                  env, 
                  discount, 
-                 brain_path):
+                 brain_path,
+                 memory_length=100000):
 
         self.env = env
         self.discount = discount
@@ -60,7 +61,7 @@ class BaseAgent(Utils):
                              self.action_space,
                              # self.reward_space,
                              self.discount,
-                             memory_length=100000)
+                             memory_length=memory_length)
 
     #  assign errors for the Base_Agent methods
     def _reset(self): raise NotImplementedError
@@ -159,7 +160,8 @@ class BaseAgent(Utils):
 
         #  create every possible combination of actions
         #  this creates the unscaled actions
-        self.actions = np.array([a for a in itertools.product(*disc_act_spcs)])
+        actions = np.array([a for a in itertools.product(*disc_act_spcs)])
+        self.actions = np.array(actions).reshape(-1, self.action_space.length)
 
         #  scale the actions
         scld_acts = np.array([self.scale_array(act, self.action_space) for act
@@ -219,6 +221,7 @@ class EpsilonGreedy(object):
     TODO update with logger
     """
     def __init__(self,
+                 initial_random,
                  decay_steps,
                  epsilon_start=1.0,
                  epsilon_end=0.1):
@@ -226,6 +229,7 @@ class EpsilonGreedy(object):
         #  we calculate a linear coefficient to decay with
         self.linear_coeff = (epsilon_end - epsilon_start) / decay_steps
 
+        self.initial_random = initial_random
         self.decay_steps = decay_steps
         self.epsilon_start = epsilon_start
         self.epsilon_end = epsilon_end
@@ -239,8 +243,12 @@ class EpsilonGreedy(object):
 
     @property
     def epsilon(self):
-        if self.steps < self.decay_steps:
+        if self.steps < self.initial_random:
+            self._epsilon = 1
+
+        elif self.steps < self.decay_steps:
             self._epsilon = self.linear_coeff * self.steps + self.epsilon_start
+
         else:
             self._epsilon = self.epsilon_end
 

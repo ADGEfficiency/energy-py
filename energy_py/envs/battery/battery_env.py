@@ -35,9 +35,7 @@ class BatteryEnv(TimeSeriesEnv):
                  round_trip_eff=0.9,
                  initial_charge=0.0):
 
-        path = os.path.dirname(os.path.abspath(__file__))
-        state_path = os.path.join(path, 'state.csv')
-        observation_path = os.path.join(path, 'observation.csv')
+        data_path = os.path.dirname(os.path.abspath(__file__))
 
         #  technical energy inputs
         self.power_rating = float(power_rating) # MW
@@ -46,11 +44,9 @@ class BatteryEnv(TimeSeriesEnv):
         self.initial_charge = float(self.capacity * initial_charge) # MWh
 
         #  calling init method of the parent Time_Series_Env class
-        super().__init__(
-                         episode_length,
+        super().__init__(episode_length,
                          episode_start,
-                         state_path,
-                         observation_path)
+                         data_path)
 
     def _reset(self):
         """
@@ -82,22 +78,6 @@ class BatteryEnv(TimeSeriesEnv):
         observation_space, self.observation_ts, self.state_ts = self.get_state_obs()
 
         observation_space.spaces.append(ContinuousSpace(0, self.capacity))
-
-        """
-        SETTING THE REWARD SPACE
-
-        For the reward function
-            reward = bau_cost - rl_cost
-
-        maximum reward = full discharge at max electricity price
-        minimum reward = full charge at max electricity price
-
-        note that we take the maximum of the absolute electricity price
-        """
-
-        max_price = max(self.state_ts.loc[:, 'C_electricity_price_[$/MWh]'].abs())
-        self.reward_space = ContinuousSpace((-max_price * self.power_rating)/12,
-                                            (max_price * self.power_rating)/12)
 
         #  reseting the step counter, state, observation & done status
         self.steps = 0

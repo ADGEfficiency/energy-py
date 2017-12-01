@@ -105,7 +105,6 @@ class TimeSeriesEnv(BaseEnv):
 
         return observation_space, observation_ts, state_ts
 
-
     def get_ts_row_idx(self, ts_length, episode_length, episode_start):
         """
         Gets the integer indicies for selecting the episode
