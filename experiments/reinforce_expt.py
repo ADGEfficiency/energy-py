@@ -32,7 +32,6 @@ def reinforce_experiment(env, base_path='reinforce_agent'):
                 policy=GaussianPolicy,
                 lr=LEARNING_RATE)
 
-    #  this is separate from expt_args() so that we can save more args if we want
     save_args(args, 
               path=ARGS_PATH,
               optional={'total steps': total_steps})
@@ -52,7 +51,7 @@ def reinforce_experiment(env, base_path='reinforce_agent'):
                                                       agent,
                                                       env,
                                                       sess)
-
+                #  now experiment is over, we can learn
                 obs, acts, rews = agent.memory.get_episode_batch(episode)
                 returns = agent.calculate_returns(rews)
 

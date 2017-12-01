@@ -14,14 +14,3 @@ from energy_py.agents.function_approximators.tensorflow import GaussianPolicy
 from energy_py.agents.function_approximators.tensorflow import TensorflowV
 from energy_py.agents.function_approximators.tensorflow import TensorflowQ
 
-__all__ = ['BaseAgent',
-           'EpsilonGreedy',
-           'Memory',
-           'RandomAgent',
-           'REINFORCE',
-           'DQN',
-           'KerasV',
-           'KerasQ',
-           'GaussianPolicy',
-           'TensorflowV',
-           'TensorflowQ']

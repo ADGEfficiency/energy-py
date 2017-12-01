@@ -6,7 +6,10 @@ Using reinforcement learning agents to control virtual energy environments is th
 
 energy_py supports this goal by providing a **collection of reinforcement learning agents, energy environments and tools to run experiments.**
 
-This project is in rapid development - come get involved.  energy_py is built and maintained by Adam Green - [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  
+energy_py is built and maintained by Adam Green - [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  
+
+This project is in rapid development - if you would like to get involved send
+me an email.
 
 I write about energy & machine learning at [adgefficiency.com](http://adgefficiency.com/).  
 
@@ -21,9 +24,10 @@ env = BatteryEnv()
 
 agent = DQN(env,
             discount=0.9,
-            Q=KerasQ,           # Keras model to approximate Q(s,a)
+            Q=KerasQ,          
             batch_size=64,
-            brain_path='/brain')
+            brain_path='/brain',
+            total_steps=1000)
 
 obs = env.reset()
 action = agent.act(observation=obs)

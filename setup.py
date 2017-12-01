@@ -22,7 +22,7 @@ setup(name='energy_py',
                 'energy_py.envs',
                 'energy_py.envs.flex',
                 'energy_py.envs.battery',
-                'energy_py.experiments',
+                'experiments',
                 'energy_py.scripts'],
 
       package_data = {'':['*.csv']},

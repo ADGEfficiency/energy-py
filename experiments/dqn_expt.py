@@ -36,7 +36,6 @@ def dqn_experiment(env, base_path='dqn_agent'):
                 BRAIN_PATH,
                 total_steps)
 
-    #  this is separate from expt_args() so that we can save more args if we want
     save_args(args, 
               path=ARGS_PATH,
               optional={'total steps': total_steps,
@@ -64,7 +63,7 @@ def dqn_experiment(env, base_path='dqn_agent'):
             step += 1
             observation = next_observation
 
-            #  now we do some DQN specific learning
+            #  with DQN we can learn within episode 
             #  get a batch to learn from
             obs, acts, rews, next_obs = agent.memory.get_random_batch(BATCH_SIZE)
 

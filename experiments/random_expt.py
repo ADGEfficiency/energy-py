@@ -3,7 +3,7 @@ from energy_py.agents import RandomAgent
 from energy_py.envs import FlexEnv
 
 
-def random_experiment(env, base_path='random_agent')
+def random_experiment(env, base_path='random_agent'):
     parser, args = expt_args()
     EPISODES = args.ep
     EPISODE_LENGTH = args.len
@@ -18,7 +18,6 @@ def random_experiment(env, base_path='random_agent')
 
     logger = make_logger(LOG_PATH)
 
-    #  this is separate from expt_args() so that we can save more args if we want
     save_args(args, path=ARGS_PATH) 
 
     env = env(episode_length=EPISODE_LENGTH)
