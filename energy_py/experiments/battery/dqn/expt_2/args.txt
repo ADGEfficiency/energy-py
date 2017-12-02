@@ -1,0 +1,11 @@
+out,50
+gamma,0.9
+len,48
+bs,64
+ep,1000
+update target net,2400
+load brain,False
+epsilon decay steps,24000
+memory length,4800
+total steps,48000
+initial random,4800
