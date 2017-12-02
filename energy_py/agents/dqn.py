@@ -35,7 +35,6 @@ class DQN(BaseAgent):
 
                  load_agent_brain=False):
 
-        Q = Q
         batch_size = batch_size
         load_agent_brain = load_agent_brain
 
@@ -52,19 +51,25 @@ class DQN(BaseAgent):
 
         memory_length = int(total_steps * 0.1)
         self.epsilon_decay_steps = int(total_steps / 2)
-        self.update_target_net = int(total_steps * 0.001)
-        self.initial_random = int(total_steps * 0.0005)
+        self.update_target_net = int(total_steps * 0.05) # 20 updates per expt
+        self.initial_random = int(total_steps * 0.1)
 
         #  passing the environment to the BaseAgent class
         super().__init__(env, discount, brain_path, memory_length=memory_length)
+
+        self.state_processor = Standardizer(length=self.observation_space.shape[0])
+        self.returns_processor = Normalizer(length=1)
+        self.action_processor = Standardizer(length=self.action_space.shape[0])
 
         #  setup self.scaled_actions (used by all_state_actions method)
         #  this method is defined in BaseAgent
         self.scaled_actions = self.setup_all_state_actions(spc_len=20)
 
-        #  model dict gets passed into the Action-Value function objects
-        model_dict = {'type' : 'feedforward',
-                      'input_dim' : self.observation_dim + self.num_actions,
+        #  model dict gets passed into the Action-Value function objects    
+        input_dim = self.observation_space.shape[0] + self.action_space.shape[0]
+
+        model_dict = {'type'      : 'feedforward',
+                      'input_dim' : input_dim, 
                       'layers'    : [25, 25],
                       'output_dim': 1,
                       'lr'        : 0.0025,
@@ -82,8 +87,6 @@ class DQN(BaseAgent):
         if load_agent_brain:
             self.load_brain()
 
-        self.state_processor = Standardizer()
-        self.returns_processor = Normalizer()
 
     def _reset(self):
         """
@@ -112,7 +115,7 @@ class DQN(BaseAgent):
         self.memory.info['epsilon'].append(epsilon)
 
         if np.random.uniform() < epsilon:
-            logging.info('epsilon {:.3f} - acting randomly'.format(epsilon))
+            logging.debug('epsilon {:.3f} - acting randomly'.format(epsilon))
             action = self.action_space.sample() 
 
         else:
@@ -130,7 +133,7 @@ class DQN(BaseAgent):
             #  as this action is sent directly to the environment
             action = acts[np.argmax(Q_estimates)]
             max_Q = np.max(Q_estimates)
-            logging.info('epsilon {:.3f} - using Q_actor - max(Q_est)={:.3f}'.format(epsilon, max_Q))
+            logging.debug('epsilon {:.3f} - using Q_actor - max(Q_est)={:.3f}'.format(epsilon, max_Q))
 
             #  save the Q estimates
             self.memory.info['acting max Q estimates'].append(max_Q)
@@ -210,7 +213,7 @@ class DQN(BaseAgent):
         logging.info('Improving Q_actor - avg unscaled target={0:.3f}'.format(np.mean(targets)))
 
         #  scaling the targets by normalizing
-        targets = self.returns_processor(targets)
+        targets = self.returns_processor.transform(targets)
         #  reshape targets into 2 dimensions
         targets = targets.reshape(-1,1)
 

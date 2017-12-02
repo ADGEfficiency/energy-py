@@ -26,6 +26,8 @@ def make_observation(path, horizion=5):
     #  becuase we dropped na's we now need to realign
     state, observation = raw_state.align(observation, axis=0, join='inner')
 
+    observation['counter'] = pd.Series(range(observation.shape[0]))
+
     state_path = os.path.join(path, 'state.csv')
     obs_path = os.path.join(path, 'observation.csv')
     state.to_csv(state_path)
@@ -86,11 +88,6 @@ class TimeSeriesEnv(BaseEnv):
 
         This is to allow different time periods to be sampled
         """
-
-        #  creating the observation space list
-        observation_space = self.make_env_obs_space(self.raw_state_ts)
-        observation_space = GlobalSpace(spaces=observation_space)
-
         ts_length = self.raw_observation_ts.shape[0]
         start, end = self.get_ts_row_idx(ts_length,
                                          self.episode_length,
@@ -98,6 +95,9 @@ class TimeSeriesEnv(BaseEnv):
 
         state_ts = self.raw_state_ts.iloc[start:end, :]
         observation_ts = self.raw_observation_ts.iloc[start:end, :]
+
+        #  creating the observation space list
+        observation_space = self.make_env_obs_space(observation_ts)
 
         assert observation_ts.shape[0] == state_ts.shape[0]
         logging.info('Ep {} starting at {}'.format(self.episode,
@@ -171,7 +171,7 @@ class TimeSeriesEnv(BaseEnv):
         This is so that environment specific info can be added onto the
         state or observation array.
         """
-        ts_info = np.array(self.state_ts.iloc[steps, :])
+        ts_info = np.array(self.observation_ts.iloc[steps, :])
 
         ts_info = np.append(ts_info, np.array(append))
 

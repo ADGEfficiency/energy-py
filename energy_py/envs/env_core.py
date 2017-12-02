@@ -86,6 +86,7 @@ class BaseEnv(Utils):
             done (boolean): whether the episode has ended, in which case further step() calls will return undefined results
             info (dict): contains auxiliary diagnostic information (helpful for debugging, and sometimes learning)
         """
+        logging.debug('Episode {} - Step {}'.format(self.episode, self.steps))
         return self._step(action)
 
     def output_results(self):

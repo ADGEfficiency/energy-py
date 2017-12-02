@@ -92,7 +92,7 @@ class GlobalSpace(object):
     def sample(self):
         #  return an array (1, space_length) 
         values = [spc.sample() for spc in self.spaces]
-        return np.array(values).reshape(1, self.length)
+        return np.array(values).reshape(1, self.shape[0])
 
     def contains(self, x):
         return all(spc.contains(part) for (spc,part) in zip(self.spaces,x))
@@ -111,4 +111,6 @@ class GlobalSpace(object):
     def _get_high(self):
         highs = [spc.high for spc in self.spaces]
         return np.array(highs).reshape(-1)
-    
+   
+    def append(self, space):
+        self.spaces.append(space)

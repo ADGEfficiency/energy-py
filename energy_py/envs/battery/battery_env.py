@@ -28,14 +28,13 @@ class BatteryEnv(TimeSeriesEnv):
         verbose         :   int     : controls env print statements
     """
     def __init__(self, 
+                 data_path,
                  episode_length='maximum',
                  episode_start=0,
                  power_rating=2,
                  capacity=4,
                  round_trip_eff=0.9,
-                 initial_charge=0.0):
-
-        data_path = os.path.dirname(os.path.abspath(__file__))
+                 initial_charge=0.00):
 
         #  technical energy inputs
         self.power_rating = float(power_rating) # MW
@@ -75,9 +74,12 @@ class BatteryEnv(TimeSeriesEnv):
         the observation space is set in the parent class TimeSeriesEnv
         we also append on an additional observation of the battery charge
         """
+        #  make a list of the observation spaces
         observation_space, self.observation_ts, self.state_ts = self.get_state_obs()
-
-        observation_space.spaces.append(ContinuousSpace(0, self.capacity))
+        #  append on any additional variables we want our agent to see
+        observation_space.append(ContinuousSpace(0, self.capacity))
+        #  create a energy_py GlobalSpace object for the observation space
+        self.observation_space = GlobalSpace(observation_space)
 
         #  reseting the step counter, state, observation & done status
         self.steps = 0
@@ -85,9 +87,14 @@ class BatteryEnv(TimeSeriesEnv):
         self.observation = self.get_observation(steps=self.steps, append=self.initial_charge)
         self.done = False
 
-        initial_charge = self.state[-1]
+        #  checking the initial charge
+        initial_charge = self.state[0][-1]
         assert initial_charge <= self.capacity
         assert initial_charge >= 0
+
+        logging.debug('initial state is {}'.format(self.state))
+        logging.debug('initial obs is {}'.format(self.observation))
+        logging.debug('initial charge is {}'.format(initial_charge))
 
         return self.observation
 
@@ -109,11 +116,9 @@ class BatteryEnv(TimeSeriesEnv):
             done        : boolean
             info        : dictionary
         """
-
-        logging.info('Episode {} - Step {}'.format(self.episode, self.steps))
         #  pulling out the state infomation
-        electricity_price = self.state[0]
-        old_charge = self.state[-1]
+        electricity_price = self.state[0][0]
+        old_charge = self.state[0][-1]
 
         #  our action is sent to the environment as (1, num_actions)
         assert action.shape == (1, 2)
@@ -123,8 +128,8 @@ class BatteryEnv(TimeSeriesEnv):
 
         #  checking the actions are valid
         for i, act in enumerate(action):
-            assert act >= self.action_space[i].low
-            assert act <= self.action_space[i].high
+            assert act >= self.action_space.spaces[i].low
+            assert act <= self.action_space.spaces[i].high
 
         #  calculate the net effect of the two actions
         #  also convert from MW to MWh/5 min by /12
@@ -183,8 +188,8 @@ class BatteryEnv(TimeSeriesEnv):
             next_observation = 'Terminal'
 
             total_ep_reward = sum(self.info['reward'])
-            logging.info('Episode {} done'.format(self.episode))
-            logging.info('Undiscounted total reward {}'.format(total_ep_reward))
+            logging.info('Episode {} - Total reward {}'.format(self.episode,
+                                                               total_ep_reward))
 
         else:
         #  moving onto next step
@@ -225,9 +230,9 @@ class BatteryEnv(TimeSeriesEnv):
                          'ylabels': ['Gross rate of charge/discharge [MW]',
                                      'Battery charge at end of step [MWh]',
                                      'Electricity price [$/MWh]'],
-                         'panels': ['gross_rate',
-                                    'new_charge',
-                                    'electricity_price'],
+                         'panels': [['gross_rate'],
+                                    ['new_charge'],
+                                    ['electricity_price']],
                          'shape': (3,1)}
         self.outputs['env_panel_fig'] = env_panel_fig
 

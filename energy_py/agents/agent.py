@@ -39,7 +39,7 @@ class BaseAgent(Utils):
     def __init__(self, 
                  env, 
                  discount, 
-                 brain_path,
+                 brain_path=[],
                  memory_length=100000):
 
         self.env = env
@@ -49,10 +49,10 @@ class BaseAgent(Utils):
         #  use the env to setup the agent
         self.action_space = self.env.action_space
         self.observation_space = self.env.observation_space
-        #  self.reward_space = self.env.reward_space
+        print(self.action_space)
+        print(self.observation_space)
 
-        self.num_actions = sum(self.action_space.shape)
-        self.observation_dim = sum(self.observation_space.shape)
+        self.num_actions = self.action_space.shape[0]
 
         #  create a memory for the agent
         #  object to hold all of the agents experience
@@ -161,14 +161,16 @@ class BaseAgent(Utils):
         #  create every possible combination of actions
         #  this creates the unscaled actions
         actions = np.array([a for a in itertools.product(*disc_act_spcs)])
-        self.actions = np.array(actions).reshape(-1, self.action_space.length)
+        self.actions = np.array(actions).reshape(-1,
+                                                 self.action_space.shape[0])
 
         #  scale the actions
-        scld_acts = np.array([self.scale_array(act, self.action_space) for act
-                              in self.actions]).reshape(self.actions.shape)
+        #  TODO this could be a bit cleaner
+        scld_acts = self.action_processor.transform(self.actions)
+        scld_acts = scld_acts.reshape(-1, self.action_space.shape[0])
 
         logging.info('scaled_actions shape is {}'.format(scld_acts.shape))
-        assert self.actions.shape[0] == scld_acts.shape[0]
+        assert self.actions.shape == scld_acts.shape
         return scld_acts
 
     def all_state_actions(self, observation):
@@ -200,7 +202,8 @@ class BaseAgent(Utils):
         #  create an array with one obs per possible action combinations
         #  reshape into (num_actions, observation_dim)
         obs = np.tile(observation, self.scaled_actions.shape[0])
-        obs = obs.reshape(self.scaled_actions.shape[0], self.observation_dim)
+        obs = obs.reshape(self.scaled_actions.shape[0],
+                          observation.shape[1])
 
         #  concat the observations & actions
         state_acts = np.concatenate([obs, self.scaled_actions], axis=1)
@@ -232,7 +235,7 @@ class EpsilonGreedy(object):
         self.initial_random = initial_random
         self.decay_steps = decay_steps
         self.epsilon_start = epsilon_start
-        self.epsilon_end = epsilon_end
+        self.epsilon_end = epsilon_end + self.initial_random
 
         self.reset()
 
@@ -246,8 +249,10 @@ class EpsilonGreedy(object):
         if self.steps < self.initial_random:
             self._epsilon = 1
 
+        #  m = slope 
+        m = self.steps - self.initial_random
         elif self.steps < self.decay_steps:
-            self._epsilon = self.linear_coeff * self.steps + self.epsilon_start
+            self._epsilon = self.linear_coeff * m + self.epsilon_start
 
         else:
             self._epsilon = self.epsilon_end

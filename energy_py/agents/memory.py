@@ -62,6 +62,7 @@ class Memory(Utils):
         self.action_space = action_space
         self.discount = discount
 
+
         #  memory & processing info
         self.length = memory_length
 
@@ -179,7 +180,10 @@ class Memory(Utils):
             rewards (np.array)
             next_observations (np.array)
         """
+        print('memry obs space {}'.format(self.observation_space))
+        print('memry act space {}'.format(self.action_space))
         sample_size = min(batch_size, len(self.experiences))
+        logging.info('getting batch of size {} from memory'.format(sample_size))
 
         #  limiting to the memory length
         memory = self.experiences[-self.length:]

@@ -16,24 +16,25 @@ I write about energy & machine learning at [adgefficiency.com](http://adgefficie
 I teach a one day [introduction to reinforcement learning learning](https://github.com/ADGEfficiency/DSR_RL) class at [Data Science Retreat](https://www.datascienceretreat.com/).
 
 ### Basic usage
+Below I run experiments using two different agents and the battery
+environment.
+
 ```
-from energy_py.agents import DQN, KerasQ
+from energy_py.experiments import random_experiment, reinforce_experiment
 from energy_py.envs import BatteryEnv
 
-env = BatteryEnv()
+#  select the location of your raw_state.csv
+data_path = os.getcwd()
 
-agent = DQN(env,
-            discount=0.9,
-            Q=KerasQ,          
-            batch_size=64,
-            brain_path='/brain',
-            total_steps=1000)
+env = BatteryEnv
 
-obs = env.reset()
-action = agent.act(observation=obs)
-next_obs, reward, done, info = env.step(action)
-agent.memory.add_experience(obs, action, reward, next_obs, step, episode)
+random_outputs = random_experiment(env, 
+                                   data_path=data_path,
+                                   base_path='random/expt_1')
 
+dqn_outputs = dqn_experiment(env,
+                             data_path=data_path,
+                             base_path='dqn/expt_2')
 ```
 
 ### Installation
@@ -68,38 +69,64 @@ energy_py was built using Keras 2.0.8 & TensorFlow 1.3.0.
 
 ### Project structure
 
-All classes inherit from the [Utils](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/main/scripts/utils.py) class, which contains useful generic functionality.
+Many classes inherit from the [Utils](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/scripts/utils.py) class, which contains useful generic functionality.  many methods are static - which makes me think that perhaps just importing functions may
+be better than inheriting from the Utils class.  
 
-Environments are created by inheriting from the [BaseEnv](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/envs/env_core.py) class.  Agents are created by inheriting from the [BaseAgent](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/agent_core.py) class.  Another key object is the [AgentMemory](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/memory.py) which holds and processes agent experience.  
+Environments are created by inheriting from the [BaseEnv](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/envs/env_core.py) class.  All of the environments implemented so far are children of the [TimeSeriesEnv](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/envs/env_ts.py) class.  Likely in the future that I will merge BaseEnv and TimeSeriesEnv into one class.  
+
+Agents are created by inheriting from the [BaseAgent](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/agent_core.py) class.  Another key object is the [AgentMemory](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/memory.py) which holds and processes agent experience.  
 
 **Environments**
 
-Currently the main focus is on building the [battery environment](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/envs/battery).  This is for two reasons - first a battery is site agnostic so the environment can be built without site knowledge.  The second is that electric batteries will be key to increasing the penetration of intermittent renewables.
+Agent and environment interaction is shown below - it follows the standard
+Open AI gym API for environments i.e. .reset, .step(action).
 
-I am also working on a [cooling flexibility action](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/envs/precool) and have previously implemented a Combined Heat and Power plant as a reinforcement learning environment in energy_py v1.0.
+```
+from energy_py.agents import DQN, KerasQ
+from energy_py.envs import BatteryEnv
+
+env = BatteryEnv()
+
+agent = DQN(env,
+            discount=0.9,
+            Q=KerasQ,          
+            batch_size=64,
+            brain_path='/brain',
+            total_steps=1000)
+
+obs = env.reset()
+action = agent.act(observation=obs)
+next_obs, reward, done, info = env.step(action)
+agent.memory.add_experience(obs, action, reward, next_obs, step, episode)
+
+```
+The following environments are implemented:
+
+- [Electricity storage in a battery](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/envs/battery)
+
+- [Generic flexibility action environment](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/envs/flex)
+
+- [Cooling flexibility action - in development](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/envs/precool) 
+
+In energy_py v1.0 I implemented a combined heat and power plant - not planning
+on introducing this into energy_py v2.0.
 
 **Agents**
 
 The following agents are currently implemented:
 
+- [Random agent](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/random_agent.py)
+
 - [Naive battery agent](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/naive/naive_battery.py)
 
-- [REINFORCE aka Monte Carlo policy gradient - TensorFlow](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/policy_based/reinforce.py)
+- [REINFORCE aka Monte Carlo policy gradient - based on TensorFlow function approximators](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/policy_based/reinforce.py)
 
-- [DQN aka Q-Learning with experience replay and target network - Keras](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/Q_learning/DQN.py)
+- [DQN aka Q-Learning with experience replay and target network - Keras function approximators](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/Q_learning/DQN.py)
 
-I plan to make energy_py environments fully agent agnostic - so that agents built using other libraries can be used.
+I plan to make energy_py environments fully agent agnostic - so that agents built using other libraries can be used.  
 
 **Function approximators**
 
 energy_py is deep learning library agnostic - any framework can be used to [parameterize either policies or value functions](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/agents/function_approximators).  Classes are used to allow flexibility in combining different function approximator with different agents.
 
-### Experiments
 
-energy_py can be used to run experiments.  Currently three are implemented:
-
-- [Naive agent + battery](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/main/experiments/battery/naive/naive_battery.py)
-
-- [REINFORCE agent + battery](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/main/experiments/battery/reinforce/reinforce_battery.py)
-
-- [DQN + battery](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/main/experiments/battery/DQN_battery.py)

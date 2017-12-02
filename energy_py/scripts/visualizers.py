@@ -116,6 +116,7 @@ class EternityVisualizer(Utils):
         num_panels = len(panels)
         print('making panel fig with {} panels - shape {}'.format(num_panels,
                                                                   shape))
+        print('panels are {}'.format(panels))
         if xlabel:
             xlabels = [xlabel for i in range(num_panels)]
             assert num_panels == len(xlabels)
@@ -189,15 +190,14 @@ class EternityVisualizer(Utils):
         data_dict, figs_dict = {}, {}
 
         for var, data in info_dict.items():
-            
+
             #  don't use next state as terminal state is a string
             if var != 'next_state' and var != 'next_observation':
 
                 if isinstance(data[0], np.ndarray):
                     logging.info('making df for {} from info dict'.format(var))
-                    length = data[0].shape[1]
                     data = [array.flatten() for array in data]
-                    names = ['{}_{}'.format(var,i) for i in range(length)]
+                    names = ['{}_{}'.format(var,i) for i in range(len(data))]
                     data = pd.DataFrame.from_items(zip(names, data))
 
                 else:
@@ -206,7 +206,7 @@ class EternityVisualizer(Utils):
 
                 data_dict[var] = data 
                 #  then create the figure and save into figs_dict
-                fig_path = os.path.join(self.results_path, var+'.png')
+                fig_path = os.path.join('figs', var+'.png')
                 figs_dict[var] = self.make_time_series_fig(data, fig_path)
 
         return data_dict, figs_dict

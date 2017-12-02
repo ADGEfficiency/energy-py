@@ -2,6 +2,7 @@ import numpy as np
 
 from energy_py.agents import BaseAgent
 
+
 class RandomAgent(BaseAgent):
     def __init__(self,
                  env,

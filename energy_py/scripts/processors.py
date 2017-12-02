@@ -46,7 +46,7 @@ class Processor(object):
 
         #  add the data we are processing onto our history list
         self.history.append(batch)
-        return _transform(self, batch)
+        return self._transform(batch)
 
 class Standardizer(Processor):
     """
