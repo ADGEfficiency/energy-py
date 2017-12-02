@@ -74,7 +74,7 @@ be better than inheriting from the Utils class.
 
 Environments are created by inheriting from the [BaseEnv](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/envs/env_core.py) class.  All of the environments implemented so far are children of the [TimeSeriesEnv](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/envs/env_ts.py) class.  Likely in the future that I will merge BaseEnv and TimeSeriesEnv into one class.  
 
-Agents are created by inheriting from the [BaseAgent](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/agent_core.py) class.  Another key object is the [AgentMemory](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/memory.py) which holds and processes agent experience.  
+Agents are created by inheriting from the [BaseAgent](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/agent.py) class.  Another key object is the [AgentMemory](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/memory.py) which holds and processes agent experience.  
 
 **Environments**
 
