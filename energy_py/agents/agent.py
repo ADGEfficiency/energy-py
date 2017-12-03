@@ -246,11 +246,12 @@ class EpsilonGreedy(object):
 
     @property
     def epsilon(self):
+        #  m = slope 
+        m = self.steps - self.initial_random
+
         if self.steps < self.initial_random:
             self._epsilon = 1
 
-        #  m = slope 
-        m = self.steps - self.initial_random
         elif self.steps < self.decay_steps:
             self._epsilon = self.linear_coeff * m + self.epsilon_start
 
