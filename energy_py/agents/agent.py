@@ -1,8 +1,5 @@
-import itertools
 import logging
 import os
-
-import numpy as np
 
 from energy_py.agents.memory import Memory
 from energy_py import Utils
@@ -38,9 +35,9 @@ class BaseAgent(Utils):
                             action space
     """
 
-    def __init__(self, 
-                 env, 
-                 discount, 
+    def __init__(self,
+                 env,
+                 discount,
                  brain_path=[],
                  memory_length=100000):
 

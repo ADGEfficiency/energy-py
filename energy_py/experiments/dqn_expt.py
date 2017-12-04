@@ -76,7 +76,7 @@ def dqn_experiment(env, data_path, base_path='dqn_agent'):
                     #  get a batch to learn from
                     batch = agent.memory.get_random_batch(BATCH_SIZE)
 
-                    loss = agent.learn(sess=sess, batch=batch)
+                    train_info = agent.learn(sess=sess, batch=batch)
                         
                     if total_step % agent.update_target_net == 0:
                         agent.update_target_network(sess)
