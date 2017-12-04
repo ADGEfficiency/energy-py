@@ -146,23 +146,19 @@ class FlexEnv(TimeSeriesEnv):
         #  reward is negative as we want to reduce cost
         reward = - flex_action * electricity_price
 
-        #  check to see if we are done
-        if self.steps == (self.episode_length - 1):
-            self.done = True
-            next_state = 'Terminal'
-            next_observation = 'Terminal'
-
-        else:
-        #  if we aren't done we move to next state
-            self.steps += 1
-            next_state = self.get_state(self.steps, append=self.flex_avail)
-            next_observation = self.get_observation(self.steps, self.flex_avail)
-
         logging.info('flex_up {}'.format(self.flex_up))
         logging.info('flex_down {}'.format(self.flex_down))
         logging.info('relax {}'.format(self.relax))
         logging.info('reward {}'.format(reward))
-        
+
+        self.steps += 1
+        next_state = self.get_state(self.steps, append=self.flex_avail)
+        next_observation = self.get_observation(self.steps, self.flex_avail)
+
+        #  check to see if we are done
+        if self.steps == (self.episode_length - 1):
+            self.done = True
+
         self.info = self.update_info(episode=self.episode,
                                      steps=self.steps,
                                      state=self.state,
@@ -171,6 +167,7 @@ class FlexEnv(TimeSeriesEnv):
                                      reward=reward,
                                      next_state=next_state,
                                      next_observation=next_observation,
+                                     done=self.done,
 
                                      electricity_price=electricity_price,
                                      flex_up=self.flex_up,

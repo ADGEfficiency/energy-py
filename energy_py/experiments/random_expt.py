@@ -10,7 +10,7 @@ def random_experiment(env, data_path, base_path='random_agent'):
     DISCOUNT = args.gamma
     OUTPUT_RESULTS = args.out
 
-    paths = make_paths('random_agent')
+    paths = make_paths(base_path)
     BRAIN_PATH = paths['brain']
     RESULTS_PATH = paths['results']
     ARGS_PATH = paths['args']

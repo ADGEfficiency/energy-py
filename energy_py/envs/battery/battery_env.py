@@ -7,6 +7,8 @@ import numpy as np
 from energy_py.envs import TimeSeriesEnv
 from energy_py.scripts.spaces import ContinuousSpace, GlobalSpace
 
+logger = logging.getLogger(__name__)
+
 
 class BatteryEnv(TimeSeriesEnv):
     """
@@ -92,9 +94,9 @@ class BatteryEnv(TimeSeriesEnv):
         assert initial_charge <= self.capacity
         assert initial_charge >= 0
 
-        logging.debug('initial state is {}'.format(self.state))
-        logging.debug('initial obs is {}'.format(self.observation))
-        logging.debug('initial charge is {}'.format(initial_charge))
+        logger.debug('initial state is {}'.format(self.state))
+        logger.debug('initial obs is {}'.format(self.observation))
+        logger.debug('initial charge is {}'.format(initial_charge))
 
         return self.observation
 
@@ -171,31 +173,26 @@ class BatteryEnv(TimeSeriesEnv):
         #  import/export
         reward = -(gross_rate / 12) * electricity_price
 
-        logging.debug('step is {}'.format(self.steps))
-                           # 'action was {}'.format(action)
-                           # 'old charge was {} MWh'.format(old_charge),
-                           # 'new charge is {} MWh'.format(new_charge),
-                           # 'gross rate is {} MW'.format(gross_rate),
-                           # 'losses were {} MWh'.format(losses),
-                           # 'net rate is {} MW'.format(net_rate),
-                           # 'reward is {} $/5min'.format(reward))
+        logger.debug('step is {:.3f}'.format(self.steps))
+        logger.debug('action was {}'.format(action))
+        logger.debug('old charge was {:.3f} MWh'.format(old_charge))
+        logger.debug('new charge is {:.3f} MWh'.format(new_charge))
+        logger.debug('gross rate is {:.3f} MW'.format(gross_rate))
+        logger.debug('losses were {:.3f} MWh'.format(losses))
+        logger.debug('net rate is {:.3f} MW'.format(net_rate))
+        logger.debug('reward is {:.3f} $/5min'.format(reward))
+
+        self.steps += 1
+        next_state = self.get_state(self.steps, append=float(new_charge))
+        next_observation = self.get_observation(self.steps, append=float(new_charge))
 
         #  check to see if episode is done
         #  -1 in here because of the zero index
         if self.steps == (self.episode_length-1):
             self.done = True
-            next_state = 'Terminal'
-            next_observation = 'Terminal'
-
             total_ep_reward = sum(self.info['reward'])
-            logging.info('Episode {} - Total reward {}'.format(self.episode,
+            logger.info('Episode {} - Total reward {:.2f}'.format(self.episode,
                                                                total_ep_reward))
-
-        else:
-        #  moving onto next step
-            next_state = self.get_state(self.steps, append=float(new_charge))
-            next_observation = self.get_observation(self.steps, append=float(new_charge))
-            self.steps += 1
 
         #  saving info
         self.info = self.update_info(episode=self.episode,
@@ -206,6 +203,7 @@ class BatteryEnv(TimeSeriesEnv):
                                      reward=reward,
                                      next_state=next_state,
                                      next_observation=next_observation,
+                                     done=self.done,
 
                                      electricity_price=electricity_price,
                                      gross_rate=gross_rate,

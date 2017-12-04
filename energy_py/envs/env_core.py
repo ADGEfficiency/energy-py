@@ -7,6 +7,8 @@ import pandas as pd
 
 from energy_py import Utils
 
+logger = logging.getLogger(__name__)
+
 
 class BaseEnv(Utils):
     """
@@ -52,7 +54,7 @@ class BaseEnv(Utils):
         Returns: observation (np array): the initial observation
         """
         self.episode = episode
-        logging.info('Reset environment')
+        logger.debug('Reset environment')
 
         self.info = collections.defaultdict(list)
         self.outputs = collections.defaultdict(list) 
@@ -81,12 +83,12 @@ class BaseEnv(Utils):
             episode (int): the current episode number
 
         returns:
-            observation (np array): agent's observation of the current environment
-            reward (np float) : amount of reward returned after previous action
-            done (boolean): whether the episode has ended, in which case further step() calls will return undefined results
-            info (dict): contains auxiliary diagnostic information (helpful for debugging, and sometimes learning)
+            observation (np array): agent's observation of the environment
+            reward (np.float) : 
+            done (boolean): 
+            info (dict): auxiliary information
         """
-        logging.debug('Episode {} - Step {}'.format(self.episode, self.steps))
+        logger.debug('Episode {} - Step {}'.format(self.episode, self.steps))
         return self._step(action)
 
     def output_results(self):
@@ -95,6 +97,7 @@ class BaseEnv(Utils):
 
         Grabs data from the self.info dictionary
         """
+        logger.debug('Outputting resuts')
         #  add the self.info dictionary into our outputs dictionary
         self.outputs['info'] = self.info
 
@@ -106,8 +109,6 @@ class BaseEnv(Utils):
     def update_info(self, **kwargs):
         """
         Helper function to update the self.info dictionary.
-
-        Use kwargs to give flexibility to the environment as to what to store.
         """
         for name, data in kwargs.items():
             self.info[name].append(data)

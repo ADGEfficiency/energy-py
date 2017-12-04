@@ -8,6 +8,7 @@ to be used with gym environments.
 
 The energy_py GlobalSpace is the equivilant of the gym TupleSpace.
 """
+import itertools
 
 import numpy as np
 
@@ -36,7 +37,7 @@ class DiscreteSpace(object):
     def contains(self, x):
         return np.in1d(x, self.discrete_space)
 
-    def discretize(self, spc_len):
+    def discretize(self, num_discrete):
         #  note that we don't use the step here
         return self.discrete_space 
 
@@ -99,7 +100,11 @@ class GlobalSpace(object):
 
     def discretize(self, num_discrete):
         #  use the same space length for all parts of the action space
-        return [spc.discretize(num_discrete) for spc in self.spaces]
+        #  first create a list of discrete actions per action dimension
+        #  len(disc) = number of actions
+        disc = [spc.discretize(num_discrete) for spc in self.spaces]
+        combinations = np.array([a for a in itertools.product(*disc)])
+        return combinations 
 
     def _get_shape(self):
         return (len(self.spaces),)

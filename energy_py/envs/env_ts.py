@@ -7,6 +7,8 @@ import pandas as pd
 from energy_py.envs import BaseEnv
 from energy_py.scripts.spaces import ContinuousSpace, DiscreteSpace, GlobalSpace
 
+logger = logging.getLogger(__name__)
+
 def make_observation(path, horizion=5):
     """
     Creates the state.csv and observation.csv.
@@ -100,7 +102,7 @@ class TimeSeriesEnv(BaseEnv):
         observation_space = self.make_env_obs_space(observation_ts)
 
         assert observation_ts.shape[0] == state_ts.shape[0]
-        logging.info('Ep {} starting at {}'.format(self.episode,
+        logger.info('Ep {} starting at {}'.format(self.episode,
                                                         state_ts.index[0]))
 
         return observation_space, observation_ts, state_ts

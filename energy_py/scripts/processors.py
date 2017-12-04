@@ -71,12 +71,12 @@ class Standardizer(Processor):
             #  create an array from history 
             #  then reshape to (num_samples, space length)
             history = np.concatenate(self.history).reshape(-1, batch.shape[1])
-            means, stdevs = history.mean(axis=0), history.std(axis=0)
+            self.means, self.stdevs = history.mean(axis=0), history.std(axis=0)
 
         else:
-            means, stdevs = batch.mean(axis=0), batch.std(axis=0)
+            self.means, self.stdevs = batch.mean(axis=0), batch.std(axis=0)
 
-        return (batch - means) / (stdevs + epsilon)
+        return (batch - self.means) / (self.stdevs + epsilon)
 
 
 class Normalizer(Processor):

@@ -1,32 +1,10 @@
+import logging
+
 import numpy as np
 import tensorflow as tf
 
+logger = logging.getLogger(__name__)
 
-def fc_layer(input_tensor, wt_shape, bias_shape, activation=[]):
-    """
-    Creates a single layer of a feedforward neural network in TensorFlow.
-
-    args
-        input_tensor : Tensor (1, input_length)
-        wt_shape     :
-        bias_shape   :
-        activation   : TensorFlow activation function
-
-    return
-        output      : output layer of the feedforward neural network
-    """
-    wt_init = tf.constant_initializer(1)
-    bias_init = tf.constant_initializer(0)
-
-    W = tf.get_variable('W', wt_shape, initializer=wt_init)
-    b = tf.get_variable('b', bias_shape, initializer=bias_init)
-    matmul = tf.matmul(input_tensor, W) + b
-
-    if activation:
-        output = activation(matmul)
-    else:
-        output = matmul
-    return output
 
 class GaussianPolicy(object):
     """
@@ -39,17 +17,15 @@ class GaussianPolicy(object):
         num_actions (int)
         learning rate (float)
     """
-    def __init__(self, **kwargs):
+    def __init__(self, model_dict):
 
-        self.lr = kwargs.pop('lr')
-
-        self.observation_dim = kwargs.pop('observation_dim')
-        self.num_actions = kwargs.pop('num_actions')
-        self.action_space = kwargs.pop('action_space')
-        super().__init__(**kwargs)
+        self.lr = model_dict['lr']
+        self.observation_dim = model_dict['observation_dim']
+        self.num_actions = model_dict['num_actions']
+        self.action_space = model_dict['action_space']
 
         self.action = self.make_acting_graph()
-        self.train_step = self.make_learning_graph()
+        self.train_op = self.make_learning_graph()
 
     def make_acting_graph(self):
         #  the TensorFlow graph for the policy network
@@ -88,7 +64,7 @@ class GaussianPolicy(object):
             #  gather ops
             self.means = tf.gather(params=self.output_layer, indices=mean_idx, axis=1)
             self.stdevs = tf.gather(params=self.output_layer, indices=stdev_idx, axis=1)
-            #self.stdevs = tf.nn.softplus(stdevs) + 1e-5
+            self.stdevs = tf.exp(stdevs) + 1e-5
             self.norm_dist = tf.contrib.distributions.Normal(loc=self.means, scale=self.stdevs)
 
             #  selecting an action by sampling from the distribution
@@ -125,9 +101,9 @@ class GaussianPolicy(object):
 
             #  creating the training step
             self.optimizer = tf.train.AdamOptimizer(self.lr)
-            self.train_step = self.optimizer.minimize(self.loss)
+            self.train_op = self.optimizer.minimize(self.loss)
 
-        return self.train_step
+        return self.train_op
 
     def get_action(self, session, observation):
         assert observation.shape[0] == 1
@@ -138,7 +114,7 @@ class GaussianPolicy(object):
         output = {'means' : results[0],
                   'stdevs': results[1],
                   'action': results[2]}
-        print(output)
+
         return output['action'].reshape(self.num_actions), output
 
     def improve(self, session,
@@ -153,65 +129,75 @@ class GaussianPolicy(object):
                      self.taken_action : actions,
                      self.returns : returns}
 
-        _, loss = session.run([self.train_step, self.loss], feed_dict)
+        _, loss = session.run([self.train_op, self.loss], feed_dict)
 
         return float(loss)
 
 
-class TensorflowV(object):
+class tfValueFunction(object):
     """
-    The class for a TensorFlow value function approximating V(s).
+    A TensorFlow value function approximating either V(s) or Q(s,a).
 
-    The value function approximates the expected discounted reward
-    after leaving state s.
+    The value function approximates the expected future discounted reward.
+
+    V(s) can be modelled by
+        input_nodes = observation_space.shape[0]
+        output_nodes = 1
+
+    Q(s,a) can be modelled by
+        input_nodes = observation_space.shape[0]
+        output_nodes = action_space.shape[0] 
 
     args
-        observation_space (list) : list of energy_py space objects
-        lr (float) : learning rate
-        layers (list) : list of nodes per layer 
+        model_dict (dict): 
     """
-    def __init__(self, **kwargs):
+    def __init__(self, model_dict, scope='value_function'):
+        logger.info('creating {}'.format(scope))
 
-        self.observation_space = kwargs.pop('observation_space')
-        self.lr = kwargs.pop('lr')
-        self.layers = kwargs.pop('layers')
-        super().__init__(**kwargs)
+        for k, v in model_dict.items():
+            logger.info('{} : {}'.format(k, v))
 
-        self.observation_dim = self.observation_space.shape[0]
+        #  network structure
+        self.input_nodes = model_dict['input_nodes']
+        self.output_nodes = model_dict['output_nodes']
+        self.layers = model_dict['layers']
 
-        #  create the tf graph for prediction and learning
-        self.make_prediction_graph()
-        self.make_learning_graph()
+        #  optimizer parameters
+        self.lr = model_dict['lr']
+
+        self.scope = scope
+        with tf.variable_scope(self.scope):
+            #  create graph for prediction and learning
+            self.prediction = self.make_prediction_graph()
+
+            self.train_op = self.make_learning_graph()
 
     def make_prediction_graph(self):
         """
         Creates the prediction part of the graph
         Predicting V(s) for the observed state
         """
-        with tf.variable_scope('prediction'):
-            #  create placeholder variable for the observation
-            self.obs = tf.placeholder(tf.float32,
-                                              [None, self.observation_dim],
-                                              'observation')
+        self.obs = tf.placeholder(tf.float32,
+                                  [None, self.input_nodes],
+                                  'observation')
+        #  add the input layer
+        with tf.variable_scope('input_layer'):
+            layer = tf.layers.dense(inputs=self.obs, 
+                                    units=self.layers[0],
+                                    activation=tf.nn.relu)
 
-            with tf.variable_scope('input_layer'):
-                layer = fc_layer(self.obs, 
-                                 [self.observation_dim, self.layers[0]], 
-                                 [self.layers[0]], 
-                                 tf.nn.relu)
+        #  iterate over self.layers
+        for i, nodes in enumerate(self.layers[1:]):
+            with tf.variable_scope('input_layer_{}'.format(i)):
+                layer = tf.layers.dense(inputs=layer, 
+                                        units=nodes,
+                                        activation=tf.nn.relu)
 
-            with tf.variable_scope('hidden_layers'):
-                for i, nodes in enumerate(self.layers[:-1]):
-                    layer = fc_layer(layer, 
-                                     [nodes, self.layers[i+1]], 
-                                     [self.layers[i+1]], 
-                                     tf.nn.relu)
-
-            with tf.variable_scope('output_layer'):
-                #  single output node to predict V(s)
-                self.prediction = fc_layer(layer, 
-                                           [self.layers[i+1], 1],
-                                           [1])
+        #  return the prediction
+        with tf.variable_scope('output_layer'):
+            prediction = tf.layers.dense(inputs=layer, 
+                                    units=self.output_nodes)
+        return prediction
 
     def make_learning_graph(self):
         """
@@ -219,141 +205,74 @@ class TensorflowV(object):
 
         Minimizing the squared difference between the prediction and target
         """
-        with tf.variable_scope('learning'):
-            #  placeholder for the target
-            self.target = tf.placeholder(tf.float32, [None, 1], 'target')
-            self.optimizer = tf.train.AdamOptimizer(self.lr)
-            
-            self.error = tf.subtract(self.prediction, self.target)
-            self.loss = tf.square(self.error)
-            self.train_step = self.optimizer.minimize(self.loss)
+        self.target = tf.placeholder(tf.float32, 
+                                     [None, self.output_nodes], 
+                                     'target')
+        #  create the optimizer object
+        self.optimizer = tf.train.AdamOptimizer(self.lr)
 
-    def predict(self, sess, observation):
+        #  use the Huber loss as the cost function
+        #  we use this to clip gradients
+        #  the shape of the huber loss means the slope is clipped at 1
+        #  for large errors
+        self.error = self.target - self.prediction
+        self.loss = tf.losses.huber_loss(self.target, self.prediction)
+        self.train_op = self.optimizer.minimize(self.loss)
+
+        return self.train_op
+
+    def predict(self, sess, obs):
         """
-        Predicting V(s) for the given observation
+        Predicting discounted return for the given observation
 
         args
             sess (tf.Session) : the current TensorFlow session
-            observation (np.array) : 
+            obs (np.array) : observation of the environment
+                             shape=(1, self.input_dim)
         """
-        return sess.run(self.prediction, {self.obs: observation})
+        return sess.run(self.prediction, {self.obs: obs})
 
-    def improve(self, sess, observation, target):
+    def improve(self, sess, obs, target):
         """
-        Improving V(s) for the given observation
+        Improving the value function approximation
+
+        either V(s) or Q(s,a) for all a 
+
         The target is created externally to this object 
         Most commonly the target will be a Bellman approximation
         V(s) = r + yV(s')
+        Q(s,a) = r + yQ(s',a)
 
         args
             sess (tf.Session) : the current TensorFlow session
-            observation (np.array) : 
-            target (np.float) : 
+            obs (np.array) : shape=(num_samples, self.input_dim)
+            target (np.array) : shape=(num_samples, self.output_dim)
         """
-        fd = {self.obs: observation, self.target: target}
-        _, error, loss = sess.run([self.train_step, self.error, self.loss], 
-                                  feed_dict=fd)
+        feed_dict = {self.obs: obs, self.target: target}
+        _, error, loss = sess.run([self.train_op, self.error, self.loss], 
+                                  feed_dict=feed_dict)
         return error, loss
 
+    def save_model(self):
+        pass
 
-class TensorflowQ(object):
-    """
-    The class for a TensorFlow action-value function approximating Q(s,a)
+    def load_model(self):
+        pass
 
-    The action-value function approximates the expected discounted reward
-    after taking action a in state s.
+    def copy_weights(self, sess, parent):
+        self_params = [t for t in tf.trainable_variables() if
+                     t.name.startswith(self.scope)]
+        self_params = sorted(self_params, key=lambda v: v.name)
 
-    args
-        observation_space (list) : list of energy_py space objects
-        action_space (list) : list of energy_py space objects
-        lr (float) : learning rate
-        layers (list) : list of nodes per layer 
-    """
-    def __init__(self, **kwargs):
+        parent_params = [t for t in tf.trainable_variables() if
+                     t.name.startswith(parent.scope)]
+        parent_params = sorted(parent_params, key=lambda v: v.name)
 
-        self.observation_space = kwargs.pop('observation_space')
-        self.action_space = kwargs.pop('action_space')
-        self.lr = kwargs.pop('lr')
-        self.layers = kwargs.pop('layers')
-        super().__init__(**kwargs)
+        update_ops = []
+        for parent_p, self_p in zip(parent_params, self_params):
+            op = parent_p.assign(self_p)
+            update_ops.append(op)
+        
+        sess.run(update_ops)
 
-        self.obs_act_dim = len(self.observation_space) + len(self.action_space)
-
-        #  create the tf graph for prediction and learning
-        self.prediction = make_prediction_graph()
-        self.train_step = self.make_learning_graph()
-
-
-    def make_prediction_graph(self):
-        """
-        Creates the prediction part of the graph
-        Predicting V(s) for the observed state
-
-        pretty much identical tto V(s) - probably can rewrite with single function
-        """
-        with tf.variable_scope('prediction'):
-            #  create placeholder variable for the observation
-            self.obs_act = tf.placeholder(tf.float32,
-                                              [None, self.obs_act_dim],
-                                              'observation_action')
-
-            with tf.variable_scope('input_layer'):
-                layer = fc_layer(self.obs_act, 
-                                 [self.obs_act_dim, layers[0]], 
-                                 [layers[0]], 
-                                 tf.nn.relu)
-
-            with tf.variable_scope('hidden_layers'):
-                for i, nodes in enumerate(self.layers[:-1]):
-                    layer = fc_layer(layer, 
-                                     [nodes, self.layers[i+1]], 
-                                     [self.layers[i+1]], 
-                                     tf.nn.relu)
-
-            with tf.variable_scope('output_layer'):
-                #  single output node to predict Q(s,a)
-                self.prediction = fc_layer(layer, 
-                                           [self.layers[i+1], 1],
-                                           [1])
-
-    def make_learning_graph(self):
-        """
-        Part of the graph used to improve the value function
-
-        Minimizing the squared difference between the prediction and target
-        """
-        with tf.variable_scope('learning'):
-            #  placeholder for the target
-            self.target = tf.placeholder(tf.float32, [none, 1], 'target')
-            self.optimizer = tf.train.AdamOptimizer(self.lr)
-            
-            self.error = tf.subtract(self.prediction, target)
-            self.loss = tf.square(self.error)
-            self.train_step = self.optimizer.minimize(self.loss)
-
-    def predict(self, sess, observation_action):
-        """
-        Predicting Q(s,a) for the given observation
-
-        args
-            sess (tf.Session) : the current TensorFlow session
-            observation_action (np.array) : 
-        """
-        return sess.run(self.prediction, {self.obs_act: observation_action})
-
-    def improve(self, sess, observation_action, target):
-        """
-        Improving V(s) for the given observation
-        The target is created externally to this object 
-        Most commonly the target will be a Bellman approximation
-        V(s) = r + yV(s')
-
-        args
-            sess (tf.Session) : the current TensorFlow session
-            observation (np.array) : 
-            target (np.float) : 
-        """
-        fd = {self.obs_act: observation_action, self.target: target}
-        _, error, loss = sess.run([self.train_step, self.error, self.loss], 
-                                  feed_dict=fd)
-        return error, loss
+        return sess

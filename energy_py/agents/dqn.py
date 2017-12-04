@@ -6,6 +6,8 @@ import numpy as np
 from energy_py import Normalizer, Standardizer
 from energy_py.agents import BaseAgent, EpsilonGreedy
 
+logger = logging.getLogger(__name__)
+
 
 class DQN(BaseAgent):
     """
@@ -27,19 +29,15 @@ class DQN(BaseAgent):
     def __init__(self, 
                  env,
                  discount,
-                 brain_path,
 
                  Q,
                  batch_size,
                  total_steps,
 
+                 brain_path=[],
                  load_agent_brain=False):
-
-        batch_size = batch_size
-        load_agent_brain = load_agent_brain
-
         """
-        Use DeepMind Atari hyperparameters as a guide
+        DeepMind Atari hyperparameters are here as an FYI 
 
         batch_size = 32
         replay_memory_size = 1 million
@@ -48,45 +46,36 @@ class DQN(BaseAgent):
         learning rate = 0.00025
         total frames = 10 million
         """
-
         memory_length = int(total_steps * 0.1)
         self.epsilon_decay_steps = int(total_steps / 2)
-        self.update_target_net = int(total_steps * 0.05) # 20 updates per expt
+        self.update_target_net = int(total_steps * 0.0125)
         self.initial_random = int(total_steps * 0.1)
 
         #  passing the environment to the BaseAgent class
         super().__init__(env, discount, brain_path, memory_length=memory_length)
 
         self.state_processor = Standardizer(length=self.observation_space.shape[0])
-        self.returns_processor = Normalizer(length=1)
-        self.action_processor = Standardizer(length=self.action_space.shape[0])
+        self.target_processor = Normalizer(length=self.action_space.shape[0])
 
-        #  setup self.scaled_actions (used by all_state_actions method)
-        #  this method is defined in BaseAgent
-        self.scaled_actions = self.setup_all_state_actions(spc_len=20)
+        self.actions = self.action_space.discretize(num_discrete=10)
 
-        #  model dict gets passed into the Action-Value function objects    
-        input_dim = self.observation_space.shape[0] + self.action_space.shape[0]
-
-        model_dict = {'type'      : 'feedforward',
-                      'input_dim' : input_dim, 
+        model_dict = {'input_nodes': self.observation_space.shape[0],
+                      'output_nodes': self.actions.shape[0],
                       'layers'    : [25, 25],
-                      'output_dim': 1,
                       'lr'        : 0.0025,
                       'batch_size': batch_size,
                       'epochs'    : 1}
 
         #  make our two action value functions
-        self.Q_actor = Q(model_dict)
-        self.Q_target = Q(model_dict)
+        self.Q_actor = Q(model_dict, 'Q_actor')
+        self.Q_target = Q(model_dict, 'Q_target')
 
         #  create an object to decay epsilon
-        self.e_greedy = EpsilonGreedy(initial_random=self.initial_random,
-                                      decay_steps=self.epsilon_decay_steps)
+        self.e_greedy = EpsilonGreedy(self.initial_random,
+                                      self.epsilon_decay_steps)
 
         if load_agent_brain:
             self.load_brain()
-
 
     def _reset(self):
         """
@@ -96,18 +85,21 @@ class DQN(BaseAgent):
         self.Q_target.model.reset_weights()
         self.e_greedy.reset()
 
-    def _act(self, observation):
+    def _act(self, **kwargs):
         """
         Act using an epsilon-greedy policy
 
         args
-            observation : np array (1, observation_dim)
+            sess (tf.Session): the current tensorflow session
+            obs (np.array): shape=(1, observation_space.shape[0])
 
         return
-            action      : np array (1, num_actions)
+            action      : np array (1, action_space.shape[0])
         """
-        #  because our observation comes directly from the env
-        #  we need to scale the observation
+        sess = kwargs.pop('sess')
+        observation = kwargs.pop('obs')
+
+        #  using our state processor to transform the observation 
         observation = self.state_processor.transform(observation)
 
         #  get the current value of epsilon
@@ -115,30 +107,31 @@ class DQN(BaseAgent):
         self.memory.info['epsilon'].append(epsilon)
 
         if np.random.uniform() < epsilon:
-            logging.debug('epsilon {:.3f} - acting randomly'.format(epsilon))
+            #  acting randomly
+            logger.debug('epsilon {:.3f} - acting randomly'.format(epsilon))
             action = self.action_space.sample() 
 
         else:
-
-            #  create all possible combinations of our single observation
-            #  and our n-dimensional action space
-            state_acts, acts = self.all_state_actions(observation)
-
             #  get predictions from the action_value function Q
-            Q_estimates = [self.Q_actor.predict(sa.reshape(1,-1))
-                           for sa in state_acts]
+            Q_estimates = self.Q_actor.predict(sess, observation)
 
             #  select the action with the highest Q
-            #  note that we index the unscaled action
-            #  as this action is sent directly to the environment
-            action = acts[np.argmax(Q_estimates)]
+            action = self.actions[np.argmax(Q_estimates)]
+
+            #  calculate some statistics from the Q estimates
             max_Q = np.max(Q_estimates)
-            logging.debug('epsilon {:.3f} - using Q_actor - max(Q_est)={:.3f}'.format(epsilon, max_Q))
+            avg_Q = np.mean(Q_estimates)
 
-            #  save the Q estimates
-            self.memory.info['acting max Q estimates'].append(max_Q)
+            #  save some data for debugging later
+            self.memory.info['max_Q_acting estimates'].append(max_Q)
+            self.memory.info['avg_Q_acting estimates'].append(avg_Q)
+            self.memory.info['Q act est'].extend(Q_estimates.flatten().tolist())
 
-        action = np.array(action).reshape(1, self.num_actions)
+            logger.debug('using Q_actor - max(Q_est)={:.3f}'.format(max_Q))
+            logger.debug('using Q_actor - avg(Q_est)={:.3f}'.format(avg_Q))
+
+        #  make sure action is shaped correctly
+        action = np.array(action).reshape(1, self.action_space.shape[0])
         assert self.action_space.shape[0] == action.shape[1]
 
         return action
@@ -151,82 +144,96 @@ class DQN(BaseAgent):
         normalized or standardized
 
         args
-            observations        : np array (batch_size, observation_dim)
-            actions             : np array (batch_size, num_actions)
-            rewards             : np array (batch_size, 1)
-            next_observations   : np array (batch_size, observataion_dim)
+            sess (tf.Session)
+
+            batch (dict) keys=str, val=np.array 
+                obs (batch_size, observation_space.shape[0])
+                acts (batch_size, num_actions)
+                rews (batch_size, 1)
+                next_obs (batch_size, observataion_dim)
+                terminal (bool)
 
         returns
             history             : list
         """
-        observations = kwargs.pop('observations')
-        actions = kwargs.pop('actions')
-        rewards = kwargs.pop('rewards')
-        next_observations = kwargs.pop('next_observations')
+        sess = kwargs.pop('sess')
+
+        #  grab the batch dictionary and pull out data
+        batch = kwargs.pop('batch')
+        observations = batch['obs']
+        actions = batch['acts']
+        rewards = batch['rews']
+        next_observations = batch['next_obs']
+        terminal = batch['terminal']
 
         #  check that we have equal number of all of our inputs
         assert observations.shape[0] == actions.shape[0]
         assert observations.shape[0] == rewards.shape[0]
         assert observations.shape[0] == next_observations.shape[0]
+        assert observations.shape[0] == terminal.shape[0]
+
+        #  we process the entire batch of inputs using our state_processor
+        inputs = self.state_processor.transform(observations)
+        targets = np.zeros(shape=(observations.shape[0], 
+                                  self.Q_actor.output_nodes))
+        assert inputs.shape[0] == targets.shape[0]
 
         #  iterate over the experience to create the input and target
-        inputs = np.zeros(shape=(observations.shape[0],
-                                 self.observation_dim + self.num_actions))
-        targets = np.array([])
-        logging.info('starting input & target creation')
-        for j, (obs, act, rew, next_obs) in enumerate(zip(observations,
-                                                          actions,
-                                                          rewards,
-                                                          next_observations)):
-            #  first the inputs
-            print(obs)
-            print(obs.shape)
-            obs = self.state_processor.transform(obs)
-            next_obs = self.state_processor.transform(next_obs)
-            inputs[j] = np.append(obs, act)
-
-            #  second the targets
-            #  TODO this is a bit hacky (maybe have s'='TERMINAL' or something?)
-            if next_obs == 'terminal':
+        for j, (rew, next_obs, term) in enumerate(zip(rewards,
+                                                      next_observations,
+                                                      terminal)):
+            if term:
                 #  if the next state is terminal
                 #  the return of our current state is equal to the reward
                 #  i.e. Q(s',a) = 0 for any a
                 target = rew
+
             else:
-                #  for non terminal states
-                #  get all possible combinations of our next state
-                #  across the action space
-                state_actions, _ = self.all_state_actions(next_obs)
-
-                #  now predict the value of each of the state_actions
+                #  if not terminal then we need to predict the max return
+                #  from the next_observation
                 #  note that we use Q_target here
-                max_q = max([self.Q_target.predict(sa.reshape(-1, state_actions.shape[1]))
-                             for sa in state_actions])
+                next_obs = self.state_processor.transform(next_obs)
+                max_q = np.max(self.Q_target.predict(sess, next_obs))
 
-                #  the Bellman equation
+                #  can now use Bellman equation to create a target
+                #  using the max value of s'
                 target = rew + self.discount * max_q
 
-            targets = np.append(targets, target)
+            #  save the network inputs and targets  
+            targets[j] = target
 
+        logger.debug('Finished iterating over batch of experience')
         #  save the unscaled targets so we can visualize later
         self.memory.info['unscaled Q targets'].extend(list(targets.flatten()))
-        logging.info('Improving Q_actor - avg unscaled target={0:.3f}'.format(np.mean(targets)))
 
         #  scaling the targets by normalizing
-        targets = self.returns_processor.transform(targets)
+        targets = self.target_processor.transform(targets)
         #  reshape targets into 2 dimensions
-        targets = targets.reshape(-1,1)
+        targets = targets.reshape(-1, self.Q_actor.output_nodes)
 
         #  update our Q function
-        logging.debug('Input shape {}'.format(inputs.shape))
-        logging.debug('Target shape {}'.format(targets.shape))
-        hist = self.Q_actor.improve(state_actions=inputs, targets=targets)
+        assert inputs.shape[0] == targets.shape[0]
+        error, loss = self.Q_actor.improve(sess, inputs, targets)
 
         #  save loss and the training targets for visualization later
-        self.memory.info['loss'].append(hist.history['loss'][-1])
-        self.memory.info['training Q targets'].extend(list(targets.flatten()))
+        self.memory.info['train error'].extend(error.flatten().tolist())
+        self.memory.info['loss'].append(loss)
 
-        return hist
+        self.memory.info['train Q inputs'].extend(inputs.flatten().tolist())
+        self.memory.info['train Q targets'].extend(targets.flatten().tolist())
+
+        #  save some data for analysis later 
+        max_target = np.max(targets)
+        avg_target = np.mean(targets)
+
+        self.memory.info['max learning target'].append(max_target)
+        self.memory.info['avg learning target'].append(avg_target)
+        self.memory.info['learning targets'].extend(targets.flatten().tolist())
+        
+        logger.debug('learning - max(Q_est)={:.3f}'.format(max_target))
+        logger.debug('learning - avg(Q_est)={:.3f}'.format(avg_target))
+
+        return error, loss 
 
     def _load_brain(self):
         """
@@ -258,9 +265,10 @@ class DQN(BaseAgent):
         Q_actor_path = os.path.join(self.brain_path, 'Q_actor.h5')
         self.Q_actor.save_model(Q_actor_path)
 
-    def update_target_network(self):
+    def update_target_network(self, sess):
         """
         Copies weights from Q_actor into Q_target
         """
-        logging.info('Updating Q_target by copying weights from Q_actor')
-        self.Q_target.copy_weights(parent=self.Q_actor.model)
+        logger.info('Updating Q_target by copying weights from Q_actor')
+        sess = self.Q_target.copy_weights(sess, parent=self.Q_actor)
+        return sess

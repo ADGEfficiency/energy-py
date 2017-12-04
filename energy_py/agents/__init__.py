@@ -11,6 +11,5 @@ from energy_py.agents.function_approximators.keras import KerasV
 from energy_py.agents.function_approximators.keras import KerasQ
 
 from energy_py.agents.function_approximators.tensorflow import GaussianPolicy
-from energy_py.agents.function_approximators.tensorflow import TensorflowV
-from energy_py.agents.function_approximators.tensorflow import TensorflowQ
+from energy_py.agents.function_approximators.tensorflow import tfValueFunction 
 

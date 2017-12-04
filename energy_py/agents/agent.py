@@ -7,6 +7,8 @@ import numpy as np
 from energy_py.agents.memory import Memory
 from energy_py import Utils
 
+logger = logging.getLogger(__name__)
+
 
 class BaseAgent(Utils):
     """
@@ -49,10 +51,6 @@ class BaseAgent(Utils):
         #  use the env to setup the agent
         self.action_space = self.env.action_space
         self.observation_space = self.env.observation_space
-        print(self.action_space)
-        print(self.observation_space)
-
-        self.num_actions = self.action_space.shape[0]
 
         #  create a memory for the agent
         #  object to hold all of the agents experience
@@ -94,7 +92,7 @@ class BaseAgent(Utils):
         return
             action (np array) : shape=(1, num_actions)
         """
-        logging.debug('Agent is acting')
+        logger.debug('Agent is acting')
         return self._act(**kwargs)
 
     def learn(self, **kwargs):
@@ -106,14 +104,14 @@ class BaseAgent(Utils):
         return
             training_history (object) : info about learning (i.e. loss)
         """
-        logging.debug('Agent is learning')
+        logger.debug('Agent is learning')
         return self._learn(**kwargs)
 
     def load_brain(self):
         """
         Agent can load previously created memories, policies or value functions
         """
-        logging.info('Loading agent brain')
+        logger.info('Loading agent brain')
         memory_path = os.path.join(self.brain_path, 'memory.pickle')
         self.memory = self.load_pickle(memory_path)
 
@@ -123,7 +121,7 @@ class BaseAgent(Utils):
         """
         Agent can save previously created memories, policies or value functions
         """
-        logging.info('Saving agent brain')
+        logger.info('Saving agent brain')
 
         #  we save the agent memory
         memory_path = os.path.join(self.brain_path, 'memory.pickle')
@@ -137,81 +135,6 @@ class BaseAgent(Utils):
         """
         return self.memory.output_results()
 
-    def setup_all_state_actions(self, spc_len):
-        """
-        Creating the combination of all actions with a single obervation is
-        one of the reasons value function methods are expensive.
-
-        This function is designed to run once on init, doing the things that
-        only need to be done once for state_action creation.
-
-        args
-            spc_len (int) : the length of the discrteizied action space
-
-        returns
-            scaled_actions (np.array) : an array of the scaled actions
-                                        shape=(spc_len, num_actions)
-        """
-        logging.info('Setting up self.scaled_actions')
-
-        #  get the discrete action space for all action dimensions
-        #  list is used to we can use itertools.product below
-        disc_act_spcs = self.action_space.discretize(spc_len)
-
-        #  create every possible combination of actions
-        #  this creates the unscaled actions
-        actions = np.array([a for a in itertools.product(*disc_act_spcs)])
-        self.actions = np.array(actions).reshape(-1,
-                                                 self.action_space.shape[0])
-
-        #  scale the actions
-        #  TODO this could be a bit cleaner
-        scld_acts = self.action_processor.transform(self.actions)
-        scld_acts = scld_acts.reshape(-1, self.action_space.shape[0])
-
-        logging.info('scaled_actions shape is {}'.format(scld_acts.shape))
-        assert self.actions.shape == scld_acts.shape
-        return scld_acts
-
-    def all_state_actions(self, observation):
-        """
-        This is a helper function used by value function based agents
-
-        All possible combinations actions for a single observation
-
-        Used by Q-Learning for both acting and learning
-            acting = argmax Q(s,a) for all possible a to select action
-            learning = argmax Q(s',a) for all possible a (Bellman target)
-
-        action_combinations = act_dim[0] * act_dim[1] ... * act_dim[n]
-                              (across the action_space)
-
-        Note that the method setup_all_state_actions should be run prior to
-        this function (should be run during child agent __init__)
-
-        args
-            observation     : np array (1, observation_dim)
-                              should be already scaled
-
-        returns
-            state_acts      : np array (action_combinations,
-                                        observation_dim + num_actions)
-            self.actions    : np array (action_combinations,
-                                        num_actions)
-        """
-        #  create an array with one obs per possible action combinations
-        #  reshape into (num_actions, observation_dim)
-        obs = np.tile(observation, self.scaled_actions.shape[0])
-        obs = obs.reshape(self.scaled_actions.shape[0],
-                          observation.shape[1])
-
-        #  concat the observations & actions
-        state_acts = np.concatenate([obs, self.scaled_actions], axis=1)
-
-        assert state_acts.shape[0] == self.scaled_actions.shape[0]
-
-        return state_acts, self.actions
-
 
 class EpsilonGreedy(object):
     """
@@ -224,7 +147,7 @@ class EpsilonGreedy(object):
     TODO update with logger
     """
     def __init__(self,
-                 initial_random,
+                 random_start,
                  decay_steps,
                  epsilon_start=1.0,
                  epsilon_end=0.1):
@@ -232,28 +155,24 @@ class EpsilonGreedy(object):
         #  we calculate a linear coefficient to decay with
         self.linear_coeff = (epsilon_end - epsilon_start) / decay_steps
 
-        self.initial_random = initial_random
+        self.random_start = random_start
         self.decay_steps = decay_steps
         self.epsilon_start = epsilon_start
-        self.epsilon_end = epsilon_end + self.initial_random
+        self.epsilon_end = epsilon_end
 
         self.reset()
 
     def reset(self):
         self.steps = 0
         self._epsilon = self.epsilon_start
-        print('starting epsilon at {}'.format(self.epsilon_start))
 
     @property
     def epsilon(self):
-        #  m = slope 
-        m = self.steps - self.initial_random
-
-        if self.steps < self.initial_random:
+        if self.steps < self.random_start:
             self._epsilon = 1
 
-        elif self.steps < self.decay_steps:
-            self._epsilon = self.linear_coeff * m + self.epsilon_start
+        elif self.steps >= self.random_start and self.steps < self.decay_steps:
+            self._epsilon = self.linear_coeff * self.steps + self.epsilon_start
 
         else:
             self._epsilon = self.epsilon_end
