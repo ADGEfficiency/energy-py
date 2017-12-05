@@ -52,7 +52,9 @@ class DQN(BaseAgent):
         #  passing the environment to the BaseAgent class
         super().__init__(env, discount, brain_path, memory_length)
 
-        self.actions = self.action_space.discretize(num_discrete=10)
+        #  Q-Learning needs a discrete action space
+        #
+        self.actions = self.action_space.discretize(10)
 
         model_dict = {'input_nodes': self.observation_space.shape[0],
                       'output_nodes': self.actions.shape[0],
@@ -107,7 +109,7 @@ class DQN(BaseAgent):
         if np.random.uniform() < epsilon:
             #  acting randomly
             logger.debug('epsilon {:.3f} - acting randomly'.format(epsilon))
-            action = self.action_space.sample()
+            action = self.action_space.sample_discrete()
 
         else:
             #  get our Q(s,a) approximation for each action
@@ -141,12 +143,15 @@ class DQN(BaseAgent):
         observations, actions, rewards should all be either
         normalized or standardized
 
+        Q(s', a) is calculated externally to the value function
+        Q(s,a) is calculated within the value function
+
         args
             sess (tf.Session)
             batch (np.array): batch of experience to learn from
 
         returns
-            train_info (dict) 
+            train_info (dict)
         """
         sess = kwargs.pop('sess')
         batch = kwargs.pop('batch')
@@ -157,11 +162,11 @@ class DQN(BaseAgent):
         next_obs = np.concatenate(batch[:, 3])
         terminal = np.array(batch[:, 4],dtype=np.bool).flatten()
 
-        logger.debug('shapes of arrays used in learning')
-        logger.debug('obs shape {}'.format(obs.shape))
-        logger.debug('actions shape {}'.format(actions.shape))
-        logger.debug('rews shape {}'.format(rews.shape))
-        logger.debug('terminal shape {}'.format(terminal.shape))
+        print('shapes of arrays used in learning')
+        print('obs shape {}'.format(obs.shape))
+        print('actions shape {}'.format(actions.shape))
+        print('rews shape {}'.format(rews.shape))
+        print('terminal shape {}'.format(terminal.shape))
 
         #  dimensionality checks
         assert rews.shape[0] == obs.shape[0]
@@ -171,22 +176,23 @@ class DQN(BaseAgent):
 
         #  we process the entire batch of inputs using our state_processor
         inputs = self.state_processor.transform(obs)
-        print('inputs shape {}'.format(inputs.shape))
-
         next_obs = self.state_processor.transform(next_obs)
         preds = self.Q_target.predict(sess, next_obs)
-        print('Q preds for next_obs shape {}'.format(preds.shape))
         max_q = np.max(self.Q_target.predict(sess, next_obs), axis=1)
-        print('max q values has shape {}'.format(max_q.shape))
+        print(max_q)
         assert max_q.shape[0] == inputs.shape[0]
-        
+
         #  we set the max Q(s',a) equal to zero for terminal states
+        max_q[terminal] = 0
         print(terminal)
-        max_q[terminal] = 0 
+        print('max_q after termnal {}'.format(max_q))
 
         #  we then use the Bellman equation with our masked max_q
+        print('before bellman eqn')
+        print('rews shape {}'.format(rews.shape))
+        print('max_q shape {}'.format(max_q.shape))
         targets = rews + self.discount * max_q
-        print('target shape after bellman equn {}'.format(targets.shape))
+        print('targets shape {}'.format(targets.shape))
         assert targets.shape[0] == inputs.shape[0]
 
         #  save the unscaled targets so we can visualize later
@@ -194,16 +200,21 @@ class DQN(BaseAgent):
 
         #  scaling the targets by normalizing
         targets = self.target_processor.transform(targets)
-        print('target shape processing {}'.format(targets.shape))
         assert targets.shape[0] == inputs.shape[0]
 
         act_list = self.actions.tolist()
-        print('act list is {}'.format(act_list))
         action_index = [act_list.index(act) for act in actions.tolist()]
         action_index = np.array(action_index).reshape(-1, 1)
+        print('action indicies shape {}'.format(action_index.shape))
         assert action_index.shape[0] == obs.shape[0]
 
         error, loss = self.Q_actor.improve(sess, inputs, targets, action_index)
+
+        print('inputs shape {}'.format(inputs.shape))
+        print('Q preds for next_obs shape {}'.format(preds.shape))
+        print('max q values has shape {}'.format(max_q.shape))
+        print('target shape after bellman equn {}'.format(targets.shape))
+        print('target shape processing {}'.format(targets.shape))
 
         #  save loss and the training targets for visualization later
         self.memory.info['train error'].extend(error.flatten().tolist())
@@ -226,7 +237,7 @@ class DQN(BaseAgent):
         train_info = {'error': error,
                       'loss': loss}
 
-        return train_info 
+        return train_info
 
     def _load_brain(self):
         """

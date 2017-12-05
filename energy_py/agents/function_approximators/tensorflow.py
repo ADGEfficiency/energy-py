@@ -147,10 +147,10 @@ class tfValueFunction(object):
 
     Q(s,a) can be modelled by
         input_nodes = observation_space.shape[0]
-        output_nodes = action_space.shape[0] 
+        output_nodes = action_space.shape[0]
 
     args
-        model_dict (dict): 
+        model_dict (dict):
     """
     def __init__(self, model_dict, scope='value_function'):
         logger.info('creating {}'.format(scope))
@@ -182,20 +182,20 @@ class tfValueFunction(object):
                                   'observation')
         #  add the input layer
         with tf.variable_scope('input_layer'):
-            layer = tf.layers.dense(inputs=self.obs, 
+            layer = tf.layers.dense(inputs=self.obs,
                                     units=self.layers[0],
                                     activation=tf.nn.relu)
 
         #  iterate over self.layers
         for i, nodes in enumerate(self.layers[1:]):
             with tf.variable_scope('input_layer_{}'.format(i)):
-                layer = tf.layers.dense(inputs=layer, 
+                layer = tf.layers.dense(inputs=layer,
                                         units=nodes,
                                         activation=tf.nn.relu)
 
         #  return the prediction
         with tf.variable_scope('output_layer'):
-            prediction = tf.layers.dense(inputs=layer, 
+            prediction = tf.layers.dense(inputs=layer,
                                     units=self.output_nodes)
         return prediction
 
@@ -205,26 +205,31 @@ class tfValueFunction(object):
 
         Minimizing the squared difference between the prediction and target
         """
-        self.target = tf.placeholder(tf.float32, 
-                                     [None, self.output_nodes], 
+        self.target = tf.placeholder(tf.float32,
+                                     [None, 1],
                                      'target')
 
         self.action_index = tf.placeholder(tf.int32,
                                            [None, 1],
                                            'selected_action_index')
 
-        #  create the optimizer object
-        self.optimizer = tf.train.AdamOptimizer(self.lr)
-
+        #  pull out the relevant
         Q_action = tf.gather(self.prediction, self.action_index, axis=1)
-        target = tf.gather(self.target, self.action_index, axis=1)
+        Q_action = tf.reshape(self.prediction, [-1, 1])
+        # target = tf.gather(self.target, self.action_index, axis=1)
+
+        #  error is calculted explcitly so we can use it outside the
+        #  value function - ie as the TD error signal in Actor-Critic
+        self.error = self.target - Q_action
 
         #  use the Huber loss as the cost function
         #  we use this to clip gradients
         #  the shape of the huber loss means the slope is clipped at 1
         #  for large errors
-        self.error = self.target - Q_action
-        self.loss = tf.losses.huber_loss(target, Q_action) 
+        self.loss = tf.losses.huber_loss(self.target, Q_action)
+
+        #  create the optimizer object and the training operation
+        self.optimizer = tf.train.AdamOptimizer(self.lr)
         self.train_op = self.optimizer.minimize(self.loss)
 
         return self.train_op
@@ -244,9 +249,9 @@ class tfValueFunction(object):
         """
         Improving the value function approximation
 
-        either V(s) or Q(s,a) for all a 
+        either V(s) or Q(s,a) for all a
 
-        The target is created externally to this object 
+        The target is created externally to this object
         Most commonly the target will be a Bellman approximation
         V(s) = r + yV(s')
         Q(s,a) = r + yQ(s',a)
@@ -257,10 +262,10 @@ class tfValueFunction(object):
             target (np.array) : shape=(num_samples, self.output_dim)
             action_index (int): shape=(num_samples, 1)
         """
-        feed_dict = {self.obs: obs, 
+        feed_dict = {self.obs: obs,
                      self.target: target,
                      self.action_index: action_index}
-        _, error, loss = sess.run([self.train_op, self.error, self.loss], 
+        _, error, loss = sess.run([self.train_op, self.error, self.loss],
                                   feed_dict=feed_dict)
         return error, loss
 
@@ -283,7 +288,7 @@ class tfValueFunction(object):
         for parent_p, self_p in zip(parent_params, self_params):
             op = parent_p.assign(self_p)
             update_ops.append(op)
-        
+
         sess.run(update_ops)
 
         return sess
