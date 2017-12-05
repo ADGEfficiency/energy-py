@@ -143,6 +143,7 @@ class tfValueFunction(object):
     V(s) can be modelled by
         input_nodes = observation_space.shape[0]
         output_nodes = 1
+        action_index = 0 always
 
     Q(s,a) can be modelled by
         input_nodes = observation_space.shape[0]
@@ -175,7 +176,6 @@ class tfValueFunction(object):
     def make_prediction_graph(self):
         """
         Creates the prediction part of the graph
-        Predicting V(s) for the observed state
         """
         self.obs = tf.placeholder(tf.float32,
                                   [None, self.input_nodes],
@@ -208,15 +208,23 @@ class tfValueFunction(object):
         self.target = tf.placeholder(tf.float32, 
                                      [None, self.output_nodes], 
                                      'target')
+
+        self.action_index = tf.placeholder(tf.int32,
+                                           [None, 1],
+                                           'selected_action_index')
+
         #  create the optimizer object
         self.optimizer = tf.train.AdamOptimizer(self.lr)
+
+        Q_action = tf.gather(self.prediction, self.action_index, axis=1)
+        target = tf.gather(self.target, self.action_index, axis=1)
 
         #  use the Huber loss as the cost function
         #  we use this to clip gradients
         #  the shape of the huber loss means the slope is clipped at 1
         #  for large errors
-        self.error = self.target - self.prediction
-        self.loss = tf.losses.huber_loss(self.target, self.prediction)
+        self.error = self.target - Q_action
+        self.loss = tf.losses.huber_loss(target, Q_action) 
         self.train_op = self.optimizer.minimize(self.loss)
 
         return self.train_op
@@ -232,7 +240,7 @@ class tfValueFunction(object):
         """
         return sess.run(self.prediction, {self.obs: obs})
 
-    def improve(self, sess, obs, target):
+    def improve(self, sess, obs, target, action_index):
         """
         Improving the value function approximation
 
@@ -247,8 +255,11 @@ class tfValueFunction(object):
             sess (tf.Session) : the current TensorFlow session
             obs (np.array) : shape=(num_samples, self.input_dim)
             target (np.array) : shape=(num_samples, self.output_dim)
+            action_index (int): shape=(num_samples, 1)
         """
-        feed_dict = {self.obs: obs, self.target: target}
+        feed_dict = {self.obs: obs, 
+                     self.target: target,
+                     self.action_index: action_index}
         _, error, loss = sess.run([self.train_op, self.error, self.loss], 
                                   feed_dict=feed_dict)
         return error, loss

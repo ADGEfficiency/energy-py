@@ -170,8 +170,8 @@ class Memory(Utils):
         indicies = np.random.randint(low=0,
                                      high=len(memory),
                                      size=sample_size).reshape(1, -1)
-
-        batch = memory[indicies].reshape(batch_size, -1)
+        
+        batch = memory[indicies].reshape(sample_size, -1)
         return batch 
 
     def output_results(self):

@@ -23,9 +23,6 @@ environment.
 from energy_py.experiments import random_experiment, reinforce_experiment
 from energy_py.envs import BatteryEnv
 
-#  select the location of your raw_state.csv
-data_path = os.getcwd()
-
 env = BatteryEnv
 
 random_outputs = random_experiment(env, 

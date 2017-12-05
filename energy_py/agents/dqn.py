@@ -152,17 +152,20 @@ class DQN(BaseAgent):
         batch = kwargs.pop('batch')
 
         obs = np.concatenate(batch[:, 0])
+        actions = np.concatenate(batch[:, 1])
         rews = batch[:, 2]
         next_obs = np.concatenate(batch[:, 3])
         terminal = np.array(batch[:, 4],dtype=np.bool).flatten()
 
-        print('batch shapes')
-        print(obs.shape)
-        print(rews.shape)
-        print(next_obs.shape)
+        logger.debug('shapes of arrays used in learning')
+        logger.debug('obs shape {}'.format(obs.shape))
+        logger.debug('actions shape {}'.format(actions.shape))
+        logger.debug('rews shape {}'.format(rews.shape))
+        logger.debug('terminal shape {}'.format(terminal.shape))
 
         #  dimensionality checks
         assert rews.shape[0] == obs.shape[0]
+        assert rews.shape[0] == actions.shape[0]
         assert rews.shape[0] == next_obs.shape[0]
         assert rews.shape[0] == terminal.shape[0]
 
@@ -194,7 +197,13 @@ class DQN(BaseAgent):
         print('target shape processing {}'.format(targets.shape))
         assert targets.shape[0] == inputs.shape[0]
 
-        error, loss = self.Q_actor.improve(sess, inputs, targets)
+        act_list = self.actions.tolist()
+        print('act list is {}'.format(act_list))
+        action_index = [act_list.index(act) for act in actions.tolist()]
+        action_index = np.array(action_index).reshape(-1, 1)
+        assert action_index.shape[0] == obs.shape[0]
+
+        error, loss = self.Q_actor.improve(sess, inputs, targets, action_index)
 
         #  save loss and the training targets for visualization later
         self.memory.info['train error'].extend(error.flatten().tolist())
