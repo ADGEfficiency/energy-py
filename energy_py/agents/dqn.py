@@ -56,7 +56,7 @@ class DQN(BaseAgent):
         #
         self.actions = self.action_space.discretize(10)
 
-        model_dict = {'input_nodes': self.observation_space.shape[0],
+        self.model_dict = {'input_nodes': self.observation_space.shape[0],
                       'output_nodes': self.actions.shape[0],
                       'layers': [25, 25],
                       'lr': 0.0025,
@@ -67,8 +67,8 @@ class DQN(BaseAgent):
         self.target_processor = Normalizer(1)
 
         #  make our two action value functions
-        self.Q_actor = Q(model_dict, 'Q_actor')
-        self.Q_target = Q(model_dict, 'Q_target')
+        self.Q_actor = Q(self.model_dict, 'Q_actor')
+        self.Q_target = Q(self.model_dict, 'Q_target')
 
         #  create an object to decay epsilon
         self.e_greedy = EpsilonGreedy(self.initial_random,
@@ -157,16 +157,23 @@ class DQN(BaseAgent):
         batch = kwargs.pop('batch')
 
         obs = np.concatenate(batch[:, 0])
-        actions = np.concatenate(batch[:, 1])
-        rews = batch[:, 2]
-        next_obs = np.concatenate(batch[:, 3])
-        terminal = np.array(batch[:, 4],dtype=np.bool).flatten()
+        obs = obs.reshape(-1, self.observation_space.shape[0])
 
-        print('shapes of arrays used in learning')
-        print('obs shape {}'.format(obs.shape))
-        print('actions shape {}'.format(actions.shape))
-        print('rews shape {}'.format(rews.shape))
-        print('terminal shape {}'.format(terminal.shape))
+        actions = np.concatenate(batch[:, 1])
+        actions = actions.reshape(-1, self.action_space.shape[0]) 
+
+        rews = batch[:, 2].reshape(-1, 1)
+
+        next_obs = np.concatenate(batch[:, 3])
+        next_obs = next_obs.reshape(-1, self.observation_space.shape[0])
+
+        terminal = np.array(batch[:, 4],dtype=np.bool).reshape(-1)
+
+        logger.debug('shapes of arrays used in learning')
+        logger.debug('obs shape {}'.format(obs.shape))
+        logger.debug('actions shape {}'.format(actions.shape))
+        logger.debug('rews shape {}'.format(rews.shape))
+        logger.debug('terminal shape {}'.format(terminal.shape))
 
         #  dimensionality checks
         assert rews.shape[0] == obs.shape[0]
@@ -178,22 +185,25 @@ class DQN(BaseAgent):
         inputs = self.state_processor.transform(obs)
         next_obs = self.state_processor.transform(next_obs)
         preds = self.Q_target.predict(sess, next_obs)
+        #  change to max q next state
         max_q = np.max(self.Q_target.predict(sess, next_obs), axis=1)
-        print(max_q)
+        max_q = max_q.reshape(-1, 1)
+
         assert max_q.shape[0] == inputs.shape[0]
 
         #  we set the max Q(s',a) equal to zero for terminal states
         max_q[terminal] = 0
-        print(terminal)
-        print('max_q after termnal {}'.format(max_q))
+        logger.debug(terminal)
+        logger.debug('max_q after termnal {}'.format(max_q))
 
         #  we then use the Bellman equation with our masked max_q
-        print('before bellman eqn')
-        print('rews shape {}'.format(rews.shape))
-        print('max_q shape {}'.format(max_q.shape))
+        logger.debug('before bellman eqn')
+        logger.debug('rews shape {}'.format(rews.shape))
+        logger.debug('max_q shape {}'.format(max_q.shape))
         targets = rews + self.discount * max_q
-        print('targets shape {}'.format(targets.shape))
+        logger.debug('targets shape {}'.format(targets.shape))
         assert targets.shape[0] == inputs.shape[0]
+        assert targets.shape[1] == 1
 
         #  save the unscaled targets so we can visualize later
         self.memory.info['unscaled Q targets'].extend(list(targets.flatten()))
@@ -202,19 +212,24 @@ class DQN(BaseAgent):
         targets = self.target_processor.transform(targets)
         assert targets.shape[0] == inputs.shape[0]
 
+        #  action_index is flattened!!!
         act_list = self.actions.tolist()
         action_index = [act_list.index(act) for act in actions.tolist()]
-        action_index = np.array(action_index).reshape(-1, 1)
-        print('action indicies shape {}'.format(action_index.shape))
+        action_index = np.array(action_index).reshape(-1)
+
+        logger.debug('action indicies shape {}'.format(action_index.shape))
         assert action_index.shape[0] == obs.shape[0]
 
+        #  flattening!!!
+        targets = targets.flatten()
+        assert targets.shape[0] == inputs.shape[0]
         error, loss = self.Q_actor.improve(sess, inputs, targets, action_index)
 
-        print('inputs shape {}'.format(inputs.shape))
-        print('Q preds for next_obs shape {}'.format(preds.shape))
-        print('max q values has shape {}'.format(max_q.shape))
-        print('target shape after bellman equn {}'.format(targets.shape))
-        print('target shape processing {}'.format(targets.shape))
+        logger.debug('inputs shape {}'.format(inputs.shape))
+        logger.debug('Q preds for next_obs shape {}'.format(preds.shape))
+        logger.debug('max q values has shape {}'.format(max_q.shape))
+        logger.debug('target shape after bellman equn {}'.format(targets.shape))
+        logger.debug('target shape processing {}'.format(targets.shape))
 
         #  save loss and the training targets for visualization later
         self.memory.info['train error'].extend(error.flatten().tolist())

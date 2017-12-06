@@ -206,27 +206,26 @@ class tfValueFunction(object):
         Minimizing the squared difference between the prediction and target
         """
         self.target = tf.placeholder(tf.float32,
-                                     [None, 1],
+                                     [None],
                                      'target')
 
         self.action_index = tf.placeholder(tf.int32,
-                                           [None, 1],
-                                           'selected_action_index')
+                                         [None],
+                                         'act_indicies')
 
-        #  pull out the relevant
-        Q_action = tf.gather(self.prediction, self.action_index, axis=1)
-        Q_action = tf.reshape(self.prediction, [-1, 1])
-        # target = tf.gather(self.target, self.action_index, axis=1)
+        rng = tf.range(tf.shape(self.prediction)[0])
+        self.Q_act = tf.gather_nd(self.prediction, 
+                                  tf.stack((rng, self.action_index), -1))
 
         #  error is calculted explcitly so we can use it outside the
         #  value function - ie as the TD error signal in Actor-Critic
-        self.error = self.target - Q_action
+        self.error = self.target - self.Q_act
 
         #  use the Huber loss as the cost function
         #  we use this to clip gradients
         #  the shape of the huber loss means the slope is clipped at 1
         #  for large errors
-        self.loss = tf.losses.huber_loss(self.target, Q_action)
+        self.loss = tf.losses.huber_loss(self.target, self.Q_act)
 
         #  create the optimizer object and the training operation
         self.optimizer = tf.train.AdamOptimizer(self.lr)
@@ -236,8 +235,6 @@ class tfValueFunction(object):
 
     def predict(self, sess, obs):
         """
-        Predicting discounted return for the given observation
-
         args
             sess (tf.Session) : the current TensorFlow session
             obs (np.array) : observation of the environment

@@ -116,6 +116,7 @@ class EternityVisualizer(Utils):
         """
         makes a panel of time series figures
         """
+        print('making panel fig')
         num_panels = len(panels)
 
         if xlabel:
@@ -125,7 +126,7 @@ class EternityVisualizer(Utils):
 
         fig, axes = plt.subplots(nrows=shape[0],
                                  ncols=shape[1],
-                                 figsize=(20, 20),
+                                 figsize=(15, 15),
                                  sharex=True)
         for i, (ax, panel) in enumerate(zip(axes.flatten(),
                                             panels)):
@@ -177,8 +178,8 @@ class EternityVisualizer(Utils):
                 path = os.path.join(self.results_path, name+'.png')
                 self.ensure_dir(path)
                 fig.savefig(path)
-            plt.clf()
-            plt.cla()
+            # plt.clf()
+            # plt.cla()
 
     def info_to_plots(self, info_dict):
         """
@@ -253,7 +254,6 @@ class EternityVisualizer(Utils):
             env_panel_fig['df'] = self.env_outputs['df_env_info']
             name = env_panel_fig['name']
             self.make_panel_fig(**env_panel_fig)
-
 
         if save_data:
             self.write_data_to_disk()
