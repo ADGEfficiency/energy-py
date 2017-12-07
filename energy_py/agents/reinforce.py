@@ -41,8 +41,8 @@ class REINFORCE(BaseAgent):
         super().__init__(env, discount, brain_path)
         
         #  create the policy function approximator
-        self.policy = policy(num_actions=self.num_actions,
-                             observation_dim=self.observation_dim, 
+        self.policy = policy(num_actions=self.action_space.shape[0],
+                             observation_dim=self.observation_space.shape[0],
                              lr=lr,
                              action_space=self.action_space)
 

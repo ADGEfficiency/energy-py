@@ -126,7 +126,7 @@ class EternityVisualizer(Utils):
 
         fig, axes = plt.subplots(nrows=shape[0],
                                  ncols=shape[1],
-                                 figsize=(15, 15),
+                                 figsize=(15, 20),
                                  sharex=True)
         for i, (ax, panel) in enumerate(zip(axes.flatten(),
                                             panels)):

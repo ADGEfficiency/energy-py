@@ -13,11 +13,11 @@ if __name__ == '__main__':
     #     random_outputs = random_experiment(env,
     #                                        data_path=data_path,
 
-    for exp in range(10):
-        dqn_outputs = dqn_experiment(env,
-                                     data_path=data_path,
-                                     base_path='dqn/expt_{}'.format(exp))
+    # for exp in range(1,2):
+    #     dqn_outputs = dqn_experiment(env,
+    #                                  data_path=data_path,
+    #                                  base_path='dqn/expt_{}'.format(exp))
 
-    # reinforce_outputs = reinforce_experiment(env,
-    #                                          data_path=data_path,
-    #                                          base_path='reinforce/expt_1')
+    reinforce_outputs = reinforce_experiment(env,
+                                             data_path=data_path,
+                                             base_path='reinforce/expt_0')

@@ -5,13 +5,14 @@ from energy_py import EternityVisualizer
 from energy_py.agents import REINFORCE, GaussianPolicy
 from energy_py.envs import FlexEnv
 
-def reinforce_experiment(env, base_path='reinforce_agent'):
+def reinforce_experiment(env, data_path, base_path='reinforce_agent'):
     parser, args = expt_args()
 
     EPISODES = args.ep
     EPISODE_LENGTH = args.len
     DISCOUNT = args.gamma
     OUTPUT_RESULTS = args.out
+    LEARNING_RATE = 0.0001
 
     paths = make_paths(base_path)
     BRAIN_PATH = paths['brain']
@@ -34,7 +35,8 @@ def reinforce_experiment(env, base_path='reinforce_agent'):
 
     save_args(args, 
               path=ARGS_PATH,
-              optional={'total steps': total_steps})
+              optional={'total steps': total_steps,
+                        'learning rate': LEARNING_RATE})
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
