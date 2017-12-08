@@ -3,7 +3,7 @@ import logging
 import numpy as np
 import tensorflow as tf
 
-from energy_py import Normalizer
+from energy_py import Normalizer, Standardizer
 from energy_py.agents import BaseAgent
 
 
@@ -14,13 +14,13 @@ class REINFORCE(BaseAgent):
 
     args
         env (energy_py environment)
-        discount (float) 
+        discount (float)
         brain_path (str) : directory where brain lives
         policy (energy_py policy approximator)
         learning rate (float)
 
     Monte Carlo REINFORCE is high variance and low bias
-    Variance can be reduced through the use of a baseline TODO 
+    Variance can be reduced through the use of a baseline TODO
 
     This algorithm requires lots of episodes to run:
     - policy gradient only makes small updates
@@ -39,18 +39,23 @@ class REINFORCE(BaseAgent):
                  lr):
 
         super().__init__(env, discount, brain_path)
-        
+
         #  create the policy function approximator
-        self.policy = policy(num_actions=self.action_space.shape[0],
-                             observation_dim=self.observation_space.shape[0],
-                             lr=lr,
-                             action_space=self.action_space)
+        self.model_dict = {'input_nodes': self.observation_space.shape[0],
+                           'output_nodes': self.actions_space.shape[0],
+                           'layers': [25, 25],
+                           'lr': 0.0025,
+                           'action_space': self.action_space)
+
+        self.policy = policy(model_dict)
 
         #  we make a state processor using the observation space
         #  minimums and maximums
-        self.state_processor = Normalizer()
+        self.state_processor = Standardizer()
+
         #  we use a normalizer for the returns as well
-        self.returns_processor = Normalizer() 
+        #  because we don't want to shift the mean
+        self.returns_processor = Normalizer()
 
     def _act(self, **kwargs):
         """
@@ -111,7 +116,7 @@ class REINFORCE(BaseAgent):
         #  we don't process the action as we take log_prob(action)
         observations = self.state_processor.transform(observations)
         #  we calculcate discountred returns then process
-        returns = self.memory.calculate_returns(rewards)  
+        returns = self.memory.calculate_returns(rewards)
         returns = self.returns_processor.transform(returns)
 
         logging.debug('observations {}'.format(observations))

@@ -17,13 +17,24 @@ class GaussianPolicy(object):
         num_actions (int)
         learning rate (float)
     """
-    def __init__(self, model_dict):
+    def __init__(self, model_dict, scope='GaussianPolicy'):
+        logger.info('creating {}'.format(scope))
 
+        for k, v in model_dict.items():
+            logger.info('{} : {}'.format(k, v))
+
+        #  network structure
+        self.input_nodes = model_dict['input_nodes']
+        self.output_nodes = model_dict['output_nodes']
+        self.layers = model_dict['layers']
+
+        #  optimizer parameters
         self.lr = model_dict['lr']
-        self.observation_dim = model_dict['observation_dim']
-        self.num_actions = model_dict['num_actions']
+
+        #  action space so we can clip actions
         self.action_space = model_dict['action_space']
 
+        #  create the TensorFlow graphs
         self.action = self.make_acting_graph()
         self.train_op = self.make_learning_graph()
 
@@ -34,23 +45,27 @@ class GaussianPolicy(object):
         #  initialize the TensorFlow machinery
         with tf.name_scope('policy_network'):
             #  create placeholder variable for the observation
-            self.observation = tf.placeholder(tf.float32,
-                                              [None, self.observation_dim],
+            self.obs = tf.placeholder(tf.float32,
+                                              [None, self.obs_dim],
                                               'observation')
 
-        with tf.variable_scope('action_selection'):
-            #  make a three layer fully-connected neural network
+            #  add the input layer
             with tf.variable_scope('input_layer'):
-                input_layer = fc_layer(self.observation, [self.observation_dim, 4], [4], tf.nn.relu)
+                layer = tf.layers.dense(inputs=self.obs,
+                                        units=self.layers[0],
+                                        activation=tf.nn.relu)
 
-            # with tf.variable_scope('hidden_layer_1'):
-            #     hidden_layer_1 = fc_layer(input_layer, [4, 4], [4], tf.nn.relu)
+            #  iterate over self.layers
+            for i, nodes in enumerate(self.layers[1:]):
+                with tf.variable_scope('input_layer_{}'.format(i)):
+                    layer = tf.layers.dense(inputs=layer,
+                                            units=nodes,
+                                            activation=tf.nn.relu)
 
-            # with tf.variable_scope('hidden_layer_2'):
-            #     hidden_layer_2 = fc_layer(hidden_layer_1, [4, 4], [4], tf.nn.relu)
-
+            #  return the means and standard deviations for each action
             with tf.variable_scope('output_layer'):
-                self.output_layer = fc_layer(input_layer, [4,  output_dim], [output_dim])
+                prediction = tf.layers.dense(inputs=layer,
+                                        units=self.output_nodes)
 
             #  parameterizing normal distributions
             #  one mean & standard deviation per action
@@ -109,7 +124,7 @@ class GaussianPolicy(object):
         assert observation.shape[0] == 1
 
         #  generating an action from the policy network
-        results = session.run([self.means, self.stdevs, self.action], {self.observation : observation})
+        results = session.run([self.means, self.stdevs, self.action], {self.obs : observation})
 
         output = {'means' : results[0],
                   'stdevs': results[1],
@@ -125,7 +140,7 @@ class GaussianPolicy(object):
         assert observations.shape[0] == actions.shape[0]
         assert actions.shape[0] == returns.shape[0]
 
-        feed_dict = {self.observation : observations,
+        feed_dict = {self.obs : observations,
                      self.taken_action : actions,
                      self.returns : returns}
 
@@ -214,7 +229,7 @@ class tfValueFunction(object):
                                          'act_indicies')
 
         rng = tf.range(tf.shape(self.prediction)[0])
-        self.Q_act = tf.gather_nd(self.prediction, 
+        self.Q_act = tf.gather_nd(self.prediction,
                                   tf.stack((rng, self.action_index), -1))
 
         #  error is calculted explcitly so we can use it outside the
