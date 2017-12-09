@@ -30,38 +30,39 @@ import numpy as np
 
 class DiscreteSpace(object):
     """
-    A single dimension discrete space.
+    A single dimension discrete space
     - an on/off switch
     - a single button on a keyboard
 
     args
-        num (int): the number of options across the discrete space
+        num (int) the number of options across the discrete space
     """
 
     def __init__(self, num):
-        self.num = num
+        self.low = 0
+        self.high = num
 
     def sample(self):
-        return np.random.choice(np.arange(0, self.num))
+        return np.random.choice(np.arange(0, self.high))
 
     def contains(self, x):
-        return np.in1d(x, np.arange(0, self.num))
+        return np.in1d(x, np.arange(0, self.high))
 
     def discretize(self, n_discr=[]):
-        #  note that we don't use num discrete here
-        return np.arange(0, self.num)
+        #  we don't use num discrete here
+        return np.arange(0, self.high)
 
 
 class ContinuousSpace(object):
     """
-    A single dimension continuous space.
+    A single dimension continuous space
     - a car accelerator
     - load on a gas turbine
     - speed of a variable speed drive
 
     args
-        low  (float) : an array with the minimum bound for each
-        high (float) : an array with the maximum bound for each
+        low  (float) minimum bound for a single dimension
+        high (float) maximum bound for a single dimension
     """
 
     def __init__(self, low, high):
@@ -75,64 +76,68 @@ class ContinuousSpace(object):
         return (x >= self.low) and (x <= self.high)
 
     def discretize(self, n_discr):
-        #  we are using n_discr here
         return np.linspace(self.low, self.high, n_discr)
 
 
 class GlobalSpace(object):
     """
-    A combination of multiple ContinuousSpace or DiscreteSpace spaces
+    A combination of simpler spaces
 
-    All energy_py environments use this as the observation.space
-    or action.space object.
-
-    This is what any agent will be dealing with.
-
-    Similar to the OpenAI gym TupleSpace object.
-
-    Potential issue if user adds space then doesn't rediscretize
-    Also issue if user changes n_discr
-
-    Will add ability for a differ n_discr for each space eventually (easy)
+    This class is used directly as the action or observation space
+    of environments and agents
 
     args
-        spaces (list): a list of DiscreteSpace or ContinuousSpace
+        spaces (list) a list of DiscreteSpace or ContinuousSpace
     """
     def __init__(self, spaces):
-        #  our space is a list of the simpler spaces
         assert type(spaces) is list
         self.spaces = [spc for spc in spaces]
 
     def sample(self):
         sample = [spc.sample() for spc in self.spaces]
-        sample = np.array(sample).reshape(1, self.shape[0])
-        return sample
+        return np.array(sample).reshape(1, self.shape[0])
 
     def sample_discrete(self):
         """
-        Chose to have a separate method for clarity when using the GlobalSpace
-        Can probably do in a single line...
+        Separate method for clarity when using the GlobalSpace
         """
         idx = np.random.randint(0, self.discrete_spaces.shape[0])
-        sample = np.array(self.discrete_spaces[idx]).reshape(1, self.shape[0])
-        return sample
+        return = np.array(self.discrete_spaces[idx]).reshape(1, self.shape[0])
 
     def contains(self, x):
         """
         Here we need to index the first element as energy_py observations or
-        actions are always (num, length)
+        actions are always (batch_size, length)
         """
+        assert x.ndim == 2
         return all(spc.contains(part) for (spc, part) in zip(self.spaces, x[0]))
 
     def discretize(self, n_discr):
-        #  using the same n_discr across the spaces
+        """
+        Using the same n_discr across each dimension of the GlobalSpace
+
+        args
+            n_discr (int) number of discrete spaces in the action space
+        """
         disc = [spc.discretize(n_discr) for spc in self.spaces]
         self.discrete_spaces = np.array([a for a in itertools.product(*disc)])
         return self.discrete_spaces
 
     def append(self, space):
+        """
+        args
+            space (object) energy_py space object
+        """
         self.spaces.append(space)
 
     @property
     def shape(self):
         return (len(self.spaces),)
+
+    @property
+    def high(self):
+        return np.array([spc.high for spc in self.spaces])
+
+    @property
+    def low(self):
+        return np.array([spc.low for spc in self.spaces])
