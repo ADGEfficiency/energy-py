@@ -1,9 +1,7 @@
 """
-This module holds energy_py Space objects.
+energy_py Space objects - inspired by the OpenAI gym Spaces.
 
-Inspired by the OpenAI gym spaces.
-
-Compatability with gym spaces is ideal as it allows enegy_py agents
+Compatability with gym spaces is ideal as it allows energy_py agents
 to be used with gym environments.
 
 The energy_py GlobalSpace is the equivilant of the gym TupleSpace.

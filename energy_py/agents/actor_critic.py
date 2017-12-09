@@ -2,11 +2,11 @@ import logging
 
 from energy_py.agents import BaseAgent
 
+logger = logging.getLogger(__name__)
+
 
 class ActorCritic(BaseAgent):
     """
-    A simple Actor-Critic agent
-
     Parameterize two functions
         actor using an energy_py policy approximator
         critic using an energy_py value function approximator
@@ -15,37 +15,47 @@ class ActorCritic(BaseAgent):
     to the actor, which updates policy parameters using the score function.
 
     args
-        env             : energy_py environment
-        discount        : float
-        policy          : energy_py policy approximator
-        value_function  : energy_py value function approximator
-        learning rate   : float
-        verbose         : boolean
+        env (object) energy_py environment
+        discount (float)
+        brain_path (str)
+        policy (object) energy_py policy approximator
+        value_function (object) energy_py value function approximator
     """
     def __init__(self,
                  env,
                  discount,
                  brain_path,
                  policy,
-                 value_function,
-                 lr=0.01,
-                 process_reward=None,
-                 process_return=None):
+                 value_function):
 
-        #  passing the environment to the Base_Agent class
-        super().__init__(env, discount, brain_path, process_reward, process_return)
+        #  initalizing the BaseAgent parent  
+        super().__init__(env, discount, brain_path)
 
-        #  create the actor
-        self.actor = policy(action_space=self.action_space,
-                            lr=lr,
-                            observation_dim=self.observation_dim,
-                            num_actions=self.num_actions)
+	#  create the actor
+        #  a policy that maps state to action 
+        actor_dict = {'input_nodes': self.observation_space.shape[0],
+                      'output_nodes': self.action_space.shape[0]*2,
+                      'layers': [25, 25],
+                      'lr': 0.0001,
+                      'action_space': self.action_space}
+        self.actor = policy(actor_dict)
 
         #  create our critic
-        #  critic of the current policy (ie on-policy)
-        self.critic = value_function(observation_space=self.observation_space,
-                                     lr=lr,
-                                     layers=[10, 10])
+        #  on-policy estimate of the expected return for the actor 
+        self.critic_dict = {'input_nodes': self.observation_space.shape[0],
+                            'output_nodes': 1,
+                            'layers': [25, 25],
+                            'lr': 0.0025,
+                            'batch_size': batch_size}
+        self.critic = value_function(critic_model_dict)
+
+        #  we make a state processor using the observation space
+        #  minimums and maximums
+        self.state_processor = Standardizer(self.observation_space.shape[0])
+
+        #  we use a normalizer for the returns as well
+        #  because we don't want to shift the mean
+        self.returns_processor = Normalizer(1)
 
     def _act(self, **kwargs):
         """
@@ -62,11 +72,10 @@ class ActorCritic(BaseAgent):
         session = kwargs.pop('session')
 
         #  scaling the observation for use in the policy network
-        scl_obs = self.memory.scale_array(observation, self.observation_space)
-        scl_obs = scl_obs.reshape(1, self.observation_dim)
+        scaled_observation = self.state_processor.transform(observation.reshape(1,-1))
 
         #  generating an action from the policy network
-        action, _ = self.actor.get_action(session, scl_obs)
+        action, output = self.policy.get_action(session, scaled_observation)
 
         return action.reshape(1, self.num_actions)
 
@@ -77,31 +86,38 @@ class ActorCritic(BaseAgent):
         The critic uses the temporal difference error to update the actor
 
         args
-            observations        : np array (samples, observation_dim)
-            actions             : np array (samples, num_actions)
-            rewards             : np.array (samples, 1)
-            next_obs            : np.array (samples, observation_dim)
-            session             : a TensorFlow Session object
-
+            batch (np.array) a batch of experience to learn from
         return
-            loss                : np float
+            loss         : np float
         """
-        obs = kwargs.pop('observations')
-        actions = kwargs.pop('actions')
-        rew = kwargs.pop('rewards')
-        next_obs = kwargs.pop('next_obs')
-        session = kwargs.pop('session')
+        sess = kwargs.pop('session')
+        batch = kwargs.pop('batch')
 
         #  first we update the critic
         #  create a target using a Bellman estimate
-        target = rew + self.discount * self.critic.predict(session, next_obs)
+        rews = batch[:, 2].reshape(-1, 1) 
+
+        next_obs = np.concatenate(batch[:, 3])
+        next_obs = next_obs.reshape(-1, self.observation_space.shape[0])
+        next_obs = self.state_processor(next_obs)
+
+        target = rews + self.discount * self.critic.predict(session, next_obs)
+        target = target.reshape(-1, 1)
         self.memory.info['value fctn target'].append(target)
 
         #  then we improve the critic using the target
-        td_error, critic_loss = self.critic.improve(session, obs, target)
+        obs = np.concatenate(batch[:, 0])
+        obs = obs.reshape(-1, self.observation_space.shape[0])
+        obs = self.state_processor(obs)
+
+        #  we hve to send an action index into the energy_py value function
+        #  update.  as this is approximating V(s), we index at 0
+        act_index = np.zeros(self.obs.shape[0]).reshape(-1, 1)
+        td_error, critic_loss = self.critic.improve(session, obs, target,
+                                                    action_index=act_index)
 
         #  now we can update the actor
-        #  we use the temporal difference error from the critic
+        #  we use the temporal difference error from the critic 
         actor_loss = self.actor.improve(session,
                                          obs,
                                          actions,
@@ -114,7 +130,7 @@ class ActorCritic(BaseAgent):
 
         for k, v in output.items():
             self.memory.info[k].append(v)
-            # logging('{} is {:.4f}'.format(k, v))
+            logger.info('{} is {:.4f}'.format(k, v))
 
         #  only calc this so we can return something
         #  makes me think I should do one train op on this loss rather than

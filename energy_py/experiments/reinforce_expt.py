@@ -1,9 +1,13 @@
+import logging
+
 import tensorflow as tf
 
 from energy_py import expt_args, save_args, make_logger, make_paths, run_single_episode
 from energy_py import EternityVisualizer
 from energy_py.agents import REINFORCE, GaussianPolicy
 from energy_py.envs import FlexEnv
+
+logger = logging.getLogger(__name__)
 
 def reinforce_experiment(env, data_path, base_path='reinforce_agent'):
     parser, args = expt_args()
@@ -42,25 +46,19 @@ def reinforce_experiment(env, data_path, base_path='reinforce_agent'):
         sess.run(tf.global_variables_initializer())
 
         for episode in range(1, EPISODES):
-
-            #  initialize before starting episode
-            done, step = False, 0
             observation = env.reset(episode)
 
             #  while loop runs through a single episode
-            while done is False:
-                agent, env, sess = run_single_episode(episode,
-                                                      agent,
-                                                      env,
-                                                      sess)
-                #  now experiment is over, we can learn
-                obs, acts, rews = agent.memory.get_episode_batch(episode)
-                returns = agent.calculate_returns(rews)
-
-                loss = agent.learn(observations=obs,
-                                   actions=acts,
-                                   discounted_returns=returns,
-                                   session=sess)
+            agent, env, sess = run_single_episode(episode,
+                                                  agent,
+                                                  env,
+                                                  sess)
+            #  now experiment is over, we can learn
+            obs, acts, rews = agent.memory.get_episode_batch(episode)
+            loss = agent.learn(observations=obs,
+                               actions=acts,
+                               rewards=rews,
+                               session=sess)
 
             if episode % OUTPUT_RESULTS == 0:
                 #  collect data from the agent & environment
@@ -70,7 +68,3 @@ def reinforce_experiment(env, data_path, base_path='reinforce_agent'):
 
                 agent_outputs, env_outputs = hist.output_results(save_data=True)
     return agent_outputs, env_outputs
-
-if __name__ == '__main__':
-    env = FlexEnv
-    agent_outputs, env_outputs = reinforce_experiment(env)

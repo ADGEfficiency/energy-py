@@ -192,9 +192,9 @@ class DQN(BaseAgent):
         assert max_q.shape[0] == inputs.shape[0]
 
         #  we set the max Q(s',a) equal to zero for terminal states
+        logger.debug('avg max_q before terminal {}'.format(np.mean(max_q))
         max_q[terminal] = 0
-        logger.debug(terminal)
-        logger.debug('max_q after termnal {}'.format(max_q))
+        logger.debug('avg max_q after terminal {}'.format(np.mean(max_q))
 
         #  we then use the Bellman equation with our masked max_q
         logger.debug('before bellman eqn')

@@ -16,20 +16,19 @@ I write about energy & machine learning at [adgefficiency.com](http://adgefficie
 I teach a one day [introduction to reinforcement learning learning](https://github.com/ADGEfficiency/DSR_RL) class at [Data Science Retreat](https://www.datascienceretreat.com/).
 
 ### Basic usage
-Below I run experiments using two different agents and the battery
-environment.
+Below I run experiments using two different agents and two different
+environments. 
 
 ```
 from energy_py.experiments import random_experiment, reinforce_experiment
-from energy_py.envs import BatteryEnv
+from energy_py.envs import BatteryEnv, FlexEnv
 
-env = BatteryEnv
 
-random_outputs = random_experiment(env, 
+random_outputs = random_experiment(BatteryEnv, 
                                    data_path=data_path,
                                    base_path='random/expt_1')
 
-dqn_outputs = dqn_experiment(env,
+dqn_outputs = dqn_experiment(FlexEnv,
                              data_path=data_path,
                              base_path='dqn/expt_2')
 ```
@@ -60,9 +59,9 @@ Finally install the required packages
 ```
 pip install requirements.txt
 ```
-The main dependencies of energy_py are numpy, pandas, Keras & TensorFlow (GPU).  
+The main dependencies of energy_py are numpy, pandas & TensorFlow.
 
-energy_py was built using Keras 2.0.8 & TensorFlow 1.3.0.  
+energy_py was built using TensorFlow 1.3.0.  
 
 ### Project structure
 
@@ -79,14 +78,14 @@ Agent and environment interaction is shown below - it follows the standard
 Open AI gym API for environments i.e. .reset, .step(action).
 
 ```
-from energy_py.agents import DQN, KerasQ
+from energy_py.agents import DQN, tfValueFunction 
 from energy_py.envs import BatteryEnv
 
 env = BatteryEnv()
 
 agent = DQN(env,
             discount=0.9,
-            Q=KerasQ,          
+            Q=tfValueFunction,
             batch_size=64,
             brain_path='/brain',
             total_steps=1000)

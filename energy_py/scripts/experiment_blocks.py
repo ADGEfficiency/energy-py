@@ -28,7 +28,11 @@ def expt_args(optional_args=[]):
                  {'name': '--out',
                   'type': int,
                   'default': 10,
-                  'help': 'output results every n episodes (default: n=10'}]
+                  'help': 'output results every n episodes (default: n=10)'},
+                 {'name': '--log',
+                  'type': str,
+                  'default': 'INFO',
+                  'help': 'logging status (default: info)'}]
 
     if optional_args:
         args_list.append(optional_args)
@@ -81,7 +85,7 @@ def make_paths(name):
     return paths
 
 
-def make_logger(log_path):
+def make_logger(log_path, log_status):
 
     logger = logging.getLogger(__name__)
     logging.config.dictConfig({
@@ -89,7 +93,7 @@ def make_logger(log_path):
             'disable_existing_loggers': False,  # this fixes the problem
             'formatters': {'standard': {'format': '%(asctime)s [%(levelname)s]%(name)s: %(message)s'}},
 
-            'handlers': {'console': {'level': 'INFO',
+            'handlers': {'console': {'level': log_status,
                                      'class': 'logging.StreamHandler',
                                      'formatter': 'standard'},
 

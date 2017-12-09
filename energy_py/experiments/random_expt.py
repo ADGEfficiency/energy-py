@@ -38,7 +38,7 @@ def random_experiment(env, data_path, base_path='random_agent'):
             next_observation, reward, done, info = env.step(action)
             #  store the experience
             agent.memory.add_experience(observation, action, reward,
-                                        next_observation, step, episode)
+                                        next_observation, done, step, episode)
             step += 1
             observation = next_observation
 

@@ -17,6 +17,7 @@ def dqn_experiment(env, data_path, base_path='dqn_agent'):
     DISCOUNT = args.gamma
     OUTPUT_RESULTS = args.out
     LOAD_BRAIN = False
+    LOG_STATUS = args.log
 
     paths = make_paths(base_path)
     BRAIN_PATH = paths['brain']
@@ -24,7 +25,7 @@ def dqn_experiment(env, data_path, base_path='dqn_agent'):
     ARGS_PATH = paths['args']
     LOG_PATH = paths['logs']
 
-    logger = make_logger(LOG_PATH)
+    logger = make_logger(LOG_PATH, LOG_STATUS)
 
     env = env(data_path, episode_length=EPISODE_LENGTH)
 

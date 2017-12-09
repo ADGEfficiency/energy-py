@@ -42,20 +42,20 @@ class REINFORCE(BaseAgent):
 
         #  create the policy function approximator
         self.model_dict = {'input_nodes': self.observation_space.shape[0],
-                           'output_nodes': self.actions_space.shape[0],
+                           'output_nodes': self.action_space.shape[0]*2,
                            'layers': [25, 25],
-                           'lr': 0.0025,
-                           'action_space': self.action_space)
+                           'lr': lr,
+                           'action_space': self.action_space}
 
-        self.policy = policy(model_dict)
+        self.policy = policy(self.model_dict)
 
         #  we make a state processor using the observation space
         #  minimums and maximums
-        self.state_processor = Standardizer()
+        self.state_processor = Standardizer(self.observation_space.shape[0])
 
         #  we use a normalizer for the returns as well
         #  because we don't want to shift the mean
-        self.returns_processor = Normalizer()
+        self.returns_processor = Normalizer(1)
 
     def _act(self, **kwargs):
         """
@@ -92,7 +92,7 @@ class REINFORCE(BaseAgent):
         logging.debug('means are {}'.format(output['means']))
         logging.debug('stdevs are {}'.format(output['stdevs']))
 
-        return action.reshape(-1, self.num_actions)
+        return action.reshape(-1, self.action_space.shape[0])
 
     def _learn(self, **kwargs):
         """
