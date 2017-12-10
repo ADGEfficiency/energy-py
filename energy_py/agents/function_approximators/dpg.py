@@ -160,8 +160,8 @@ class DPGCritic(object):
 
         #  add the actions into the second layer
         with tf.variable_scope('hidden_layer_1'):
-            l1 = tf.layers.dense(inputs=net, self.layers[1])
-            l2 = tf.layers.dense(inputs=act, self.layers[1])
+            l1 = tf.layers.dense(inputs=net, units=self.layers[1])
+            l2 = tf.layers.dense(inputs=act, units=self.layers[1])
 
             net = tf.matmul(net, l1.W) + tf.matmul(act, l2.W) + l2.b
             net = tf.layers.batch_normalization(net, training=True)
