@@ -102,7 +102,7 @@ class GlobalSpace(object):
         Separate method for clarity when using the GlobalSpace
         """
         idx = np.random.randint(0, self.discrete_spaces.shape[0])
-        return = np.array(self.discrete_spaces[idx]).reshape(1, self.shape[0])
+        return np.array(self.discrete_spaces[idx]).reshape(1, self.shape[0])
 
     def contains(self, x):
         """

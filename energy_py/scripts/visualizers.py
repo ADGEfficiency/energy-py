@@ -23,16 +23,20 @@ class EternityVisualizer(Utils):
         results_path (str):
     """
     def __init__(self,
-                 agent,
-                 env,
+                 agent=[],
+                 env=[],
                  results_path='results/'):
 
         super().__init__()
 
-        self.env = env
-        self.agent = agent
         self.results_path = os.path.join(results_path)
 
+        if agent and env:
+            self.env = env
+            self.agent = agent
+            self.master()
+
+    def master(self):
         logger.debug('Pulling data out of the environment')
         self.env_outputs = self.env.output_results()
 
