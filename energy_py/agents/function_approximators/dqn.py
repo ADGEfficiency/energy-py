@@ -51,11 +51,18 @@ class tfValueFunction(object):
         self.obs = tf.placeholder(tf.float32,
                                   [None, self.input_nodes],
                                   'observation')
+
+        self.obs = tf.reshape(self.obs, [-1, self.input_nodes, 1])
+
         #  add the input layer
         with tf.variable_scope('input_layer'):
-            layer = tf.layers.dense(inputs=self.obs,
-                                    units=self.layers[0],
-                                    activation=tf.nn.relu)
+            #  filter size 3, 1 input, 1 output
+            filter = tf.zeros([3, 1, 1])
+
+            layer = tf.layers.conv1d(self.obs,
+                                     self.layers[0],
+                                     kernel_size=2,
+                                     activation=tf.nn.relu)
 
         #  iterate over self.layers
         for i, nodes in enumerate(self.layers[1:]):
@@ -71,6 +78,7 @@ class tfValueFunction(object):
             prediction = tf.layers.dense(inputs=layer,
                                     units=self.output_nodes,
                                          kernel_initializer=wt_init)
+            prediction = tf.reshape(prediction, [-1, self.output_nodes])
         return prediction
 
     def make_learning_graph(self):
