@@ -52,17 +52,11 @@ class tfValueFunction(object):
                                   [None, self.input_nodes],
                                   'observation')
 
-        self.obs = tf.reshape(self.obs, [-1, self.input_nodes, 1])
-
         #  add the input layer
         with tf.variable_scope('input_layer'):
-            #  filter size 3, 1 input, 1 output
-            filter = tf.zeros([3, 1, 1])
-
-            layer = tf.layers.conv1d(self.obs,
-                                     self.layers[0],
-                                     kernel_size=2,
-                                     activation=tf.nn.relu)
+            layer = tf.layers.dense(self.obs, 
+                                    units=self.layers[0],
+                                    activation=tf.nn.relu)
 
         #  iterate over self.layers
         for i, nodes in enumerate(self.layers[1:]):
