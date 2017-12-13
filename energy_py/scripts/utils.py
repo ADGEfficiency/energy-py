@@ -7,12 +7,22 @@ import time
 import numpy as np
 
 
+def ensure_dir(file_path):
+    """
+    Check that a directory exists
+    If it doesn't - make it
+    """
+    directory = os.path.dirname(file_path)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+
 class Utils(object):
     """
     A base class that holds generic functions
     """
     def __init__(self):
-        pass
+        self.ensure_dir = ensure_dir
 
     """
     Useful Python functions:
@@ -28,16 +38,6 @@ class Utils(object):
         with open(name, 'rb') as handle:
             obj = pickle.load(handle)
         return obj
-
-    @staticmethod
-    def ensure_dir(file_path):
-        """
-        Check that a directory exists
-        If it doesn't - make it
-        """
-        directory = os.path.dirname(file_path)
-        if not os.path.exists(directory):
-            os.makedirs(directory)
 
     @staticmethod
     def get_upper_path(string):

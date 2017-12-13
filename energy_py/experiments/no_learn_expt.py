@@ -1,14 +1,16 @@
 from energy_py import expt_args, save_args, make_logger, make_paths, EternityVisualizer
-from energy_py.agents import RandomAgent 
-from energy_py.envs import FlexEnv
 
 
-def random_experiment(env, data_path, base_path='random_agent'):
+def no_learning_experiment(agent, env, data_path, base_path='no_learn_agent'):
+    """
+    Runs an experiment with an agent that doesn't need to learn
+    """
     parser, args = expt_args()
     EPISODES = args.ep
     EPISODE_LENGTH = args.len
     DISCOUNT = args.gamma
     OUTPUT_RESULTS = args.out
+    LOG_STATUS = args.log
 
     paths = make_paths(base_path)
     BRAIN_PATH = paths['brain']
@@ -16,13 +18,13 @@ def random_experiment(env, data_path, base_path='random_agent'):
     ARGS_PATH = paths['args']
     LOG_PATH = paths['logs']
 
-    logger = make_logger(LOG_PATH)
+    logger = make_logger(LOG_PATH, LOG_STATUS)
 
     save_args(args, path=ARGS_PATH) 
 
     env = env(data_path, episode_length=EPISODE_LENGTH)
 
-    agent = RandomAgent(env, DISCOUNT)
+    agent = agent(env, DISCOUNT)
 
     for episode in range(1, EPISODES):
 
@@ -32,8 +34,13 @@ def random_experiment(env, data_path, base_path='random_agent'):
 
         #  while loop runs through a single episode
         while done is False:
+            #  we cheat a little bit here by grabbing the observation as a
+            #  pandas series
+            #  just want to pull out the timestamp
+            time = env.observation_ts.index[env.steps]
+            print('time stamp is {}'.format(time))
             #  select an action
-            action = agent.act(observation=observation)
+            action = agent.act(observation=observation, timestamp=time)
             #  take one step through the environment
             next_observation, reward, done, info = env.step(action)
             #  store the experience
@@ -49,7 +56,3 @@ def random_experiment(env, data_path, base_path='random_agent'):
                                       results_path=RESULTS_PATH)
 
             agent_outputs, env_outputs = hist.output_results(save_data=True)
-
-if __name__ == 'main':
-    env = FlexEnv
-    agent_outputs, env_outputs = random_experiment(env)

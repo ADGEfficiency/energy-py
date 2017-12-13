@@ -216,7 +216,7 @@ class Memory(Utils):
         reward = df_ep.loc[:, 'reward']
         df_ep.loc[:, 'cum max reward'] = reward.cummax()
         #  set the window at 10% of the data
-        window = int(df_ep.shape[0]*0.1)
+        window = max(int(df_ep.shape[0]*0.1), 1)
         df_ep.loc[:, 'rolling mean'] = reward.rolling(window,
                                                       min_periods=1).mean()
         df_ep.loc[:, 'rolling std'] = pd.rolling_std(reward, window,

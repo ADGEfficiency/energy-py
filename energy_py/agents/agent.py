@@ -54,7 +54,6 @@ class BaseAgent(Utils):
         #  TODO does memory need all this now???
         self.memory = Memory(self.observation_space,
                              self.action_space,
-                             # self.reward_space,
                              self.discount,
                              memory_length=memory_length)
 

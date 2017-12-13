@@ -230,8 +230,7 @@ class BatteryEnv(TimeSeriesEnv):
                                      'Electricity price [$/MWh]'],
                          'panels': [['gross_rate'],
                                     ['new_charge'],
-                                    ['electricity_price']],
-                         'shape': (3,1)}
+                                    ['electricity_price']]}
         self.outputs['env_panel_fig'] = env_panel_fig
 
 

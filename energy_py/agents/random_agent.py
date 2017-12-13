@@ -14,11 +14,8 @@ class RandomAgent(BaseAgent):
     def _reset(self):
         pass
 
-    def _act(self, observation):
+    def _act(self, **kwargs):
         action = self.action_space.sample()
         action = np.array(action).reshape(1, self.action_space.shape[0])
         return action
-
-    def _learn(self, **kwargs):
-        pass
 

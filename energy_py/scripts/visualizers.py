@@ -6,11 +6,142 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from energy_py.scripts.utils import Utils
+from energy_py.scripts.utils import Utils, ensure_dir
 
 
+plt.style.use('seaborn')
 matplotlib.rcParams['agg.path.chunksize'] = 10000
 logger = logging.getLogger(__name__)
+
+"""
+Functions related to generating outputs from agent and environment info
+"""
+
+def single_series_fig(series, name, results_path=[],
+                      xlabel=[], ylabel=[],
+                         xlim='all', ylim=[]):
+    """
+    args
+        series (pd.Series)
+        name (str)
+        xlabel (str) 
+        ylabel (str)
+        xlim (str) last_week, last_month or all
+        ylim (list) 
+
+    returns
+        fig (object) a plot of a single time series
+    """
+    #  create the matplotlib axes and figure objects
+    fig, ax = plt.subplots(1, 1, figsize=(20, 15))
+    #  plot as a line
+    series.astype(float).plot(kind='line', ax=ax)
+
+    if xlabel:
+        plt.xlabel(xlabel)
+
+    if ylabel:
+        plt.ylabel(ylabel)
+
+    plt.legend()
+
+    if xlim == 'last_week':
+        start = series.index[-7 * 24 * 12]
+        end = series.index[-1]
+
+    if xlim == 'last_month':
+        start = series.index[-30 * 24 * 12]
+        end = series.index[-1]
+
+    if xlim == 'all':
+        start = series.index[0]
+        end = series.index[-1]
+
+    ax.set_xlim([start, end])
+
+    if ylim:
+        ax.set_ylim(ylim)
+
+    #  saving to disk
+    if results_path:
+        path = os.path.join(results_path, name+'.png')
+        ensure_dir(path)
+        fig.savefig(path)
+
+    #  attempting to close
+    plt.clf()
+    plt.cla()
+    return fig
+
+def make_panel_fig(df, panels, name, results_path=[],
+                   ylabels=[], xlabel=[],
+                   ylims=[],
+                   kinds=[], errors=[]):
+    """
+    Creates a panel of time series plots.  
+    
+    args
+        df (pd.DataFrame)
+        panels (list) names of the columns to include in each panel
+                      is always a list of lists [['col1', 'col2']]
+        name (str) name for .png
+        ylabels (list) one per panel
+        xlabel (str) shared between all panels
+        ylims (str) optional limits on the y axis
+        kinds (list) option to change type of plot
+        errors (list) column names to use as error bars
+
+    returns
+        fig (object) plot of the panels
+    """
+    logger.info('making panel fig for {}'.format(name))
+    num_panels = len(panels)
+
+    fig, axes = plt.subplots(nrows=num_panels,
+                             ncols=1,
+                             figsize=(20, 15),
+                             sharex=True)
+
+    axes = np.reshape(axes, -1)
+    for i, (ax, panel) in enumerate(zip(axes.flatten(),
+                                        panels)):
+
+        for col in panel:
+            data = df.loc[:, col]
+            
+            if kinds:
+                kind = kinds[i]
+            else:
+                kind = 'line'
+
+            data.plot(kind=kind, ax=ax, label=col)
+
+            if errors and errors[i]:
+                x = df.index.values
+                y = data.values
+                error = df.loc[:, errors[i]].values.flatten()
+                ax.fill_between(x, y - error, y + error,
+                                alpha=0.5)
+
+            if ylims and ylims[i]:
+                ax.set_ylim(ylims[i])
+
+            if xlabel:
+                xlabels = [xlabel for i in range(num_panels)]
+                ax.set_xlabel(xlabels[i])
+
+            if ylabels: 
+                assert num_panels == len(ylabels)
+                ax.set_ylabel(ylabels[i])
+
+            ax.legend()
+
+        if results_path:
+            path = os.path.join(results_path, name+'.png')
+            ensure_dir(path)
+            fig.savefig(path)
+
+        return fig
 
 
 class EternityVisualizer(Utils):
@@ -31,6 +162,7 @@ class EternityVisualizer(Utils):
 
         self.results_path = os.path.join(results_path)
 
+        #  option to not run the functionality of the class
         if agent and env:
             self.env = env
             self.agent = agent
@@ -59,132 +191,6 @@ class EternityVisualizer(Utils):
         self.env_outputs['series'] = env_series
         self.env_outputs['figs'] = env_figs
 
-    def make_time_series_fig(self, 
-                             series,
-                             name,
-                             xlabel=[],
-                             ylabel=[],
-                             xlim='all',
-                             ylim=[]):
-        """
-        makes a time series figure from a pd.Series and specified columns
-        """
-
-        fig, ax = plt.subplots(1, 1, figsize=(20, 20))
-        data = series.astype(float)
-        data.plot(kind='line', ax=ax)
-
-        if ylim:
-            ax.set_ylim(ylim)
-
-        if xlabel:
-            plt.xlabel(xlabel)
-
-        if ylabel:
-            plt.ylabel(ylabel)
-
-        plt.legend()
-
-        if xlim == 'last_week':
-            start = series.index[-7 * 24 * 12]
-            end = series.index[-1]
-
-        if xlim == 'last_month':
-            start = series.index[-30 * 24 * 12]
-            end = series.index[-1]
-
-        if xlim == 'all':
-            start = series.index[0]
-            end = series.index[-1]
-
-        ax.set_xlim([start, end])
-
-        if name:
-            path = os.path.join(self.results_path, name+'.png')
-            self.ensure_dir(path)
-            fig.savefig(path)
-
-        plt.clf()
-        plt.cla()
-    def make_panel_fig(self, 
-                       df,
-                       panels,
-                       shape,
-                       name,
-                       xlim='all',
-                       ylabels=[],
-                       xlabel=[],
-                       ylims=[],
-                       kinds=[],
-                       errors=[]):
-        """
-        makes a panel of time series figures
-        """
-        print('making panel fig')
-        num_panels = len(panels)
-
-        if xlabel:
-            xlabels = [xlabel for i in range(num_panels)]
-            assert num_panels == len(xlabels)
-        assert shape[0] * shape[1] == num_panels 
-
-        fig, axes = plt.subplots(nrows=shape[0],
-                                 ncols=shape[1],
-                                 figsize=(20, 15),
-                                 sharex=True)
-        for i, (ax, panel) in enumerate(zip(axes.flatten(),
-                                            panels)):
-
-            for col in panel:
-                data = df.loc[:, col]
-                
-                if kinds:
-                    kind = kinds[i]
-                else:
-                    kind = 'line'
-
-                data.plot(kind=kind, ax=ax, label=col)
-
-                if errors and errors[i]:
-                    x = df.index.values
-                    y = data.values
-                    error = df.loc[:, errors[i]].values.flatten()
-                    ax.fill_between(x, y - error, y + error,
-                                    alpha=0.5)
-
-                if ylims and ylims[i]:
-                    ax.set_ylim(ylims[i])
-
-                if xlabel:
-                    ax.set_xlabel(xlabels[i])
-
-                if ylabels: 
-                    assert num_panels == len(ylabels)
-                    ax.set_ylabel(ylabels[i])
-
-                ax.legend()
-
-                # if xlim == 'last_week':
-                #     start = df.index[-7 * 24 * 12]
-                #     end = df.index[-1]
-
-                # if xlim == 'last_month':
-                #     start = df.index[-30 * 24 * 12]
-                #     end = df.index[-1]
-
-                # if xlim == 'all':
-                #     start = df.index[0]
-                #     end = df.index[-1]
-
-                # ax.set_xlim([start, end])
-
-            if name:
-                path = os.path.join(self.results_path, name+'.png')
-                self.ensure_dir(path)
-                fig.savefig(path)
-            # plt.clf()
-            # plt.cla()
-
     def info_to_plots(self, info_dict):
         """
         Takes the info dictionary and converts the data into pd.Series
@@ -212,8 +218,8 @@ class EternityVisualizer(Utils):
 
                 data_dict[var] = data 
                 #  then create the figure and save into figs_dict
-                fig_path = os.path.join('figs', var)
-                self.make_time_series_fig(data, fig_path)
+                fig_name = os.path.join('figs', var)
+                single_series_fig(data, fig_name, self.results_path)
 
         return data_dict, figs_dict
 
@@ -244,20 +250,20 @@ class EternityVisualizer(Utils):
                         'xlabel': 'Episode',
                         'ylabels': ['Total undiscounted reward per episode',
                                     'Rolling last 10% of episodes'],
-                        'shape': (2,1)}
+                        'results_path': self.results_path}
 
         #  add the dataframe with the data for this plot
         reward_panel['df'] = self.agent_outputs['df_ep']
 
         #  create the figure
-        self.make_panel_fig(**reward_panel)
+        make_panel_fig(**reward_panel)
 
         env_panel_fig = self.env_outputs['env_panel_fig']
         if env_panel_fig:
             #  now we make any environment specific panel figures
             env_panel_fig['df'] = self.env_outputs['df_env_info']
             name = env_panel_fig['name']
-            self.make_panel_fig(**env_panel_fig)
+            make_panel_fig(**env_panel_fig)
 
         if save_data:
             self.write_data_to_disk()

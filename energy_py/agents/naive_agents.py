@@ -1,3 +1,4 @@
+import pandas as pd
 import numpy as np
 
 from energy_py.agents import BaseAgent
@@ -14,46 +15,43 @@ class NaiveBatteryAgent(BaseAgent):
     This agent is designed to control the battery environment.
     """
 
-    def __init__(self, env):
+    def __init__(self, env, discount):
         #  calling init method of the parent Base_Agent class
         #  passing the environment to the Base_Agent
-        super().__init__(env)
+        super().__init__(env, discount)
 
     def _reset(self):
         #  nothing additional to be reset for this agent
         return None
 
-    def _act(self, observation, session=None, epsilon=None):
+    def _act(self, **kwargs):
         """
         Agent recieves a numpy array as the observation
 
-        Agent makes determinsitc actions based on the observation
+        Agent makes determinstic actions based on a timestamp
+
+        Doesn't look at the observation numpy array that other
+        agents use (it is available in kwargs)
         """
+        time = pd.to_datetime(kwargs.pop('timestamp'))
+        hour = time.hour
 
-        #  extracting the info from the observation
-        electricity_price  = observation[0]
-        electricity_demand = observation[1]
-        month              = observation[2]
-        day                = observation[3]
-        hour               = observation[4]
-        minute             = observation[5]
-        weekday            = observation[6]
-        current_charge     = observation[7]
+        #  default action is nothing
+        action = 0
 
-        #  simple rules to decide what actions to take
-        if hour >= 6 and hour < 10:
-            #  discharge at max rate
-            action = [self.action_space[0].low, self.action_space[1].high]
+        if hour >= 7 and hour < 10:
+            #  discharge during morning peak
+            action = self.action_space.low
 
         elif hour >= 15 and hour < 21:
-            #  discharge at max rate
-            action = [self.action_space[0].low, self.action_space[1].high]
+            #  discharge during evening peak
+            action = self.action_space.high
 
         else:
             #  charge at max rate
-            action = [self.action_space[0].high, self.action_space[1].low]
+            action = self.action_space.high
 
-        return np.array(action)
+        return np.array(action).reshape(-1, self.action_space.shape[0])
 
     def _learn(self):
         print('I am an agent based on a human desgined heuristic')
