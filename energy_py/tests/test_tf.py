@@ -4,9 +4,13 @@ import tensorflow as tf
 from energy_py.agents import tfValueFunction
 
 model_dict = {'input_nodes': 4,
-              'output_nodes': 6,
+              'output_nodes': 3,
               'layers': [3],
               'lr': 0.1}
+
+obs = np.arange(8).reshape(2,4)
+target = np.arange(2).flatten()
+action_index = np.arange(2).flatten()
 
 def test_train_op():
     v = tfValueFunction(model_dict)
@@ -16,8 +20,9 @@ def test_train_op():
     before = sess.run(tf.trainable_variables())
 
     _ = sess.run(v.train_op,
-                 feed_dict={v.obs: np.arange(4).reshape(-1,4),
-                            v.target: np.arange(6).reshape(-1,6)})
+                 feed_dict={v.obs: obs, 
+                            v.target: target,
+                            v.action_index: action_index})
     after = sess.run(tf.trainable_variables())
 
     for b, a in zip(before, after):
@@ -40,8 +45,9 @@ def test_target_network():
 
     #  train only the actor network
     _ = sess.run(Q_actor.train_op,
-                 feed_dict={Q_actor.obs: np.arange(4).reshape(-1,4),
-                            Q_actor.target: np.arange(6).reshape(-1,6)})
+                 feed_dict={Q_actor.obs: obs,
+                            Q_actor.target: target,
+                            Q_actor.action_index: action_index})
 
     after_actor = sess.run(act_vars)
     after_target = sess.run(target_vars)

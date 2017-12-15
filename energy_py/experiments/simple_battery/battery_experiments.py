@@ -1,7 +1,7 @@
 import os
 
 from energy_py.agents import RandomAgent, NaiveBatteryAgent
-from energy_py.experiments import random_experiment
+from energy_py.experiments import no_learning_experiment
 from energy_py.experiments import dqn_experiment
 from energy_py.experiments import reinforce_experiment
 from energy_py.envs import BatteryEnv
@@ -13,17 +13,6 @@ if __name__ == '__main__':
     for exp in range(1):
         naive_outputs = no_learning_experiment(NaiveBatteryAgent,
                                                env,
-                                               data_path=data_path,
+                                               data_path=data_path)
 
-    # for exp in range(1):
-    #     random_outputs = random_experiment(env,
-    #                                        data_path=data_path,
-
-    # for exp in range(1,2):
-    #     dqn_outputs = dqn_experiment(env,
-    #                                  data_path=data_path,
-    #                                  base_path='dqn/expt_{}'.format(exp))
-
-    reinforce_outputs = reinforce_experiment(env,
-                                             data_path=data_path,
-                                             base_path='reinforce/expt_0')
+        dqn = dqn_experiment(env, data_path)

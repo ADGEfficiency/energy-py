@@ -3,7 +3,7 @@ import numpy as np
 from energy_py import DiscreteSpace, ContinuousSpace, GlobalSpace
 from energy_py.agents import Memory
 
-observation_space = GlobalSpace([DiscreteSpace(0,1), ContinuousSpace(0,10)])
+observation_space = GlobalSpace([ContinuousSpace(0,10)])
 action_space = GlobalSpace([ContinuousSpace(50,100)])
 discount = 0.9
 mem = Memory(observation_space,
@@ -48,3 +48,15 @@ def test_returns_calc():
     for v1, v2, v3 in zip(result_one, result_two, result_memory):
         assert (v1 == v2).all()
         assert (v1 == v3).all()
+
+def test_add_exp():
+    for i in range(50):
+        mem.add_experience(observation_space.sample(),
+                           action_space.sample(),
+                           1,
+                           observation_space.sample(),
+                           True,
+                           0,
+                           0)
+
+    assert mem.num_exp == 50 

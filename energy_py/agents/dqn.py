@@ -156,18 +156,11 @@ class DQN(BaseAgent):
         sess = kwargs.pop('sess')
         batch = kwargs.pop('batch')
 
-        obs = np.concatenate(batch[:, 0])
-        obs = obs.reshape(-1, self.observation_space.shape[0])
-
-        actions = np.concatenate(batch[:, 1])
-        actions = actions.reshape(-1, self.action_space.shape[0]) 
-
-        rews = batch[:, 2].reshape(-1, 1)
-
-        next_obs = np.concatenate(batch[:, 3])
-        next_obs = next_obs.reshape(-1, self.observation_space.shape[0])
-
-        terminal = np.array(batch[:, 4],dtype=np.bool).reshape(-1)
+        obs = batch['obs']
+        actions = batch['actions']
+        rews = batch['rewards']
+        next_obs = batch['next_obs']
+        terminal = batch['terminal']
 
         logger.debug('shapes of arrays used in learning')
         logger.debug('obs shape {}'.format(obs.shape))

@@ -99,18 +99,16 @@ class REINFORCE(BaseAgent):
         Update the policy network using the episode experience
 
         args
-            observations        : np array (episode_length, observation_dim)
-            actions             : np array (episode_length, num_actions)
-            rewards             : np array (episode_length, 1)
-            session             : a TensorFlow Session object
+            session (object) a TensorFlow Session object
+            batch (dict) dictionary of np.arrays
 
         return
-            loss                : np float
+            loss (float)
         """
-        observations = kwargs.pop('observations')
-        actions = kwargs.pop('actions')
-        rewards = kwargs.pop('rewards')
-        session = kwargs.pop('session')
+        batch = kwargs.pop('batch')
+        observations = batch['obs']
+        actions = batch['actions']
+        rewards = batch['rewards']
 
         #  processing our observation
         #  we don't process the action as we take log_prob(action)
