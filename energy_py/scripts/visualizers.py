@@ -97,19 +97,17 @@ def make_panel_fig(df, panels, name, results_path=[],
     """
     logger.info('making panel fig for {}'.format(name))
     num_panels = len(panels)
-
     fig, axes = plt.subplots(nrows=num_panels,
                              ncols=1,
                              figsize=(20, 15),
                              sharex=True)
-
-    axes = np.reshape(axes, -1)
+    print(axes.flatten().shape)
     for i, (ax, panel) in enumerate(zip(axes.flatten(),
                                         panels)):
 
         for col in panel:
             data = df.loc[:, col]
-            
+
             if kinds:
                 kind = kinds[i]
             else:
@@ -137,12 +135,12 @@ def make_panel_fig(df, panels, name, results_path=[],
 
             ax.legend()
 
-        if results_path:
-            path = os.path.join(results_path, name+'.png')
-            ensure_dir(path)
-            fig.savefig(path)
+    if results_path:
+        path = os.path.join(results_path, name+'.png')
+        ensure_dir(path)
+        fig.savefig(path)
 
-        return fig
+    return fig
 
 
 class EternityVisualizer(Utils):
@@ -263,6 +261,7 @@ class EternityVisualizer(Utils):
         if env_panel_fig:
             #  now we make any environment specific panel figures
             env_panel_fig['df'] = self.env_outputs['df_env_info']
+            env_panel_fig['results_path'] = self.results_path
             name = env_panel_fig['name']
             make_panel_fig(**env_panel_fig)
 

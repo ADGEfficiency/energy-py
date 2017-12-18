@@ -132,7 +132,6 @@ class DQN(BaseAgent):
 
         #  make sure action is shaped correctly
         action = np.array(action).reshape(1, self.action_space.shape[0])
-        assert self.action_space.shape[0] == action.shape[1]
 
         return action
 
@@ -177,57 +176,56 @@ class DQN(BaseAgent):
         #  we process the entire batch of inputs using our state_processor
         inputs = self.state_processor.transform(obs)
         next_obs = self.state_processor.transform(next_obs)
-        preds = self.Q_target.predict(sess, next_obs)
-        #  change to max q next state
-        max_q = np.max(self.Q_target.predict(sess, next_obs), axis=1)
-        max_q = max_q.reshape(-1, 1)
 
-        assert max_q.shape[0] == inputs.shape[0]
+        #  now we can get a prediction of Q(s,a) for each action
+        Q_next_state = self.Q_target.predict(sess, next_obs)
+
+        #  change to max q next state
+        max_Q_next_state = np.max(Q_next_state, axis=1).reshape(-1, 1)
+        assert max_Q_next_state.shape[0] == inputs.shape[0]
 
         #  we set the max Q(s',a) equal to zero for terminal states
-        logger.debug('avg max_q before terminal {}'.format(np.mean(max_q)))
-        max_q[terminal] = 0
-        logger.debug('avg max_q after terminal {}'.format(np.mean(max_q)))
+        max_Q_next_state[terminal] = 0
 
         #  we then use the Bellman equation with our masked max_q
         logger.debug('before bellman eqn')
         logger.debug('rews shape {}'.format(rews.shape))
-        logger.debug('max_q shape {}'.format(max_q.shape))
-        targets = rews + self.discount * max_q
-        logger.debug('targets shape {}'.format(targets.shape))
-        assert targets.shape[0] == inputs.shape[0]
-        assert targets.shape[1] == 1
+        logger.debug('max_q shape {}'.format(max_Q_next_state.shape))
+        targets = rews + self.discount * max_Q_next_state
 
         #  save the unscaled targets so we can visualize later
         self.memory.info['unscaled Q targets'].extend(list(targets.flatten()))
 
         #  scaling the targets by normalizing
         targets = self.target_processor.transform(targets)
-        assert targets.shape[0] == inputs.shape[0]
-
-        #  action_index is flattened!!!
-        act_list = self.actions.tolist()
-        action_index = [act_list.index(act) for act in actions.tolist()]
-        action_index = np.array(action_index).reshape(-1)
-
-        logger.debug('action indicies shape {}'.format(action_index.shape))
-        assert action_index.shape[0] == obs.shape[0]
-
-        #  flattening!!!
         targets = targets.flatten()
+
+        #  creating an index for the action we are training
+        #  first get a list of all possible actions
+        act_list = self.actions.tolist()
+        #  find the index of the action we took in the act_list
+        action_index = [act_list.index(act) for act in actions.tolist()]
+        #  create a 1D array of the index for each action we took
+        action_index = np.array(action_index).flatten()
+
+        assert action_index.shape[0] == actions.shape[0]
         assert targets.shape[0] == inputs.shape[0]
+
+        #  improve our approximation of Q(s,a)
         error, loss = self.Q_actor.improve(sess, inputs, targets, action_index)
 
+        logger.debug('targets shape {}'.format(targets.shape))
+        logger.debug('action indicies shape {}'.format(action_index.shape))
+
         logger.debug('inputs shape {}'.format(inputs.shape))
-        logger.debug('Q preds for next_obs shape {}'.format(preds.shape))
-        logger.debug('max q values has shape {}'.format(max_q.shape))
+        logger.debug('Q preds for next_obs shape {}'.format(Q_next_state.shape))
+        logger.debug('max q values has shape {}'.format(max_Q_next_state.shape))
         logger.debug('target shape after bellman equn {}'.format(targets.shape))
         logger.debug('target shape processing {}'.format(targets.shape))
 
         #  save loss and the training targets for visualization later
         self.memory.info['train error'].extend(error.flatten().tolist())
         self.memory.info['loss'].append(loss)
-
         self.memory.info['train Q inputs'].extend(inputs.flatten().tolist())
         self.memory.info['train Q targets'].extend(targets.flatten().tolist())
 

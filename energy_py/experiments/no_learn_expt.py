@@ -8,6 +8,8 @@ def no_learning_experiment(agent, env, data_path, base_path='no_learn_agent'):
     parser, args = expt_args()
     EPISODES = args.ep
     EPISODE_LENGTH = args.len
+    EPISODE_RANDOM = args.rand
+
     DISCOUNT = args.gamma
     OUTPUT_RESULTS = args.out
     LOG_STATUS = args.log
@@ -22,7 +24,8 @@ def no_learning_experiment(agent, env, data_path, base_path='no_learn_agent'):
 
     save_args(args, path=ARGS_PATH) 
 
-    env = env(data_path, episode_length=EPISODE_LENGTH)
+    env = env(data_path, episode_length=EPISODE_LENGTH,
+              episode_random=True)
 
     agent = agent(env, DISCOUNT)
 
@@ -38,7 +41,6 @@ def no_learning_experiment(agent, env, data_path, base_path='no_learn_agent'):
             #  pandas series
             #  just want to pull out the timestamp
             time = env.observation_ts.index[env.steps]
-            print('time stamp is {}'.format(time))
             #  select an action
             action = agent.act(observation=observation, timestamp=time)
             #  take one step through the environment

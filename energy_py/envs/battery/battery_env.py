@@ -31,8 +31,9 @@ class BatteryEnv(TimeSeriesEnv):
     """
     def __init__(self, 
                  data_path,
-                 episode_length='maximum',
+                 episode_length=48,
                  episode_start=0,
+                 episode_random=False,
                  power_rating=2,
                  capacity=4,
                  round_trip_eff=0.9,
@@ -47,6 +48,7 @@ class BatteryEnv(TimeSeriesEnv):
         #  calling init method of the parent Time_Series_Env class
         super().__init__(episode_length,
                          episode_start,
+                         episode_random,
                          data_path)
 
     def _reset(self):

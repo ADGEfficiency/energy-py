@@ -47,10 +47,12 @@ class TimeSeriesEnv(BaseEnv):
     def __init__(self, 
                  episode_length,
                  episode_start,
+                 episode_random,
                  data_path):
 
         self.episode_start = episode_start
         self.episode_length = episode_length
+        self.episode_random = episode_random
 
         #  load up the infomation from the csvs once
         #  we do this before we init the BaseEnv so we can reset in
@@ -90,9 +92,7 @@ class TimeSeriesEnv(BaseEnv):
 
         This is to allow different time periods to be sampled
         """
-        ts_length = self.raw_observation_ts.shape[0]
-        start, end = self.get_ts_row_idx(ts_length,
-                                         self.episode_length,
+        start, end = self.get_ts_row_idx(self.episode_length,
                                          self.episode_start)
 
         state_ts = self.raw_state_ts.iloc[start:end, :]
@@ -107,23 +107,20 @@ class TimeSeriesEnv(BaseEnv):
 
         return observation_space, observation_ts, state_ts
 
-    def get_ts_row_idx(self, ts_length, episode_length, episode_start):
+    def get_ts_row_idx(self, episode_length, episode_start):
         """
         Gets the integer indicies for selecting the episode
         time period
         """
-        start = episode_start
-        if episode_length == 'maximum':
-            episode_length = ts_length - 1
-            self.episode_length = episode_length
+        ts_length = self.raw_observation_ts.shape[0]
 
-        if episode_start == 'random':
+        if self.episode_random:
             end_int_idx = ts_length - episode_length
-            start = np.random.randint(0, end_int_idx)
+            episode_start = np.random.randint(0, end_int_idx)
 
         #  now we can set the end of the episode
-        end = start + episode_length
-        return start, end
+        end = episode_start + episode_length
+        return episode_start, end
 
     def make_env_obs_space(self, ts):
         """

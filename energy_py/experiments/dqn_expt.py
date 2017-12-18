@@ -13,6 +13,8 @@ def dqn_experiment(env, data_path, base_path='dqn_agent'):
                               'help': 'batch size for experience replay'})
     EPISODES = args.ep
     EPISODE_LENGTH = args.len
+    EPISODE_RANDOM = args.rand
+
     BATCH_SIZE = args.bs
     DISCOUNT = args.gamma
     OUTPUT_RESULTS = args.out
@@ -27,7 +29,9 @@ def dqn_experiment(env, data_path, base_path='dqn_agent'):
 
     logger = make_logger(LOG_PATH, LOG_STATUS)
 
-    env = env(data_path, episode_length=EPISODE_LENGTH)
+    env = env(data_path, 
+              episode_length=EPISODE_LENGTH,
+              episode_random=EPISODE_RANDOM)
 
     #  total steps is used to setup hyperparameters for the DQN agent
     total_steps = EPISODES * env.observation_ts.shape[0]

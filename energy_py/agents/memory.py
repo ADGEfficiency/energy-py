@@ -252,16 +252,15 @@ class Memory(object):
 
         #  make a dataframe on an episodic basis
         df_ep = df_stp.groupby(by=['episode'], axis=0).sum()
-
-        #  add statistics into the episodic dataframe
         reward = df_ep.loc[:, 'reward']
+        #  add statistics into the episodic dataframe
         df_ep.loc[:, 'cum max reward'] = reward.cummax()
         #  set the window at 10% of the data
-        window = max(int(df_ep.shape[0]*0.1), 1)
+        window = max(int(df_ep.shape[0]*0.1), 2)
         df_ep.loc[:, 'rolling mean'] = reward.rolling(window,
-                                                      min_periods=1).mean()
+                                                      min_periods=2).mean()
         df_ep.loc[:, 'rolling std'] = pd.rolling_std(reward, window,
-                                                     min_periods=1)
+                                                     min_periods=2)
 
         #  saving data in the output_dict
         self.outputs['df_stp'] = df_stp
