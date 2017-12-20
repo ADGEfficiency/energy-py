@@ -1,30 +1,10 @@
 import gym
 
-from energy_py import expt_args, save_args, make_logger, make_paths 
+from energy_py import experiment
 from energy_py import EternityVisualizer
 
-from energy_py.agents import REINFORCE, GaussianPolicy
-
-env = gym.envs.make('MountainCarContinuous-v0')
-#env = gym.envs.make('Pendulum-v0')
-
-def gym_experiment(agent, env, data_path, base_path='gym_expt'):
-    parser, args = expt_args()
-    EPISODES = args.ep
-    DISCOUNT = args.gamma
-    LEARNING_RATE = args.lr
-    OUTPUT_RESULTS = args.out
-
-    paths = make_paths(base_path)
-
-    paths = make_paths(name)
-    BRAIN_PATH = paths['brain']
-    RESULTS_PATH = paths['results']
-    LOG_PATH = paths['logs']
-
-    logger = make_logger(LOG_PATH)
-
-    env = env(data_path, episode_length=EPISODE_LENGTH)
+@experiment()
+def gym_experiment(agent, args, paths, env):
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -67,3 +47,9 @@ def gym_experiment(agent, env, data_path, base_path='gym_expt'):
 
             global_history = EternityVisualizer(episode, agent, env=None, results_path=RESULTS_PATH) 
             outputs = global_history.output_results(save_data=False)
+    return outputs
+if __name__ == '__main__':
+
+    env = gym.envs.make('MountainCarContinuous-v0')
+    
+    outputs = gym_experiment(

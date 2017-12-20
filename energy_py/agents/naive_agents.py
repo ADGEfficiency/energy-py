@@ -33,24 +33,30 @@ class NaiveBatteryAgent(BaseAgent):
         Doesn't look at the observation numpy array that other
         agents use (it is available in kwargs)
         """
-        time = pd.to_datetime(kwargs.pop('timestamp'))
-        hour = time.hour
+        hour_index = self.observation_info.index('D_hour')
+        observation = kwargs['observation']
+        hour = observation[0][hour_index]
 
-        #  default action is nothing
-        action = 0
+        #  grab the spaces list 
+        act_spaces = self.action_space.spaces
 
         if hour >= 7 and hour < 10:
             #  discharge during morning peak
-            action = self.action_space.low
+            action = [act_spaces[0].low, act_spaces[1].high]
+            action = np.array(action).reshape(1, self.action_space.shape[0])
 
         elif hour >= 15 and hour < 21:
             #  discharge during evening peak
-            action = self.action_space.high
+            action = [act_spaces[0].low, act_spaces[1].high]
+            action = np.array(action).reshape(1, self.action_space.shape[0])
 
         else:
             #  charge at max rate
-            action = self.action_space.high
+            action = [act_spaces[0].high, act_spaces[1].low]
+            action = np.array(action).reshape(1, self.action_space.shape[0])
 
+        print('hour {}'.format(hour))
+        print('action {}'.format(action))
         return np.array(action).reshape(-1, self.action_space.shape[0])
 
     def _learn(self):

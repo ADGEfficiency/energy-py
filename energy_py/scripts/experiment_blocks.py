@@ -6,6 +6,38 @@ import logging.config
 from energy_py import Utils
 
 
+def experiment():
+    """
+    A decorator used to wrap experiments
+    """
+    def outer_wrapper(my_expt_func):
+
+        def wrapper(agent, env, 
+                    data_path, base_path, 
+                    opt_parser_args=[]):
+
+            parser, args = expt_args(opt_parser_args)
+
+            paths = make_paths(base_path)
+
+            logger = make_logger(paths['logs'], args.log)
+
+            env = env(data_path, 
+                      episode_length=args.len,
+                      episode_random=args.rand)
+            
+            agent_outputs, env_outputs = my_expt_func(agent,
+                                                      args,
+                                                      paths,
+                                                      env)
+
+            return agent_outputs, env_outputs
+        
+        return wrapper
+    
+    return outer_wrapper
+
+
 def expt_args(optional_args=[]):
     """
     args

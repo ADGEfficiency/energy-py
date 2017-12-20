@@ -1,35 +1,16 @@
-from energy_py import expt_args, save_args, make_logger, make_paths, EternityVisualizer
+from energy_py import experiment, save_args, EternityVisualizer
 
 
-def no_learning_experiment(agent, env, data_path, base_path='no_learn_agent'):
+@experiment()
+def no_learning_experiment(agent, args, paths, env):
     """
     Runs an experiment with an agent that doesn't need to learn
     """
-    parser, args = expt_args()
-    EPISODES = args.ep
-    EPISODE_LENGTH = args.len
-    EPISODE_RANDOM = args.rand
+    agent = agent(env, args.gamma)
 
-    DISCOUNT = args.gamma
-    OUTPUT_RESULTS = args.out
-    LOG_STATUS = args.log
+    save_args(args, paths['args'])
 
-    paths = make_paths(base_path)
-    BRAIN_PATH = paths['brain']
-    RESULTS_PATH = paths['results']
-    ARGS_PATH = paths['args']
-    LOG_PATH = paths['logs']
-
-    logger = make_logger(LOG_PATH, LOG_STATUS)
-
-    save_args(args, path=ARGS_PATH) 
-
-    env = env(data_path, episode_length=EPISODE_LENGTH,
-              episode_random=True)
-
-    agent = agent(env, DISCOUNT)
-
-    for episode in range(1, EPISODES):
+    for episode in range(1, args.ep):
 
         #  initialize before starting episode
         done, step = False, 0
@@ -37,12 +18,8 @@ def no_learning_experiment(agent, env, data_path, base_path='no_learn_agent'):
 
         #  while loop runs through a single episode
         while done is False:
-            #  we cheat a little bit here by grabbing the observation as a
-            #  pandas series
-            #  just want to pull out the timestamp
-            time = env.observation_ts.index[env.steps]
             #  select an action
-            action = agent.act(observation=observation, timestamp=time)
+            action = agent.act(observation=observation)
             #  take one step through the environment
             next_observation, reward, done, info = env.step(action)
             #  store the experience
@@ -51,10 +28,12 @@ def no_learning_experiment(agent, env, data_path, base_path='no_learn_agent'):
             step += 1
             observation = next_observation
 
-        if episode % OUTPUT_RESULTS == 0:
+        if episode % args.out == 0:
             #  collect data from the agent & environment
             hist = EternityVisualizer(agent,
                                       env,
-                                      results_path=RESULTS_PATH)
+                                      paths['results'])
 
             agent_outputs, env_outputs = hist.output_results(save_data=True)
+
+    return agent_outputs, env_outputs

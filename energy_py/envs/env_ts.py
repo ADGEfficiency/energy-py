@@ -25,10 +25,16 @@ def make_observation(path, horizion=5):
 
     observations = [raw_state.shift(-i) for i in range(horizion)]
     observation = pd.concat(observations, axis=1).dropna()
-    #  becuase we dropped na's we now need to realign
+
+    #  we dropped na's we now need to realign
     state, observation = raw_state.align(observation, axis=0, join='inner')
 
-    observation['counter'] = pd.Series(range(observation.shape[0]))
+    #  add a counter for agent to learn from
+    observation['D_counter'] = np.arange(observation.shape[0]) 
+
+    #  add some datetime features
+    observation.index = state.index
+    observation['D_hour'] = observation.index.hour
 
     state_path = os.path.join(path, 'state.csv')
     obs_path = os.path.join(path, 'observation.csv')
@@ -80,6 +86,10 @@ class TimeSeriesEnv(BaseEnv):
 
         except:
             state, observation = make_observation(path)
+            
+        #  grab the column name so we can index state & obs arrays
+        self.state_info = state.columns
+        self.observation_info = observation.columns.tolist()
 
         assert state.shape[0] == observation.shape[0]
         return state, observation 
@@ -133,7 +143,7 @@ class TimeSeriesEnv(BaseEnv):
             label = str(name[:2])
 
             if label == 'D_':
-                obs_space = DiscreteSpace(col.min(), col.max(), 1)
+                obs_space = DiscreteSpace(col.max())
 
             elif label == 'C_':
                 obs_space = ContinuousSpace(col.min(), col.max())

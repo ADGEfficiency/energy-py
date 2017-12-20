@@ -48,6 +48,7 @@ class BaseAgent(Utils):
         #  use the env to setup the agent
         self.action_space = self.env.action_space
         self.observation_space = self.env.observation_space
+        self.observation_info = self.env.observation_info
 
         #  create a memory for the agent
         #  object to hold all of the agents experience
