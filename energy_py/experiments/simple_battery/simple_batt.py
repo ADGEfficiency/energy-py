@@ -10,10 +10,11 @@ if __name__ == '__main__':
     data_path = os.getcwd()
 
     for exp in range(1):
-        naive_outputs = no_learning_experiment(NaiveBatteryAgent,
-                                               env,
-                                               data_path,
-                                               'naive')
+        # naive_outputs = no_learning_experiment(NaiveBatteryAgent,
+        #                                        env,
+        #                                        data_path,
+        #                                        'naive')
+
         dqn_outputs = dqn_experiment(DQN,
                                      env,
                                      data_path,

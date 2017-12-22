@@ -60,7 +60,6 @@ class DQN(BaseAgent):
                       'output_nodes': self.actions.shape[0],
                       'layers': [25, 25],
                       'lr': 0.0025,
-                      'batch_size': batch_size,
                       'epochs': 1}
 
         self.state_processor = Standardizer(self.observation_space.shape[0])
@@ -74,16 +73,11 @@ class DQN(BaseAgent):
         self.e_greedy = EpsilonGreedy(self.initial_random,
                                       self.epsilon_decay_steps)
 
-        if load_agent_brain:
-            self.load_brain()
-
     def _reset(self):
         """
         Resets the agent
         """
-        self.Q_actor.model.reset_weights()
-        self.Q_target.model.reset_weights()
-        self.e_greedy.reset()
+        raise NotImplementedError
 
     def _act(self, **kwargs):
         """
@@ -161,18 +155,6 @@ class DQN(BaseAgent):
         next_obs = batch['next_obs']
         terminal = batch['terminal']
 
-        logger.debug('shapes of arrays used in learning')
-        logger.debug('obs shape {}'.format(obs.shape))
-        logger.debug('actions shape {}'.format(actions.shape))
-        logger.debug('rews shape {}'.format(rews.shape))
-        logger.debug('terminal shape {}'.format(terminal.shape))
-
-        #  dimensionality checks
-        assert rews.shape[0] == obs.shape[0]
-        assert rews.shape[0] == actions.shape[0]
-        assert rews.shape[0] == next_obs.shape[0]
-        assert rews.shape[0] == terminal.shape[0]
-
         #  we process the entire batch of inputs using our state_processor
         inputs = self.state_processor.transform(obs)
         next_obs = self.state_processor.transform(next_obs)
@@ -181,30 +163,27 @@ class DQN(BaseAgent):
         Q_next_state = self.Q_target.predict(sess, next_obs)
 
         #  change to max q next state
-        max_Q_next_state = np.max(Q_next_state, axis=1).reshape(-1, 1)
-        assert max_Q_next_state.shape[0] == inputs.shape[0]
+        max_Q_next_state = np.max(Q_next_state, axis=1).reshape(obs.shape[0] ,1)
 
         #  we set the max Q(s',a) equal to zero for terminal states
         max_Q_next_state[terminal] = 0
 
         #  we then use the Bellman equation with our masked max_q
-        logger.debug('before bellman eqn')
-        logger.debug('rews shape {}'.format(rews.shape))
-        logger.debug('max_q shape {}'.format(max_Q_next_state.shape))
         targets = rews + self.discount * max_Q_next_state
 
         #  save the unscaled targets so we can visualize later
-        self.memory.info['unscaled Q targets'].extend(list(targets.flatten()))
+        self.memory.info['unscaled_targets'].extend(list(targets.flatten()))
 
         #  scaling the targets by normalizing
-        targets = self.target_processor.transform(targets)
-        targets = targets.flatten()
+        targets = self.target_processor.transform(targets).flatten()
 
         #  creating an index for the action we are training
         #  first get a list of all possible actions
         act_list = self.actions.tolist()
+
         #  find the index of the action we took in the act_list
         action_index = [act_list.index(act) for act in actions.tolist()]
+
         #  create a 1D array of the index for each action we took
         action_index = np.array(action_index).flatten()
 
@@ -214,66 +193,17 @@ class DQN(BaseAgent):
         #  improve our approximation of Q(s,a)
         error, loss = self.Q_actor.improve(sess, inputs, targets, action_index)
 
-        logger.debug('targets shape {}'.format(targets.shape))
-        logger.debug('action indicies shape {}'.format(action_index.shape))
-
-        logger.debug('inputs shape {}'.format(inputs.shape))
-        logger.debug('Q preds for next_obs shape {}'.format(Q_next_state.shape))
-        logger.debug('max q values has shape {}'.format(max_Q_next_state.shape))
-        logger.debug('target shape after bellman equn {}'.format(targets.shape))
-        logger.debug('target shape processing {}'.format(targets.shape))
-
-        #  save loss and the training targets for visualization later
-        self.memory.info['train error'].extend(error.flatten().tolist())
+        #  save data for analysis later 
+        self.memory.info['train_error'].extend(error.flatten().tolist())
         self.memory.info['loss'].append(loss)
-        self.memory.info['train Q inputs'].extend(inputs.flatten().tolist())
-        self.memory.info['train Q targets'].extend(targets.flatten().tolist())
 
-        #  save some data for analysis later
-        max_target = np.max(targets)
-        avg_target = np.mean(targets)
+        self.memory.info['scaled_obs'].extend(inputs.flatten().tolist())
+        self.memory.info['scaled_targets'].extend(targets.flatten().tolist())
 
-        self.memory.info['max learning target'].append(max_target)
-        self.memory.info['avg learning target'].append(avg_target)
-        self.memory.info['learning targets'].extend(targets.flatten().tolist())
+        self.memory.info['max_scaled_target'].append(np.max(targets))
+        self.memory.info['avg_scaled_target'].append(np.mean(targets))
 
-        logger.debug('learning - max(Q_est)={:.3f}'.format(max_target))
-        logger.debug('learning - avg(Q_est)={:.3f}'.format(avg_target))
-
-        train_info = {'error': error,
-                      'loss': loss}
-
-        return train_info
-
-    def _load_brain(self):
-        """
-        Loads experiences, Q_actor and Q_target
-        """
-        #  load the epsilon greedy object
-        e_greedy_path = os.path.join(self.brain_path, 'e_greedy.pickle')
-        self.e_greedy = self.load_pickle(e_greedy_path)
-
-        #  load the action value functions
-        Q_actor_path = os.path.join(self.brain_path, 'Q_actor.h5')
-        self.Q_actor.load_model(Q_actor_path)
-        self.Q_target = self.Q_actor
-
-    def _save_brain(self):
-        """
-        Saves experiences, Q_actor and Q_target
-        """
-        e_greedy_path = os.path.join(self.brain_path, 'e_greedy.pickle')
-        self.dump_pickle(self.e_greedy, e_greedy_path)
-
-        """
-        add the acting Q network
-        we don't add the target network - we just use the acting network
-        to initialize Q_target when we load_brain
-        not reccomended to use pickle for Keras models
-        so we use h5py to save Keras models
-        """
-        Q_actor_path = os.path.join(self.brain_path, 'Q_actor.h5')
-        self.Q_actor.save_model(Q_actor_path)
+        return {'error': error, 'loss': loss}
 
     def update_target_network(self, sess):
         """

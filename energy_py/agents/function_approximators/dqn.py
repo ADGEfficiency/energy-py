@@ -5,20 +5,9 @@ import tensorflow as tf
 logger = logging.getLogger(__name__)
 
 
-class tfValueFunction(object):
+class Q_DQN(object):
     """
-    A TensorFlow value function approximating either V(s) or Q(s,a).
-
-    The value function approximates the expected future discounted reward.
-
-    V(s) can be modelled by
-        input_nodes = observation_space.shape[0]
-        output_nodes = 1
-        action_index = 0 always
-
-    Q(s,a) can be modelled by
-        input_nodes = observation_space.shape[0]
-        output_nodes = action_space.shape[0]
+    Q(s,a) with one output node per action
 
     args
         model_dict (dict):
@@ -93,14 +82,11 @@ class tfValueFunction(object):
         self.Q_act = tf.gather_nd(self.prediction,
                                   tf.stack((rng, self.action_index), -1))
 
-        #  error is calculted explcitly so we can use it outside the
-        #  value function - ie as the TD error signal in Actor-Critic
-        self.error = self.target - self.Q_act
-
         #  use the Huber loss as the cost function
-        #  we use this to clip gradients
-        #  the shape of the huber loss means the slope is clipped at 1
+        #  using Huber means gradients are clipped 
+        #  the shape of the Huber loss means the slope is clipped at 1
         #  for large errors
+        self.error = self.target - self.Q_act
         self.loss = tf.losses.huber_loss(self.target, self.Q_act)
 
         #  create the optimizer object and the training operation
@@ -122,12 +108,8 @@ class tfValueFunction(object):
         """
         Improving the value function approximation
 
-        either V(s) or Q(s,a) for all a
-
-        The target is created externally to this object
-        Most commonly the target will be a Bellman approximation
-        V(s) = r + yV(s')
-        Q(s,a) = r + yQ(s',a)
+        The target is created externally to this object.  This is to allow 
+        the user to be flexbile in the way they create a target.
 
         args
             sess (tf.Session) : the current TensorFlow session

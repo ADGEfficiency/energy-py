@@ -50,17 +50,6 @@ class GaussianPolicy(object):
 
             #  add the input layer
             with tf.variable_scope('inputlayer'):
-                # filters = 2 
-                # kernels = 4
-                # stride = 1
-                # layer = tf.layers.conv1d(inputs=obs,
-                #                          filters=filters,
-                #                          kernel_size=kernels,
-                #                          strides=stride,
-                #                          padding='SAME',
-                #                          activation=tf.nn.relu)
-                # out_size = (self.input_nodes - filters + 2*pad)/stride + 1
-                # layer = tf.reshape(None, out_size)
 
                 layer = tf.layers.dense(inputs=self.obs,
                                         units=self.layers[0],
@@ -97,13 +86,8 @@ class GaussianPolicy(object):
             self.action = self.norm_dist.sample()
 
             #  clipping the action
-            #  use an exception to catch the single action case
-            # try:
             lows = np.array([space.low for space in self.action_space.spaces])
             highs = np.array([space.high for space in self.action_space.spaces])
-            # except TypeError:
-            #     lows = np.array(self.action_space.low)
-            #     highs = np.array(self.action_space.high)
 
             self.action = tf.clip_by_value(self.action, lows, highs)
 
