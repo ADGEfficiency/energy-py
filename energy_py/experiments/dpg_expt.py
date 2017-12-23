@@ -2,37 +2,27 @@ import tensorflow as tf
 
 from energy_py import experiment, save_args
 from energy_py import EternityVisualizer
-from energy_py.agents import Q_DQN 
+from energy_py.agents import DPGActor, DPGCritic, OrnsteinUhlenbeckActionNoise
 
 
 @experiment()
-def dqn_experiment(agent, args, paths, env):
+def dpg_experiment(agent, args, paths, env):
 
     EPISODES = args.ep 
     DISCOUNT = args.gamma 
-    BATCH_SIZE = args.bs
     OUTPUT_FREQ = args.out
+    BATCH_SIZE = 64
 
     ARGS_PATH = paths['args']
     RESULTS_PATH = paths['results']
 
-    #  total steps is used to setup hyperparameters for the DQN agent
-    total_steps = EPISODES * env.observation_ts.shape[0]
-
     agent = agent(env, 
-                  DISCOUNT, 
-                  brain_path=paths['brain'],
-                  Q=tfValueFunction,
-                  batch_size=BATCH_SIZE,
-                  total_steps=total_steps)
-
-    save_args(args, 
-              path=ARGS_PATH,
-              optional={'total steps': total_steps,
-                        'epsilon decay (steps)': agent.epsilon_decay_steps,
-                        'update target net (steps)': agent.update_target_net,
-                        'memory length (steps)': agent.memory.length,
-                        'initial random (steps)': agent.initial_random}) 
+                  DISCOUNT,
+                  DPGActor,
+                  DPGCritic)
+    agent.initial_random = 10
+    agent.update_target_net = 10
+    save_args(args, path=ARGS_PATH)
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -66,7 +56,8 @@ def dqn_experiment(agent, args, paths, env):
                     train_info = agent.learn(sess=sess, batch=batch)
                         
                     if total_step % agent.update_target_net == 0:
-                        agent.update_target_network(sess)
+                        agent.actor.update_target_net()
+                        agent.critic.update_target_net()
 
             if episode % OUTPUT_FREQ == 0:
                 #  collect data from the agent & environment

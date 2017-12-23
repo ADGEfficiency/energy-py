@@ -6,70 +6,77 @@ import tensorflow as tf
 logger = logging.getLogger(__name__)
 
 
-class DeterminsticPolicy(object):
+class DPGActor(object):
     """
-    A policy that maps state to action 
-    For use in a DeterminsticPolicyGradient agent
+    Policy that maps state to a single continuous action
 
     args
        model_dict (dict) 
     """
-    def __init__(self, model_dict, scope='DeterminsticPolicy'):
+    def __init__(self, model_dict, scope='DPG_Actor'):
         
+        self.input_nodes = model_dict['input_nodes']
+        self.output_nodes = model_dict['output_nodes']
+        self.layers = model_dict['layers']
+
+        self.lr = model_dict['lr']
         self.tau = model_dict['tau']
 
+        self.action_space = model_dict['action_space']
+
         #  actor network
-        self.obs, self.action = self.make_acting_graph()
+        with tf.variable_scope('actor_online_net'):
+            self.obs, self.action = self.make_acting_graph()
         self.network_param = tf.trainable_variables()
 
         #  target network
-        self.t_obs, self.t_action = self.make_acting_graph()
-        self.t_network_param = tf.trainable_variables()[len(self.network_params):]
+        with tf.variable_scope('actor_target_net'):
+            self.t_obs, self.t_action = self.make_acting_graph()
+        self.t_network_param = tf.trainable_variables()[len(self.network_param):]
+
+        self.num_vars = len(self.network_param) + len(self.t_network_param)
 
         #  tf machinery to improve actor network 
         self.train_op = self.make_learning_graph()
 
+        #  exploration noise
+        self.actor_noise = OrnsteinUhlenbeckActionNoise(np.zeros(self.action_space.shape[0]))
+
     def make_acting_graph(self):
         """
-        Creates the TensorFlow graph for selecting actions determinstically.
-
         """
-        obs = tf.placeholder(tf.float32,
-                                  [None, self.input_nodes],
-                                  'obs')
+        obs = tf.placeholder(tf.float32, [None, self.input_nodes], 'obs')
+
         #  add the input layer
         with tf.variable_scope('input_layer'):
-            layer = tf.layers.dense(inputs=self.obs,
+            layer = tf.layers.dense(inputs=obs,
                                     units=self.layers[0])
 
             #  set training=True so that each batch is normalized with 
             #  statistics of the current batch
             batch_norm = tf.layers.batch_normalization(layer,
                                                        training=True)
-            relu = tf.relu(batch_norm)
+            relu = tf.nn.relu(batch_norm)
 
         #  iterate over self.layers
         for i, nodes in enumerate(self.layers[1:]):
             with tf.variable_scope('input_layer_{}'.format(i)):
-                layer = tf.layers.dense(inputs=relu,
-                                        units=nodes)
-            batch_norm = tf.layers.batch_normalization(layer,
-                                                       training=True)
-            relu = tf.relu(batch_norm)
+                layer = tf.layers.dense(inputs=relu, units=nodes)
+                batch_norm = tf.layers.batch_normalization(layer, training=True)
+                relu = tf.nn.relu(batch_norm)
 
         with tf.variable_scope('output_layer'):
             wt_init = tf.random_uniform_initializer(minval=-0.003,
                                                     maxval=0.003)
             action = tf.layers.dense(inputs=layer,
                                      units=self.output_nodes,
-                                     activation='linear',
+                                     activation=None,
                                      kernel_initializer=wt_init)
 
             #  clipping the action
             lows = np.array([space.low for space in self.action_space.spaces])
             highs = np.array([space.high for space in self.action_space.spaces])
-
-            action = tf.clip_by_value(self.action, lows, highs)
+            action = tf.clip_by_value(action, lows, highs)
 
         return obs, action 
 
@@ -79,16 +86,16 @@ class DeterminsticPolicy(object):
         self.network_param
         """
         #  this gradient is provided by the critic
-        self.action_gradient = tf.placeholder(tf.float32, [None,
-                                                           self.action_dim])
+        self.action_gradient = tf.placeholder(tf.float32, 
+                                              [None, self.action_space.shape[0]])
 
         #  combine the gradients
-        actor_gradients = tf.gradients(self.prediction,
+        self.actor_gradients = tf.gradients(self.action,
                                        self.network_param,
                                        -self.action_gradient)
 
         #  clip using global norm
-        self.actor_gradients = tf.clip_by_global_norm(actor_gradients)
+        #self.actor_gradients = tf.clip_by_global_norm(actor_gradients, 5)
 
         #  define the optimizer
         self.optimizer = tf.train.AdamOptimizer(self.lr)
@@ -101,23 +108,32 @@ class DeterminsticPolicy(object):
 
     def get_action(self, sess, obs):
         #  generating an action from the policy network
-        action = session.run(self.action, {self.obs : obs})
-        return action.reshape(1, self.action_space.shape[0])
+        determ_action = sess.run(self.action, {self.obs : obs})
+        noise = self.actor_noise().reshape(-1, self.action_space.shape[0])
+        action = determ_action + noise
+         
+        #  clipping the action
+        lows = np.array([space.low for space in self.action_space.spaces])
+        highs = np.array([space.high for space in self.action_space.spaces])
+        action = np.clip(action, lows, highs)
+
+        action = action.reshape(obs.shape[0],  self.action_space.shape[0])
+        return determ_action, noise, action 
 
     def get_target_action(self, sess, obs):
         #  generates an action from the target network
-        t_action = session.run(self.t_action, {self.t_obs: obs})
-        return t_action.reshape(1, self.action_space.shape[0])
+        t_action = sess.run(self.t_action, {self.t_obs: obs})
+        return t_action.reshape(obs.shape[0], self.action_space.shape[0])
 
     def improve(self, 
-                session,
-                obss,
+                sess,
+                obs,
                 act_grads):
 
-        feed_dict = {self.obs: obss,
+        feed_dict = {self.obs: obs,
                      self.action_gradient: act_grads}
 
-        loss = session.run(self.train_op, feed_dict)
+        loss = sess.run(self.train_op, feed_dict)
         return loss
 
     def update_target_net(self):
@@ -125,7 +141,7 @@ class DeterminsticPolicy(object):
         Operation for copying actor weights to target
         """
 
-        for param, target in zip(self.network_param, self.target_param):
+        for param, target in zip(self.network_param, self.t_network_param):
             target.assign(tf.multiply(param, self.tau) +
                           tf.multiply(target, 1 - self.tau))
 
@@ -136,25 +152,37 @@ class DPGCritic(object):
 
     Single output node for Q(s,a) of the action taken by the policy
     """
-    def __init__(self, model_dict, num_actor_vars, scope='DPGCritic'):
+    def __init__(self, model_dict, num_actor_vars, scope='DPG_Critic'):
 
-        self.obs, self.action, self.pred = self.make_pred_graph()
-        self.network_param = tf.trainable_variables()[num_actor_vars:]
+        self.input_nodes = model_dict['input_nodes']
+        self.output_nodes = model_dict['output_nodes']
+        self.layers = model_dict['layers']
 
-        self.t_obs, self.t_action, self.t_pred = self.make_pred_graph()
-        self.t_network_param = tf.trainable_variables()[(len(self.network_param)
-                                                            + num_actor_vars):]
+        self.lr = model_dict['lr']
+        self.tau = model_dict['tau']
 
-        self.train_op, self.loss, self.action_grads = self.make_learning_graph()
+        self.observation_space = model_dict['observation_space']
+        self.action_space = model_dict['action_space']
+
+        with tf.variable_scope('online_net'):
+            self.obs, self.action, self.pred = self.make_pred_graph()
+            self.network_param = tf.trainable_variables()[num_actor_vars:]
+
+        with tf.variable_scope('target_net'):
+            self.t_obs, self.t_action, self.t_pred = self.make_pred_graph()
+            self.t_network_param = tf.trainable_variables()[(len(self.network_param)
+                                                                + num_actor_vars):]
+
+        self.target, self.error, self.train_op, self.action_grads = self.make_learning_graph()
 
     def make_pred_graph(self):
 
         obs = tf.placeholder(tf.float32,
-                             [None, self.obs_dim],
+                             [None, self.observation_space.shape[0]],
                              'obs')
 
         act = tf.placeholder(tf.float32,
-                             [None, self.a_dim],
+                             [None, self.action_space.shape[0]],
                              'action')
 
         with tf.variable_scope('input_layer'):
@@ -164,14 +192,15 @@ class DPGCritic(object):
             #  set training=True so that each batch is normalized with 
             #  statistics of the current batch
             net = tf.layers.batch_normalization(net, training=True)
-            net = tf.relu(batch_norm)
+            net = tf.nn.relu(net)
 
         #  add the actions into the second layer
         with tf.variable_scope('hidden_layer_1'):
-            l1 = tf.layers.dense(inputs=net, units=self.layers[1])
-            l2 = tf.layers.dense(inputs=act, units=self.layers[1])
+            l1_W = tf.Variable(tf.random_normal([self.layers[0], self.layers[1]]))
+            l2_W = tf.Variable(tf.random_normal([self.action_space.shape[0], self.layers[1]]))
+            l2_b = tf.Variable(tf.zeros([self.layers[1]]))
 
-            net = tf.matmul(net, l1.W) + tf.matmul(act, l2.W) + l2.b
+            net = tf.matmul(net, l1_W) + tf.matmul(act, l2_W) + l2_b
             net = tf.layers.batch_normalization(net, training=True)
 
         #  iterate over self.layers
@@ -179,51 +208,52 @@ class DPGCritic(object):
             with tf.variable_scope('hidden_layer_{}'.format(i)):
                 net = tf.layers.dense(inputs=net, units=nodes)
                 net = tf.layers.batch_normalization(net, training=True)
-                net = tf.relu(net)
+                net = tf.nn.relu(net)
 
+        #  use a linear layer as the output layer
         with tf.variable_scope('output_layer'):
             wt_init = tf.random_uniform_initializer(minval=-0.003,
                                                     maxval=0.003)
             out = tf.layers.dense(inputs=net,
-                                  activation='linear',
+                                  units=self.output_nodes,
+                                  activation=None,
                                   kernel_initializer=wt_init)
         return obs, act, out
 
     def make_learning_graph(self):
         #  a Bellman target created externally to this value function
-        self.target = tf.placeholder(tf.float32,
-                                [None, 1],
-                                'Bellman_target')
+        target = tf.placeholder(tf.float32, [None, 1], 'target')
 
         #  add the optimizer, loss function & train operation
         self.optimizer = tf.train.AdamOptimizer(self.lr)
-        error = self.target - self.out
-        loss = tf.losses.huber_loss(target, self.out)
+        error = target - self.pred
+        loss = tf.losses.huber_loss(target, self.pred)
         train_op = self.optimizer.minimize(loss)
 
         #  gradient of network parameters wrt action 
-        action_grads = tf.gradients(self.out, self.action)
-        return target, train_op, action_grads
+        action_grads = tf.gradients(self.pred, self.action)
+        return target, error, train_op, action_grads
 
     def predict(self, sess, obs, action):
 
         pred = sess.run(self.pred, {self.obs: obs,
-                                    self.action, action})
+                                    self.action: action})
         return pred
 
     def predict_target(self, sess, obs, action):
 
         t_pred = sess.run(self.t_pred, {self.t_obs: obs,
-                                        self.t_action, action})
+                                        self.t_action: action})
         return t_pred
 
     def improve(self, sess, obs, action, target):
-        error, loss = sess.run(self.train_op, {self.obs: obs,
-                                        self.action: action,
-                                        self.target, target})
+        error, loss = sess.run([self.error, self.train_op], 
+                               {self.obs: obs,
+                                self.action: action,
+                                self.target: target})
         return error, loss
 
-    def action_grads(self, sess, obs, action):
+    def get_action_grads(self, sess, obs, action):
         grads = sess.run(self.action_grads, {self.obs: obs,
                                             self.action: action}) 
         return grads
@@ -232,9 +262,10 @@ class DPGCritic(object):
         """
         Operation for copying actor weights to target
         """
-        for param, target in zip(self.network_param, self.target_param):
+        for param, target in zip(self.network_param, self.t_network_param):
             target.assign(tf.multiply(param, self.tau) +
                           tf.multiply(target, 1 - self.tau))
+
 
 # Taken from https://github.com/pemami4911/deep-rl/blob/master/ddpg/ddpg.py
 # Taken from https://github.com/openai/baselines/blob/master/baselines/ddpg/noise.py, which is
