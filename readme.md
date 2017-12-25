@@ -6,18 +6,18 @@ Using reinforcement learning agents to control virtual energy environments is th
 
 energy_py supports this goal by providing a **collection of reinforcement learning agents, energy environments and tools to run experiments.**
 
-energy_py is built and maintained by Adam Green - [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  
-
-This project is in rapid development - if you would like to get involved send
-me an email.
+energy_py is built and maintained by Adam Green.  This project is in rapid development - if you would like to get involved send me an email at [adam.green@adgefficiency.com](adam.green@adgefficiency.com).
 
 I write about energy & machine learning at [adgefficiency.com](http://adgefficiency.com/).  
 
 I teach a one day [introduction to reinforcement learning learning](https://github.com/ADGEfficiency/DSR_RL) class at [Data Science Retreat](https://www.datascienceretreat.com/).
 
 ### Basic usage
-Below I run experiments using two different agents and two different
-environments. 
+
+A [simple but detailed example](https://github.com/ADGEfficiency/energy_py/blob/master/notebooks/examples/Q_learning_battery.ipynb) of using the DQN agent to control the battery environment is a great place to start.
+
+
+Another way to use energy_py is to run experiments.  Below I run experiments with two different agents and two different environments. 
 
 ```
 from energy_py.experiments import random_experiment, reinforce_experiment
@@ -107,6 +107,8 @@ The following environments are implemented:
 In energy_py v1.0 I implemented a combined heat and power plant - not planning
 on introducing this into energy_py v2.0.
 
+I plan to make energy_py environments fully agent agnostic - so that agents built using other libraries can be used.  
+
 **Agents**
 
 The following agents are currently implemented:
@@ -115,14 +117,14 @@ The following agents are currently implemented:
 
 - [Naive battery agent](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/naive/naive_battery.py)
 
-- [REINFORCE aka Monte Carlo policy gradient - based on TensorFlow function approximators](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/policy_based/reinforce.py)
+- [REINFORCE aka Monte Carlo policy gradient](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/policy_based/reinforce.py)
 
-- [DQN aka Q-Learning with experience replay and target network - Keras function approximators](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/Q_learning/DQN.py)
+- [DQN aka Q-Learning with experience replay and target network](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/Q_learning/dqn.py)
 
-I plan to make energy_py environments fully agent agnostic - so that agents built using other libraries can be used.  
+- [Deterministic Policy Gradient](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/Q_learning/dpg.py)
 
 **Function approximators**
 
 energy_py is deep learning library agnostic - any framework can be used to [parameterize either policies or value functions](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/agents/function_approximators).  Classes are used to allow flexibility in combining different function approximator with different agents.
 
-
+Currently all function approximators are based on TensorFlow.
