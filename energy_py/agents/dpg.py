@@ -28,10 +28,9 @@ class DPG(BaseAgent):
                  env,
                  discount,
                  actor, 
-                 critic,
-                 brain_path=[]):
+                 critic):
 
-        super().__init__(env, discount, brain_path)
+        super().__init__(env, discount)
 
         model_dict_actor = {'input_nodes': self.observation_space.shape[0],
                            'output_nodes': self.action_space.shape[0],

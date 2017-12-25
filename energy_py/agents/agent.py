@@ -1,5 +1,4 @@
 import logging
-import os
 
 from energy_py.agents.memory import Memory
 from energy_py import Utils
@@ -20,39 +19,27 @@ class BaseAgent(Utils):
         _reset
         _act
         _learn
-
-    Some agents will also override
-        _load_brain
-        _save_brain
         _output_results
 
     args
-        env      : energy_py environment
-        discount : float : discount rate (gamma)
-
-    methods
-        all_state_actions : used to create all combinations of state across the
-                            action space
+        env (object) energy_py environment
+        discount (float) discount rate aka gamma
+        memory_length (int) number of experiences to store
     """
 
     def __init__(self,
                  env,
                  discount,
-                 brain_path=[],
                  memory_length=100000):
 
         self.env = env
         self.discount = discount
-        self.brain_path = brain_path
 
         #  use the env to setup the agent
         self.action_space = self.env.action_space
         self.observation_space = self.env.observation_space
-        self.observation_info = self.env.observation_info
 
         #  create a memory for the agent
-        #  object to hold all of the agents experience
-        #  TODO does memory need all this now???
         self.memory = Memory(self.observation_space,
                              self.action_space,
                              self.discount,
@@ -65,15 +52,11 @@ class BaseAgent(Utils):
 
     def _learn(self, **kwargs): raise NotImplementedError
 
-    def _load_brain(self): raise NotImplementedError
-
-    def _save_brain(self): raise NotImplementedError
-
     def _output_results(self): raise NotImplementedError
 
     def reset(self):
         """
-        Resets the agent
+        Resets the agent.
         """
         #  reset the objects set in the Base_Agent init
         self.memory.reset()
@@ -81,81 +64,63 @@ class BaseAgent(Utils):
 
     def act(self, **kwargs):
         """
-        Action selection by agent
+        Action selection by agent.
 
         args
-            observation (np array) : shape=(1, observation_dim)
+            observation (np array) shape=(1, observation_dim)
+            sess (tf.Session)
 
         return
-            action (np array) : shape=(1, num_actions)
+            action (np array) shape=(1, num_actions)
         """
         logger.debug('Agent is acting')
         return self._act(**kwargs)
 
     def learn(self, **kwargs):
         """
-        Agent learns from experience
+        Agent learns from experience.
 
-        Use **kwargs for flexibility
+        args
+            batch (dict) batch of experience
+            sess (tf.Session)
 
         return
-            training_history (object) : info about learning (i.e. loss)
+            training_history (object) info about learning (i.e. loss)
         """
         logger.debug('Agent is learning')
         return self._learn(**kwargs)
 
-    def load_brain(self):
-        """
-        Agent can load previously created memories, policies or value functions
-        """
-        logger.info('Loading agent brain')
-        memory_path = os.path.join(self.brain_path, 'memory.pickle')
-        self.memory = self.load_pickle(memory_path)
-
-        return self._load_brain()
-
-    def save_brain(self):
-        """
-        Agent can save previously created memories, policies or value functions
-        """
-        logger.info('Saving agent brain')
-
-        #  we save the agent memory
-        memory_path = os.path.join(self.brain_path, 'memory.pickle')
-        self.dump_pickle(self.memory, memory_path)
-
-        return self._save_brain()
-
     def output_results(self):
         """
-        Agent can load previously created memories, policies or value functions
+        Calls the memory output_results method.
         """
         return self.memory.output_results()
 
 
 class EpsilonGreedy(object):
     """
-    A class to perform epsilon greedy action selection.
+    A class to decay epsilon.  Epsilon is used in e-greedy action selection.
 
-    Decay is done linearly.
+    Initially act totally random, then linear decay to a minimum.
 
-    Decay occurs every time we call get_epsilon.
-
-    TODO update with logger
+    args
+        random_start (int) number of steps to act totally random
+        decay_steps (int) number of steps to decay epsilon from start to end
+        epsilon_start (float)
+        epsilon_end (float)
     """
     def __init__(self,
                  random_start,
                  decay_steps,
                  epsilon_start=1.0,
                  epsilon_end=0.1):
+        self.random_start = int(random_start)
+        self.decay_steps = int(decay_steps)
+        self.epsilon_start = float(epsilon_start)
+        self.epsilon_end = float(epsilon_end)
 
         #  we calculate a linear coefficient to decay with
         self.linear_coeff = (epsilon_end - epsilon_start) / decay_steps
-
-        self.random_start = random_start
-        self.decay_steps = decay_steps
-        self.epsilon_start = epsilon_start
-        self.epsilon_end = epsilon_end
 
         self.reset()
 
@@ -170,11 +135,11 @@ class EpsilonGreedy(object):
 
         elif self.steps >= self.random_start and self.steps < self.decay_steps:
             self._epsilon = self.linear_coeff * self.steps + self.epsilon_start
+            self.steps += 1
 
         else:
             self._epsilon = self.epsilon_end
 
-        self.steps += 1
         return float(self._epsilon)
 
     @epsilon.setter

@@ -6,10 +6,9 @@ from energy_py.agents import BaseAgent
 class RandomAgent(BaseAgent):
     def __init__(self,
                  env,
-                 discount,
-                 brain_path=[]):
+                 discount):
 
-        super().__init__(env, discount, brain_path)
+        super().__init__(env, discount)
 
     def _reset(self):
         pass

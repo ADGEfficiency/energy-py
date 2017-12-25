@@ -33,12 +33,10 @@ class REINFORCE(BaseAgent):
     def __init__(self,
                  env,
                  discount,
-                 brain_path,
-
                  policy,
                  lr):
 
-        super().__init__(env, discount, brain_path)
+        super().__init__(env, discount)
 
         #  create the policy function approximator
         self.model_dict = {'input_nodes': self.observation_space.shape[0],

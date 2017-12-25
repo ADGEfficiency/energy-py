@@ -1,5 +1,4 @@
 import logging
-import os
 
 import numpy as np
 
@@ -15,13 +14,11 @@ class DQN(BaseAgent):
     aka Q-learning with experience replay & target network
 
     args
-        env                 : energy_py environment
-        Q                   : energy_py Action-Value Function Q(s,a)
-        discount
-        batch_size
-
-    inherits from
-        Base_Agent          : the energy_py class used for agents
+        env (object) energy_py environment
+        Q (object) energy_py Action-Value Function Q(s,a)
+        discount (float) discount rate aka gamma
+        total_steps (int) number of steps in agent life
+        discrete_space_size (int) number of discrete spaces
 
     Based on the DeepMind Atari work
     Reference = Mnih et. al (2013), Mnih et. al (2015)
@@ -30,10 +27,8 @@ class DQN(BaseAgent):
                  env,
                  discount,
                  Q,
-                 batch_size,
                  total_steps,
-                 brain_path=[],
-                 load_agent_brain=False):
+                 discrete_space_size=50):
         """
         DeepMind Atari hyperparameters are here as an FYI
 
@@ -44,30 +39,32 @@ class DQN(BaseAgent):
         learning rate = 0.00025
         total frames = 10 million
         """
+        #  setup hyperparameter using DeepMind ratios as guide
         memory_length = int(total_steps * 0.1)
         self.epsilon_decay_steps = int(total_steps / 2)
         self.update_target_net = int(total_steps * 0.0125)
         self.initial_random = int(total_steps * 0.1)
 
-        #  passing the environment to the BaseAgent class
-        super().__init__(env, discount, brain_path, memory_length)
+        #  initializing the BaseAgent class
+        super().__init__(env, discount, memory_length)
 
         #  Q-Learning needs a discrete action space
-        #
-        self.actions = self.action_space.discretize(10)
+        self.actions = self.action_space.discretize(discrete_space_size)
 
+        #  a dictionary to setup the approximation of Q(s,a)
         self.model_dict = {'input_nodes': self.observation_space.shape[0],
-                      'output_nodes': self.actions.shape[0],
-                      'layers': [25, 25],
-                      'lr': 0.0025,
-                      'epochs': 1}
-
-        self.state_processor = Standardizer(self.observation_space.shape[0])
-        self.target_processor = Normalizer(1)
+                           'output_nodes': self.actions.shape[0],
+                           'layers': [25, 25],
+                           'lr': 0.0025,
+                           'epochs': 1}
 
         #  make our two action value functions
         self.Q_actor = Q(self.model_dict, 'Q_actor')
         self.Q_target = Q(self.model_dict, 'Q_target')
+
+        #  objects to process the inputs & targets of neural networks
+        self.state_processor = Standardizer(self.observation_space.shape[0])
+        self.target_processor = Normalizer(1)
 
         #  create an object to decay epsilon
         self.e_greedy = EpsilonGreedy(self.initial_random,
@@ -84,14 +81,14 @@ class DQN(BaseAgent):
         Act using an epsilon-greedy policy
 
         args
-            sess (tf.Session): the current tensorflow session
-            obs (np.array): shape=(1, observation_space.shape[0])
+            sess (tf.Session) the current tensorflow session
+            obs (np.array) shape=(1, observation_space.shape[0])
 
         return
-            action      : np array (1, action_space.shape[0])
+            action (np.array) (1, action_space.shape[0])
         """
-        sess = kwargs.pop('sess')
-        observation = kwargs.pop('obs')
+        sess = kwargs['sess']
+        observation = kwargs['obs']
 
         #  using our state processor to transform the observation
         observation = self.state_processor.transform(observation)
@@ -163,7 +160,8 @@ class DQN(BaseAgent):
         Q_next_state = self.Q_target.predict(sess, next_obs)
 
         #  change to max q next state
-        max_Q_next_state = np.max(Q_next_state, axis=1).reshape(obs.shape[0] ,1)
+        max_Q_next_state = np.max(Q_next_state,
+                                  axis=1).reshape(obs.shape[0], 1)
 
         #  we set the max Q(s',a) equal to zero for terminal states
         max_Q_next_state[terminal] = 0
@@ -193,7 +191,7 @@ class DQN(BaseAgent):
         #  improve our approximation of Q(s,a)
         error, loss = self.Q_actor.improve(sess, inputs, targets, action_index)
 
-        #  save data for analysis later 
+        #  save data for analysis later
         self.memory.info['train_error'].extend(error.flatten().tolist())
         self.memory.info['loss'].append(loss)
 

@@ -2,6 +2,7 @@ import logging
 
 import tensorflow as tf
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -10,11 +11,11 @@ class Q_DQN(object):
     Q(s,a) with one output node per action
 
     args
-        model_dict (dict):
+        model_dict (dict) contains info to setup the neural network
+        scope (str) used by Tensorflow
     """
     def __init__(self, model_dict, scope='value_function'):
-        logger.info('creating {}'.format(scope))
-
+        #  output the model_dict to the log
         for k, v in model_dict.items():
             logger.info('{} : {}'.format(k, v))
 
@@ -28,22 +29,24 @@ class Q_DQN(object):
 
         self.scope = scope
         with tf.variable_scope(self.scope):
-            #  create graph for prediction and learning
+            #  create Tensorflow graph for prediction
             self.prediction = self.make_prediction_graph()
 
+            #  create Tensorflow graph for learning
             self.train_op = self.make_learning_graph()
 
     def make_prediction_graph(self):
         """
-        Creates the prediction part of the graph
+        The Tensorflow machinery for predicting Q(s,a).
         """
+        #  the input to the network
         self.obs = tf.placeholder(tf.float32,
                                   [None, self.input_nodes],
                                   'observation')
 
         #  add the input layer
         with tf.variable_scope('input_layer'):
-            layer = tf.layers.dense(self.obs, 
+            layer = tf.layers.dense(self.obs,
                                     units=self.layers[0],
                                     activation=tf.nn.relu)
 
@@ -54,14 +57,17 @@ class Q_DQN(object):
                                         units=nodes,
                                         activation=tf.nn.relu)
 
-        #  return the prediction
+        #  the linear output layer
         with tf.variable_scope('output_layer'):
             wt_init = tf.random_uniform_initializer(minval=-0.003,
                                                     maxval=0.003)
+
             prediction = tf.layers.dense(inputs=layer,
-                                    units=self.output_nodes,
+                                         units=self.output_nodes,
                                          kernel_initializer=wt_init)
+
             prediction = tf.reshape(prediction, [-1, self.output_nodes])
+
         return prediction
 
     def make_learning_graph(self):
@@ -70,20 +76,25 @@ class Q_DQN(object):
 
         Minimizing the squared difference between the prediction and target
         """
+        #  the target for the error calculation
         self.target = tf.placeholder(tf.float32,
                                      [None],
                                      'target')
 
+        #  the index of the action we are training
         self.action_index = tf.placeholder(tf.int32,
-                                         [None],
-                                         'act_indicies')
+                                           [None],
+                                           'act_indicies')
 
-        rng = tf.range(tf.shape(self.prediction)[0])
-        self.Q_act = tf.gather_nd(self.prediction,
-                                  tf.stack((rng, self.action_index), -1))
+        #  create indicies in the correct shape
+        indicies = tf.stack((tf.range(tf.shape(self.prediction)[0]),
+                             self.action_index), -1)
+
+        #  index the predictions for the correct action
+        self.Q_act = tf.gather_nd(self.prediction, indicies)
 
         #  use the Huber loss as the cost function
-        #  using Huber means gradients are clipped 
+        #  using Huber means gradients are clipped
         #  the shape of the Huber loss means the slope is clipped at 1
         #  for large errors
         self.error = self.target - self.Q_act
@@ -108,7 +119,7 @@ class Q_DQN(object):
         """
         Improving the value function approximation
 
-        The target is created externally to this object.  This is to allow 
+        The target is created externally to this object.  This is to allow
         the user to be flexbile in the way they create a target.
 
         args
@@ -124,19 +135,20 @@ class Q_DQN(object):
                                   feed_dict=feed_dict)
         return error, loss
 
-    def save_model(self):
-        pass
-
-    def load_model(self):
-        pass
-
     def copy_weights(self, sess, parent):
+        """
+        Copies the weights from a parent model into this model.
+
+        args
+            sess (tf.Session)
+            parent (object) energy_py object approximating Q(s,a)
+        """
         self_params = [t for t in tf.trainable_variables() if
-                     t.name.startswith(self.scope)]
+                       t.name.startswith(self.scope)]
         self_params = sorted(self_params, key=lambda v: v.name)
 
         parent_params = [t for t in tf.trainable_variables() if
-                     t.name.startswith(parent.scope)]
+                         t.name.startswith(parent.scope)]
         parent_params = sorted(parent_params, key=lambda v: v.name)
 
         update_ops = []
