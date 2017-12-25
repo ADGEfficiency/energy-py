@@ -10,7 +10,13 @@ logger = logging.getLogger(__name__)
 
 class Memory(object):
     """
+    An object to store and process experience.
 
+    args
+        observation_space (object) energy_py GlobalSpace
+        action_space (object) energy_py GlobalSpace
+        discount (float) the discount rate (aka gamma)
+        memory_length (int) maximum number of experiences to store
     """
 
     def __init__(self,
@@ -22,41 +28,35 @@ class Memory(object):
         #  MDP info
         self.observation_space = observation_space
         self.action_space = action_space
-        self.discount = discount
-
-        #  memory & processing info
-        self.length = memory_length
+        self.discount = float(discount)
+        self.memory_length = int(memory_length)
 
         self.reset()
 
     def reset(self):
         """
-        Resets the memory internals - deques and dictionaries
+        Resets the memory internals.
         """
         #  keep count of the number of experiences
         self.num_exp = 0
 
         #  create an array for each type of info we want to store
-        obs = np.array([], dtype=np.float32)
-        self.obs = np.reshape(obs, (-1, self.observation_space.shape[0]))
+        self.obs = np.array([], dtype=np.float32).reshape(-1,
+                                                          self.observation_space.shape[0])
 
-        actions = np.array([], dtype=np.float32)
-        self.actions = np.reshape(actions, (-1, self.action_space.shape[0]))
+        self.actions = np.array([], dtype=np.float32).reshape(-1,
+                                                              self.action_space.shape[0])
 
-        rewards = np.array([], dtype=np.float32)
-        self.rewards = np.reshape(rewards, (-1, 1))
+        self.rewards = np.array([], dtype=np.float32).reshape(-1, 1)
 
-        next_obs = np.array([], dtype=np.float32)
-        self.next_obs = np.reshape(next_obs, (-1, self.observation_space.shape[0]))
+        self.next_obs = np.array([], dtype=np.float32).reshape(-1,
+                                                               self.observation_space.shape[0])
 
-        terminal = np.array([], dtype=bool)
-        self.terminal = np.reshape(terminal, (-1, 1))
+        self.terminal = np.array([], dtype=bool).reshape(-1, 1)
 
-        step = np.array([], dtype=np.int32)
-        self.step = np.reshape(step, (-1, 1))
+        self.step = np.array([], dtype=np.int32).reshape(-1, 1)
 
-        episode = np.array([], dtype=np.int32)
-        self.episode = np.reshape(episode, (-1, 1))
+        self.episode = np.array([], dtype=np.int32).reshape(-1, 1)
 
         #  an info dictionary to hold other info we might want to collect
         self.info = collections.defaultdict(list)
@@ -73,7 +73,7 @@ class Memory(object):
                        step,
                        episode):
         """
-        Adds a single step of experience to our deques
+        Adds a single step of experience to the numpy arrays.
 
         args
             observation
@@ -86,32 +86,23 @@ class Memory(object):
         """
         logger.debug('adding exp episode {} step {}'.format(episode, step))
 
-        #  make a tuple to iterate over
-        experience = (observation,
-                      action,
-                      reward,
-                      next_observation,
-                      terminal,
-                      step,
-                      episode)
-
         self.obs = np.append(self.obs, observation, axis=0)
         self.actions = np.append(self.actions, action, axis=0)
 
-        reward = np.array(reward, dtype=np.float32).reshape(1,1)
+        reward = np.array(reward, dtype=np.float32).reshape(1, 1)
         self.rewards = np.append(self.rewards, reward, axis=0)
 
         self.next_obs = np.append(self.next_obs, next_observation, axis=0)
 
-        terminal = np.array(terminal, dtype=np.bool).reshape(1,1)
+        terminal = np.array(terminal, dtype=np.bool).reshape(1, 1)
         self.terminal = np.append(self.terminal, terminal, axis=0)
 
-        step = np.array(step, dtype=np.int32).reshape(1,1)
+        step = np.array(step, dtype=np.int32).reshape(1, 1)
         self.step = np.append(self.step, step, axis=0)
 
-        episode = np.array(episode, dtype=np.int32).reshape(1,1)
+        episode = np.array(episode, dtype=np.int32).reshape(1, 1)
         self.episode = np.append(self.episode, episode, axis=0)
-        
+
         self.num_exp += 1
 
     def calculate_returns(self, rewards):
@@ -119,12 +110,12 @@ class Memory(object):
         Calculates the Monte Carlo discounted return
 
         args
-            rewards (np.array) rewards we want to calculate returns for
+            rewards (np.array) rewards we want to calculate the return for
         """
-        #  returns = return after state s
-        #  R = the return from next state s'
-        R, returns = 0, []
-        #  note that we reverse the list here
+        R = 0  # return after state s
+        returns = []  # return after next state s'
+
+        #  reverse the list so that we can do a backup
         for r in rewards[::-1]:
             R = r + self.discount * R  # the Bellman equation
             returns.insert(0, R)
@@ -151,7 +142,7 @@ class Memory(object):
                 rewards (np.array) shape=(samples, 1)
         """
 
-        #  get the indicies of the episode we want 
+        #  get the indicies of the episode we want
         episode_mask = np.where(self.episode == episode_number)[0]
 
         obs = self.obs[episode_mask]
@@ -169,7 +160,7 @@ class Memory(object):
                       'actions': actions,
                       'rewards': rewards}
 
-        return batch_dict 
+        return batch_dict
 
     def get_random_batch(self, batch_size, save_batch=False):
         """
@@ -190,7 +181,7 @@ class Memory(object):
         logger.debug('getting batch size {} from memory'.format(sample_size))
 
         #  indicies for the batch
-        lower_bound = max(0, self.num_exp - self.length)
+        lower_bound = max(0, self.num_exp - self.memory_length)
         indicies = np.random.randint(low=lower_bound,
                                      high=self.num_exp-1,
                                      size=sample_size)
@@ -220,18 +211,18 @@ class Memory(object):
         self.outputs['info'] = self.info
 
         obs = pd.DataFrame(self.obs,
-                           columns=['obs_{}'.format(i) for i in 
+                           columns=['obs_{}'.format(i) for i in
                                     range(self.obs.shape[1])])
 
         act = pd.DataFrame(self.actions,
-                           columns=['act_{}'.format(i) for i in 
+                           columns=['act_{}'.format(i) for i in
                                     range(self.actions.shape[1])])
 
         rew = pd.DataFrame(self.rewards,
                            columns=['reward'])
 
         next_obs = pd.DataFrame(self.next_obs,
-                                columns=['next_obs_{}'.format(i) for i in 
+                                columns=['next_obs_{}'.format(i) for i in
                                          range(self.next_obs.shape[1])])
 
         step = pd.DataFrame(self.step,
@@ -241,7 +232,7 @@ class Memory(object):
                                columns=['episode'])
 
         #  make a dataframe on a step by step basis
-        df_stp = pd.concat([obs, 
+        df_stp = pd.concat([obs,
                             act,
                             rew,
                             next_obs,
@@ -259,8 +250,9 @@ class Memory(object):
         window = max(int(df_ep.shape[0]*0.1), 2)
         df_ep.loc[:, 'rolling mean'] = reward.rolling(window,
                                                       min_periods=2).mean()
-        df_ep.loc[:, 'rolling std'] = pd.rolling_std(reward, window,
-                                                     min_periods=2)
+
+        df_ep.loc[:, 'rolling std'] = reward.rolling(window,
+                                                     min_periods=2).std()
 
         #  saving data in the output_dict
         self.outputs['df_stp'] = df_stp
