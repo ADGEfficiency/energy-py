@@ -6,9 +6,7 @@ Using reinforcement learning agents to control virtual energy environments is th
 
 energy_py supports this goal by providing a **collection of reinforcement learning agents, energy environments and tools to run experiments.**
 
-energy_py is built and maintained by Adam Green.  This project is in rapid development - if you would like to get involved send me an email at [adam.green@adgefficiency.com](adam.green@adgefficiency.com).
-
-I write about energy & machine learning at [adgefficiency.com](http://adgefficiency.com/).  
+energy_py is built and maintained by Adam Green.  This project is in rapid development - if you would like to get involved send me an email at [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  I write about energy & machine learning at [adgefficiency.com](http://adgefficiency.com/).  
 
 I teach a one day [introduction to reinforcement learning learning](https://github.com/ADGEfficiency/DSR_RL) class at [Data Science Retreat](https://www.datascienceretreat.com/).
 
@@ -59,9 +57,7 @@ Finally install the required packages
 ```
 pip install requirements.txt
 ```
-The main dependencies of energy_py are numpy, pandas & TensorFlow.
-
-energy_py was built using TensorFlow 1.3.0.  
+The main dependencies of energy_py are numpy, pandas & TensorFlow.  energy_py was built using TensorFlow 1.3.0.  
 
 ### Project structure
 
@@ -125,6 +121,4 @@ The following agents are currently implemented:
 
 **Function approximators**
 
-energy_py is deep learning library agnostic - any framework can be used to [parameterize either policies or value functions](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/agents/function_approximators).  Classes are used to allow flexibility in combining different function approximator with different agents.
-
-Currently all function approximators are based on TensorFlow.
+energy_py is deep learning library agnostic - any framework can be used to [parameterize either policies or value functions](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/agents/function_approximators).  Classes are used to allow flexibility in combining different function approximator with different agents.  Currently all function approximators are based on TensorFlow.
