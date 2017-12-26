@@ -80,7 +80,6 @@ agent = DQN(env,
             discount=0.9,
             Q=tfValueFunction,
             batch_size=64,
-            brain_path='/brain',
             total_steps=1000)
 
 obs = env.reset()

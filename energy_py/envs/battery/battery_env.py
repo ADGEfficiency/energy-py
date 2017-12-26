@@ -16,18 +16,15 @@ class BatteryEnv(TimeSeriesEnv):
     Agent chooses to either charge or discharge.
 
     args
-        episode_length  : int / str : length of the episode
-                                      'maximum' = run entire legnth
-        episode_start   :   int     : the integer index to start the episode
-        power_rating    :   float   : maximum rate of battery charge
-                                      or discharge [MWe]
-        capacity        :   float   : amount of electricity that can be stored
-                                      [MWh]
-        round_trip_eff  :   float   : round trip efficiency of storage [%]
-        initial_charge  :   float   : inital amount of electricity stored
-                                    : as a percent of capacity [%]
+        data_path (str) location of state.csv, observation.csv
+        episode_length (int) 
+        episode_start (int) integer index of episode start 
+        episode_random (bool) whether to randomize the episode start position
+        power_rating (float) maximum rate of battery charge or discharge [MW]
+        capacity (float) amount of electricity that can be stored [MWh]
+        round_trip_eff (float) round trip efficiency of storage [%]
+        initial_charge (float) inital charge as pct of capacity [%]
 
-        verbose         :   int     : controls env print statements
     """
     def __init__(self, 
                  data_path,
@@ -46,10 +43,10 @@ class BatteryEnv(TimeSeriesEnv):
         self.initial_charge = float(self.capacity * initial_charge) # MWh
 
         #  calling init method of the parent Time_Series_Env class
-        super().__init__(episode_length,
+        super().__init__(data_path,
+                         episode_length,
                          episode_start,
-                         episode_random,
-                         data_path)
+                         episode_random)
 
     def _reset(self):
         """

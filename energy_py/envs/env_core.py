@@ -1,8 +1,6 @@
 import collections
 import logging
-import os
 
-import numpy as np
 import pandas as pd
 
 from energy_py import Utils
@@ -40,12 +38,14 @@ class BaseEnv(Utils):
 
     # Override in ALL subclasses
     def _step(self, action): raise NotImplementedError
+
     def _reset(self): raise NotImplementedError
+
     def _output_results(self): raise NotImplementedError
 
     #  Set these in ALL subclasses
-    action_space = None       
-    observation_space = None 
+    action_space = None
+    observation_space = None
 
     def reset(self, episode):
         """
@@ -57,16 +57,14 @@ class BaseEnv(Utils):
         logger.debug('Reset environment')
 
         self.info = collections.defaultdict(list)
-        self.outputs = collections.defaultdict(list) 
+        self.outputs = collections.defaultdict(list)
 
         return self._reset()
 
     def step(self, action):
         """
         Run one timestep of the environment's dynamics.
-        When end of episode is reached, you are responsible for calling reset().
-
-        Accepts an action and returns a tuple (observation, reward, done, info).
+        User is responsible for resetting after episode end.
 
         The step function should progress in the following order:
         - action = a[1]
@@ -79,14 +77,14 @@ class BaseEnv(Utils):
         step() returns the observation - not the state!
 
         args
-            action  (object): an action provided by the environment
-            episode (int): the current episode number
+            action (object) an action provided by the environment
+            episode (int) the current episode number
 
         returns:
-            observation (np array): agent's observation of the environment
-            reward (np.float) : 
-            done (boolean): 
-            info (dict): auxiliary information
+            observation (np array) agent's observation of the environment
+            reward (np.float)
+            done (boolean)
+            info (dict) auxiliary information
         """
         logger.debug('Episode {} - Step {}'.format(self.episode, self.steps))
         return self._step(action)

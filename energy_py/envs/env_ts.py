@@ -5,9 +5,10 @@ import numpy as np
 import pandas as pd
 
 from energy_py.envs import BaseEnv
-from energy_py.scripts.spaces import ContinuousSpace, DiscreteSpace, GlobalSpace
+from energy_py.scripts.spaces import ContinuousSpace, DiscreteSpace
 
 logger = logging.getLogger(__name__)
+
 
 def make_observation(path, horizion=5):
     """
@@ -30,7 +31,7 @@ def make_observation(path, horizion=5):
     state, observation = raw_state.align(observation, axis=0, join='inner')
 
     #  add a counter for agent to learn from
-    observation['D_counter'] = np.arange(observation.shape[0]) 
+    observation['D_counter'] = np.arange(observation.shape[0])
 
     #  add some datetime features
     observation.index = state.index
@@ -42,19 +43,26 @@ def make_observation(path, horizion=5):
     observation.to_csv(obs_path)
     return state, observation
 
+
 class TimeSeriesEnv(BaseEnv):
     """
     The base environment class for time series environments
 
     Most energy problems are time series problems - hence the need for a
     class to give functionality
+
+    args
+        data_path (str) location of state.csv, observation.csv
+        episode_length (int)
+        episode_start (int) integer index of episode start
+        episode_random (bool) whether to randomize the episode start position
     """
 
-    def __init__(self, 
+    def __init__(self,
+                 data_path,
                  episode_length,
                  episode_start,
-                 episode_random,
-                 data_path):
+                 episode_random):
 
         self.episode_start = episode_start
         self.episode_length = episode_length
@@ -65,45 +73,49 @@ class TimeSeriesEnv(BaseEnv):
         #  the BaseEnv class
         self.raw_state_ts, self.raw_observation_ts = self.load_ts(data_path)
 
+        #  initialize BaseEnv parent class
         super().__init__()
 
-    def load_ts(self, path):
+    def load_ts(self, data_path):
         """
         args
-            state_path (str)
-            observation_path (str)
+            data_path (str) location of state.csv, observation.csv
 
         returns
             state (pd.DataFrame)
             observation (pd.DataFrame)
         """
-        state_path = os.path.join(path, 'state.csv')
-        obs_path = os.path.join(path, 'observation.csv')
+        state_path = os.path.join(data_path, 'state.csv')
+        obs_path = os.path.join(data_path, 'observation.csv')
 
         try:
+            #  load from disk
             state = pd.read_csv(state_path, index_col=0)
             observation = pd.read_csv(obs_path, index_col=0)
 
-        except:
-            state, observation = make_observation(path)
-            
+        except FileNotFoundError:
+            #  create state and observation from scratch
+            state, observation = make_observation(data_path)
+
         #  grab the column name so we can index state & obs arrays
         self.state_info = state.columns
         self.observation_info = observation.columns.tolist()
 
         assert state.shape[0] == observation.shape[0]
-        return state, observation 
+        return state, observation
 
     def get_state_obs(self):
         """
-        The master function for the Time_Series_Env class
+        Indexes the raw state & observation dataframes into smaller
+        state and observation dataframes.
 
-        Envisioned that this will be run during the _reset of the child class
+        returns
+            observation_space (object) energy_py GlobalSpace
+            observation_ts (pd.DataFrame)
+            state_ts (pd.DataFrame)
 
-        This is to allow different time periods to be sampled
         """
-        start, end = self.get_ts_row_idx(self.episode_length,
-                                         self.episode_start)
+        start, end = self.get_ts_row_idx()
 
         state_ts = self.raw_state_ts.iloc[start:end, :]
         observation_ts = self.raw_observation_ts.iloc[start:end, :]
@@ -113,28 +125,35 @@ class TimeSeriesEnv(BaseEnv):
 
         assert observation_ts.shape[0] == state_ts.shape[0]
         logger.info('Ep {} starting at {}'.format(self.episode,
-                                                        state_ts.index[0]))
+                                                  state_ts.index[0]))
 
         return observation_space, observation_ts, state_ts
 
-    def get_ts_row_idx(self, episode_length, episode_start):
+    def get_ts_row_idx(self):
         """
-        Gets the integer indicies for selecting the episode
-        time period
+        Sets the start and end integer indicies for episodes.
+
+        returns
+            self.episode_start (int)
+            self.episode_end (int)
         """
         ts_length = self.raw_observation_ts.shape[0]
 
         if self.episode_random:
-            end_int_idx = ts_length - episode_length
-            episode_start = np.random.randint(0, end_int_idx)
+            end_int_idx = ts_length - self.episode_length
+            self.episode_start = np.random.randint(0, end_int_idx)
 
         #  now we can set the end of the episode
-        end = episode_start + episode_length
-        return episode_start, end
+        self.episode_end = self.episode_start + self.episode_length
+
+        return self.episode_start, self.episode_end
 
     def make_env_obs_space(self, ts):
         """
-        Creates the observation space list
+        Creates the observation space list.
+
+        returns
+            observation_space (list) contains energy_py Space objects
         """
         observation_space = []
 
@@ -153,6 +172,7 @@ class TimeSeriesEnv(BaseEnv):
                 assert 1 == 0
 
             observation_space.append(obs_space)
+
         assert len(observation_space) == ts.shape[1]
 
         return observation_space
@@ -167,6 +187,14 @@ class TimeSeriesEnv(BaseEnv):
 
         Repeated code with get_observation but I think having two functions
         is cleaner when using in the child class.
+
+        args
+            steps (int) used as a row index
+            append (list) optional array to append onto the state
+
+        returns
+            ts_info (np.array)
+
         """
         ts_info = np.array(self.state_ts.iloc[steps, :])
         ts_info = np.append(ts_info, append)
@@ -179,9 +207,14 @@ class TimeSeriesEnv(BaseEnv):
         Also takes an optional argument to append onto the end of the array.
         This is so that environment specific info can be added onto the
         state or observation array.
+
+        args
+            steps (int) used as a row index
+            append (list) optional array to append onto the observation
+
+        returns
+            ts_info (np.array)
         """
         ts_info = np.array(self.observation_ts.iloc[steps, :])
-
         ts_info = np.append(ts_info, np.array(append))
-
         return ts_info.reshape(1, -1)
