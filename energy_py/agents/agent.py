@@ -103,42 +103,53 @@ class EpsilonGreedy(object):
 
     Initially act totally random, then linear decay to a minimum.
 
-    args
-        random_start (int) number of steps to act totally random
-        decay_steps (int) number of steps to decay epsilon from start to end
-        epsilon_start (float)
-        epsilon_end (float)
-    """
-    def __init__(self,
-                 random_start,
-                 decay_steps,
-                 epsilon_start=1.0,
-                 epsilon_end=0.1):
-        self.random_start = int(random_start)
-        self.decay_steps = int(decay_steps)
-        self.epsilon_start = float(epsilon_start)
-        self.epsilon_end = float(epsilon_end)
+    Two counters are used
+        self.count is the total number of steps the object has seen
+        self.decay_count is the number of steps in the decary period
 
-        #  we calculate a linear coefficient to decay with
-        self.linear_coeff = (epsilon_end - epsilon_start) / decay_steps
+    args
+        decay_length (int) len of the linear decay period
+        init_random (int) num steps to act fully randomly at start
+        eps_start (float) initial value of epsilon
+        eps_end (float) final value of epsilon
+    """
+
+    def __init__(self,
+                 decay_length,
+                 init_random=0,
+                 eps_start=1.0,
+                 eps_end=0.1):
+
+        self.decay_length = int(decay_length)
+        self.init_random = int(init_random)
+        self.min_start = self.init_random + self.decay_length
+
+        self.eps_start = float(eps_start)
+        self.eps_end = float(eps_end)
+
+        eps_delta = self.eps_start - self.eps_end
+        self.coeff = - eps_delta / self.decay_length
 
         self.reset()
 
     def reset(self):
-        self.steps = 0
-        self._epsilon = self.epsilon_start
+        self.count = 0
+        self.decay_count = 0
 
     @property
     def epsilon(self):
-        if self.steps < self.random_start:
-            self._epsilon = 1
+        #  move the counter each step
+        self.count += 1
 
-        elif self.steps >= self.random_start and self.steps < self.decay_steps:
-            self._epsilon = self.linear_coeff * self.steps + self.epsilon_start
-            self.steps += 1
+        if self.count <= self.init_random:
+            self._epsilon = 1.0
 
-        else:
-            self._epsilon = self.epsilon_end
+        if self.count > self.init_random and self.count <= self.min_start:
+            self._epsilon = self.coeff * self.decay_count + self.eps_start
+            self.decay_count += 1
+
+        if self.count > self.min_start:
+            self._epsilon = self.eps_end
 
         return float(self._epsilon)
 

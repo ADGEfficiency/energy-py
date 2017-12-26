@@ -17,13 +17,14 @@ def make_observation(path, horizion=5):
     Currently only supports giving the agent a forecast.
 
     args
-        horizion (int)
+        horizion (int) number of steps for the observation forecast
     """
     print('creating new state.csv and observation.csv')
+    #  load the raw state infomation
     raw_state_path = os.path.join(path, 'raw_state.csv')
-    print(raw_state_path)
     raw_state = pd.read_csv(raw_state_path, index_col=0, parse_dates=True)
 
+    #  create the observation, which is a perfect forecast
     observations = [raw_state.shift(-i) for i in range(horizion)]
     observation = pd.concat(observations, axis=1).dropna()
 
@@ -37,10 +38,9 @@ def make_observation(path, horizion=5):
     observation.index = state.index
     observation['D_hour'] = observation.index.hour
 
-    state_path = os.path.join(path, 'state.csv')
-    obs_path = os.path.join(path, 'observation.csv')
-    state.to_csv(state_path)
-    observation.to_csv(obs_path)
+    state.to_csv(os.path.join(path, 'state.csv'))
+    observation.to_csv(os.path.join(path, 'observation.csv'))
+
     return state, observation
 
 
@@ -102,6 +102,7 @@ class TimeSeriesEnv(BaseEnv):
         self.observation_info = observation.columns.tolist()
 
         assert state.shape[0] == observation.shape[0]
+
         return state, observation
 
     def get_state_obs(self):
@@ -198,6 +199,7 @@ class TimeSeriesEnv(BaseEnv):
         """
         ts_info = np.array(self.state_ts.iloc[steps, :])
         ts_info = np.append(ts_info, append)
+
         return ts_info.reshape(1, -1)
 
     def get_observation(self, steps, append=[]):
@@ -217,4 +219,5 @@ class TimeSeriesEnv(BaseEnv):
         """
         ts_info = np.array(self.observation_ts.iloc[steps, :])
         ts_info = np.append(ts_info, np.array(append))
+
         return ts_info.reshape(1, -1)

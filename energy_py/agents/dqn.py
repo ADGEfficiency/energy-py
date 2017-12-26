@@ -67,8 +67,9 @@ class DQN(BaseAgent):
         self.target_processor = Normalizer(1)
 
         #  create an object to decay epsilon
-        self.e_greedy = EpsilonGreedy(self.initial_random,
-                                      self.epsilon_decay_steps)
+        self.e_greedy = EpsilonGreedy(decay_length=self.epsilon_decay_steps,
+                                      init_random=self.initial_random)
+                                      
 
     def _reset(self):
         """
