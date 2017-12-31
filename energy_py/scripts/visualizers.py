@@ -279,5 +279,5 @@ class EternityVisualizer():
 
         for path, data in disk_data.items():
             path = os.path.join(self.results_path, 'csvs', path)
-            self.ensure_dir(path)
+            ensure_dir(path)
             data.to_csv(path)

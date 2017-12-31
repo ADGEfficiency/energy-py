@@ -67,4 +67,8 @@ def dpg_experiment(agent, args, paths, env):
 
                 agent_outputs, env_outputs = hist.output_results(save_data=True)
 
+        hist = EternityVisualizer(agent,
+                                  env,
+                                  results_path=RESULTS_PATH)
+        agent_outputs, env_outputs = hist.output_results(save_data=True)
     return agent_outputs, env_outputs

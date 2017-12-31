@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-from energy_py.agents import tfValueFunction
+from energy_py.agents import Q_DQN 
 
 model_dict = {'input_nodes': 4,
               'output_nodes': 3,
@@ -13,7 +13,7 @@ target = np.arange(2).flatten()
 action_index = np.arange(2).flatten()
 
 def test_train_op():
-    v = tfValueFunction(model_dict)
+    v = Q_DQN(model_dict)
 
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
@@ -31,8 +31,8 @@ def test_train_op():
 
 def test_target_network():
 
-    Q_actor = tfValueFunction(model_dict, 'actor')
-    Q_target = tfValueFunction(model_dict, 'target')
+    Q_actor = Q_DQN(model_dict, 'actor')
+    Q_target = Q_DQN(model_dict, 'target')
 
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())

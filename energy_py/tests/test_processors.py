@@ -1,56 +1,63 @@
 import numpy as np
-from energy_py import Standardizer, Normalizer
-eps = 1e-5
-batch = np.array([[1,2,-3],
-                  [0,-2,0],
-                  [4,5,-1]]).reshape(3,-1)
 
-def test_std():
-    std = Standardizer(length=3, use_history=False)
-    res = std.transform(batch)
+from energy_py import Normalizer, Standardizer
+from energy_py import ContinuousSpace, DiscreteSpace, GlobalSpace
 
-    #  check that the array is shaped correctly
-    assert res.shape == batch.shape
+#  create a Global Space for the Normalizer test
+spc = GlobalSpace([ContinuousSpace(0,10), DiscreteSpace(1), ContinuousSpace(0,10)])
 
-    #  check our means are close to 0 
-    assert np.any(np.absolute(res.mean(axis=0) < eps))
-    #  check our standard deviations are close to 1
-    assert np.any(np.absolute(res.std(axis=0) - 1 < eps))
+#  create arrays to process
+b1 = np.random.rand(10,3)
+b2 = np.random.rand(10,3)
+all_b = np.concatenate([b1, b2], axis=0)
 
-def test_norm():    
-    norm = Normalizer(length=3, use_history=False)
-    res = norm.transform(batch)
+def test_standardizer():
+    #  test using batch statistics
+    processor = Standardizer(b1.shape[1], use_history=False)
+    _ = processor.transform(b1)
+    _ = processor.transform(b2)
+    
+    assert processor.means.flatten().all() == np.mean(b2, axis=0).all()
+    
+def test_standardizer_hist():
+    #  test using history
+    true_means = np.mean(b1, axis=0)
+    true_stds = np.std(b1, axis=0)
+    
+    processor = Standardizer(b1.shape[1], use_history=True)
+    _ = processor.transform(b1)
+    
+    assert true_means.all() == processor.means.all()
+    assert true_stds.all() == processor.stds.all()
 
-    #  check that the array is shaped correctly
-    assert res.shape == batch.shape
+def test_normalizer():
+    #  testing using batch statistics
+    processor = Normalizer(b1.shape[1], use_history=False)
+    
+    _ = processor.transform(b1)
+    assert processor.mins.all() == np.min(b1, axis=0).all()
+    assert processor.maxs.all() == np.max(b1, axis=0).all()
+    
+    _ = processor.transform(b2)
+    assert processor.mins.all() == np.min(b2, axis=0).all()
+    assert processor.maxs.all() == np.max(b2, axis=0).all()   
 
-    #  check our means are close to 0 
-    assert np.any(np.absolute(res.max(axis=0) - 1 < eps))
-    #  check our standard deviations are close to 1
-    assert np.any(np.absolute(res.min(axis=0) < eps))
+def test_normalizer_hist():
+    #  test using history
+    processor = Normalizer(b1.shape[1], use_history=True)
+    
+    _ = processor.transform(b1)   
+    _ = processor.transform(b2)
 
-def test_std_hist():
-    std = Standardizer(length=3, use_history=True)
-    res = std.transform(batch)
-    old_mean, old_stdev = std.means, std.stdevs
-
-    res = std.transform(batch)
-    new_mean, new_stdev = std.means, std.stdevs
-    assert np.all(new_mean == old_mean)
-    assert np.all(new_stdev == old_stdev)
-
-    res = std.transform(batch*2)
-    new_mean, new_stdev = std.means, std.stdevs
-    assert np.all(new_mean != old_mean)
-    assert np.all(new_stdev != old_stdev)
-
-def test_norm_hist():
-    norm = Normalizer(length=3, use_history=True)
-    res = norm.transform(batch)
-    old_max, old_min = norm.maxs, norm.mins
-
-    res = norm.transform(batch)
-    new_max, new_min = norm.maxs, norm.mins
-    assert np.all(new_max == old_max)
-    assert np.all(new_min == old_min)
-
+    assert processor.mins.all() == np.min(all_b, axis=0).all()
+    assert processor.maxs.all() == np.max(all_b, axis=0).all()   
+    
+def test_normalizer_space():
+    #  test using a GlobalSpace
+    processor = Normalizer(b1.shape[1], space=spc)
+    
+    _ = processor.transform(b1)
+    _ = processor.transform(b2)
+    
+    assert processor.mins.all() == spc.low.all()
+    assert processor.maxs.all() == spc.high.all()
