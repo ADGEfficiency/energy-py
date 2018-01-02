@@ -87,13 +87,18 @@ class BaseEnv(Utils):
             info (dict) auxiliary information
         """
         logger.debug('Episode {} - Step {}'.format(self.episode, self.steps))
+
+        assert action.shape == (1, self.action_space.shape[0])
+
         return self._step(action)
 
     def output_results(self):
         """
-        Pulls data out of the environment.
+        Adds the .info dictionary to the outputs dictionary.
+        Makes a dataframe from self.info.
 
-        Grabs data from the self.info dictionary
+        returns
+            self._output_results() function set in child class
         """
         logger.debug('Outputting resuts')
         #  add the self.info dictionary into our outputs dictionary

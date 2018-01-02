@@ -59,13 +59,14 @@ class NaiveBatteryAgent(BaseAgent):
         print('action {}'.format(action))
         return np.array(action).reshape(-1, self.action_space.shape[0])
 
-    def _learn(self):
-        print('I am an agent based on a human desgined heuristic')
-        print('I cannot learn anything')
-        return None
 
-    def _load_brain(self):
-        print('I am an agent based on a human desgined heuristic')
-        print('I have no brain')
-        #  TODO could get this to load a rule from disk
-        return None
+class DispatchAgent(BaseAgent):
+
+    def __init__(self, env, discount):
+        #  calling init method of the parent Base_Agent class
+        #  passing the environment to the Base_Agent
+        super().__init__(env, discount)
+
+    def _act(self, **kwargs):
+
+        obs = kwargs['observation']

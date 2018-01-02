@@ -54,13 +54,13 @@ class DQN(BaseAgent):
         #  a dictionary to setup the approximation of Q(s,a)
         self.model_dict = {'input_nodes': self.observation_space.shape[0],
                            'output_nodes': self.actions.shape[0],
-                           'layers': [25, 25],
+                           'layers': [100, 50, 25],
                            'lr': 0.0025,
                            'epochs': 1}
 
         #  make our two action value functions
-        self.Q_actor = Q(self.model_dict, 'Q_actor')
-        self.Q_target = Q(self.model_dict, 'Q_target')
+        self.Q_actor = Q(self.model_dict, 'actor')
+        self.Q_target = Q(self.model_dict, 'target')
 
         #  objects to process the inputs & targets of neural networks
         self.state_processor = Standardizer(self.observation_space.shape[0])
@@ -209,5 +209,10 @@ class DQN(BaseAgent):
         Copies weights from Q_actor into Q_target
         """
         logger.info('Updating Q_target by copying weights from Q_actor')
+
+        assert self.Q_target.scope == 'target'
+        assert self.Q_actor.scope == 'actor'
+
         sess = self.Q_target.copy_weights(sess, parent=self.Q_actor)
+
         return sess

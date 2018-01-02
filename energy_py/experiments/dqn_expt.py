@@ -21,9 +21,7 @@ def dqn_experiment(agent, args, paths, env):
 
     agent = agent(env, 
                   DISCOUNT, 
-                  brain_path=paths['brain'],
                   Q=Q_DQN,
-                  batch_size=BATCH_SIZE,
                   total_steps=total_steps)
 
     save_args(args, 
@@ -31,7 +29,7 @@ def dqn_experiment(agent, args, paths, env):
               optional={'total steps': total_steps,
                         'epsilon decay (steps)': agent.epsilon_decay_steps,
                         'update target net (steps)': agent.update_target_net,
-                        'memory length (steps)': agent.memory.length,
+                        'memory length (steps)': agent.memory.memory_length,
                         'initial random (steps)': agent.initial_random}) 
 
     with tf.Session() as sess:
@@ -76,4 +74,9 @@ def dqn_experiment(agent, args, paths, env):
 
                 agent_outputs, env_outputs = hist.output_results(save_data=True)
 
+        hist = EternityVisualizer(agent,
+                                  env,
+                                  results_path=RESULTS_PATH)
+
+        agent_outputs, env_outputs = hist.output_results(save_data=True)
     return agent_outputs, env_outputs

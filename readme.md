@@ -1,18 +1,18 @@
-## energy_py v2.0
+## energy_py
 
-**energy_py is reinforcement learning for energy systems.**:wq
+**energy_py is reinforcement learning for energy systems.**
 
 Using reinforcement learning agents to control virtual energy environments is the first step towards using reinforcement learning to optimize real world energy systems.
 
 energy_py supports this goal by providing a **collection of reinforcement learning agents, energy environments and tools to run experiments.**
 
-energy_py is built and maintained by Adam Green.  This project is in rapid development - if you would like to get involved send me an email at [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  I write about energy & machine learning at [adgefficiency.com](http://adgefficiency.com/).  
+energy_py is built and maintained by Adam Green.  This project is in rapid development - if you would like to get involved send me an email at [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  I write about energy & machine learning at [adgefficiency.com](http://adgefficiency.com/).  [The introductory blog post for this project is here.](http://adgefficiency.com/energy_py-reinforcement-learning-for-energy-systems/)
 
 I teach a one day [introduction to reinforcement learning learning](https://github.com/ADGEfficiency/DSR_RL) class at [Data Science Retreat](https://www.datascienceretreat.com/).
 
 ### Basic usage
 
-A [simple but detailed example](https://github.com/ADGEfficiency/energy_py/blob/master/notebooks/examples/Q_learning_battery.ipynb) of using the DQN agent to control the battery environment is a great place to start.
+[A simple but detailed example](https://github.com/ADGEfficiency/energy_py/blob/master/notebooks/examples/Q_learning_battery.ipynb) of using the DQN agent to control the battery environment is a great place to start.
 
 
 Another way to use energy_py is to run experiments.  Below I run experiments with two different agents and two different environments. 

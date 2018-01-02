@@ -18,14 +18,14 @@ if __name__ == '__main__':
         #                                        data_path,
         #                                        'naive')
 
-        # dqn_outputs = dqn_experiment(DQN,
-        #                              env,
-        #                              data_path,
-        #                              base_path='dqn',
-        #                              opt_parser_args={'name': '--bs',
-        #                                               'type': int,
-        #                                               'default': 64,
-        #                                               'help': 'batch size for experience replay'})
+        dqn_outputs = dqn_experiment(DQN,
+                                     env,
+                                     data_path,
+                                     base_path='dqn',
+                                     opt_parser_args={'name': '--bs',
+                                                      'type': int,
+                                                      'default': 64,
+                                                      'help': 'batch size for experience replay'})
 
         dpg_out = dpg_experiment(DPG,
                                  env,

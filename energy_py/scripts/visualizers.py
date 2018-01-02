@@ -92,7 +92,7 @@ def make_panel_fig(df, panels, name, results_path=[],
     returns
         fig (object) plot of the panels
     """
-    logger.info('making panel fig for {}'.format(name))
+    logger.debug('making panel fig for {}'.format(name))
     num_panels = len(panels)
     fig, axes = plt.subplots(nrows=num_panels,
                              ncols=1,

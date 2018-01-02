@@ -1,8 +1,4 @@
-import collections
 import logging
-import os
-
-import numpy as np
 
 from energy_py.envs import TimeSeriesEnv
 from energy_py.scripts.spaces import ContinuousSpace, GlobalSpace
@@ -17,8 +13,8 @@ class BatteryEnv(TimeSeriesEnv):
 
     args
         data_path (str) location of state.csv, observation.csv
-        episode_length (int) 
-        episode_start (int) integer index of episode start 
+        episode_length (int)
+        episode_start (int) integer index of episode start
         episode_random (bool) whether to randomize the episode start position
         power_rating (float) maximum rate of battery charge or discharge [MW]
         capacity (float) amount of electricity that can be stored [MWh]
@@ -26,7 +22,7 @@ class BatteryEnv(TimeSeriesEnv):
         initial_charge (float) inital charge as pct of capacity [%]
 
     """
-    def __init__(self, 
+    def __init__(self,
                  data_path,
                  episode_length=48,
                  episode_start=0,
@@ -37,10 +33,10 @@ class BatteryEnv(TimeSeriesEnv):
                  initial_charge=0.00):
 
         #  technical energy inputs
-        self.power_rating = float(power_rating) # MW
-        self.capacity = float(capacity) # MWh
-        self.round_trip_eff = float(round_trip_eff) # %
-        self.initial_charge = float(self.capacity * initial_charge) # MWh
+        self.power_rating = float(power_rating)  # MW
+        self.capacity = float(capacity)  # MWh
+        self.round_trip_eff = float(round_trip_eff)  # %
+        self.initial_charge = float(self.capacity * initial_charge)  # MWh
 
         #  calling init method of the parent Time_Series_Env class
         super().__init__(data_path,
@@ -51,7 +47,7 @@ class BatteryEnv(TimeSeriesEnv):
     def _reset(self):
         """
         Resets the environment.
-            
+
         returns
             observation : np.array : the initial observation
         """
@@ -191,7 +187,7 @@ class BatteryEnv(TimeSeriesEnv):
             self.done = True
             total_ep_reward = sum(self.info['reward'])
             logger.info('Episode {} - Total reward {:.2f}'.format(self.episode,
-                                                               total_ep_reward))
+                                                                  total_ep_reward))
 
         #  saving info
         self.info = self.update_info(episode=self.episode,
@@ -231,6 +227,5 @@ class BatteryEnv(TimeSeriesEnv):
                                     ['new_charge'],
                                     ['electricity_price']]}
         self.outputs['env_panel_fig'] = env_panel_fig
-
 
         return self.outputs
