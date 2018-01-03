@@ -7,22 +7,24 @@ from energy_py.envs import TimeSeriesEnv
 
 class FlexEnv(TimeSeriesEnv):
     def __init__(self,
-                 episode_length='maximum',
+                 data_path,
+                 episode_length=48,
                  episode_start=0,
+                 episode_random=False,
                  flex_size=2,  # MW
                  flex_time=6,  # num 5 minute periods
                  relax_time=12):  # num 5 min periods
-
-        data_path = os.path.dirname(os.path.abspath(__file__))
 
         #  technical energy inputs
         self.flex_size = float(flex_size)
         self.flex_time = int(flex_time)
         self.relax_time = int(relax_time)
 
-        super().__init__(episode_length,
+        #  init the parent TimeSeriesEnv
+        super().__init__(data_path,
+                         episode_length,
                          episode_start,
-                         data_path)
+                         episode_random)
 
     def _reset(self):
         """
@@ -40,7 +42,7 @@ class FlexEnv(TimeSeriesEnv):
         Once flex cycle is started it runs for the flex_time
         After flex_time is over, relax_time starts
         """
-        self.action_space = GlobalSpace(spaces=[DiscreteSpace(0, 1)])
+        self.action_space = GlobalSpace([DiscreteSpace(1)])
 
         #  initialize all of the
         self.flex_avail = 1  # 0=not available, 1=available
@@ -57,10 +59,9 @@ class FlexEnv(TimeSeriesEnv):
         """
         obs_spc, self.observation_ts, self.state_ts = self.get_state_obs()
 
-        #  grab the spaces list as setup by get_state_obs()
         #  add on a space to represent the flex availability
-        spaces = obs_spc.spaces.append(DiscreteSpace(0, 1))
-        self.observation_space = GlobalSpace(spaces)
+        obs_spc.append(DiscreteSpace(1))
+        self.observation_space = GlobalSpace(obs_spc)
 
         """
         Resetting steps, state, observation, done status
@@ -89,39 +90,37 @@ class FlexEnv(TimeSeriesEnv):
             info (dict)
         """
         #  pull the electricity price out of the state
-        electricity_price = self.state[0][0]
+        elect_price_index = self.observation_info.index('C_electricity_price_[$/MWh]')
+        electricity_price = self.state[0][elect_price_index]
 
         #  grab the action
         action = action[0][0]
         assert action >= self.action_space.spaces[0].low
         assert action <= self.action_space.spaces[0].high
 
-        logging.info('electricity_price is {}'.format(electricity_price))
-        logging.info('action is {}'.format(action))
-
-        #  check counters are consistent
-        self.check_counters()
+        #  probably a bit excessive to check twice (I check again below)
+        total_counters = self.check_counters()
+        
+        #  if we are in the flex down cycle, continue that
+        if self.flex_down > 0:
+            self.flex_down += 1
 
         #  if we are in the flex up cycle, continue
         if self.flex_up > 0:
             self.flex_up += 1
 
-        #  if we are in the flex down cycle, continue that
-        if self.flex_down > 0:
-            self.flex_down += 1
-
         #  if we are in the relaxation period, continue that
         if self.relax > 0:
             self.relax += 1
 
-        #  if we are ending the flex up period, we start flex down
-        if self.flex_up > self.flex_time:
-            self.flex_up = 0
-            self.flex_down = 1
-
-        #  if we are ending the flex down period, we start relaxation
-        if self.flex_down > self.flex_time:
+        #  if we are ending the flex down cycle, and starting flex up
+        if self.flex_down == self.flex_time:
             self.flex_down = 0
+            self.flex_up = 1
+
+        #  if we are ending the flex up cycle, and starting relaxation
+        if self.flex_up == self.flex_time:
+            self.flex_up = 0
             self.relax = 1
 
         #  ending the relaxation period
@@ -132,7 +131,7 @@ class FlexEnv(TimeSeriesEnv):
         #  if we are not doing anything but want to start the flex cycle
         total_counters = sum([self.flex_up, self.flex_down, self.relax])
         if total_counters == 0 and action == 1:
-            self.flex_up = 1
+            self.flex_down = 1
             self.flex_avail = 0
 
         #  we set the default action to do nothing
@@ -140,20 +139,25 @@ class FlexEnv(TimeSeriesEnv):
 
         #  we set the flex action to do something if we are flexing
         #  up or down
-        if self.flex_up > 0:
-            flex_action = - self.flex_size
 
         if self.flex_down > 0:
             flex_action = self.flex_size
 
-        #  now we set reward based on whether we are in a cycle or not
-        #  reward is negative as we want to reduce cost
-        reward = - flex_action * electricity_price
+        if self.flex_up > 0:
+            flex_action = - self.flex_size
 
-        logging.debug('flex_up {}'.format(self.flex_up))
-        logging.debug('flex_down {}'.format(self.flex_down))
-        logging.debug('relax {}'.format(self.relax))
-        logging.debug('reward {}'.format(reward))
+        #  now we set reward based on whether we are in a cycle or not
+        reward = flex_action * electricity_price
+
+        total_counters = self.check_counters()
+
+        if total_counters > 0:
+            logging.info('electricity_price is {}'.format(electricity_price))
+            logging.info('action is {}'.format(action))
+            logging.info('up {} down {} relax {} rew {}'.format(self.flex_up,
+                                                         self.flex_down,
+                                                         self.relax,
+                                                         reward))
 
         self.steps += 1
         next_state = self.get_state(self.steps, append=self.flex_avail)
@@ -183,9 +187,6 @@ class FlexEnv(TimeSeriesEnv):
         #  moving to the next time step
         self.state = next_state
         self.observation = next_observation
-
-        #  check counters are consistent
-        self.check_counters()
 
         return self.observation, reward, self.done, self.info
 
@@ -242,3 +243,5 @@ class FlexEnv(TimeSeriesEnv):
 
         if self.flex_avail == 1:
             assert total_counters == 0
+
+        return total_counters

@@ -38,7 +38,7 @@ class BatteryEnv(TimeSeriesEnv):
         self.round_trip_eff = float(round_trip_eff)  # %
         self.initial_charge = float(self.capacity * initial_charge)  # MWh
 
-        #  calling init method of the parent Time_Series_Env class
+        #  calling init method of the parent TimeSeriesEnv 
         super().__init__(data_path,
                          episode_length,
                          episode_start,
@@ -114,7 +114,8 @@ class BatteryEnv(TimeSeriesEnv):
             info        : dictionary
         """
         #  pulling out the state infomation
-        electricity_price = self.state[0][0]
+        elect_price_index = self.observation_info.index('C_electricity_price_[$/MWh]')
+        electricity_price = self.state[0][elect_price_index]
         old_charge = self.state[0][-1]
 
         #  our action is sent to the environment as (1, num_actions)
