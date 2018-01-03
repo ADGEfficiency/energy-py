@@ -1,7 +1,7 @@
-import pandas as pd
 import numpy as np
 
 from energy_py.agents import BaseAgent
+
 
 class NaiveBatteryAgent(BaseAgent):
     """
@@ -17,7 +17,6 @@ class NaiveBatteryAgent(BaseAgent):
 
     def __init__(self, env, discount):
         #  calling init method of the parent Base_Agent class
-        #  passing the environment to the Base_Agent
         super().__init__(env, discount)
 
     def _reset(self):
@@ -37,36 +36,45 @@ class NaiveBatteryAgent(BaseAgent):
         observation = kwargs['observation']
         hour = observation[0][hour_index]
 
-        #  grab the spaces list 
+        #  grab the spaces list
         act_spaces = self.action_space.spaces
 
         if hour >= 7 and hour < 10:
             #  discharge during morning peak
             action = [act_spaces[0].low, act_spaces[1].high]
-            action = np.array(action).reshape(1, self.action_space.shape[0])
 
         elif hour >= 15 and hour < 21:
             #  discharge during evening peak
             action = [act_spaces[0].low, act_spaces[1].high]
-            action = np.array(action).reshape(1, self.action_space.shape[0])
 
         else:
             #  charge at max rate
             action = [act_spaces[0].high, act_spaces[1].low]
-            action = np.array(action).reshape(1, self.action_space.shape[0])
 
-        print('hour {}'.format(hour))
-        print('action {}'.format(action))
-        return np.array(action).reshape(-1, self.action_space.shape[0])
+        return np.array(action).reshape(1, self.action_space.shape[0])
 
 
 class DispatchAgent(BaseAgent):
 
-    def __init__(self, env, discount):
+    def __init__(self, env, discount, trigger=200):
         #  calling init method of the parent Base_Agent class
-        #  passing the environment to the Base_Agent
         super().__init__(env, discount)
+        self.trigger = trigger
 
     def _act(self, **kwargs):
 
         obs = kwargs['observation']
+        idx = self.env.observation_info.index('C_cumulative_mean_dispatch_[$/MWh]')
+        cumulative_dispatch = obs[0][idx]
+
+        if cumulative_dispatch > 200:
+            action = self.action_space.high
+
+        else:
+            action = self.action_space.low
+
+        return np.array(action).reshape(1, self.action_space.shape[0])
+
+    def _reset(self):
+        #  nothing additional to be reset for this agent
+        return None
