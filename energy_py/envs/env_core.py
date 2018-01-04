@@ -41,8 +41,6 @@ class BaseEnv(Utils):
 
     def _reset(self): raise NotImplementedError
 
-    def _output_results(self): raise NotImplementedError
-
     #  Set these in ALL subclasses
     action_space = None
     observation_space = None

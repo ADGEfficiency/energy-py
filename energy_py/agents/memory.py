@@ -206,7 +206,7 @@ class Memory(object):
         Extract data from the memory
 
         returns
-            self.outputs (dict): includes self.info
+            self.outputs (dict) includes self.info
         """
         self.outputs['info'] = self.info
 

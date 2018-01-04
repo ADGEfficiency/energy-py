@@ -1,8 +1,9 @@
 import logging
-import os
 
 from energy_py import DiscreteSpace, GlobalSpace
 from energy_py.envs import TimeSeriesEnv
+
+logger = logging.getLogger(__name__)
 
 
 class FlexEnv(TimeSeriesEnv):
@@ -100,7 +101,7 @@ class FlexEnv(TimeSeriesEnv):
 
         #  probably a bit excessive to check twice (I check again below)
         total_counters = self.check_counters()
-        
+
         #  if we are in the flex down cycle, continue that
         if self.flex_down > 0:
             self.flex_down += 1
@@ -114,12 +115,12 @@ class FlexEnv(TimeSeriesEnv):
             self.relax += 1
 
         #  if we are ending the flex down cycle, and starting flex up
-        if self.flex_down == self.flex_time:
+        if self.flex_down > self.flex_time:
             self.flex_down = 0
             self.flex_up = 1
 
         #  if we are ending the flex up cycle, and starting relaxation
-        if self.flex_up == self.flex_time:
+        if self.flex_up > self.flex_time:
             self.flex_up = 0
             self.relax = 1
 
@@ -147,17 +148,19 @@ class FlexEnv(TimeSeriesEnv):
             flex_action = - self.flex_size
 
         #  now we set reward based on whether we are in a cycle or not
-        reward = flex_action * electricity_price
+        #  /12 so we get reward in terms of £/5 minutes
+        reward = flex_action * electricity_price / 12
 
         total_counters = self.check_counters()
 
         if total_counters > 0:
-            logging.info('electricity_price is {}'.format(electricity_price))
-            logging.info('action is {}'.format(action))
-            logging.info('up {} down {} relax {} rew {}'.format(self.flex_up,
-                                                         self.flex_down,
-                                                         self.relax,
-                                                         reward))
+            logger.info('{}'.format(self.observation_ts.index[self.steps]))
+            logger.info('electricity_price is {}'.format(electricity_price))
+            logger.info('action is {}'.format(action))
+            logger.info('up {} down {} relax {} rew {}'.format(self.flex_up,
+                                                                self.flex_down,
+                                                                self.relax,
+                                                                reward))
 
         self.steps += 1
         next_state = self.get_state(self.steps, append=self.flex_avail)
@@ -209,8 +212,7 @@ class FlexEnv(TimeSeriesEnv):
                          'panels': [['flex_up', 'flex_down', 'relax'],
                                     ['flex_avail', 'flex_action'],
                                     ['electricity_price'],
-                                    ['reward']],
-                         'shape': (4, 1)}
+                                    ['reward']]}
 
         #  add to the outputs dictionary
         self.outputs['env_panel_fig'] = env_panel_fig

@@ -6,7 +6,7 @@ Using reinforcement learning agents to control virtual energy environments is th
 
 energy_py supports this goal by providing a **collection of reinforcement learning agents, energy environments and tools to run experiments.**
 
-energy_py is built and maintained by Adam Green.  This project is in rapid development - if you would like to get involved send me an email at [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  I write about energy & machine learning at [adgefficiency.com](http://adgefficiency.com/).  [The introductory blog post for this project is here.](http://adgefficiency.com/energy_py-reinforcement-learning-for-energy-systems/)
+energy_py is built and maintained by Adam Green.  This project is in rapid development - if you would like to get involved send me an email at [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  I write about energy & machine learning at [adgefficiency.com](http://adgefficiency.com/).  The introductory blog post for this project [is here.](http://adgefficiency.com/energy_py-reinforcement-learning-for-energy-systems/)
 
 I teach a one day [introduction to reinforcement learning learning](https://github.com/ADGEfficiency/DSR_RL) class at [Data Science Retreat](https://www.datascienceretreat.com/).
 

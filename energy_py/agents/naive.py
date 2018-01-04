@@ -19,18 +19,9 @@ class NaiveBatteryAgent(BaseAgent):
         #  calling init method of the parent Base_Agent class
         super().__init__(env, discount)
 
-    def _reset(self):
-        #  nothing additional to be reset for this agent
-        return None
-
     def _act(self, **kwargs):
         """
-        Agent recieves a numpy array as the observation
 
-        Agent makes determinstic actions based on a timestamp
-
-        Doesn't look at the observation numpy array that other
-        agents use (it is available in kwargs)
         """
         hour_index = self.observation_info.index('D_hour')
         observation = kwargs['observation']
@@ -55,26 +46,33 @@ class NaiveBatteryAgent(BaseAgent):
 
 
 class DispatchAgent(BaseAgent):
+    """
+    Dispatch agent looks at the cumulative mean of the within half hour
+    dispatch price.  Takes action if this cumulative average is greater
+    than the trigger price
 
+    args
+        env (object) energy_py environment
+        discount (float) discount rate
+        trigget (float) triggers flex action based on cumulative mean price
+    """
     def __init__(self, env, discount, trigger=200):
         #  calling init method of the parent Base_Agent class
         super().__init__(env, discount)
-        self.trigger = trigger
+        self.trigger = float(trigger)
 
     def _act(self, **kwargs):
+        """
 
+        """
         obs = kwargs['observation']
         idx = self.env.observation_info.index('C_cumulative_mean_dispatch_[$/MWh]')
         cumulative_dispatch = obs[0][idx]
 
-        if cumulative_dispatch > 200:
+        if cumulative_dispatch > self.trigger:
             action = self.action_space.high
 
         else:
             action = self.action_space.low
 
         return np.array(action).reshape(1, self.action_space.shape[0])
-
-    def _reset(self):
-        #  nothing additional to be reset for this agent
-        return None

@@ -52,8 +52,6 @@ class BaseAgent(Utils):
 
     def _learn(self, **kwargs): raise NotImplementedError
 
-    def _output_results(self): raise NotImplementedError
-
     def reset(self):
         """
         Resets the agent.

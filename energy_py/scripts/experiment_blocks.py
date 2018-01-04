@@ -12,9 +12,12 @@ def experiment():
     """
     def outer_wrapper(my_expt_func):
 
-        def wrapper(agent, env, 
-                    data_path, base_path, 
-                    opt_parser_args=[]):
+        def wrapper(agent, 
+                    env, 
+                    data_path, 
+                    base_path, 
+                    opt_parser_args=None,
+                    opt_agent_args=None):
 
             parser, args = expt_args(opt_parser_args)
 
@@ -29,7 +32,8 @@ def experiment():
             agent_outputs, env_outputs = my_expt_func(agent,
                                                       args,
                                                       paths,
-                                                      env)
+                                                      env,
+                                                      opt_agent_args)
 
             return agent_outputs, env_outputs
         
@@ -41,7 +45,7 @@ def experiment():
 def expt_args(optional_args=[]):
     """
     args
-        optional_args (list) list of dictionaries
+        optional_args (list) one dict per optional parser arg required
     """
     parser = argparse.ArgumentParser(description='energy_py expt arg parser')
 

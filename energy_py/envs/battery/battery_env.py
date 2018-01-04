@@ -38,7 +38,7 @@ class BatteryEnv(TimeSeriesEnv):
         self.round_trip_eff = float(round_trip_eff)  # %
         self.initial_charge = float(self.capacity * initial_charge)  # MWh
 
-        #  calling init method of the parent TimeSeriesEnv 
+        #  calling init method of the parent TimeSeriesEnv
         super().__init__(data_path,
                          episode_length,
                          episode_start,
