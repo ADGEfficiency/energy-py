@@ -64,9 +64,9 @@ class TimeSeriesEnv(BaseEnv):
                  episode_start,
                  episode_random):
 
-        self.episode_start = episode_start
-        self.episode_length = episode_length
-        self.episode_random = episode_random
+        self.episode_start = int(episode_start)
+        self.episode_length = int(episode_length)
+        self.episode_random = bool(episode_random)
 
         #  load up the infomation from the csvs once
         #  we do this before we init the BaseEnv so we can reset in
@@ -149,16 +149,18 @@ class TimeSeriesEnv(BaseEnv):
 
         return self.episode_start, self.episode_end
 
-    def make_env_obs_space(self, ts):
+    def make_env_obs_space(self, obs_ts):
         """
         Creates the observation space list.
 
+        args
+            obs_ts (pd.DataFrame)
         returns
             observation_space (list) contains energy_py Space objects
         """
         observation_space = []
 
-        for name, col in ts.iteritems():
+        for name, col in obs_ts.iteritems():
             #  pull the label from the column name
             label = str(name[:2])
 
@@ -169,16 +171,15 @@ class TimeSeriesEnv(BaseEnv):
                 obs_space = ContinuousSpace(col.min(), col.max())
 
             else:
-                print('time series not labelled correctly')
-                assert 1 == 0
+                raise ValueError('Time series columns mislabelled')
 
             observation_space.append(obs_space)
 
-        assert len(observation_space) == ts.shape[1]
+        assert len(observation_space) == obs_ts.shape[1]
 
         return observation_space
 
-    def get_state(self, steps, append=[]):
+    def get_state(self, steps, append=None):
         """
         Helper function to get a state.
 

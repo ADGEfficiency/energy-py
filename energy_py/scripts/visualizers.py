@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from energy_py.scripts.utils import Utils, ensure_dir
+from energy_py.scripts.utils import  ensure_dir
 
 
 plt.style.use('seaborn')
@@ -18,9 +18,9 @@ logger = logging.getLogger(__name__)
 Functions related to generating outputs from agent and environment info
 """
 
-def single_series_fig(series, name, results_path=[],
-                      xlabel=[], ylabel=[],
-                         xlim='all', ylim=[]):
+def single_series_fig(series, name, results_path=None,
+                      xlabel=None, ylabel=None,
+                         xlim='all', ylim=None):
     """
     args
         series (pd.Series)
@@ -71,10 +71,13 @@ def single_series_fig(series, name, results_path=[],
 
     return fig
 
-def make_panel_fig(df, panels, name, results_path=[],
-                   ylabels=[], xlabel=[],
-                   ylims=[],
-                   kinds=[], errors=[]):
+def make_panel_fig(df, 
+                   panels, 
+                   name, results_path=None,
+                   ylabels=None, xlabel=None,
+                   ylims=None,
+                   kinds=None, 
+                   errors=None):
     """
     Creates a panel of time series plots.  
     
@@ -94,6 +97,7 @@ def make_panel_fig(df, panels, name, results_path=[],
     """
     logger.debug('making panel fig for {}'.format(name))
     num_panels = len(panels)
+
     fig, axes = plt.subplots(nrows=num_panels,
                              ncols=1,
                              figsize=(15, 10),

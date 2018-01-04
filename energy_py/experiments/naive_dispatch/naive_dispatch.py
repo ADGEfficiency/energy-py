@@ -16,13 +16,11 @@ if __name__ == '__main__':
                                     'no_op',
                                     opt_agent_args={'sample_probability':0.0})
 
-    for j in range(2):
-        random = no_learning_experiment(RandomAgent,
-                                        env,
-                                        data_path,
-                                        'random_{}'.format(j),
-                                        opt_agent_args={'sample_probability':0.1})
-
+    # random = no_learning_experiment(RandomAgent,
+    #                                 env,
+    #                                 data_path,
+    #                                 'random_{}'.format(j),
+    #                                 opt_agent_args={'sample_probability':0.1})
     
     dispatch = no_learning_experiment(DispatchAgent,
                                       env,

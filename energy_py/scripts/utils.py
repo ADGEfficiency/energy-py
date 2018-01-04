@@ -1,105 +1,41 @@
-import csv
-from itertools import zip_longest
 import pickle
 import os
-import time
-
-import numpy as np
 
 
 def ensure_dir(file_path):
     """
-    Check that a directory exists
-    If it doesn't - make it
+    Checks a directory exists.  If it doesn't, makes it.
+
+    args
+        file_path (str)
     """
     directory = os.path.dirname(file_path)
     if not os.path.exists(directory):
         os.makedirs(directory)
 
 
-class Utils(object):
+def dump_pickle(obj, name):
     """
-    A base class that holds generic functions
+    Saves an object to a pickle file.
+    
+    args
+        obj (object)
+        name (str) path of the dumped file
     """
-    def __init__(self):
-        self.ensure_dir = ensure_dir
+    with open(name, 'wb') as handle:
+        pickle.dump(obj, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+
+def load_pickle(name):
     """
-    Useful Python functions:
+    Loads a an object from a pickle file. 
+
+    args
+        name (str) path to file to be loaded
+    
+    returns
+        obj (object)
     """
-
-    @staticmethod
-    def dump_pickle(obj, name):
-        with open(name, 'wb') as handle:
-            pickle.dump(obj, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-    @staticmethod
-    def load_pickle(name):
-        with open(name, 'rb') as handle:
-            obj = pickle.load(handle)
-        return obj
-
-    @staticmethod
-    def get_upper_path(string):
-        owd = os.getcwd()  #  save original working directory
-        os.chdir(string)  #  move based on the input string
-        base = os.getcwd()  #  get new wd
-        os.chdir(owd)  #  reset wd
-        return base
-
-    """
-    energy_py specific functions
-    """
-
-    @staticmethod
-    def normalize(value, low, high):
-        """
-        Generic helper function
-        Normalizes a value using a given lower & upper bound
-
-        args
-            value (float)
-            low   (float) : upper bound
-            high  (float) : lower_bound
-
-        returns
-            normalized (np array)
-        """
-        #  if statement to catch the constant value case
-        if low == high:
-            normalized = 0
-        else:
-            max_range = high - low
-            normalized = (value - low) / max_range
-        return np.array(normalized)
-
-    def scale_array(self, array, space):
-        """
-        Helper function for make_machine_experience()
-        Uses the space & a given function to scale an array
-        Scaling is done by normalization
-
-        Used to scale the observations and actions
-
-        Only really setup for continuous spaces TODO
-
-        args
-            array (np array) : array to be scaled
-                               shape=(1, space_length)
-
-            space (list) : a list of energy_py Space objects
-                           shape=len(action or observation space)
-
-        returns
-            scaled_array (np array)  : the scaled array
-                                       shape=(1, space_length)
-        """
-        array = array.reshape(-1)
-        assert array.shape[0] == space.shape[0]
-
-        scaled_array = np.array([])
-        for low, high, val in zip_longest(space.low, space.high, array):
-           scaled = self.normalize(low, high, val) 
-           scaled_array = np.append(scaled_array, scaled)
-
-        return scaled_array.reshape(1, space.shape[0])
+    with open(name, 'rb') as handle:
+        obj = pickle.load(handle)
+    return obj

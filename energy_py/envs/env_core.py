@@ -3,12 +3,11 @@ import logging
 
 import pandas as pd
 
-from energy_py import Utils
 
 logger = logging.getLogger(__name__)
 
 
-class BaseEnv(Utils):
+class BaseEnv(object):
     """
     The parent class for energy_py environments
     inspired by the gym.Env class
@@ -32,11 +31,9 @@ class BaseEnv(Utils):
     """
 
     def __init__(self):
-        super().__init__()
         self.observation = self.reset(episode='none')
-        return None
 
-    # Override in ALL subclasses
+    # Override in subclasses
     def _step(self, action): raise NotImplementedError
 
     def _reset(self): raise NotImplementedError

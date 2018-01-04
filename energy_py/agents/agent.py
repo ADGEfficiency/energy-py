@@ -1,12 +1,11 @@
 import logging
 
 from energy_py.agents.memory import Memory
-from energy_py import Utils
 
 logger = logging.getLogger(__name__)
 
 
-class BaseAgent(Utils):
+class BaseAgent(object):
     """
     The energy_py base agent class
 

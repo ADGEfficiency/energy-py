@@ -3,8 +3,7 @@ import csv
 import logging
 import logging.config
 
-from energy_py import Utils
-
+from energy_py.scripts.utils import ensure_dir
 
 def experiment():
     """
@@ -119,9 +118,8 @@ def make_paths(name):
              'brain': results + 'brain/',
              'logs': results + 'logs.log',
              'args': results + 'args.txt'}
-    utils = Utils()
     for k, path in paths.items():
-        utils.ensure_dir(path)
+        ensure_dir(path)
     return paths
 
 
