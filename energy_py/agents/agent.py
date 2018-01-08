@@ -71,6 +71,9 @@ class BaseAgent(object):
             action (np array) shape=(1, num_actions)
         """
         logger.debug('Agent is acting')
+        #  do some checks on observation array shape
+        #  potential to remove kwargs here for clarity - agent only needs
+        #  an observation to choose an action from
         return self._act(**kwargs)
 
     def learn(self, **kwargs):

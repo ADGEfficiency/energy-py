@@ -6,7 +6,8 @@ from energy_py.agents import Q_DQN
 
 
 @experiment()
-def dqn_experiment(agent, args, paths, env):
+def dqn_experiment(agent, args, paths, env, opt_agent_args=None):
+    #  opt_agent_args is not doing anything here!
 
     EPISODES = args.ep 
     DISCOUNT = args.gamma 
@@ -22,7 +23,8 @@ def dqn_experiment(agent, args, paths, env):
     agent = agent(env, 
                   DISCOUNT, 
                   Q=Q_DQN,
-                  total_steps=total_steps)
+                  total_steps=total_steps,
+                  *opt_agent_args)
 
     save_args(args, 
               path=ARGS_PATH,
@@ -40,7 +42,7 @@ def dqn_experiment(agent, args, paths, env):
 
             #  initialize before starting episode
             done, step = False, 0
-            observation = env.reset(episode)
+            observation = env.reset()
 
             #  while loop runs through a single episode
             while done is False:

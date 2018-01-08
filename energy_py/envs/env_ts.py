@@ -64,8 +64,8 @@ class TimeSeriesEnv(BaseEnv):
                  episode_start,
                  episode_random):
 
-        self.episode_start = int(episode_start)
         self.episode_length = int(episode_length)
+        self.episode_start = int(episode_start)
         self.episode_random = bool(episode_random)
 
         #  load up the infomation from the csvs once
@@ -73,11 +73,17 @@ class TimeSeriesEnv(BaseEnv):
         #  the BaseEnv class
         self.raw_state_ts, self.raw_observation_ts = self.load_ts(data_path)
 
+        #  hack to allow max length 
+        if self.episode_length == 0:
+            self.episode_length = int(self.raw_observation_ts.shape[0])
+
         #  initialize BaseEnv parent class
         super().__init__()
 
     def load_ts(self, data_path):
         """
+        Loads the state and observation from disk.
+
         args
             data_path (str) location of state.csv, observation.csv
 
@@ -85,6 +91,7 @@ class TimeSeriesEnv(BaseEnv):
             state (pd.DataFrame)
             observation (pd.DataFrame)
         """
+        #  paths to load state & observation 
         state_path = os.path.join(data_path, 'state.csv')
         obs_path = os.path.join(data_path, 'observation.csv')
 
@@ -94,11 +101,11 @@ class TimeSeriesEnv(BaseEnv):
             observation = pd.read_csv(obs_path, index_col=0)
 
         except FileNotFoundError:
-            #  create state and observation from scratch
+            #  create observation from scratch
             state, observation = make_observation(data_path)
 
         #  grab the column name so we can index state & obs arrays
-        self.state_info = state.columns
+        self.state_info = state.columns.tolist()
         self.observation_info = observation.columns.tolist()
 
         assert state.shape[0] == observation.shape[0]
@@ -125,8 +132,7 @@ class TimeSeriesEnv(BaseEnv):
         observation_space = self.make_env_obs_space(observation_ts)
 
         assert observation_ts.shape[0] == state_ts.shape[0]
-        logger.info('Ep {} starting at {}'.format(self.episode,
-                                                  state_ts.index[0]))
+        logger.info('Ep starting at {}'.format(state_ts.index[0]))
 
         return observation_space, observation_ts, state_ts
 
@@ -185,7 +191,7 @@ class TimeSeriesEnv(BaseEnv):
 
         Also takes an optional argument to append onto the end of the array.
         This is so that environment specific info can be added onto the
-        state or observation array.
+        state array.
 
         Repeated code with get_observation but I think having two functions
         is cleaner when using in the child class.
@@ -209,7 +215,7 @@ class TimeSeriesEnv(BaseEnv):
 
         Also takes an optional argument to append onto the end of the array.
         This is so that environment specific info can be added onto the
-        state or observation array.
+        observation array.
 
         args
             steps (int) used as a row index

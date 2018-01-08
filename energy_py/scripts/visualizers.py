@@ -103,7 +103,8 @@ def make_panel_fig(df,
                              figsize=(15, 10),
                              sharex=True)
 
-    for i, (ax, panel) in enumerate(zip(axes.flatten(),
+    axes = np.array(axes).flatten()
+    for i, (ax, panel) in enumerate(zip(axes,
                                         panels)):
 
         for col in panel:

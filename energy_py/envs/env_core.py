@@ -1,6 +1,8 @@
 import collections
+import copy
 import logging
 
+import numpy as np
 import pandas as pd
 
 
@@ -31,7 +33,7 @@ class BaseEnv(object):
     """
 
     def __init__(self):
-        self.observation = self.reset(episode='none')
+        self.observation = self.reset()
 
     # Override in subclasses
     def _step(self, action): raise NotImplementedError
@@ -42,13 +44,12 @@ class BaseEnv(object):
     action_space = None
     observation_space = None
 
-    def reset(self, episode):
+    def reset(self):
         """
         Resets the state of the environment and returns an initial observation.
 
         Returns: observation (np array): the initial observation
         """
-        self.episode = episode
         logger.debug('Reset environment')
 
         self.info = collections.defaultdict(list)
@@ -81,7 +82,7 @@ class BaseEnv(object):
             done (boolean)
             info (dict) auxiliary information
         """
-        logger.debug('Episode {} - Step {}'.format(self.episode, self.steps))
+        logger.debug('Step {}'.format(self.steps))
 
         assert action.shape == (1, self.action_space.shape[0])
 
@@ -96,11 +97,33 @@ class BaseEnv(object):
             self._output_results() function set in child class
         """
         logger.debug('Outputting resuts')
-        #  add the self.info dictionary into our outputs dictionary
-        self.outputs['info'] = self.info
+
+        #  add the raw self.info dictionary into our outputs dictionary
+        self.outputs['info'] = copy.copy(self.info)
+
+        #  keys of .info that contain arrays 
+        arrays = ['action', 'state', 'observation', 
+               'next_state', 'next_observation']
+
+        dfs = []
+        for name in arrays:
+            ar = self.info.pop(name)
+            ar = np.array(ar).reshape(len(ar), -1)
+
+            if name == 'observation' or name == 'next_observation':
+                columns = self.observation_info
+
+            df = pd.DataFrame(ar,
+                              columns=['{}_{}'.format(name, k)
+                                       for k in range(ar.shape[1])])
+            dfs.append(df)
 
         #  make a dataframe from self.info
-        self.outputs['df_env_info'] = pd.DataFrame.from_dict(self.info)
+        info_df = pd.DataFrame.from_dict(self.info)
+        dfs.append(info_df)
+        
+        df = pd.concat(dfs, axis=1)
+        self.outputs['df_env_info'] = df
 
         return self._output_results()
 

@@ -15,7 +15,7 @@ def no_learning_experiment(agent, args, paths, env, opt_agent_args=None):
 
         #  initialize before starting episode
         done, step = False, 0
-        observation = env.reset(episode)
+        observation = env.reset()
 
         #  while loop runs through a single episode
         while done is False:

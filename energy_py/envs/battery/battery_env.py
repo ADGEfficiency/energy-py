@@ -44,6 +44,8 @@ class BatteryEnv(TimeSeriesEnv):
                          episode_start,
                          episode_random)
 
+        self.observation = self.reset()
+
     def _reset(self):
         """
         Resets the environment.
@@ -73,8 +75,11 @@ class BatteryEnv(TimeSeriesEnv):
         """
         #  make a list of the observation spaces
         observation_space, self.observation_ts, self.state_ts = self.get_state_obs()
+
         #  append on any additional variables we want our agent to see
         observation_space.append(ContinuousSpace(0, self.capacity))
+        self.observation_info.append('capacity')
+
         #  create a energy_py GlobalSpace object for the observation space
         self.observation_space = GlobalSpace(observation_space)
 
@@ -103,15 +108,14 @@ class BatteryEnv(TimeSeriesEnv):
         the action.
 
         args
-            action      : np.array shape=(1, 2)
+            action (np.array) shape=(1, 2)
                           [0][0] = charging
                           [0][1] = discharging
         returns
-            observation : np.array
-                          shape=(1, len(self.observation_space)
-            reward      : float
-            done        : boolean
-            info        : dictionary
+            observation (np.array) shape=(1, len(self.observation_space)
+            reward (float)
+            done (boolean)
+            info (dictionary)
         """
         #  pulling out the state infomation
         elect_price_index = self.observation_info.index('C_electricity_price_[$/MWh]')
@@ -187,12 +191,9 @@ class BatteryEnv(TimeSeriesEnv):
         if self.steps == (self.episode_length-1):
             self.done = True
             total_ep_reward = sum(self.info['reward'])
-            logger.info('Episode {} - Total reward {:.2f}'.format(self.episode,
-                                                                  total_ep_reward))
 
         #  saving info
-        self.info = self.update_info(episode=self.episode,
-                                     steps=self.steps,
+        self.info = self.update_info(steps=self.steps,
                                      state=self.state,
                                      observation=self.observation,
                                      action=action,

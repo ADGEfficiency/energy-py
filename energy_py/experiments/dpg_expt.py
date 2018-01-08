@@ -6,7 +6,7 @@ from energy_py.agents import DPGActor, DPGCritic, OrnsteinUhlenbeckActionNoise
 
 
 @experiment()
-def dpg_experiment(agent, args, paths, env):
+def dpg_experiment(agent, args, paths, env, opt_agent_args=None):
 
     EPISODES = args.ep 
     DISCOUNT = args.gamma 

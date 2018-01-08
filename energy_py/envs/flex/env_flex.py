@@ -62,6 +62,7 @@ class FlexEnv(TimeSeriesEnv):
 
         #  add on a space to represent the flex availability
         obs_spc.append(DiscreteSpace(1))
+        self.observation_info.append('flex_availability')
         self.observation_space = GlobalSpace(obs_spc)
 
         """
@@ -170,8 +171,7 @@ class FlexEnv(TimeSeriesEnv):
         if self.steps == (self.episode_length - 1):
             self.done = True
 
-        self.info = self.update_info(episode=self.episode,
-                                     steps=self.steps,
+        self.info = self.update_info(steps=self.steps,
                                      state=self.state,
                                      observation=self.observation,
                                      action=action,

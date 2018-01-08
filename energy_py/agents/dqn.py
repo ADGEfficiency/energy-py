@@ -43,6 +43,8 @@ class DQN(BaseAgent):
         memory_length = int(total_steps * 0.1)
         self.epsilon_decay_steps = int(total_steps / 2)
         self.update_target_net = int(total_steps * 0.0125)
+
+        #  initial number of steps to act totally random
         self.initial_random = int(total_steps * 0.1)
 
         #  initializing the BaseAgent class
@@ -52,11 +54,11 @@ class DQN(BaseAgent):
         self.actions = self.action_space.discretize(discrete_space_size)
 
         #  a dictionary to setup the approximation of Q(s,a)
+        #  hardcoded in for now - will eventually be pulled out
         self.model_dict = {'input_nodes': self.observation_space.shape[0],
                            'output_nodes': self.actions.shape[0],
-                           'layers': [100, 50, 25],
-                           'lr': 0.0025,
-                           'epochs': 1}
+                           'layers': [50, 25],
+                           'lr': 0.0025}
 
         #  make our two action value functions
         self.Q_actor = Q(self.model_dict, 'actor')
@@ -134,7 +136,7 @@ class DQN(BaseAgent):
         observations, actions, rewards should all be either
         normalized or standardized
 
-        Q(s', a) is calculated externally to the value function
+        Q(s',a) is calculated externally to the value function
         Q(s,a) is calculated within the value function
 
         args
@@ -153,21 +155,21 @@ class DQN(BaseAgent):
         next_obs = batch['next_obs']
         terminal = batch['terminal']
 
-        #  we process the entire batch of inputs using our state_processor
+        #  process the entire batch of inputs using our state_processor
         inputs = self.state_processor.transform(obs)
         next_obs = self.state_processor.transform(next_obs)
 
-        #  now we can get a prediction of Q(s,a) for each action
+        #  prediction of Q(s',a) for each action
         Q_next_state = self.Q_target.predict(sess, next_obs)
 
-        #  change to max q next state
+        #  maximize the value of the next state 
         max_Q_next_state = np.max(Q_next_state,
                                   axis=1).reshape(obs.shape[0], 1)
 
-        #  we set the max Q(s',a) equal to zero for terminal states
+        #  set the max Q(s',a) equal to zero for terminal states
         max_Q_next_state[terminal] = 0
 
-        #  we then use the Bellman equation with our masked max_q
+        #  use the Bellman equation with our masked max_q
         targets = rews + self.discount * max_Q_next_state
 
         #  save the unscaled targets so we can visualize later
@@ -177,6 +179,7 @@ class DQN(BaseAgent):
         targets = self.target_processor.transform(targets).flatten()
 
         #  creating an index for the action we are training
+        #  the action we are training is the action our agent chose
         #  first get a list of all possible actions
         act_list = self.actions.tolist()
 

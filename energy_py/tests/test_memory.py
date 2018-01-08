@@ -38,6 +38,8 @@ def method_two(rewards):
     rtns = np.array(rtns_).reshape(-1)
     return rtns
 
+#  could also add https://github.com/reinforceio/tensorforce/blob/master/tensorforce/util.py
+
 def test_returns_calc():
     rewards = np.ones(10)
 

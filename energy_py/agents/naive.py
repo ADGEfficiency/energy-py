@@ -1,3 +1,12 @@
+"""
+This naive agent takes actions used predefined rules.
+
+A naive agent is useful as a baseline for comparing with reinforcement
+learning agents.
+
+As the rules are predefined each agent is specific to an environment.
+"""
+
 import numpy as np
 
 from energy_py.agents import BaseAgent
@@ -5,17 +14,18 @@ from energy_py.agents import BaseAgent
 
 class NaiveBatteryAgent(BaseAgent):
     """
-    This naive agent takes actions used predefined rules.
-
-    A naive agent is useful as a baseline for comparing with reinforcement
-    learning agents.
-
-    As the rules are predefined each agent is specific to an environment.
-
-    This agent is designed to control the battery environment.
+    Charges at max/min based on the hour of the day.
     """
 
     def __init__(self, env, discount):
+        """
+        args
+            env (object)
+            discount (float)
+        """
+        #  find the integer index of the hour in the observation
+        self.hour_index = self.observation_info.index('D_hour')
+
         #  calling init method of the parent Base_Agent class
         super().__init__(env, discount)
 
@@ -23,9 +33,10 @@ class NaiveBatteryAgent(BaseAgent):
         """
 
         """
-        hour_index = self.observation_info.index('D_hour')
         observation = kwargs['observation']
-        hour = observation[0][hour_index]
+        #  index the observation at 0 because observation is
+        #  shape=(num_samples, observation_length)
+        hour = observation[0][self.hour_index]
 
         #  grab the spaces list
         act_spaces = self.action_space.spaces
@@ -76,3 +87,46 @@ class DispatchAgent(BaseAgent):
             action = self.action_space.low
 
         return np.array(action).reshape(1, self.action_space.shape[0])
+
+
+class NaiveFlex(BaseAgent):
+    """
+    Flexes based on time of day
+    """
+
+    def __init__(self, env, discount, hours):
+        """
+        args
+            env (object)
+            discount (float)
+            hours (list) hours to flex in
+        """
+        self.hours = hours
+
+        #  calling init method of the parent Base_Agent class
+        super().__init__(env, discount)
+
+        #  find the integer index of the hour in the observation
+        self.hour_index = self.env.observation_info.index('C_hour')
+    def _act(self, **kwargs):
+        """
+
+        """
+        observation = kwargs['observation']
+        #  index the observation at 0 because observation is
+        #  shape=(num_samples, observation_length)
+        hour = observation[0][self.hour_index]
+
+        #  grab the spaces list
+        act_spaces = self.action_space.spaces
+
+        if hour in self.hours: 
+            action = self.action_space.high 
+
+        else:
+            #  do nothing 
+            action = self.action_space.low 
+
+        return np.array(action).reshape(1, self.action_space.shape[0])
+
+
