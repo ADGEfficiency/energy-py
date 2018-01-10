@@ -94,7 +94,7 @@ class NaiveFlex(BaseAgent):
     Flexes based on time of day
     """
 
-    def __init__(self, env, discount, hours):
+    def __init__(self, env, discount, hours, run_weekend=False):
         """
         args
             env (object)
@@ -108,6 +108,7 @@ class NaiveFlex(BaseAgent):
 
         #  find the integer index of the hour in the observation
         self.hour_index = self.env.observation_info.index('C_hour')
+
     def _act(self, **kwargs):
         """
 
@@ -116,9 +117,6 @@ class NaiveFlex(BaseAgent):
         #  index the observation at 0 because observation is
         #  shape=(num_samples, observation_length)
         hour = observation[0][self.hour_index]
-
-        #  grab the spaces list
-        act_spaces = self.action_space.spaces
 
         if hour in self.hours: 
             action = self.action_space.high 

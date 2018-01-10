@@ -7,7 +7,6 @@ from energy_py.agents import Q_DQN
 
 @experiment()
 def dqn_experiment(agent, args, paths, env, opt_agent_args=None):
-    #  opt_agent_args is not doing anything here!
 
     EPISODES = args.ep 
     DISCOUNT = args.gamma 
@@ -81,4 +80,5 @@ def dqn_experiment(agent, args, paths, env, opt_agent_args=None):
                                   results_path=RESULTS_PATH)
 
         agent_outputs, env_outputs = hist.output_results(save_data=True)
+
     return agent_outputs, env_outputs

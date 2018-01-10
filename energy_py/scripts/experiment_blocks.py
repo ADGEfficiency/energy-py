@@ -41,7 +41,7 @@ def experiment():
     return outer_wrapper
 
 
-def expt_args(optional_args=[]):
+def expt_args(optional_args=None):
     """
     args
         optional_args (list) one dict per optional parser arg required
@@ -74,7 +74,7 @@ def expt_args(optional_args=[]):
                   'help': 'logging status (default: info)'}]
 
     if optional_args:
-        args_list.append(optional_args)
+        args_list.extend(optional_args)
 
     for arg in args_list:
         parser.add_argument(arg['name'],
@@ -83,6 +83,7 @@ def expt_args(optional_args=[]):
                             help=arg['help'])
 
     args = parser.parse_args()
+
     return parser, args
 
 
