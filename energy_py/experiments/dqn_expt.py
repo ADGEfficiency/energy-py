@@ -6,8 +6,8 @@ from energy_py.agents import Q_DQN
 
 
 @experiment()
-def dqn_experiment(agent, args, paths, env, opt_agent_args=None):
-
+def dqn_experiment(agent, args, paths, env, opt_agent_args=[]):
+#  not using opt agent args here
     EPISODES = args.ep 
     DISCOUNT = args.gamma 
     BATCH_SIZE = args.bs
@@ -22,8 +22,7 @@ def dqn_experiment(agent, args, paths, env, opt_agent_args=None):
     agent = agent(env, 
                   DISCOUNT, 
                   Q=Q_DQN,
-                  total_steps=total_steps,
-                  *opt_agent_args)
+                  total_steps=total_steps)
 
     save_args(args, 
               path=ARGS_PATH,

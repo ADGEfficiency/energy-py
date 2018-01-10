@@ -14,7 +14,8 @@ if __name__ == '__main__':
     dqn = dqn_experiment(DQN,
                          env,
                          data_path,
+                         base_path='dqn',
                          opt_parser_args={'name': '--bs',
                                           'type': int,
                                           'default': 64,
-                                          'help': 'batch size for experience replay'}
+                                          'help': 'batch size for experience replay'})

@@ -249,8 +249,7 @@ class EternityVisualizer(object):
         #  it uses only reinforcement learning data (reward)
 
         fig_path = os.path.join(self.results_path, 'reward_panel.png')
-        reward_panel = {'name': 'reward_panel',
-                        'panels': [['reward', 'cum max reward'],
+        reward_panel = {'panels': [['reward', 'cum max reward'],
                                    ['rolling mean']],
                         'errors': [[], ['rolling std']],
                         'xlabel': 'Episode',
@@ -273,7 +272,7 @@ class EternityVisualizer(object):
         env_panel_fig['df'] = self.env_outputs['df_env_info']
          
         fig_path = os.path.join(self.results_path, 
-                                env_panel_fig['name']+'.png')
+                                'env_fig.png')
 
         env_panel_fig['fig_path'] = fig_path
 

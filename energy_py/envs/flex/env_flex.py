@@ -92,7 +92,7 @@ class FlexEnv(TimeSeriesEnv):
             info (dict)
         """
         #  pull the electricity price out of the state
-        elect_price_index = self.observation_info.index('C_electricity_price_[$/MWh]')
+        elect_price_index = self.state_info.index('C_electricity_price_[$/MWh]')
         electricity_price = self.state[0][elect_price_index]
 
         #  grab the action
@@ -206,8 +206,7 @@ class FlexEnv(TimeSeriesEnv):
         self.outputs['observation_ts'] = self.observation_ts
 
         #  arguments for the Visualizer make_panel_fig() function
-        env_panel_fig = {'name': 'last_ep',
-                         'ylims': [[0, 6], [], [], []],
+        env_panel_fig = {'ylims': [[0, 6], [], [], []],
                          'kinds': ['line', 'line', 'line', 'line'],
                          'panels': [['flex_up', 'flex_down', 'relax'],
                                     ['flex_avail', 'flex_action'],

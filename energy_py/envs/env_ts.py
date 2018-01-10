@@ -107,6 +107,8 @@ class TimeSeriesEnv(BaseEnv):
         #  grab the column name so we can index state & obs arrays
         self.state_info = state.columns.tolist()
         self.observation_info = observation.columns.tolist()
+        logger.info('state info is {}'.format(self.state_info))
+        logger.info('observation info is {}'.format(self.observation_info))
 
         assert state.shape[0] == observation.shape[0]
 

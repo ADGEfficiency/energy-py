@@ -74,7 +74,7 @@ def expt_args(optional_args=None):
                   'help': 'logging status (default: info)'}]
 
     if optional_args:
-        args_list.extend(optional_args)
+        args_list.append(optional_args)
 
     for arg in args_list:
         parser.add_argument(arg['name'],

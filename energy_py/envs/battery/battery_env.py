@@ -118,7 +118,7 @@ class BatteryEnv(TimeSeriesEnv):
             info (dictionary)
         """
         #  pulling out the state infomation
-        elect_price_index = self.observation_info.index('C_electricity_price_[$/MWh]')
+        elect_price_index = self.state_info.index('C_electricity_price_[$/MWh]')
         electricity_price = self.state[0][elect_price_index]
         old_charge = self.state[0][-1]
 
