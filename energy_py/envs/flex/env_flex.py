@@ -43,7 +43,7 @@ class FlexEnv(TimeSeriesEnv):
         Once flex cycle is started it runs for the flex_time
         After flex_time is over, relax_time starts
         """
-        self.action_space = GlobalSpace([DiscreteSpace(1)])
+        self.action_space = GlobalSpace([DiscreteSpace(2)])
 
         #  initialize all of the
         self.flex_avail = 1  # 0=not available, 1=available
