@@ -1,13 +1,15 @@
 import tensorflow as tf
 
-from energy_py import experiment, save_args
+from energy_py import experiment, save_args, Timer
 from energy_py import EternityVisualizer
 from energy_py.agents import Q_DQN 
 
 
 @experiment()
 def dqn_experiment(agent, args, paths, env, opt_agent_args=[]):
-#  not using opt agent args here
+    #  not using opt agent args here
+    timer = Timer()
+
     EPISODES = args.ep 
     DISCOUNT = args.gamma 
     BATCH_SIZE = args.bs
@@ -65,6 +67,12 @@ def dqn_experiment(agent, args, paths, env, opt_agent_args=[]):
                         
                     if total_step % agent.update_target_net == 0:
                         agent.update_target_network(sess)
+
+            #  reporting expt status at the end of each episode
+            timer.report({'episode': episode,
+                          'ep start': env.state_ts.index[0],
+                          'lifetime avg rew': agent.memory.rewards.mean()})
+
 
             if episode % OUTPUT_FREQ == 0:
                 #  collect data from the agent & environment

@@ -134,7 +134,6 @@ class TimeSeriesEnv(BaseEnv):
         observation_space = self.make_env_obs_space(observation_ts)
 
         assert observation_ts.shape[0] == state_ts.shape[0]
-        logger.info('Ep starting at {}'.format(state_ts.index[0]))
 
         return observation_space, observation_ts, state_ts
 

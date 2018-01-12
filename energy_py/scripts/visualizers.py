@@ -69,7 +69,7 @@ def single_series_fig(series,
     if fig_path:
         ensure_dir(fig_path)
         fig.savefig(fig_path)
-
+    plt.close(fig)
     return fig
 
 def make_panel_fig(df, 
@@ -140,7 +140,7 @@ def make_panel_fig(df,
     if fig_path:
         ensure_dir(fig_path)
         fig.savefig(fig_path)
-
+    plt.close(fig)
     return fig
 
 
@@ -175,6 +175,7 @@ class EternityVisualizer(object):
         args
             save_data (bool) option to save csvs to disk
         """
+        logger.info('Outputting results from history')
         if self.agent:
             self.agent_outputs = self.load_agent_data()
             self.info_to_plots(self.agent_outputs['info'])
@@ -187,6 +188,8 @@ class EternityVisualizer(object):
 
         if save_data:
             self.save_data_to_disk()
+
+        plt.close('all')
 
         return self.agent_outputs, self.env_outputs
 

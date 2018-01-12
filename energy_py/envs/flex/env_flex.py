@@ -155,10 +155,10 @@ class FlexEnv(TimeSeriesEnv):
         total_counters = self.check_counters()
 
         if total_counters > 0:
-            logger.info('{}'.format(self.observation_ts.index[self.steps]))
-            logger.info('electricity_price is {}'.format(electricity_price))
-            logger.info('action is {}'.format(action))
-            logger.info('up {} down {} relax {} rew {}'.format(self.flex_up,
+            logger.debug('{}'.format(self.observation_ts.index[self.steps]))
+            logger.debug('electricity_price is {}'.format(electricity_price))
+            logger.debug('action is {}'.format(action))
+            logger.debug('up {} down {} relax {} rew {}'.format(self.flex_up,
                                                                 self.flex_down,
                                                                 self.relax,
                                                                 reward))

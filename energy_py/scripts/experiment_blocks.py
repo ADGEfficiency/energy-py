@@ -2,8 +2,11 @@ import argparse
 import csv
 import logging
 import logging.config
+import time
 
 from energy_py.scripts.utils import ensure_dir
+
+logger = logging.getLogger(__name__)
 
 def experiment():
     """
@@ -66,8 +69,8 @@ def expt_args(optional_args=None):
                   'help': 'discount rate (default: 0.9)'},
                  {'name': '--out',
                   'type': int,
-                  'default': 50,
-                  'help': 'output results every n episodes (default: n=50)'},
+                  'default': 500,
+                  'help': 'output results every n episodes (default: n=500)'},
                  {'name': '--log',
                   'type': str,
                   'default': 'INFO',
@@ -176,3 +179,24 @@ def run_single_episode(episode_number,
 
     #  now episode is done - process the episode in the agent memory
     return agent, env, sess
+
+
+class Timer(object):
+    """
+    Logs useful infomation and times experiments
+    """
+    def __init__(self):
+        self.start_time = time.time()
+        self.logger_timer = logging.getLogger('Timer')
+
+    def report(self, output_dict):
+        """
+        The main functionality of this class
+        """
+        output_dict['run time'] = self.calc_time()
+
+        log = ['{} : {}'.format(k, v) for k,v in output_dict.items()]
+        self.logger_timer.info(log)
+
+    def calc_time(self):
+        return (time.time() - self.start_time) / 60

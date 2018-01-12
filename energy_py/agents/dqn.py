@@ -211,7 +211,7 @@ class DQN(BaseAgent):
         """
         Copies weights from Q_actor into Q_target
         """
-        logger.info('Updating Q_target by copying weights from Q_actor')
+        logger.debug('Updating Q_target by copying weights from Q_actor')
 
         assert self.Q_target.scope == 'target'
         assert self.Q_actor.scope == 'actor'
