@@ -8,9 +8,26 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 
+#  use a named_tuple to store a single step of experience
+Experience = collections.namedtuple('experience', ['state',
+                                                   'action',
+                                                   'reward',
+                                                   'next_state',
+                                                   'terminal',
+                                                   'step',
+                                                   'episode'])
 class Memory(object):
     """
     An object to store and process experience.
+
+    A deque is used store experience tuples.
+    The experience tuples are named tuples.
+    The deque is dumped to disk in text files everytime it is wiped over.
+
+    I experimented with antother memory structure based on using one
+    numpy array for state, one for action etc.  The deque structure
+    was much faster.  You can see this work in energy_py/notebooks
+
     args
         observation_space (object) energy_py GlobalSpace
         action_space (object) energy_py GlobalSpace
@@ -30,6 +47,12 @@ class Memory(object):
         self.discount = float(discount)
         self.memory_length = int(memory_length)
 
+        self.shapes = {'obs': self.observation_space.shape,
+                       'actions': self.action_space.shape,
+                       'rewards': (1,),
+                       'next_observation': self.observation_space.shape,
+                       'terminal': (1,)}
+
         self.reset()
 
     def reset(self):
@@ -37,25 +60,10 @@ class Memory(object):
         Resets the memory internals.
         """
         #  keep count of the number of experiences
-        self.num_exp = 0
+        self.count = 0
 
-        #  create an array for each type of info we want to store
-        self.obs = np.array([], dtype=np.float32).reshape(-1,
-                                                          self.observation_space.shape[0])
-
-        self.actions = np.array([], dtype=np.float32).reshape(-1,
-                                                              self.action_space.shape[0])
-
-        self.rewards = np.array([], dtype=np.float32).reshape(-1, 1)
-
-        self.next_obs = np.array([], dtype=np.float32).reshape(-1,
-                                                               self.observation_space.shape[0])
-
-        self.terminal = np.array([], dtype=bool).reshape(-1, 1)
-
-        self.step = np.array([], dtype=np.int32).reshape(-1, 1)
-
-        self.episode = np.array([], dtype=np.int32).reshape(-1, 1)
+        #  use a deque to store experience
+        self.experiences = collections.deque(maxlen=self.memory_length)
 
         #  an info dictionary to hold other info we might want to collect
         self.info = collections.defaultdict(list)
@@ -73,6 +81,7 @@ class Memory(object):
                        episode):
         """
         Adds a single step of experience to the numpy arrays.
+
         args
             observation
             action
@@ -84,28 +93,48 @@ class Memory(object):
         """
         logger.debug('adding exp episode {} step {}'.format(episode, step))
 
-        self.obs = np.append(self.obs, observation, axis=0)
-        self.actions = np.append(self.actions, action, axis=0)
+        self.experiences.append(Experience(observation,
+                                           action,
+                                           reward,
+                                           next_observation,
+                                           terminal,
+                                           step,
+                                           episode))
 
-        reward = np.array(reward, dtype=np.float32).reshape(1, 1)
-        self.rewards = np.append(self.rewards, reward, axis=0)
+        self.count += 1
+        #  check if we need to save the memory to disk
+        if self.count % self.memory_length == 0:
+            self.dump_memory()
 
-        self.next_obs = np.append(self.next_obs, next_observation, axis=0)
+    def dump_memory(self):
+        """
 
-        terminal = np.array(terminal, dtype=np.bool).reshape(1, 1)
-        self.terminal = np.append(self.terminal, terminal, axis=0)
+        """
+        pass
 
-        step = np.array(step, dtype=np.int32).reshape(1, 1)
-        self.step = np.append(self.step, step, axis=0)
+    @staticmethod
+    def batch_to_dict(batch):
 
-        episode = np.array(episode, dtype=np.int32).reshape(1, 1)
-        self.episode = np.append(self.episode, episode, axis=0)
+        batch_dict = collections.defaultdict(list)
+        for exp in batch:
+            batch_dict['obs'].append(exp.observation)
+            batch_dict['actions'].append(exp.action)
+            batch_dict['rewards'].append(exp.reward)
+            batch_dict['next_obs'].append(exp.next_observation)
+            batch_dict['terminal'].append(exp.terminal)
 
-        self.num_exp += 1
+        for key, data in batch_dict.items():
+            data = np.array(data).reshape(sample_size, *self.shapes[key])
+            batch_dict[key] = data        
+            assert not np.any(np.isnan(data))
+
+        return batch_dict
+
 
     def calculate_returns(self, rewards):
         """
         Calculates the Monte Carlo discounted return
+
         args
             rewards (np.array) rewards we want to calculate the return for
         """
@@ -128,8 +157,10 @@ class Memory(object):
     def get_episode_batch(self, episode_number):
         """
         Gets the experiences for a given episode
+
         args
             episode_number (int)
+
         returns
             batch_dict (dict)
                 observations (np.array) shape=(samples, self.observation_dim)
@@ -138,30 +169,20 @@ class Memory(object):
         """
 
         #  get the indicies of the episode we want
-        episode_mask = np.where(self.episode == episode_number)[0]
+        eps = np.array([exp.episode for exp in self.experiences]).reshape(-1,1)
+        episode_mask = np.where(eps == episode_number)[0]
 
-        obs = self.obs[episode_mask]
-        actions = self.actions[episode_mask]
-        rewards = self.rewards[episode_mask]
+        episode_experiences = self.experiences[episode_mask]
 
-        assert obs.shape[0] == actions.shape[0]
-        assert obs.shape[0] == rewards.shape[0]
-
-        assert not np.any(np.isnan(obs))
-        assert not np.any(np.isnan(actions))
-        assert not np.any(np.isnan(rewards))
-
-        batch_dict = {'obs': obs,
-                      'actions': actions,
-                      'rewards': rewards}
-
-        return batch_dict
+        return self.batch_to_dict(episode_experiences)
 
     def get_random_batch(self, batch_size, save_batch=False):
         """
         Gets a random batch of experiences
+
         args
             batch_size (int)
+
         returns
             batch_dict (dict)
                 obs (np.array) shape=(samples, self.observation_dim)
@@ -173,30 +194,14 @@ class Memory(object):
         sample_size = min(batch_size, self.num_exp)
         logger.debug('getting batch size {} from memory'.format(sample_size))
 
-        #  indicies for the batch
-        lower_bound = max(0, self.num_exp - self.memory_length)
-        indicies = np.random.randint(low=lower_bound,
-                                     high=self.num_exp-1,
-                                     size=sample_size)
+        batch = random.sample(self.experiences, sample_size)
 
-        #  sample from the memory using these indicies
-        obs = self.obs[indicies]
-        actions = self.actions[indicies]
-        rewards = self.rewards[indicies]
-        next_obs = self.next_obs[indicies]
-        terminal = self.terminal[indicies]
-
-        batch_dict = {'obs': obs,
-                      'actions': actions,
-                      'rewards': rewards,
-                      'next_obs': next_obs,
-                      'terminal': terminal}
-
-        return batch_dict
+        return self.batch_to_dict(batch)
 
     def output_results(self):
         """
         Extract data from the memory
+
         returns
             self.outputs (dict) includes self.info
         """

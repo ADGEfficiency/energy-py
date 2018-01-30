@@ -6,11 +6,11 @@ learning agents.
 
 As the rules are predefined each agent is specific to an environment.
 """
-
+import logging
 import numpy as np
 
 from energy_py.agents import BaseAgent
-
+logger = logging.getLogger(__name__)
 
 class NaiveBatteryAgent(BaseAgent):
     """
@@ -118,12 +118,40 @@ class NaiveFlex(BaseAgent):
         #  shape=(num_samples, observation_length)
         hour = observation[0][self.hour_index]
 
-        if hour in self.hours: 
+        if hour in self.hours:
             action = self.action_space.high 
 
         else:
             #  do nothing 
             action = self.action_space.low 
+
+        return np.array(action).reshape(1, self.action_space.shape[0])
+
+class ClassifierAgent(BaseAgent):
+    """
+    Flexes based on a prediction from a classifier.
+    """
+
+    def __init__(self, env, discount, **kwargs):
+
+        super().__init__(env, discount)
+        print(self.env.observation_info)
+        self.hor0_index = self.env.observation_info.index('D_Prediction_h0')
+        self.hor6_index = self.env.observation_info.index('D_Prediction_h6')
+
+    def _act(self, **kwargs):
+        """
+        """
+        observation = kwargs['observation']
+        h0 = observation[0][self.hor0_index]
+        h6 = observation[0][self.hor6_index]
+
+        if h0 == 'High' and h6 == 'Very High':
+            print(observation)
+            print('acting')
+            action = self.action_space.high
+        else:
+            action = self.action_space.low
 
         return np.array(action).reshape(1, self.action_space.shape[0])
 

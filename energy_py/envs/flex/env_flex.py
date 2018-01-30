@@ -12,12 +12,15 @@ class FlexEnv(TimeSeriesEnv):
                  episode_length=48,
                  episode_start=0,
                  episode_random=False,
-                 flex_size=2,  # MW
+                 flex_initial_size=1,  #  in MW
+                 flex_final_size=-1,
                  flex_time=6,  # num 5 minute periods
                  relax_time=12):  # num 5 min periods
 
         #  technical energy inputs
-        self.flex_size = float(flex_size)
+        self.flex_initial_size = flex_initial_size
+        self.flex_final_size = flex_final_size
+
         self.flex_time = int(flex_time)
         self.relax_time = int(relax_time)
 
@@ -26,6 +29,9 @@ class FlexEnv(TimeSeriesEnv):
                          episode_length,
                          episode_start,
                          episode_random)
+
+        if self.flex_initial_size + self.flex_final_size != 0:
+            raise ValueError('Your flex actions are not equal and opposite')
 
     def _reset(self):
         """
@@ -43,12 +49,12 @@ class FlexEnv(TimeSeriesEnv):
         Once flex cycle is started it runs for the flex_time
         After flex_time is over, relax_time starts
         """
-        self.action_space = GlobalSpace([DiscreteSpace(2)])
+        self.action_space = GlobalSpace([DiscreteSpace(1)])
 
         #  initialize all of the
         self.flex_avail = 1  # 0=not available, 1=available
-        self.flex_up = 0
-        self.flex_down = 0
+        self.flex_initial = 0
+        self.flex_final = 0
         self.relax = 0
 
         """
@@ -103,26 +109,26 @@ class FlexEnv(TimeSeriesEnv):
         #  probably a bit excessive to check twice (I check again below)
         total_counters = self.check_counters()
 
-        #  if we are in the flex down cycle, continue that
-        if self.flex_down > 0:
-            self.flex_down += 1
+        #  if we are in the initial flex cycle, continue that
+        if self.flex_initial > 0:
+            self.flex_initial += 1
 
         #  if we are in the flex up cycle, continue
-        if self.flex_up > 0:
-            self.flex_up += 1
+        if self.flex_final > 0:
+            self.flex_final += 1
 
         #  if we are in the relaxation period, continue that
         if self.relax > 0:
             self.relax += 1
 
-        #  if we are ending the flex down cycle, and starting flex up
-        if self.flex_down > self.flex_time:
-            self.flex_down = 0
-            self.flex_up = 1
+        #  if we are ending the initial flex cycle, and starting flex up
+        if self.flex_initial > self.flex_time:
+            self.flex_initial = 0
+            self.flex_final = 1
 
         #  if we are ending the flex up cycle, and starting relaxation
-        if self.flex_up > self.flex_time:
-            self.flex_up = 0
+        if self.flex_final > self.flex_time:
+            self.flex_final = 0
             self.relax = 1
 
         #  ending the relaxation period
@@ -131,22 +137,21 @@ class FlexEnv(TimeSeriesEnv):
             self.flex_avail = 1
 
         #  if we are not doing anything but want to start the flex cycle
-        total_counters = sum([self.flex_up, self.flex_down, self.relax])
+        total_counters = sum([self.flex_final, self.flex_initial, self.relax])
         if total_counters == 0 and action == 1:
-            self.flex_down = 1
+            self.flex_initial = 1
             self.flex_avail = 0
 
         #  we set the default action to do nothing
         flex_action = 0
 
         #  we set the flex action to do something if we are flexing
-        #  up or down
 
-        if self.flex_down > 0:
-            flex_action = self.flex_size
+        if self.flex_initial > 0:
+            flex_action = self.flex_initial_size
 
-        if self.flex_up > 0:
-            flex_action = - self.flex_size
+        if self.flex_final > 0:
+            flex_action = self.flex_final_size
 
         #  now we set reward based on whether we are in a cycle or not
         #  /12 so we get reward in terms of £/5 minutes
@@ -158,8 +163,8 @@ class FlexEnv(TimeSeriesEnv):
             logger.debug('{}'.format(self.observation_ts.index[self.steps]))
             logger.debug('electricity_price is {}'.format(electricity_price))
             logger.debug('action is {}'.format(action))
-            logger.debug('up {} down {} relax {} rew {}'.format(self.flex_up,
-                                                                self.flex_down,
+            logger.debug('up {} down {} relax {} rew {}'.format(self.flex_final,
+                                                                self.flex_initial,
                                                                 self.relax,
                                                                 reward))
 
@@ -181,8 +186,8 @@ class FlexEnv(TimeSeriesEnv):
                                      done=self.done,
 
                                      electricity_price=electricity_price,
-                                     flex_up=self.flex_up,
-                                     flex_down=self.flex_down,
+                                     flex_up=self.flex_final,
+                                     flex_down=self.flex_initial,
                                      relax=self.relax,
                                      flex_avail=self.flex_avail,
                                      flex_action=flex_action)
@@ -223,22 +228,22 @@ class FlexEnv(TimeSeriesEnv):
         Helper function to check that the counters are OK
         """
 
-        if self.flex_up != 0:
-            assert self.flex_down == 0
+        if self.flex_final != 0:
+            assert self.flex_initial == 0
             assert self.relax == 0
             assert self.flex_avail == 0
 
-        if self.flex_down != 0:
-            assert self.flex_up == 0
+        if self.flex_initial != 0:
+            assert self.flex_final == 0
             assert self.relax == 0
             assert self.flex_avail == 0
 
         if self.relax != 0:
-            assert self.flex_down == 0
-            assert self.flex_up == 0
+            assert self.flex_initial == 0
+            assert self.flex_final == 0
             assert self.flex_avail == 0
 
-        total_counters = sum([self.flex_up, self.flex_down, self.relax])
+        total_counters = sum([self.flex_final, self.flex_initial, self.relax])
         if self.flex_avail == 0:
             assert total_counters != 0
 

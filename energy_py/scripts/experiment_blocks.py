@@ -14,12 +14,13 @@ def experiment():
     """
     def outer_wrapper(my_expt_func):
 
-        def wrapper(agent, 
-                    env, 
-                    data_path, 
-                    base_path, 
+        def wrapper(agent,
+                    env,
+                    data_path,
+                    base_path,
                     opt_parser_args=None,
-                    opt_agent_args=None):
+                    opt_agent_args=None,
+                    **kwargs):
 
             parser, args = expt_args(opt_parser_args)
 
@@ -27,15 +28,15 @@ def experiment():
 
             logger = make_logger(paths['logs'], args.log)
 
-            env = env(data_path, 
+            env = env(data_path,
                       episode_length=args.len,
                       episode_random=args.rand)
-            
+
             agent_outputs, env_outputs = my_expt_func(agent,
                                                       args,
                                                       paths,
                                                       env,
-                                                      opt_agent_args)
+                                                      opt_agent_args=opt_agent_args)
 
             return agent_outputs, env_outputs
         

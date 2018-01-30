@@ -12,7 +12,7 @@ I teach a one day [introduction to reinforcement learning learning](https://gith
 
 ### Basic usage
 
-[A simple but detailed example](https://github.com/ADGEfficiency/energy_py/blob/master/notebooks/examples/Q_learning_battery.ipynb) of using the DQN agent to control the battery environment is a great place to start.
+[A simple and detailed example](https://github.com/ADGEfficiency/energy_py/blob/master/notebooks/examples/Q_learning_battery.ipynb) of using the DQN agent to control the battery environment is a great place to start.
 
 
 Another way to use energy_py is to run experiments.  Below I run experiments with two different agents and two different environments. 
