@@ -4,8 +4,8 @@ import os
 import numpy as np
 import pandas as pd
 
-from energy_py.envs import BaseEnv
 from energy_py.scripts.spaces import ContinuousSpace, DiscreteSpace
+from energy_py.scripts.tensorboard import TensorboardHepler 
 
 logger = logging.getLogger(__name__)
 
@@ -44,25 +44,30 @@ def make_observation(path, horizion=5):
     return state, observation
 
 
-class TimeSeriesEnv(BaseEnv):
+class BaseEnv(object):
     """
     The base environment class for time series environments
 
     Most energy problems are time series problems - hence the need for a
-    class to give functionality
+    class to give functionality.  Likely that this could be merged with the
+    BaseEnv class
 
     args
         data_path (str) location of state.csv, observation.csv
         episode_length (int)
         episode_start (int) integer index of episode start
         episode_random (bool) whether to randomize the episode start position
+        log_path (str)
+        tb_scalars (dict) {tag: value} setup tensorboard scalar summaries
     """
 
     def __init__(self,
                  data_path,
                  episode_length,
                  episode_start,
-                 episode_random):
+                 episode_random,
+                 log_path=None,
+                 tb_scalars=None):
 
         self.episode_length = int(episode_length)
         self.episode_start = int(episode_start)
@@ -77,8 +82,64 @@ class TimeSeriesEnv(BaseEnv):
         if self.episode_length == 0:
             self.episode_length = int(self.raw_observation_ts.shape[0])
 
-        #  initialize BaseEnv parent class
-        super().__init__()
+        if log_path and tb_scalars:
+            self.env_writer = TensorboardHepler(log_path, tb_scalars)
+
+        self.observation = self.reset()
+
+    # Override in subclasses
+    def _step(self, action): raise NotImplementedError
+
+    def _reset(self): raise NotImplementedError
+
+    #  Set these in ALL subclasses
+    action_space = None
+    observation_space = None
+
+    def reset(self):
+        """
+        Resets the state of the environment and returns an initial observation.
+
+        Returns: observation (np array): the initial observation
+        """
+        logger.debug('Reset environment')
+
+        self.info = collections.defaultdict(list)
+        self.outputs = collections.defaultdict(list)
+
+        return self._reset()
+
+    def step(self, action):
+        """
+        Run one timestep of the environment's dynamics.
+        User is responsible for resetting after episode end.
+
+        The step function should progress in the following order:
+        - action = a[1]
+        - reward = r[1]
+        - next_state = next_state[1]
+        - update_info()
+        - step += 1
+        - self.state = next_state[1]
+
+        step() returns the observation - not the state!
+
+        args
+            action (object) an action provided by the environment
+            episode (int) the current episode number
+
+        returns:
+            observation (np array) agent's observation of the environment
+            reward (np.float)
+            done (boolean)
+            info (dict) auxiliary information
+        """
+        logger.debug('Step {}'.format(self.steps))
+
+        assert action.shape == (1, self.action_space.shape[0])
+
+        return self._step(action)
+
 
     def load_ts(self, data_path):
         """

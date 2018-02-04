@@ -1,8 +1,9 @@
 import logging
 
-from energy_py.agents.memory import Memory
+from energy_py.agents.memory import DequeMemory, ArrayMemory
 
 logger = logging.getLogger(__name__)
+
 
 
 class BaseAgent(object):
@@ -29,22 +30,26 @@ class BaseAgent(object):
     def __init__(self,
                  env,
                  discount,
-                 memory_length=100000):
+                 memory_length,
+                 memory_type='deque'):
 
         self.env = env
         self.discount = discount
 
-        #  use the env to setup the agent
-        self.action_space = self.env.action_space
-        self.observation_space = self.env.observation_space
+        memory_args = (self.obs_shape,
+                       self.action_shape,
+                       memory_length)
 
-        #  create a memory for the agent
-        self.memory = Memory(self.observation_space,
-                             self.action_space,
-                             self.discount,
-                             memory_length=memory_length)
+        #  probably a better way to do this pattern!
+        if memory_type == 'deque':
+            self.memory = DequeMemory(*memory_args)
 
-    #  assign errors for the Base_Agent methods
+        elif memory_type == 'array':
+            self.memory = ArrayMemory(*memory_args)
+
+        else:
+            raise ValueError('{} memory type not supported'.format(memory_type)
+
     def _reset(self): raise NotImplementedError
 
     def _act(self, **kwargs): raise NotImplementedError
@@ -95,6 +100,43 @@ class BaseAgent(object):
         Calls the memory output_results method.
         """
         return self.memory.output_results()
+
+    def setup_spaces(env, num_discrete=20):
+        """
+        Custom setup for different environments
+        """
+
+
+        if repr(env) == '<TimeLimit<CartPoleEnv<CartPole-v1>>>':
+            obs_space_shape = env.observation_space.shape
+            #  the shape of the gym Discrete space is the number of actions
+            #  not the shape of a single action array
+            #  create a tuple to specify the action space
+            action_space_shape = (1,)
+            #  a list of all possible actions
+            actions = [act for act in range(env.action_space.n)]
+
+        elif repr(env) == '<TimeLimit<PendulumEnv<Pendulum-v0>>>':
+            raise ValueError('Build in progress')
+            obs_space_shape = env.observation_space.shape
+            action_space_shape = env.action_space.shape
+            actions = np.linspace(env.action_space.low,
+                                       env.action_space.high,
+                                       num=num_discrete,
+                                       endpoint=True).tolist()
+
+        elif repr(env) == '<TimeLimit<MountainCarEnv<MountainCar-v0>>>':
+            obs_space_shape = env.observation_space.shape
+            action_space_shape = (1,)
+            actions = [act for act in range(env.action_space.n)]
+        else:
+            raise ValueError('Environment not supported')
+
+        self.obs_shape = obs_space_shape
+        self.action_space = action_space_shape
+        self.actions = actions
+
+        return actions
 
 
 class EpsilonGreedy(object):

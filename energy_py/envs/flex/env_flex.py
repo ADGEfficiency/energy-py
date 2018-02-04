@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 class FlexEnv(TimeSeriesEnv):
     def __init__(self,
                  data_path,
+                 log_path=None,
                  episode_length=48,
                  episode_start=0,
                  episode_random=False,
@@ -24,14 +25,30 @@ class FlexEnv(TimeSeriesEnv):
         self.flex_time = int(flex_time)
         self.relax_time = int(relax_time)
 
+        if self.flex_initial_size + self.flex_final_size != 0:
+            raise ValueError('Your flex actions are not equal and opposite')
+
+        self.electricity_price = None
+        self.flex_initial = None
+        self.flex_final = None
+        self.relax = None
+        self.flex_avail = None
+        self.flex_action = None
+
+        scalars = {'electricity_price': self.electricity_price,
+                   'flex_up': self.flex_final,
+                   'flex_down': self.flex_initial,
+                   'relax': self.relax,
+                   'flex_avail': self.flex_avail,
+                   'flex_action': self.flex_action}
+
         #  init the parent TimeSeriesEnv
         super().__init__(data_path,
                          episode_length,
                          episode_start,
-                         episode_random)
-
-        if self.flex_initial_size + self.flex_final_size != 0:
-            raise ValueError('Your flex actions are not equal and opposite')
+                         episode_random,
+                         log_path=log_path,
+                         tb_scalars=scalars)
 
     def _reset(self):
         """
@@ -159,16 +176,16 @@ class FlexEnv(TimeSeriesEnv):
 
         total_counters = self.check_counters()
 
-        logger.debug('{}'.format(self.observation_ts.index[self.steps]))
-        logger.debug('electricity_price is {}'.format(electricity_price))
+        logger.debug('step {} elect. price {}'.format(
+            self.observation_ts.index[self.steps], electricity_price))
 
         if total_counters > 0:
             logger.debug('action is {}'.format(action))
             logger.debug('flex_action is {}'.format(flex_action))
-            logger.debug('up {} down {} relax {} rew {}'.format(self.flex_final,
-                                                                self.flex_initial,
-                                                                self.relax,
-                                                                reward))
+            logger.debug('up {} down {} relax {} rew {}'.format(
+                self.flex_final, self.flex_initial, self.relax, reward))
+
+        self.tb_helper.write_summaries()
 
         self.steps += 1
         next_state = self.get_state(self.steps, append=self.flex_avail)
@@ -178,52 +195,11 @@ class FlexEnv(TimeSeriesEnv):
         if self.steps == (self.episode_length - 1):
             self.done = True
 
-        self.info = self.update_info(steps=self.steps,
-                                     state=self.state,
-                                     observation=self.observation,
-                                     action=action,
-                                     reward=reward,
-                                     next_state=next_state,
-                                     next_observation=next_observation,
-                                     done=self.done,
-
-                                     electricity_price=electricity_price,
-                                     flex_up=self.flex_final,
-                                     flex_down=self.flex_initial,
-                                     relax=self.relax,
-                                     flex_avail=self.flex_avail,
-                                     flex_action=flex_action)
-
         #  moving to the next time step
         self.state = next_state
         self.observation = next_observation
 
         return self.observation, reward, self.done, self.info
-
-    def _output_results(self):
-        """
-        Saves the state and observation dataframes to the outputs dict.
-        Saves the environment panel figure args to the outputs dict.
-
-        returns
-            self.outputs (dict)
-        """
-        #  add the state and observation time series to the output dict
-        self.outputs['state_ts'] = self.state_ts
-        self.outputs['observation_ts'] = self.observation_ts
-
-        #  arguments for the Visualizer make_panel_fig() function
-        env_panel_fig = {'ylims': [[0, 6], [], [], []],
-                         'kinds': ['line', 'line', 'line', 'line'],
-                         'panels': [['flex_up', 'flex_down', 'relax'],
-                                    ['flex_avail', 'flex_action'],
-                                    ['electricity_price'],
-                                    ['reward']]}
-
-        #  add to the outputs dictionary
-        self.outputs['env_panel_fig'] = env_panel_fig
-
-        return self.outputs
 
     def check_counters(self):
         """
