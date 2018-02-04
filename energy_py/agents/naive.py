@@ -127,17 +127,19 @@ class NaiveFlex(BaseAgent):
 
         return np.array(action).reshape(1, self.action_space.shape[0])
 
+
 class ClassifierAgent(BaseAgent):
     """
     Flexes based on a prediction from a classifier.
     """
 
-    def __init__(self, env, discount, **kwargs):
+    def __init__(self, env, discount, setup_dict, **kwargs):
 
         super().__init__(env, discount)
         print(self.env.observation_info)
         self.hor0_index = self.env.observation_info.index('D_Prediction_h0')
         self.hor6_index = self.env.observation_info.index('D_Prediction_h6')
+        self.setup_dict = setup_dict
 
     def _act(self, **kwargs):
         """
@@ -145,6 +147,7 @@ class ClassifierAgent(BaseAgent):
         observation = kwargs['observation']
         h0 = observation[0][self.hor0_index]
         h6 = observation[0][self.hor6_index]
+
 
         if h0 == 'High' and h6 == 'Very High':
             print(observation)

@@ -12,14 +12,14 @@ class FlexEnv(TimeSeriesEnv):
                  episode_length=48,
                  episode_start=0,
                  episode_random=False,
-                 flex_initial_size=1,  #  in MW
+                 flex_initial_size=1,  # in MW
                  flex_final_size=-1,
                  flex_time=6,  # num 5 minute periods
                  relax_time=12):  # num 5 min periods
 
         #  technical energy inputs
-        self.flex_initial_size = flex_initial_size
-        self.flex_final_size = flex_final_size
+        self.flex_initial_size = float(flex_initial_size)
+        self.flex_final_size = float(flex_final_size)
 
         self.flex_time = int(flex_time)
         self.relax_time = int(relax_time)
@@ -159,10 +159,12 @@ class FlexEnv(TimeSeriesEnv):
 
         total_counters = self.check_counters()
 
+        logger.debug('{}'.format(self.observation_ts.index[self.steps]))
+        logger.debug('electricity_price is {}'.format(electricity_price))
+
         if total_counters > 0:
-            logger.debug('{}'.format(self.observation_ts.index[self.steps]))
-            logger.debug('electricity_price is {}'.format(electricity_price))
             logger.debug('action is {}'.format(action))
+            logger.debug('flex_action is {}'.format(flex_action))
             logger.debug('up {} down {} relax {} rew {}'.format(self.flex_final,
                                                                 self.flex_initial,
                                                                 self.relax,

@@ -27,7 +27,7 @@ def single_series_fig(series,
     args
         series (pd.Series)
         fig_path (str)
-        xlabel (str) 
+        xlabel (str)
         ylabel (str)
         xlim (str) last_week, last_month or all
         ylim (list) 
@@ -72,8 +72,8 @@ def single_series_fig(series,
     plt.close(fig)
     return fig
 
-def make_panel_fig(df, 
-                   panels, 
+def make_panel_fig(df,
+                   panels,
                    fig_path=None,
                    ylabels=None, 
                    xlabel=None,
