@@ -76,7 +76,7 @@ class DQN(BaseAgent):
         #  the counter is stepped up every time we act or learn
         self.counter = 0
 
-        self.actions = self.setup_spaces(num_discrete=20)
+        self.actions = self.env.discretize(num_discrete=20)
 
         super().__init__(env, discount, memory_length)
 

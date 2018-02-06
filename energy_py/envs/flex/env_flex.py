@@ -1,12 +1,12 @@
 import logging
 
 from energy_py import DiscreteSpace, GlobalSpace
-from energy_py.envs import TimeSeriesEnv
+from energy_py.envs import BaseEnv
 
 logger = logging.getLogger(__name__)
 
 
-class FlexEnv(TimeSeriesEnv):
+class Flex(BaseEnv):
     def __init__(self,
                  data_path,
                  log_path=None,

@@ -1,6 +1,4 @@
-from gym.envs.classic_control import CartPoleEnv
-from gym.envs.classic_control import MountainCarEnv
-from gym.envs.classic_control import PendulumEnv
+import gym
 
 from energy_py.envs.flex.env_flex import Flex
 from energy_py.envs.battery.battery_env import Battery
@@ -22,7 +20,7 @@ class FlexEnv(EnvWrapper):
 
     def __init__(self, **kwargs):
         env = Flex(**kwargs)
-        super(EnvWrapper, self).__init__(env)
+        super(FlexEnv, self).__init__(env)
 
         self.observation_space = self.env.observation_space
         self.obs_space_shape = self.observation_space.shape
@@ -40,8 +38,8 @@ class FlexEnv(EnvWrapper):
 class CartPoleEnv(EnvWrapper):
 
     def __init__(self):
-        env = gym.make('CartPole-V0')
-        super(EnvWrapper, self).__init__(env)
+        env = gym.make('CartPole-v0')
+        super(CartPoleEnv, self).__init__(env)
 
         self.observation_space = self.env.observation_space
         self.obs_space_shape = self.observation_space.shape
@@ -53,14 +51,14 @@ class CartPoleEnv(EnvWrapper):
         """
         Not every agent will need to do this
         """
-        self.actions = [act for act in range(self.action_space.n)]
+        return [act for act in range(self.action_space.n)]
 
 
 class PendulumEnv(EnvWrapper):
 
     def __init__(self, num_discrete):
         env = gym.make('Pendulum-V0')
-        super(EnvWrapper, self).__init__(env)
+        super(PendulumEnv, self).__init__(env)
 
         self.observation_space = self.env.observation_space
         self.obs_space_shape = self.observation_space.shape
@@ -72,7 +70,7 @@ class PendulumEnv(EnvWrapper):
         """
         Not every agent will need to do this
         """
-        self.actions = np.linspace(self.action_space.low,
+        return np.linspace(self.action_space.low,
                                    self.action_space.high,
                                    num=num_discrete,
                                    endpoint=True).tolist()
@@ -82,7 +80,7 @@ class MountainCarEnv(EnvWrapper):
 
     def __init__(self):
         env = gym.make('Pendulum-V0')
-        super(EnvWrapper, self).__init__(env)
+        super(MountainCarEnv, self).__init__(env)
 
         self.observation_space = self.env.observation_space
         self.obs_space_shape = self.observation_space.shape
@@ -94,6 +92,6 @@ class MountainCarEnv(EnvWrapper):
         """
         Not every agent will need to do this
         """
-        self.actions = [act for act in range(self.action_space.n)]
+        return [act for act in range(self.action_space.n)]
 
 

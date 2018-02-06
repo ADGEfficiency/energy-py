@@ -1,10 +1,9 @@
 import logging
 
-import gym
 
 from energy_py import experiment
 from energy_py.agents import DQN
-
+from energy_py.envs import CartPoleEnv
 
 if __name__ == '__main__':
 
@@ -20,8 +19,7 @@ if __name__ == '__main__':
                    'process_observation': False,
                    'process_target': False}
 
-    envs = ['Pendulum-v0', 'CartPole-v1', 'MountainCar-v0']
-    env = gym.make(envs[1])
+    env = CartPoleEnv() 
     total_steps = 1e5
     base_path = './dqn'
     info = experiment(agent, agent_config, env,

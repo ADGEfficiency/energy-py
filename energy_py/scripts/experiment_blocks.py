@@ -182,11 +182,11 @@ def experiment(agent, agent_config, env, total_steps, base_path):
                 if step > agent.initial_random:
                     train_info = agent.learn()
 
-            global_rewards.append(ep_rew)
-            # avg_rew = sum(global_rewards[-100:]) / len(global_rewards[-100:])
+            global_rewards.append(sum(ep_rew))
+            avg_rew = sum(global_rewards[-100:]) / len(global_rewards[-100:])
             #  reporting expt status at the end of each episode
-            runner.report({'episode': episode,
-                           'ep_rew': ep_rew,
+            runner.report({'ep': episode,
+                           'ep_rew': sum(ep_rew),
                            'avg_rew': avg_rew})
 
     return train_info
@@ -205,7 +205,7 @@ class Timer(object):
         The main functionality of this class
         """
         output_dict['run time'] = self.calc_time()
-        log = ['{} : {}'.format(k, v) for k,v in output_dict.items()]
+        log = ['{} : {:.2f}'.format(k, v) for k,v in output_dict.items()]
         self.logger_timer.info(log)
 
     def calc_time(self):

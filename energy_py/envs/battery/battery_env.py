@@ -1,12 +1,12 @@
 import logging
 
-from energy_py.envs import TimeSeriesEnv
+from energy_py.envs import BaseEnv
 from energy_py.scripts.spaces import ContinuousSpace, GlobalSpace
 
 logger = logging.getLogger(__name__)
 
 
-class BatteryEnv(TimeSeriesEnv):
+class Battery(BaseEnv):
     """
     An environment that simulates storage of electricity in a battery.
     Agent chooses to either charge or discharge.
