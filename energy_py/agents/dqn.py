@@ -58,6 +58,8 @@ class DQN(BaseAgent):
                  memory_fraction=0.25,
                  process_observation=False,
                  process_target=False,
+                 act_path=None,
+                 learn_path=None,
                  **kwargs):
 
         self.env = env
@@ -100,10 +102,10 @@ class DQN(BaseAgent):
         if process_target:
             self.target_processor = Normalizer(1)
 
-        self.acting_writer = tf.summary.FileWriter('./results/acting',
+        self.acting_writer = tf.summary.FileWriter(act_path,
                                                    graph=self.sess.graph)
 
-        self.learning_writer = tf.summary.FileWriter('./results/learning',
+        self.learning_writer = tf.summary.FileWriter(learn_path,
                                                      graph=self.sess.graph)
 
         sess.run(tf.global_variables_initializer())
