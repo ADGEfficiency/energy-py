@@ -53,6 +53,7 @@ class DQN(BaseAgent):
                  batch_size,
                  layers,
                  learning_rate,
+                 initial_random=0.1,
                  epsilon_decay_fraction=0.5,
                  memory_fraction=0.25,
                  process_observation=False,
@@ -66,10 +67,11 @@ class DQN(BaseAgent):
         self.batch_size = batch_size
 
         memory_length = int(total_steps * memory_fraction)
-
+        self.initial_random = initial_random
         #  number of steps where epsilon is decayed from 1.0 to 0.1
         decay_steps = total_steps * epsilon_decay_fraction
-        self.epsilon_getter = EpsilonDecayer(decay_steps)
+        self.epsilon_getter = EpsilonDecayer(decay_steps,
+                                             init_random=self.initial_random)
 
         #  the counter is stepped up every time we act or learn
         self.counter = 0
@@ -104,6 +106,7 @@ class DQN(BaseAgent):
         self.learning_writer = tf.summary.FileWriter('./results/learning',
                                                      graph=self.sess.graph)
 
+        sess.run(tf.global_variables_initializer())
         self.update_target_network()
 
     def __repr__(self): return '<class DQN Agent>'

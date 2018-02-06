@@ -1,6 +1,7 @@
 from collections import defaultdict, deque, namedtuple
 from random import sample
 
+import numpy as np
 
 Experience = namedtuple('Experience', ['observation',
                                        'action',

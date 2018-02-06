@@ -15,6 +15,7 @@ import argparse
 import csv
 import logging
 import logging.config
+import time
 
 import numpy as np
 import tensorflow as tf
@@ -70,21 +71,19 @@ def expt_args(optional_args=None):
 
 def save_args(config, path, argparse=None):
     """
-    Saves args from an argparse object and from an optional
-    dictionary
+    Saves a config dictionary and optional argparse object to a text file.
 
     args
+        config (dict)
+        path (str) path for output text file
         argparse (object)
-        path (str)        : path to save too
-        optional (dict)   : optional dictionary of additional arguments
-
     returns
-        writer (object) : csv Writer object
+        writer (object) csv Writer object
     """
     with open(path, 'w') as outfile:
         writer = csv.writer(outfile)
 
-        for k, v in optional.items():
+        for k, v in config.items():
             print('{} : {}'.format(k, v))
             writer.writerow([k]+[v])
 
@@ -100,6 +99,7 @@ def make_paths(name):
     results = name + '/'
     paths = {'results': results,
              'brain': results + 'brain/',
+             'tb': results + 'tb/',
              'logs': results + 'logs.log',
              'args': results + 'args.txt',
              'env_args': results + 'env_args.txt',
@@ -114,6 +114,7 @@ def make_logger(log_path, log_status='INFO'):
     logger = logging.getLogger(__name__)
 
     logging.config.dictConfig({
+            'version': 1,
             'disable_existing_loggers': False,
 
             'formatters': {'standard': {'format': '%(asctime)s [%(levelname)s]%(name)s: %(message)s'}},
@@ -138,21 +139,19 @@ def make_logger(log_path, log_status='INFO'):
 def experiment(agent, agent_config, env, total_steps, base_path):
 
 
-    paths = make_paths(base_path)
-
-    logger = make_logger(paths['logs'], 'DEBUG')
-
-    agent_config['env'] = env
-    agent_config['env_repr'] = repr(env)
-    agent_config['sess'] = sess
-    agent = agent(**agent_config)
-
-    save_args(agent_config, path=paths['agent_args'])
-
     with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
+        paths = make_paths(base_path)
 
-        ep_rew, global_rewards, avg_rew = [], [], None
+        logger = make_logger(paths['logs'], 'INFO')
+
+        agent_config['env'] = env
+        agent_config['env_repr'] = repr(env)
+        agent_config['sess'] = sess
+        agent = agent(**agent_config)
+
+        save_args(agent_config, path=paths['agent_args'])
+
+        ep_rew, global_rewards, avg_rew = 0, [], None
         summaries = {'episode_reward': ep_rew,
                      'avg_rew': avg_rew}
         runner = Runner(sess, paths['tb'], summaries)
@@ -164,17 +163,17 @@ def experiment(agent, agent_config, env, total_steps, base_path):
             episode += 1
             done, step = False, 0
             observation = env.reset()
-
+            ep_rew = []
             #  inner while loop runs through a single episode
             while not done:
                 step += 1
 
                 #  select an action
-                action = agent.act(sess=sess, obs=observation)
+                action = agent.act(observation)
                 #  take one step through the environment
                 next_observation, reward, done, info = env.step(action)
                 #  store the experience
-                agent.add_experience(observation, action, reward,
+                agent.remember(observation, action, reward,
                                      next_observation, done)
                 #  moving to the next time step
                 observation = next_observation
@@ -184,10 +183,9 @@ def experiment(agent, agent_config, env, total_steps, base_path):
                     train_info = agent.learn()
 
             global_rewards.append(ep_rew)
-            avg_rew = np.mean(global_rewards[-100:])
+            # avg_rew = sum(global_rewards[-100:]) / len(global_rewards[-100:])
             #  reporting expt status at the end of each episode
             runner.report({'episode': episode,
-                           'ep start': env.state_ts.index[0],
                            'ep_rew': ep_rew,
                            'avg_rew': avg_rew})
 
@@ -200,7 +198,7 @@ class Timer(object):
     """
     def __init__(self):
         self.start_time = time.time()
-        self.logger_timer = logging.getLogger('Timer')
+        self.logger_timer = logging.getLogger('runner')
 
     def report(self, output_dict):
         """

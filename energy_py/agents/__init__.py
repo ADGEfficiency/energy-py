@@ -1,4 +1,8 @@
 from energy_py.agents.memory import ArrayMemory, DequeMemory
+
+memories = {'array': ArrayMemory,
+            'deque': DequeMemory}
+
 from energy_py.agents.agent import BaseAgent, EpsilonGreedy
 
 from energy_py.agents.rand import RandomAgent
