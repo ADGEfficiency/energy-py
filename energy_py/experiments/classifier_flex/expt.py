@@ -2,7 +2,7 @@ import os
 
 from energy_py.agents import ClassifierAgent
 from energy_py.envs import FlexEnv
-from energy_py.experiments import no_learning_experiment
+from energy_py import experient
 
 if __name__ == '__main__':
 

@@ -50,6 +50,8 @@ class FlexEnv(TimeSeriesEnv):
                          log_path=log_path,
                          tb_scalars=scalars)
 
+    def __repr__(self): return '<energy_py flexibility environment>'
+
     def _reset(self):
         """
         Resets the environment
@@ -116,7 +118,7 @@ class FlexEnv(TimeSeriesEnv):
         """
         #  pull the electricity price out of the state
         elect_price_index = self.state_info.index('C_electricity_price_[$/MWh]')
-        electricity_price = self.state[0][elect_price_index]
+        self.electricity_price = self.state[0][elect_price_index]
 
         #  grab the action
         action = action[0][0]
@@ -172,12 +174,12 @@ class FlexEnv(TimeSeriesEnv):
 
         #  now we set reward based on whether we are in a cycle or not
         #  /12 so we get reward in terms of £/5 minutes
-        reward = flex_action * electricity_price / 12
+        reward = flex_action * self.electricity_price / 12
 
         total_counters = self.check_counters()
 
         logger.debug('step {} elect. price {}'.format(
-            self.observation_ts.index[self.steps], electricity_price))
+            self.observation_ts.index[self.steps], self.electricity_price))
 
         if total_counters > 0:
             logger.debug('action is {}'.format(action))

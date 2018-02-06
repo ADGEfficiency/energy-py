@@ -95,14 +95,17 @@ class GlobalSpace(object):
 
     def sample(self):
         sample = [spc.sample() for spc in self.spaces]
-        return np.array(sample).reshape(1, self.shape[0])
+        return np.array(sample).reshape(1, *self.shape)
 
     def sample_discrete(self):
         """
         Separate method for clarity when using the GlobalSpace
+
+        This method requires that self.discrete_spaces has been set using
+        the discretize() method.
         """
         idx = np.random.randint(0, self.discrete_spaces.shape[0])
-        return np.array(self.discrete_spaces[idx]).reshape(1, self.shape[0])
+        return np.array(self.discrete_spaces[idx]).reshape(1, *self.shape)
 
     def contains(self, x):
         """

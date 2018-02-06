@@ -1,48 +1,25 @@
+"""
+A collection of functions to run experiments.
+
+Module contains:
+    expt_args - creates and parses command line arguments
+    save_args - saves dictionaries or argparses to text files
+    make_paths - creates a dictionary of paths
+    make_logger - DEBUG to file, INFO to console
+    experiment - runs a single reinforcment learning experiment
+    Timer - times experiments
+    
+"""
+
 import argparse
 import csv
 import logging
 import logging.config
-import time
 
-from energy_py.scripts.utils import ensure_dir
+import numpy as np
+import tensorflow as tf
 
-logger = logging.getLogger(__name__)
-
-def experiment():
-    """
-    A decorator used to wrap experiments
-    """
-    def outer_wrapper(my_expt_func):
-
-        def wrapper(agent,
-                    env,
-                    data_path,
-                    base_path,
-                    opt_parser_args=None,
-                    opt_agent_args=None,
-                    **kwargs):
-
-            parser, args = expt_args(opt_parser_args)
-
-            paths = make_paths(base_path)
-
-            logger = make_logger(paths['logs'], args.log)
-
-            env = env(data_path,
-                      episode_length=args.len,
-                      episode_random=args.rand)
-
-            agent_outputs, env_outputs = my_expt_func(agent,
-                                                      args,
-                                                      paths,
-                                                      env,
-                                                      opt_agent_args=opt_agent_args)
-
-            return agent_outputs, env_outputs
-        
-        return wrapper
-    
-    return outer_wrapper
+from energy_py import ensure_dir
 
 
 def expt_args(optional_args=None):
@@ -91,7 +68,7 @@ def expt_args(optional_args=None):
     return parser, args
 
 
-def save_args(argparse, path, optional={}):
+def save_args(config, path, argparse=None):
     """
     Saves args from an argparse object and from an optional
     dictionary
@@ -106,14 +83,16 @@ def save_args(argparse, path, optional={}):
     """
     with open(path, 'w') as outfile:
         writer = csv.writer(outfile)
-        for k, v in vars(argparse).items():
+
+        for k, v in optional.items():
             print('{} : {}'.format(k, v))
             writer.writerow([k]+[v])
 
-        if optional:
-            for k, v in optional.items():
+        if argparse:
+            for k, v in vars(argparse).items():
                 print('{} : {}'.format(k, v))
                 writer.writerow([k]+[v])
+
     return writer
 
 
@@ -122,18 +101,21 @@ def make_paths(name):
     paths = {'results': results,
              'brain': results + 'brain/',
              'logs': results + 'logs.log',
-             'args': results + 'args.txt'}
+             'args': results + 'args.txt',
+             'env_args': results + 'env_args.txt',
+             'agent_args': results + 'agent_args.txt'}
     for k, path in paths.items():
         ensure_dir(path)
     return paths
 
 
-def make_logger(log_path, log_status):
+def make_logger(log_path, log_status='INFO'):
 
     logger = logging.getLogger(__name__)
+
     logging.config.dictConfig({
-            'version': 1,
-            'disable_existing_loggers': False,  # this fixes the problem
+            'disable_existing_loggers': False,
+
             'formatters': {'standard': {'format': '%(asctime)s [%(levelname)s]%(name)s: %(message)s'}},
 
             'handlers': {'console': {'level': log_status,
@@ -153,33 +135,63 @@ def make_logger(log_path, log_status):
     return logger
 
 
-def run_single_episode(episode_number,
-                       agent,
-                       env,
-                       sess=None,
-                       normalize_return=True):
-    """
-    Helper function to run through a single episode
-    """
+def experiment(agent, agent_config, env, total_steps, base_path):
 
-    #  initialize before starting episode
-    done, step = False, 0
-    observation = env.reset(episode_number)
-    #  while loop runs through a single episode
-    while done is False:
-        #  select an action
-        action = agent.act(observation=observation, session=sess)
-        #  take one step through the environment
-        next_observation, reward, done, info = env.step(action)
-        #  store the experience
-        agent.memory.add_experience(observation, action, reward,
-                                    next_observation, done,
-                                    step, episode_number)
-        step += 1
-        observation = next_observation
 
-    #  now episode is done - process the episode in the agent memory
-    return agent, env, sess
+    paths = make_paths(base_path)
+
+    logger = make_logger(paths['logs'], 'DEBUG')
+
+    agent_config['env'] = env
+    agent_config['env_repr'] = repr(env)
+    agent_config['sess'] = sess
+    agent = agent(**agent_config)
+
+    save_args(agent_config, path=paths['agent_args'])
+
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+
+        ep_rew, global_rewards, avg_rew = [], [], None
+        summaries = {'episode_reward': ep_rew,
+                     'avg_rew': avg_rew}
+        runner = Runner(sess, paths['tb'], summaries)
+
+        step, episode = 0, 0
+
+        #  outer while loop runs through multiple episodes
+        while step < total_steps:
+            episode += 1
+            done, step = False, 0
+            observation = env.reset()
+
+            #  inner while loop runs through a single episode
+            while not done:
+                step += 1
+
+                #  select an action
+                action = agent.act(sess=sess, obs=observation)
+                #  take one step through the environment
+                next_observation, reward, done, info = env.step(action)
+                #  store the experience
+                agent.add_experience(observation, action, reward,
+                                     next_observation, done)
+                #  moving to the next time step
+                observation = next_observation
+                ep_rew.append(reward)
+
+                if step > agent.initial_random:
+                    train_info = agent.learn()
+
+            global_rewards.append(ep_rew)
+            avg_rew = np.mean(global_rewards[-100:])
+            #  reporting expt status at the end of each episode
+            runner.report({'episode': episode,
+                           'ep start': env.state_ts.index[0],
+                           'ep_rew': ep_rew,
+                           'avg_rew': avg_rew})
+
+    return train_info
 
 
 class Timer(object):
@@ -195,9 +207,42 @@ class Timer(object):
         The main functionality of this class
         """
         output_dict['run time'] = self.calc_time()
-
         log = ['{} : {}'.format(k, v) for k,v in output_dict.items()]
         self.logger_timer.info(log)
 
     def calc_time(self):
         return (time.time() - self.start_time) / 60
+
+
+class TensorboardHepler(object):
+
+    def __init__(self, logdir, scalars):
+        self.writer = tf.summary.FileWriter(logdir)
+        self.summaries = []
+        self.steps = 0
+        for tag, variable in scalars.items():
+            self.add_scalar(tag, variable)
+
+    def add_scalar(self, tag, variable):
+        summary = tf.Summary(value=[tf.Summary.Value(tag=tag,
+                                                     simple_value=variable)])
+        self.summaries.append(summary)
+
+    def write_summaries(self):
+        _ = [self.writer.add_summary(s, self.steps) for s in self.summaries]
+        self.writer.flush()
+
+
+class Runner(object):
+    """
+    Trying to figure out what to do here - trying this runner class
+    """
+    def __init__(self, sess, logdir, scalars):
+        self.sess = sess
+        self.timer = Timer()
+        self.tb = TensorboardHepler(logdir, scalars)
+
+    def report(self, output_dict):
+        self.timer.report(output_dict)
+
+        self.tb.write_summaries()

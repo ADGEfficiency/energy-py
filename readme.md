@@ -61,7 +61,7 @@ The main dependencies of energy_py are numpy, pandas & TensorFlow.  energy_py wa
 
 ### Project structure
 
-Environments are created by inheriting from the [BaseEnv](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/envs/env_core.py) class.  All of the environments implemented so far are children of the [TimeSeriesEnv](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/envs/env_ts.py) class.  Likely in the future that I will merge BaseEnv and TimeSeriesEnv into one class.  
+Environments are created by inheriting from the [BaseEnv](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/envs/env_core.py) class.
 
 Agents are created by inheriting from the [BaseAgent](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/agent.py) class.  Another key object is the [AgentMemory](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/memory.py) which holds and processes agent experience.  
 

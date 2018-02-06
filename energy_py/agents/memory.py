@@ -1,10 +1,8 @@
 from collections import defaultdict, deque, namedtuple
 from random import sample
 
-import numpy as np
 
-#  a namedtuple to hold a single sample of experience
-Experience = namedtuple('experience', ['observation',
+Experience = namedtuple('Experience', ['observation',
                                        'action',
                                        'reward',
                                        'next_observation',

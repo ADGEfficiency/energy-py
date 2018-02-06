@@ -18,7 +18,7 @@ import numpy as np
 import tensorflow as tf
 
 from energy_py.agents import BaseAgent
-from processors import Normalizer
+from energy_py import Normalizer
 
 
 logging.getLogger(__name__)
@@ -67,8 +67,6 @@ class DQN(BaseAgent):
 
         memory_length = int(total_steps * memory_fraction)
 
-        super().__init__(env, discount, memory_length)
-
         #  number of steps where epsilon is decayed from 1.0 to 0.1
         decay_steps = total_steps * epsilon_decay_fraction
         self.epsilon_getter = EpsilonDecayer(decay_steps)
@@ -77,6 +75,8 @@ class DQN(BaseAgent):
         self.counter = 0
 
         self.actions = self.setup_spaces(num_discrete=20)
+
+        super().__init__(env, discount, memory_length)
 
         model_config = {'input_shape': self.obs_shape,
                         'output_shape': (len(self.actions),),
@@ -93,7 +93,7 @@ class DQN(BaseAgent):
         self.update_ops = self.make_target_net_update_ops()
 
         if process_observation:
-            self.observation_processor = Normalizer(obs_shape[0])
+            self.observation_processor = Normalizer(self.obs_shape[0])
 
         if process_target:
             self.target_processor = Normalizer(1)
@@ -103,8 +103,6 @@ class DQN(BaseAgent):
 
         self.learning_writer = tf.summary.FileWriter('./results/learning',
                                                      graph=self.sess.graph)
-
-        self.sess.run(tf.global_variables_initializer())
 
         self.update_target_network()
 

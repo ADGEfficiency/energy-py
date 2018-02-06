@@ -1,9 +1,11 @@
 import logging
 
-from energy_py.agents.memory import DequeMemory, ArrayMemory
+from energy_py.agents import ArrayMemory, DequeMemory
 
 logger = logging.getLogger(__name__)
 
+memories = {'array': ArrayMemory,
+            'deque': DequeMemory}
 
 
 class BaseAgent(object):
@@ -36,19 +38,9 @@ class BaseAgent(object):
         self.env = env
         self.discount = discount
 
-        memory_args = (self.obs_shape,
-                       self.action_shape,
-                       memory_length)
-
-        #  probably a better way to do this pattern!
-        if memory_type == 'deque':
-            self.memory = DequeMemory(*memory_args)
-
-        elif memory_type == 'array':
-            self.memory = ArrayMemory(*memory_args)
-
-        else:
-            raise ValueError('{} memory type not supported'.format(memory_type)
+        self.memory = memories[memory_type](self.obs_shape,
+                                            self.action_shape,
+                                            memory_length)
 
     def _reset(self): raise NotImplementedError
 
@@ -129,6 +121,12 @@ class BaseAgent(object):
             obs_space_shape = env.observation_space.shape
             action_space_shape = (1,)
             actions = [act for act in range(env.action_space.n)]
+
+        elif repr(env)[:10] == '<energy_py':
+            obs_space_shape = env.observation_space.shape
+            action_space_shape = env.action_space.shape
+            actions = list(action_space.discretize(num_discrete))
+
         else:
             raise ValueError('Environment not supported')
 
