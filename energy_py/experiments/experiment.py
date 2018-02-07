@@ -138,7 +138,20 @@ def make_logger(log_path, log_status='INFO'):
 
 
 def experiment(agent, agent_config, env, total_steps, base_path):
+    """
+    Run an experiment.  Episodes are run until total_steps are reached.
 
+    args
+        agent (object) learner & decision maker
+        agent_config (dict)
+        env (object) reinforcment learning environment
+        total_steps (int) length of the experiment
+        base_path (str) used to setup results folders
+
+    returns
+        global_rewards (list) rewards for each episode
+
+    """
 
     with tf.Session() as sess:
         paths = make_paths(base_path)
@@ -188,7 +201,8 @@ def experiment(agent, agent_config, env, total_steps, base_path):
             runner.report({'ep': episode,
                           'ep_rew': sum(rewards),
                           'avg_rew': avg_rew})
-    return train_info
+
+    return global_rewards
 
 
 class Runner(object):
@@ -221,9 +235,9 @@ class Runner(object):
             if tag in no_tb:
                 pass
             else:
-            summary = tf.Summary(value=[tf.Summary.Value(tag=tag,
-                                                         simple_value=var)])
-            self.writer.add_summary(summary, self.steps)
+                summary = tf.Summary(value=[tf.Summary.Value(tag=tag,
+                                                             simple_value=var)])
+                self.writer.add_summary(summary, self.steps)
 
         self.writer.flush()
 
