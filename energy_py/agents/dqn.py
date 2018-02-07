@@ -97,10 +97,10 @@ class DQN(BaseAgent):
         self.update_ops = self.make_target_net_update_ops()
 
         if process_observation:
-            self.observation_processor = Normalizer(self.obs_shape[0])
+            self.observation_processor = Normalizer()
 
         if process_target:
-            self.target_processor = Normalizer(1)
+            self.target_processor = Normalizer()
 
         self.acting_writer = tf.summary.FileWriter(act_path,
                                                    graph=self.sess.graph)
@@ -282,7 +282,7 @@ class DQN(BaseAgent):
         target = rewards + self.discount * next_obs_q
 
         if hasattr(self, 'target_processor'):
-            target = self.target_processor(target)
+            target = self.target_processor.transform(target)
 
         indicies = np.zeros((actions.shape[0], 1), dtype=int)
 
