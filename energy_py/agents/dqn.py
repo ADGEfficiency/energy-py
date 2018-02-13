@@ -148,7 +148,6 @@ class DQN(BaseAgent):
         observation = observation.reshape(-1, *self.obs_shape)
         next_observation = next_observation.reshape(-1, *self.obs_shape)
 
-
         if hasattr(self, 'observation_processor'):
             observation = self.observation_processor.transform(observation)
             next_observation = self.observation_processor.transform(next_observation)
@@ -230,7 +229,7 @@ class DQN(BaseAgent):
 
         return self.sess.run(self.update_ops)
 
-    def act(self, observation):
+    def _act(self, observation):
         """
         Our agent attempts to manipulate the world.
 
@@ -260,7 +259,7 @@ class DQN(BaseAgent):
         return np.array(action).reshape(1, *self.action_shape)
         # return action
 
-    def learn(self):
+    def _learn(self):
         """
         Our agent attempts to make sense of the world.
 

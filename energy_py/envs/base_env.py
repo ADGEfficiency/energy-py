@@ -58,8 +58,7 @@ class BaseEnv(object):
         episode_length (int)
         episode_start (int) integer index of episode start
         episode_random (bool) whether to randomize the episode start position
-        log_path (str)
-        tb_scalars (dict) {tag: value} setup tensorboard scalar summaries
+        tb_path (str)
     """
 
     def __init__(self,

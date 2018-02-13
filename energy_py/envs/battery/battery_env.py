@@ -192,24 +192,23 @@ class Battery(BaseEnv):
         #  -1 in here because of the zero index
         if self.steps == (self.episode_length-1):
             self.done = True
-            total_ep_reward = sum(self.info['reward'])
 
-        # #  saving info
-        # self.info = self.update_info(steps=self.steps,
-        #                              state=self.state,
-        #                              observation=self.observation,
-        #                              action=action,
-        #                              reward=reward,
-        #                              next_state=next_state,
-        #                              next_observation=next_observation,
-        #                              done=self.done,
+        #  saving info
+        self.info = self.update_info(steps=self.steps,
+                                     state=self.state,
+                                     observation=self.observation,
+                                     action=action,
+                                     reward=reward,
+                                     next_state=next_state,
+                                     next_observation=next_observation,
+                                     done=self.done,
 
-        #                              electricity_price=electricity_price,
-        #                              gross_rate=gross_rate,
-        #                              losses=losses,
-        #                              new_charge=new_charge,
-        #                              old_charge=old_charge,
-        #                              net_stored=net_stored)
+                                     electricity_price=electricity_price,
+                                     gross_rate=gross_rate,
+                                     losses=losses,
+                                     new_charge=new_charge,
+                                     old_charge=old_charge,
+                                     net_stored=net_stored)
 
         #  moving to next time step
         self.state = next_state

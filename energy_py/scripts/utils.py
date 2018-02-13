@@ -1,7 +1,7 @@
 """
 A collection of helper functions.
 """
-
+import logging
 import pickle
 import os
 
@@ -46,6 +46,36 @@ def load_pickle(name):
         obj = pickle.load(handle)
 
     return obj
+
+
+def make_logger(log_path, name=None):
+
+    if name:
+        logger = logging.getLogger(name)
+    else:
+        logger = logging.getLogger(__name__)
+
+    logging.config.dictConfig({
+            'version': 1,
+            'disable_existing_loggers': False,
+
+            'formatters': {'standard': {'format': '%(asctime)s [%(levelname)s]%(name)s: %(message)s'}},
+
+            'handlers': {'console': {'level': 'INFO',
+                                     'class': 'logging.StreamHandler',
+                                     'formatter': 'standard'},
+
+                         'file': {'class': 'logging.FileHandler',
+                                  'level': 'DEBUG',
+                                  'filename': log_path,
+                                  'mode': 'w',
+                                  'formatter': 'standard'}, },
+
+            'loggers': {'': {'handlers': ['console', 'file', ],
+                             'level': 'DEBUG',
+                             'propagate': True}}})
+
+    return logger
 
 
 class TensorboardHepler(object):

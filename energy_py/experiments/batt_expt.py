@@ -8,7 +8,6 @@ from energy_py.envs import CartPoleEnv, FlexEnv, BatteryEnv
 if __name__ == '__main__':
 
     agent = DQN
-
     agent_config = {'discount': 0.97,
                     'tau': 0.001,
                     'total_steps': 500000,
@@ -20,13 +19,14 @@ if __name__ == '__main__':
                     'process_observation': False,
                     'process_target': False}
 
+    env = BatteryEnv
     env_config = {'episode_length': 2016,
-                  'episode_random': True,
-                  'data_path': './perfect_forecast',
-                  'tb_path': '.results/perfect_battery/dqn/tb/env'}
+                  'episode_random': True}
 
-    env = BatteryEnv(**env_config)
     total_steps = 1e6
-    base_path = './results/perfect_battery/dqn'
-    info = experiment(agent, agent_config, env,
-                      total_steps, base_path)
+
+    data_path = './perfect_forecast',
+    results_path = '.results/perfect_battery_dqn'
+
+    info = experiment(agent, agent_config, env, env_config,
+                      total_steps, data_path, results_path)
