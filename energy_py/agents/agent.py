@@ -53,28 +53,25 @@ class BaseAgent(object):
 
     def reset(self):
         """
-        Resets the agent.
+        Resets the agent internals.
         """
-        #  reset the objects set in the Base_Agent init
         self.memory.reset()
         return self._reset()
 
-    def act(self, **kwargs):
+    def act(self, observation):
         """
         Action selection by agent.
 
         args
             observation (np array) shape=(1, observation_dim)
-            sess (tf.Session)
 
         return
             action (np array) shape=(1, num_actions)
         """
         logger.debug('Agent is acting')
-        #  do some checks on observation array shape
-        #  potential to remove kwargs here for clarity - agent only needs
-        #  an observation to choose an action from
-        return self._act(**kwargs)
+        assert observation.shape[0] == 1
+
+        return self._act(observation)
 
     def learn(self, **kwargs):
         """

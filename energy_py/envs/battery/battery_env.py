@@ -30,7 +30,8 @@ class Battery(BaseEnv):
                  power_rating=2,
                  capacity=4,
                  round_trip_eff=0.9,
-                 initial_charge=0.00):
+                 initial_charge=0.00,
+                 **kwargs):
 
         #  technical energy inputs
         self.power_rating = float(power_rating)  # MW
@@ -42,7 +43,8 @@ class Battery(BaseEnv):
         super().__init__(data_path,
                          episode_length,
                          episode_start,
-                         episode_random)
+                         episode_random,
+                         **kwargs)
 
         self.observation = self.reset()
 
@@ -192,22 +194,22 @@ class Battery(BaseEnv):
             self.done = True
             total_ep_reward = sum(self.info['reward'])
 
-        #  saving info
-        self.info = self.update_info(steps=self.steps,
-                                     state=self.state,
-                                     observation=self.observation,
-                                     action=action,
-                                     reward=reward,
-                                     next_state=next_state,
-                                     next_observation=next_observation,
-                                     done=self.done,
+        # #  saving info
+        # self.info = self.update_info(steps=self.steps,
+        #                              state=self.state,
+        #                              observation=self.observation,
+        #                              action=action,
+        #                              reward=reward,
+        #                              next_state=next_state,
+        #                              next_observation=next_observation,
+        #                              done=self.done,
 
-                                     electricity_price=electricity_price,
-                                     gross_rate=gross_rate,
-                                     losses=losses,
-                                     new_charge=new_charge,
-                                     old_charge=old_charge,
-                                     net_stored=net_stored)
+        #                              electricity_price=electricity_price,
+        #                              gross_rate=gross_rate,
+        #                              losses=losses,
+        #                              new_charge=new_charge,
+        #                              old_charge=old_charge,
+        #                              net_stored=net_stored)
 
         #  moving to next time step
         self.state = next_state

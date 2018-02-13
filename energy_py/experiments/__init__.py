@@ -1,5 +1,1 @@
-from energy_py.experiments.dqn_expt import dqn_experiment
-from energy_py.experiments.dpg_expt import dpg_experiment
-
-from energy_py.experiments.reinforce_expt import reinforce_experiment
-from energy_py.experiments.no_learn_expt import no_learning_experiment
+from experiment import Runner, experiment

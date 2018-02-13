@@ -5,6 +5,7 @@ A collection of helper functions.
 import pickle
 import os
 
+import tensorflow as tf
 
 def ensure_dir(file_path):
     """
@@ -45,3 +46,20 @@ def load_pickle(name):
         obj = pickle.load(handle)
 
     return obj
+
+
+class TensorboardHepler(object):
+
+    def __init__(self, logdir):
+
+        self.writer = tf.summary.FileWriter(logdir)
+        self.steps = 0
+
+    def add_summaries(self, summaries):
+        self.steps += 1
+        for tag, var in summaries.items():
+            summary = tf.Summary(value=[tf.Summary.Value(tag=tag,
+                                                         simple_value=var)])
+            self.writer.add_summary(summary, self.steps)
+
+        self.writer.flush()

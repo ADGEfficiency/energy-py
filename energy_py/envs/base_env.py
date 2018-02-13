@@ -1,3 +1,4 @@
+import collections
 import logging
 import os
 
@@ -5,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from energy_py.scripts.spaces import ContinuousSpace, DiscreteSpace
-from energy_py.scripts.tensorboard import TensorboardHepler 
+from energy_py import TensorboardHepler
 
 logger = logging.getLogger(__name__)
 
@@ -66,8 +67,7 @@ class BaseEnv(object):
                  episode_length,
                  episode_start,
                  episode_random,
-                 log_path=None,
-                 tb_scalars=None):
+                 tb_path):
 
         self.episode_length = int(episode_length)
         self.episode_start = int(episode_start)
@@ -78,12 +78,11 @@ class BaseEnv(object):
         #  the BaseEnv class
         self.raw_state_ts, self.raw_observation_ts = self.load_ts(data_path)
 
-        #  hack to allow max length 
+        #  hack to allow max length
         if self.episode_length == 0:
             self.episode_length = int(self.raw_observation_ts.shape[0])
 
-        if log_path and tb_scalars:
-            self.env_writer = TensorboardHepler(log_path, tb_scalars)
+        self.env_writer = TensorboardHepler(tb_path)
 
         self.observation = self.reset()
 

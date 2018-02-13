@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 class Flex(BaseEnv):
     def __init__(self,
                  data_path,
-                 log_path=None,
+                 tb_path=None,
                  episode_length=48,
                  episode_start=0,
                  episode_random=False,
@@ -35,20 +35,12 @@ class Flex(BaseEnv):
         self.flex_avail = None
         self.flex_action = None
 
-        scalars = {'electricity_price': self.electricity_price,
-                   'flex_up': self.flex_final,
-                   'flex_down': self.flex_initial,
-                   'relax': self.relax,
-                   'flex_avail': self.flex_avail,
-                   'flex_action': self.flex_action}
-
         #  init the parent TimeSeriesEnv
         super().__init__(data_path,
                          episode_length,
                          episode_start,
                          episode_random,
-                         log_path=log_path,
-                         tb_scalars=scalars)
+                         tb_path=tb_path)
 
     def __repr__(self): return '<energy_py flexibility environment>'
 
@@ -187,7 +179,14 @@ class Flex(BaseEnv):
             logger.debug('up {} down {} relax {} rew {}'.format(
                 self.flex_final, self.flex_initial, self.relax, reward))
 
-        self.tb_helper.write_summaries()
+        summaries = {'electricity_price': self.electricity_price,
+                   'flex_up': self.flex_final,
+                   'flex_down': self.flex_initial,
+                   'relax': self.relax,
+                   'flex_avail': self.flex_avail,
+                   'flex_action': self.flex_action}
+
+        self.env_writer.add_summaries(summaries)
 
         self.steps += 1
         next_state = self.get_state(self.steps, append=self.flex_avail)

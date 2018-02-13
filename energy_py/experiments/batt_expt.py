@@ -3,7 +3,7 @@ import os
 
 from energy_py import experiment
 from energy_py.agents import DQN
-from energy_py.envs import CartPoleEnv, FlexEnv
+from energy_py.envs import CartPoleEnv, FlexEnv, BatteryEnv
 
 if __name__ == '__main__':
 
@@ -20,12 +20,13 @@ if __name__ == '__main__':
                     'process_observation': False,
                     'process_target': False}
 
-    data_path = os.getcwd()
-    env_config = {'data_path': data_path,
-                  'log_path': './dqn/tb/env'}
+    env_config = {'episode_length': 2016,
+                  'episode_random': True,
+                  'data_path': './perfect_forecast',
+                  'tb_path': '.results/perfect_battery/dqn/tb/env'}
 
-    env = FlexEnv(**env_config)
-    total_steps = 1e5
-    base_path = './dqn'
+    env = BatteryEnv(**env_config)
+    total_steps = 1e6
+    base_path = './results/perfect_battery/dqn'
     info = experiment(agent, agent_config, env,
                       total_steps, base_path)

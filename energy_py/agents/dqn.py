@@ -70,6 +70,7 @@ class DQN(BaseAgent):
 
         memory_length = int(total_steps * memory_fraction)
         self.initial_random = initial_random
+
         #  number of steps where epsilon is decayed from 1.0 to 0.1
         decay_steps = total_steps * epsilon_decay_fraction
         self.epsilon_getter = EpsilonDecayer(decay_steps,
@@ -79,7 +80,7 @@ class DQN(BaseAgent):
         self.counter = 0
 
         self.actions = self.env.discretize(num_discrete=20)
-
+        print('{} actions'.format(self.actions))
         super().__init__(env, discount, memory_length)
 
         model_config = {'input_shape': self.obs_shape,
@@ -144,9 +145,13 @@ class DQN(BaseAgent):
             next_observation (np.array)
             done (np.array)
         """
+        observation = observation.reshape(-1, *self.obs_shape)
+        next_observation = next_observation.reshape(-1, *self.obs_shape)
+
+
         if hasattr(self, 'observation_processor'):
-            observation = self.observation_processor(observation)
-            next_observation = self.observation_processor(next_observation)
+            observation = self.observation_processor.transform(observation)
+            next_observation = self.observation_processor.transform(next_observation)
 
         return self.memory.remember(observation, action, reward,
                                     next_observation, done)
@@ -242,7 +247,7 @@ class DQN(BaseAgent):
         logging.debug('epsilon is {}'.format(epsilon))
 
         if epsilon > random_uniform():
-            action = self.env.action_space.sample()
+            action = self.env.action_space.sample_discrete()
             logging.debug('acting randomly - action is {}'.format(action))
         else:
             action = self.predict_online(observation)
@@ -252,8 +257,8 @@ class DQN(BaseAgent):
         self.acting_writer.add_summary(epsilon_sum, self.counter)
         self.acting_writer.flush()
 
-        # return np.array(action).reshape(1, *self.action_space_shape)
-        return action
+        return np.array(action).reshape(1, *self.action_shape)
+        # return action
 
     def learn(self):
         """
@@ -283,11 +288,13 @@ class DQN(BaseAgent):
 
         if hasattr(self, 'target_processor'):
             target = self.target_processor.transform(target)
+            logging.info('target_processor_mins {}'.format(self.target_processor.mins))
+            logging.info('target_processor_maxs {}'.format(self.target_processor.maxs))
 
         indicies = np.zeros((actions.shape[0], 1), dtype=int)
 
         for arr, action in zip(indicies, actions):
-            idx = self.actions.index(action)
+            idx = self.actions.index(action.tolist())
             arr[0] = idx
 
         rng = np.arange(actions.shape[0]).reshape(actions.shape[0], 1)

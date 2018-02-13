@@ -1,8 +1,8 @@
 """
-Objects to doing preprocessing tasks.
+Objects to preprocess numpy arrays.
 
+M
 Module contains
-    
     Normalizer
     Standardizer
 """
@@ -19,7 +19,7 @@ class Normalizer(object):
     Normalization to range [0, 1]
 
     normalized = (value - minimum) / (maximum - minimum)
-    
+
     args
         array (np.array)
     """

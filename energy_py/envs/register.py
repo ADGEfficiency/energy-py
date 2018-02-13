@@ -34,6 +34,23 @@ class FlexEnv(EnvWrapper):
         """
         return list(self.action_space.discretize(num_discrete))
 
+class BatteryEnv(EnvWrapper):
+
+    def __init__(self, **kwargs):
+        env = Battery(**kwargs)
+        super(BatteryEnv, self).__init__(env)
+
+        self.observation_space = self.env.observation_space
+        self.obs_space_shape = self.observation_space.shape
+
+        self.action_space = self.env.action_space
+        self.action_space_shape = self.action_space.shape
+
+    def discretize(self, num_discrete):
+        """
+        Not every agent will need to do this
+        """
+        return list(self.action_space.discretize(num_discrete))
 
 class CartPoleEnv(EnvWrapper):
 

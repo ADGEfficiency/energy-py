@@ -19,7 +19,7 @@ import time
 import numpy as np
 import tensorflow as tf
 
-from energy_py import ensure_dir
+from energy_py import ensure_dir, TensorboardHepler
 
 
 def expt_args(optional_args=None):
@@ -163,12 +163,13 @@ def experiment(agent, agent_config, env, total_steps, base_path):
         agent_config['sess'] = sess
         agent_config['act_path'] = paths['tb_act']
         agent_config['learn_path'] = paths['tb_learn']
+        print('BEFORE AGENT CONFIG')
         agent = agent(**agent_config)
 
+        print('AFTER AGENT CONFIG')
         save_args(agent_config, path=paths['agent_args'])
 
-        runner = Runner(sess, paths['tb_rl'])
-
+        runner = Runner(paths['tb_rl'])
         step, episode = 0, 0
         global_rewards = []
         #  outer while loop runs through multiple episodes
@@ -187,7 +188,7 @@ def experiment(agent, agent_config, env, total_steps, base_path):
                 next_observation, reward, done, info = env.step(action)
                 #  store the experience
                 agent.remember(observation, action, reward,
-                                     next_observation, done)
+                               next_observation, done)
                 #  moving to the next time step
                 observation = next_observation
                 rewards.append(reward)
@@ -199,8 +200,8 @@ def experiment(agent, agent_config, env, total_steps, base_path):
             avg_rew = sum(global_rewards[-100:]) / len(global_rewards[-100:])
             #  reporting expt status at the end of each episode
             runner.report({'ep': episode,
-                          'ep_rew': sum(rewards),
-                          'avg_rew': avg_rew})
+                           'ep_rew': sum(rewards),
+                           'avg_rew': avg_rew})
 
     return global_rewards
 
@@ -209,14 +210,12 @@ class Runner(object):
     """
     Trying to figure out what to do here - trying this runner class
     """
-    def __init__(self, sess, logdir):
-        self.sess = sess
+    def __init__(self, logdir):
 
         self.start_time = time.time()
         self.logger_timer = logging.getLogger('runner')
 
-        self.writer = tf.summary.FileWriter(logdir)
-        self.steps = 0
+        self.tb_helper = TensorboardHepler(logdir)
 
     def calc_time(self):
         return (time.time() - self.start_time) / 60
@@ -229,15 +228,6 @@ class Runner(object):
         log = ['{} : {:.2f}'.format(k, v) for k, v in summaries.items()]
         self.logger_timer.info(log)
 
-        self.steps += 1
         no_tb = ['ep', 'run_time']
-        for tag, var in summaries.items():
-            if tag in no_tb:
-                pass
-            else:
-                summary = tf.Summary(value=[tf.Summary.Value(tag=tag,
-                                                             simple_value=var)])
-                self.writer.add_summary(summary, self.steps)
-
-        self.writer.flush()
-
+        _ = [summaries.pop(key) for key in no_tb]
+        self.tb_helper.add_summaries(summaries)
