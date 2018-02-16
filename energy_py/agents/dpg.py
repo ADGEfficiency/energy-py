@@ -1,3 +1,9 @@
+"""
+Most functionality occurs within the Actor or Critic classes. DPG agent
+only really has _act and _learn
+"""
+
+
 import logging
 
 import numpy as np
@@ -17,8 +23,7 @@ class DPG(BaseAgent):
     args
         env (object) energy_py environment
         actor (object) a determinstic policy
-        critic (object) 
-
+        critic (object)
 
     references
         Silver et. al (2014) Determinstic Policy Gradient Algorithms
@@ -27,163 +32,185 @@ class DPG(BaseAgent):
     """
 
     def __init__(self,
+                 sess,
                  env,
                  discount,
-                 actor,
-                 critic):
+                 # actor_config,
+                 # critic_config,
+                 total_steps,
+                 batch_size,
+                 memory_fraction,
+                 **kwargs):
 
-        super().__init__(env, discount)
+        self.sess = sess
+        self.batch_size = batch_size
+        memory_length = total_steps * memory_fraction
 
-        model_dict_actor = {'input_nodes': self.observation_space.shape[0],
-                           'output_nodes': self.action_space.shape[0],
-                           'layers': [25, 25],
-                           'lr': 0.0025,
-                           'tau': 0.001,
-                           'action_space': self.action_space}
+        super().__init__(env, discount, memory_length)
 
-        model_dict_critic = {'input_nodes': self.observation_space.shape[0],
-                           'output_nodes': 1,
-                           'layers': [25, 25],
-                           'lr': 0.0025,
-                           'tau': 0.001,
-                           'observation_space': self.observation_space,
-                           'action_space': self.action_space}
+        actor_config = {'sess': self.sess,
+                        'input_nodes': self.obs_shape,
+                        'output_nodes': self.action_shape,
+                        'layers': [25, 25],
+                        'lr': 0.0025,
+                        'tau': 0.001,
+                        'action_space': self.action_space}
 
-        self.state_processor = Standardizer(self.observation_space.shape[0])
-        self.action_processor = Standardizer(self.action_space.shape[0])
-        self.target_processor = Normalizer(1) 
+        critic_config = {'sess': self.sess,
+                         'input_nodes': self.obs_shape,
+                         'output_nodes': 1,
+                         'layers': [25, 25],
+                         'lr': 0.0025,
+                         'tau': 0.001,
+                         'observation_space': self.observation_space,
+                         'action_space': self.action_space}
 
         #  create the actor & critic
-        self.actor = actor(model_dict_actor)
-        self.critic = critic(model_dict_critic, self.actor.num_vars)
+        self.actor = DPGActor(actor_config)
+        self.critic = DPGCritic(critic_config)
+
+        self.sess.run(tf.global_variables_initializer())
 
     def _reset(self):
         raise NotImplementedError
 
-    def _act(self, **kwargs):
-
-        sess = kwargs['sess']
-        obs = kwargs['obs']
-
-        obs = self.state_processor.transform(obs)
-
-        determ_action, noise, action = self.actor.get_action(sess, obs) 
-        action = np.array(action).reshape(1, self.action_space.shape[0])
-
-        self.memory.info['determinsitic_action'] = determ_action
-        self.memory.info['noise'] = noise
-        self.memory.info['action'] = action
-
-        return action
+    def _act(self, observation):
+        return self.actor.get_action(observation)
 
     def _learn(self, **kwargs):
 
-        sess = kwargs['sess']
-        batch = kwargs['batch']
-
-        #  unpack the batch dictionary
+        #  get batch and unpack it
+        #  TODO can I explode this somehow?
+        batch = self.memory.get_batch(self.batch_size)
         obs = batch['obs']
         actions = batch['actions']
         rews = batch['rewards']
         next_obs = batch['next_obs']
         terminal = batch['terminal']
 
-        #  process our obs, actions and next_obs using our state processor
-        obs = self.state_processor.transform(obs)
-        next_obs = self.state_processor.transform(next_obs)
-
-        #  create a Bellman target to update our critic 
+        #  create a Bellman target to update our critic
         #  get an estimate of next state value using target network
         #  we use the target network to generate actions
-        t_actions = self.actor.get_target_action(sess, obs)
-        t_actions = self.action_processor.transform(t_actions)
-        Q_next_obs = self.critic.predict_target(sess, obs, t_actions)
+        t_actions = self.actor.get_target_action(next_obs)
+
+        if hasattr(self, 'action_processor'):
+            t_actions = self.action_processor.transform(t_actions)
+
+        #  obs is already processed as we pull it from memory
+        #  TODO this could be a test!
+        #  this is the critics estimate of the return from the
+        #  experienced next state, taking actions as suggested by the
+        #  actor network
+        q_next_obs = self.critic.predict_target(next_obs, t_actions)
 
         #  set terminal next state Q to zero
-        Q_next_obs[terminal] = 0
+        q_next_obs[terminal] = 0
 
         #  create the Bellman target
-        targets = rews + self.discount * Q_next_obs
-
-        #  save the unscaled targets 
-        self.memory.info['unscaled_targets'].extend(targets.flatten().tolist())
+        targets = rews + self.discount * q_next_obs
 
         #  scale the targets
-        targets = self.target_processor.transform(targets)
+        if hasattr(self, 'target_processor'):
+            targets = self.target_processor.transform(targets)
 
-        #  update the critic 
-        actual_actions = self.action_processor.transform(actions)
-        c_error, c_loss = self.critic.improve(sess, obs, actual_actions, targets)
-
-        #  save data for analysis later
-        self.memory.info['c_train_error'].extend(c_error.flatten().tolist())
-        self.memory.info['c_loss'].append(c_loss)
-
-        self.memory.info['scaled_obs'].extend(obs.flatten().tolist())
-        self.memory.info['scaled_targets'].extend(targets.flatten().tolist())
-
-        self.memory.info['max_target'].append(np.max(targets))
-        self.memory.info['avg_target'].append(np.mean(targets))
+        #  update the critic
+        #  actions are already scaled as they are pulled from memory
+        #  TODO test
+        self.critic.improve(obs, actions, targets)
 
         #  update the actor
         #  get the actions the actor would take for these observations
         #  using online network (not target)
-        actor_actions, _, _ = self.actor.get_action(sess, obs)
+        actor_actions = self.actor.get_action(obs)
 
         #  get the gradients for these actions
-        act_grads = self.critic.get_action_grads(sess, obs, actor_actions)[0]
-        a_loss = self.actor.improve(sess, obs, act_grads)
-        self.memory.info['a_loss'].append(a_loss)
+        act_grads = self.critic.get_action_grads(obs, actor_actions)[0]
+        self.actor.improve(obs, act_grads)
 
-        return {'c_error': c_error, 'c_loss': c_loss, 'a_loss:': a_loss}
-
+        return {}
 
 class DPGActor(object):
     """
-    Policy that maps state to a single continuous action
-
-    args
-       model_dict (dict) 
+    Policy that maps state to action deterministically
     """
-    def __init__(self, model_dict, scope='DPG_Actor'):
-        
-        self.input_nodes = model_dict['input_nodes']
-        self.output_nodes = model_dict['output_nodes']
-        self.layers = model_dict['layers']
-        self.lr = model_dict['lr']
-        self.tau = model_dict['tau']
+    def __init__(self,
+                 sess,
+                 observation_shape,
+                 action_shape,
+                 layers,
+                 learning_rate,
+                 tau,
+                 wt_init=tf.truncated_normal,
+                 b_init=tf.zeros,
+                 scope='DPG_Actor'):
 
-        self.action_space = model_dict['action_space']
-
-        #  actor network
-        with tf.variable_scope('actor_online_net'):
-            self.obs, self.action = self.make_acting_graph()
-        self.network_param = tf.trainable_variables()
-
-        #  target network
-        with tf.variable_scope('actor_target_net'):
-            self.t_obs, self.t_action = self.make_acting_graph()
-        self.t_network_param = tf.trainable_variables()[len(self.network_param):]
-
-        self.num_vars = len(self.network_param) + len(self.t_network_param)
-
-        #  tf machinery to improve actor network 
-        self.train_op = self.make_learning_graph()
+        self.sess = sess
+        self.obs_shape = observation_shape
+        self.action_shape = action_shape
+        self.layers = layers
+        self.learning_rate = learning_rate
+        self.tau = tau
 
         #  exploration noise
-        self.actor_noise = OrnsteinUhlenbeckActionNoise(np.zeros(self.action_space.shape[0]))
+        self.actor_noise = OUActionNoise(np.zeros(*self.action_shape))
 
-    def make_acting_graph(self):
+        with tf.variable_scope(scope):
+
+            #  actor network
+            with tf.variable_scope('actor_online_net'):
+                self.obs, self.action = self.make_acting_graph(wt_init, b_init)
+                self.o_params = self.get_tf_params('{}/actor_online_net'.format(scope))
+
+            #  target network
+            with tf.variable_scope('actor_target_net'):
+                self.t_obs, self.t_action = self.make_acting_graph(wt_init, b_init)
+                self.t_params = self.get_tf_params('{}/actor_target_net'.format(scope))
+
+            #  tf machinery to improve actor network
+            with tf.variable_scope('learning'):
+                self.make_learning_graph()
+
+            #  ops to update target network
+            with tf.variable_scope('target_net_update'):
+                self.update_target_net = self.make_target_net_update_ops()
+
+    def get_tf_params(self, name_start):
+        params = [p for p in tf.trainable_variables()
+                  if p.name.startswith(name_start)]
+
+        return sorted(params, key=lambda var: var.name)
+
+    def make_target_net_update_ops(self):
+        """
+        Creates the Tensorflow operations to update the target network.
+
+        The two lists of Tensorflow Variables (one for the online net, one
+        for the target net) are iterated over together and new weights
+        are assigned to the target network
+        """
+        update_ops = []
+        for online, target in zip(self.o_params, self.t_params):
+            logging.debug('copying {} to {}'.format(online.name,
+                                                    target.name))
+            val = tf.add(tf.multiply(online, self.tau),
+                         tf.multiply(target, 1 - self.tau))
+
+            operation = target.assign(val)
+            update_ops.append(operation)
+
+        return update_ops
+
+    def make_acting_graph(self, wt_init, b_init):
         """
         """
-        obs = tf.placeholder(tf.float32, [None, self.input_nodes], 'obs')
+        obs = tf.placeholder(tf.float32, (None, *self.obs_shape), 'obs')
 
         #  add the input layer
         with tf.variable_scope('input_layer'):
             layer = tf.layers.dense(inputs=obs,
                                     units=self.layers[0])
 
-            #  set training=True so that each batch is normalized with 
+            #  set training=True so that each batch is normalized with
             #  statistics of the current batch
             batch_norm = tf.layers.batch_normalization(layer,
                                                        training=True)
@@ -218,7 +245,7 @@ class DPGActor(object):
         """
         #  this gradient is provided by the critic
         self.action_gradient = tf.placeholder(tf.float32,
-                                              [None, self.action_space.shape[0]])
+                                              (None, *self.action_shape))
 
         #  combine the gradients
         self.actor_gradients = tf.gradients(self.action,
@@ -232,104 +259,131 @@ class DPGActor(object):
         self.optimizer = tf.train.AdamOptimizer(self.lr)
 
         #  improve the actor network using the DPG algorithm
-        train_op = self.optimizer.apply_gradients(zip(self.actor_gradients,
+        self.train_op = self.optimizer.apply_gradients(zip(self.actor_gradients,
                                                       self.network_param))
 
-        return train_op 
 
-    def get_action(self, sess, obs):
+    def get_action(self, obs):
+        assert obs.shape[0] == 1
         #  generating an action from the policy network
-        determ_action = sess.run(self.action, {self.obs : obs})
-        noise = self.actor_noise().reshape(-1, self.action_space.shape[0])
-        action = determ_action + noise
-         
+        determ_action = self.sess.run(self.action, {self.obs: obs})
+        noise = self.actor_noise().reshape(-1, *self.action_shape)
+        action = determ_action + self.actor_noise()
+
         #  clipping the action
-        lows = np.array([space.low for space in self.action_space.spaces])
-        highs = np.array([space.high for space in self.action_space.spaces])
-        action = np.clip(action, lows, highs)
+        # lows = np.array([space.low for space in self.action_space.spaces])
+        # highs = np.array([space.high for space in self.action_space.spaces])
+        # action = np.clip(action, lows, highs)
 
-        action = action.reshape(obs.shape[0],  self.action_space.shape[0])
-        return determ_action, noise, action 
+        logger.debug('determinsitic_action {}'.format(determ_action))
+        logger.debug('noise {}'.format(noise))
+        logger.debug('action {}'.format(action))
 
-    def get_target_action(self, sess, obs):
-        #  generates an action from the target network
-        t_action = sess.run(self.t_action, {self.t_obs: obs})
-        return t_action.reshape(obs.shape[0], self.action_space.shape[0])
+        return np.array(action).reshape(1, *self.action_shape)
+
+    def get_target_action(self, obs):
+
+        action = self.sess.run(self.t_action, {self.t_obs: obs})
+
+        return np.array(action).reshape(-1, *self.action_shape)
 
     def improve(self,
-                sess,
                 obs,
                 act_grads):
 
-        feed_dict = {self.obs: obs,
-                     self.action_gradient: act_grads}
-
-        loss = sess.run(self.train_op, feed_dict)
-        return loss
-
-    def update_target_net(self):
-        """
-        Operation for copying actor weights to target
-        """
-
-        for param, target in zip(self.network_param, self.t_network_param):
-            target.assign(tf.multiply(param, self.tau) +
-                          tf.multiply(target, 1 - self.tau))
+        self.sess.run(self.train_op, {self.obs: obs,
+                                      self.action_gradient: act_grads})
 
 
 class DPGCritic(object):
     """
     An on-policy estimate of Q(s,a) for the actor policy
 
-    Single output node for Q(s,a) of the action taken by the policy
+    Single output node Q(s,a)
     """
-    def __init__(self, model_dict, num_actor_vars, scope='DPG_Critic'):
+    def __init__(self,
+                 sess,
+                 observation_shape,
+                 action_shape,
+                 layers,
+                 learning_rate,
+                 tau,
+                 wt_init=tf.truncated_normal,
+                 b_init=tf.zeros,
+                 scope='DPG_Critic'):
 
-        self.input_nodes = model_dict['input_nodes']
-        self.output_nodes = model_dict['output_nodes']
-        self.layers = model_dict['layers']
+        self.sess = sess
+        self.obs_shape = observation_shape
+        self.action_shape = action_shape
+        self.layers = layers
+        self.learning_rate = learning_rate
+        self.tau = tau
 
-        self.lr = model_dict['lr']
-        self.tau = model_dict['tau']
+        with tf.variable_scope(scope):
+            with tf.variable_scope('online_net'):
+                self.obs, self.action, self.pred = self.make_pred_graph(wt_init, b_init)
+                self.o_params = self.get_tf_params('{}/online_net'.format(scope))
 
-        self.observation_space = model_dict['observation_space']
-        self.action_space = model_dict['action_space']
+            with tf.variable_scope('target_net'):
+                self.t_obs, self.t_action, self.t_pred = self.make_pred_graph(wt_init, b_init)
+                self.t_params = self.get_tf_params('{}/target_net'.format(scope))
 
-        with tf.variable_scope('online_net'):
-            self.obs, self.action, self.pred = self.make_pred_graph()
-            self.network_param = tf.trainable_variables()[num_actor_vars:]
+            with tf.variable_scope('learning'):
+                self.make_learning_graph()
 
-        with tf.variable_scope('target_net'):
-            self.t_obs, self.t_action, self.t_pred = self.make_pred_graph()
-            self.t_network_param = tf.trainable_variables()[(len(self.network_param)
-                                                                + num_actor_vars):]
+            with tf.variable_scope('target_net_update'):
+                self.update_target_net = self.make_target_net_update_ops()
 
-        self.target, self.error, self.train_op, self.action_grads = self.make_learning_graph()
+    def get_tf_params(self, name_start):
+        params = [p for p in tf.trainable_variables()
+                  if p.name.startswith(name_start)]
 
-    def make_pred_graph(self):
+        return sorted(params, key=lambda var: var.name)
+
+    def make_target_net_update_ops(self):
+        """
+        Creates the Tensorflow operations to update the target network.
+
+        The two lists of Tensorflow Variables (one for the online net, one
+        for the target net) are iterated over together and new weights
+        are assigned to the target network
+        """
+        update_ops = []
+        for online, target in zip(self.o_params, self.t_params):
+            logging.debug('copying {} to {}'.format(online.name,
+                                                    target.name))
+            val = tf.add(tf.multiply(online, self.tau),
+                         tf.multiply(target, 1 - self.tau))
+
+            operation = target.assign(val)
+            update_ops.append(operation)
+
+        return update_ops
+
+    def make_pred_graph(self, wt_init, bias_init):
 
         obs = tf.placeholder(tf.float32,
-                             [None, self.observation_space.shape[0]],
+                             (None, *self.observation_shape),
                              'obs')
 
         act = tf.placeholder(tf.float32,
-                             [None, self.action_space.shape[0]],
+                             (None, *self.action_shape),
                              'action')
 
         with tf.variable_scope('input_layer'):
             net = tf.layers.dense(inputs=obs,
-                                    units=self.layers[0])
+                                  units=self.layers[0])
 
-            #  set training=True so that each batch is normalized with 
+            #  set training=True so that each batch is normalized with
             #  statistics of the current batch
             net = tf.layers.batch_normalization(net, training=True)
             net = tf.nn.relu(net)
 
         #  add the actions into the second layer
         with tf.variable_scope('hidden_layer_1'):
-            l1_W = tf.Variable(tf.random_normal([self.layers[0], self.layers[1]]))
-            l2_W = tf.Variable(tf.random_normal([self.action_space.shape[0], self.layers[1]]))
-            l2_b = tf.Variable(tf.zeros([self.layers[1]]))
+            l1_W = tf.Variable(wt_init([self.layers[0], self.layers[1]]))
+            l2_W = tf.Variable(wt_init([self.action_space.shape[0], self.layers[1]]))
+            l2_b = tf.Variable(bias_init([self.layers[1]]))
 
             net = tf.matmul(net, l1_W) + tf.matmul(act, l2_W) + l2_b
             net = tf.layers.batch_normalization(net, training=True)
@@ -343,8 +397,8 @@ class DPGCritic(object):
 
         #  use a linear layer as the output layer
         with tf.variable_scope('output_layer'):
-            wt_init = tf.random_uniform_initializer(minval=-0.003,
-                                                    maxval=0.003)
+            wt_init = tf.wt_init(minval=-0.003,
+                                 maxval=0.003)
             out = tf.layers.dense(inputs=net,
                                   units=self.output_nodes,
                                   activation=None,
@@ -353,46 +407,37 @@ class DPGCritic(object):
 
     def make_learning_graph(self):
         #  a Bellman target created externally to this value function
-        target = tf.placeholder(tf.float32, [None, 1], 'target')
+        self.target = tf.placeholder(tf.float32, [None, 1], 'target')
 
         #  add the optimizer, loss function & train operation
-        self.optimizer = tf.train.AdamOptimizer(self.lr)
-        error = target - self.pred
-        loss = tf.losses.huber_loss(target, self.pred)
-        train_op = self.optimizer.minimize(loss)
+        self.optimizer = tf.train.AdamOptimizer(self.learning_rate)
+        self.error = self.target - self.pred
+        loss = tf.losses.huber_loss(self.target, self.pred)
+        self.train_op = self.optimizer.minimize(loss)
 
         #  gradient of network parameters wrt action 
-        action_grads = tf.gradients(self.pred, self.action)
-        return target, error, train_op, action_grads
+        #  this is using online network - CHECK
+        self.action_grads = tf.gradients(self.pred, self.action)
 
-    def predict(self, sess, obs, action):
+    def predict(self, obs, action):
+        return self.sess.run(self.pred, {self.obs: obs,
+                                         self.action: action})
 
-        pred = sess.run(self.pred, {self.obs: obs,
-                                    self.action: action})
-        return pred
+    def predict_target(self,  obs, action):
+        return self.sess.run(self.t_pred, {self.t_obs: obs,
+                                           self.t_action: action})
 
-    def predict_target(self, sess, obs, action):
+    def improve(self, obs, action, target):
+        self.sess.run([self.error, self.train_op],
+                      {self.obs: obs,
+                       self.action: action,
+                       self.target: target})
 
-        t_pred = sess.run(self.t_pred, {self.t_obs: obs,
-                                        self.t_action: action})
-        return t_pred
-
-    def improve(self, sess, obs, action, target):
-        error, loss = sess.run([self.error, self.train_op], 
-                               {self.obs: obs,
-                                self.action: action,
-                                self.target: target})
-        return error, loss
-
-    def get_action_grads(self, sess, obs, action):
-        grads = sess.run(self.action_grads, {self.obs: obs,
-                                            self.action: action}) 
-        return grads
+    def get_action_grads(self, obs, action):
+        return self.sess.run(self.action_grads, {self.obs: obs,
+                                                 self.action: action})
 
     def update_target_net(self):
-        """
-        Operation for copying actor weights to target
-        """
         for param, target in zip(self.network_param, self.t_network_param):
             target.assign(tf.multiply(param, self.tau) +
                           tf.multiply(target, 1 - self.tau))
@@ -401,7 +446,10 @@ class DPGCritic(object):
 # Taken from https://github.com/pemami4911/deep-rl/blob/master/ddpg/ddpg.py
 # Taken from https://github.com/openai/baselines/blob/master/baselines/ddpg/noise.py, which is
 # based on http://math.stackexchange.com/questions/1287634/implementing-ornstein-uhlenbeck-in-matlab
-class OrnsteinUhlenbeckActionNoise:
+class OUActionNoise(object):
+    """
+    OrnsteinUhlenbeckActionNoise
+    """
     def __init__(self, mu, sigma=0.3, theta=.15, dt=1e-2, x0=None):
         self.theta = theta
         self.mu = mu

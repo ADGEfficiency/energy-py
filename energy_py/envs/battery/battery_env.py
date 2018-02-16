@@ -46,16 +46,6 @@ class Battery(BaseEnv):
                          episode_random,
                          **kwargs)
 
-        self.observation = self.reset()
-
-    def _reset(self):
-        """
-        Resets the environment.
-
-        returns
-            observation : np.array : the initial observation
-        """
-
         """
         SETTING THE ACTION SPACE
 
@@ -80,11 +70,19 @@ class Battery(BaseEnv):
 
         #  append on any additional variables we want our agent to see
         observation_space.append(ContinuousSpace(0, self.capacity))
-        self.observation_info.append('capacity')
+        self.observation_info.append('C_charge_level_[MWh]')
 
         #  create a energy_py GlobalSpace object for the observation space
         self.observation_space = GlobalSpace(observation_space)
+        self.observation = self.reset()
 
+    def _reset(self):
+        """
+        Resets the environment.
+
+        returns
+            observation : np.array : the initial observation
+        """
         #  reseting the step counter, state, observation & done status
         self.steps = 0
         self.state = self.get_state(steps=self.steps, append=self.initial_charge)

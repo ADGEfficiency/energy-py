@@ -58,15 +58,13 @@ class BaseEnv(object):
         episode_length (int)
         episode_start (int) integer index of episode start
         episode_random (bool) whether to randomize the episode start position
-        tb_path (str)
     """
 
     def __init__(self,
                  data_path,
                  episode_length,
                  episode_start,
-                 episode_random,
-                 tb_path):
+                 episode_random):
 
         self.episode_length = int(episode_length)
         self.episode_start = int(episode_start)
@@ -80,10 +78,6 @@ class BaseEnv(object):
         #  hack to allow max length
         if self.episode_length == 0:
             self.episode_length = int(self.raw_observation_ts.shape[0])
-
-        self.env_writer = TensorboardHepler(tb_path)
-
-        self.observation = self.reset()
 
     # Override in subclasses
     def _step(self, action): raise NotImplementedError
@@ -138,6 +132,14 @@ class BaseEnv(object):
 
         return self._step(action)
 
+    def update_info(self, **kwargs):
+        """
+        Helper function to update the self.info dictionary.
+        """
+        for name, data in kwargs.items():
+            self.info[name].append(data)
+
+        return self.info
 
     def load_ts(self, data_path):
         """
@@ -150,7 +152,7 @@ class BaseEnv(object):
             state (pd.DataFrame)
             observation (pd.DataFrame)
         """
-        #  paths to load state & observation 
+        #  paths to load state & observation
         state_path = os.path.join(data_path, 'state.csv')
         obs_path = os.path.join(data_path, 'observation.csv')
 

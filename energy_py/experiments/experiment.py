@@ -97,7 +97,8 @@ def save_args(config, path, argparse=None):
 
 def make_paths(data_path, results_path):
 
-    paths = {'results': results_path,
+    paths = {'data_path': data_path,
+             'results': results_path,
              'tb_rl': results_path + '/tensorboard/rl/',
              'tb_act': results_path + '/tensorboard/act/',
              'tb_learn': results_path + '/tensorboard/learn/',
@@ -218,7 +219,7 @@ class Runner(object):
             csv_path = os.path.join(self.env_hist_path,
                                     'ep_{}'.format(summaries['ep']),
                                     'hist.csv')
-
+            ensure_dir(csv_path)
             output.to_csv(csv_path)
 
         no_tb = ['ep', 'run_time', 'step']

@@ -9,15 +9,20 @@ class Agent - the learner and decision maker.
 class EpsilonDecayer - decays epsilon used in the e-greedy policy.
 class Qfunc - an approximation of Q(s,a) using a Tensorflow feedforward net.
 
+Most functionality occurs within the DQN class.  Qfunc initializes the
+tensorflow graph but all sess.run's are within the DQN agent class.
+
+
+
 """
 
 import logging
-from random import random as random_uniform
+from random import random
 
 import numpy as np
 import tensorflow as tf
 
-from energy_py.agents import BaseAgent
+from energy_py.agents import BaseAgent, EpsilonGreedy
 from energy_py import Normalizer
 
 
@@ -26,9 +31,8 @@ logging.getLogger(__name__)
 
 class DQN(BaseAgent):
     """
-    The learner and decision maker.
-
-    All calls to tensorflow are wrapped into methods.
+    energy_py implementation of DQN - aka Q-Learning with experience
+    replay and a target network.
 
     args
         env (object) either gym or energy_py environment
@@ -43,12 +47,16 @@ class DQN(BaseAgent):
         memory_fraction (float) as a % of total steps
         process_observation (bool) TODO
         process_target (bool)
+
+    references
+        Minh et. al (2015)
+
     """
     def __init__(self,
+                 sess,
                  env,
                  discount,
                  tau,
-                 sess,
                  total_steps,
                  batch_size,
                  layers,
@@ -62,26 +70,20 @@ class DQN(BaseAgent):
                  learn_path=None,
                  **kwargs):
 
-        self.env = env
-        self.discount = discount
-        self.tau = tau
         self.sess = sess
+        self.tau = tau
         self.batch_size = batch_size
-
         memory_length = int(total_steps * memory_fraction)
-        self.initial_random = initial_random
+
+        super().__init__(env, discount, memory_length)
 
         #  number of steps where epsilon is decayed from 1.0 to 0.1
         decay_steps = total_steps * epsilon_decay_fraction
-        self.epsilon_getter = EpsilonDecayer(decay_steps,
-                                             init_random=self.initial_random)
 
-        #  the counter is stepped up every time we act or learn
-        self.counter = 0
+        self.epsilon_getter = EpsilonGreedy(decay_steps,
+                                            init_random=initial_random)
 
         self.actions = self.env.discretize(num_discrete=20)
-        print('{} actions'.format(self.actions))
-        super().__init__(env, discount, memory_length)
 
         model_config = {'input_shape': self.obs_shape,
                         'output_shape': (len(self.actions),),
@@ -96,12 +98,6 @@ class DQN(BaseAgent):
         #  set up the operations to copy the online network parameters to
         #  the target network
         self.update_ops = self.make_target_net_update_ops()
-
-        if process_observation:
-            self.observation_processor = Normalizer()
-
-        if process_target:
-            self.target_processor = Normalizer()
 
         self.acting_writer = tf.summary.FileWriter(act_path,
                                                    graph=self.sess.graph)
@@ -134,26 +130,6 @@ class DQN(BaseAgent):
                 update_ops.append(operation)
         return update_ops
 
-    def remember(self, observation, action, reward, next_observation, done):
-        """
-        Store experience in the agent's memory.
-
-        args
-            observation (np.array)
-            action (np.array)
-            reward (np.array)
-            next_observation (np.array)
-            done (np.array)
-        """
-        observation = observation.reshape(-1, *self.obs_shape)
-        next_observation = next_observation.reshape(-1, *self.obs_shape)
-
-        if hasattr(self, 'observation_processor'):
-            observation = self.observation_processor.transform(observation)
-            next_observation = self.observation_processor.transform(next_observation)
-
-        return self.memory.remember(observation, action, reward,
-                                    next_observation, done)
 
     def predict_target(self, observations):
         """
@@ -245,7 +221,7 @@ class DQN(BaseAgent):
         epsilon = self.epsilon_getter.epsilon
         logging.debug('epsilon is {}'.format(epsilon))
 
-        if epsilon > random_uniform():
+        if epsilon > random():
             action = self.env.action_space.sample_discrete()
             logging.debug('acting randomly - action is {}'.format(action))
         else:
@@ -330,69 +306,6 @@ class DQN(BaseAgent):
         self.update_target_network()
 
         return {'loss': loss}
-
-
-class EpsilonDecayer(object):
-    """
-    A class to decay epsilon.  Epsilon is used in e-greedy action selection.
-
-    Initially act totally random, then linear decay to a minimum.
-
-    Two counters are used
-        self.count is the total number of steps the object has seen
-        self.decay_count is the number of steps in the decay period
-
-    args
-        decay_length (int) len of the linear decay period
-        init_random (int) num steps to act fully randomly at start
-        eps_start (float) initial value of epsilon
-        eps_end (float) final value of epsilon
-    """
-
-    def __init__(self,
-                 decay_length,
-                 init_random=0,
-                 eps_start=1.0,
-                 eps_end=0.1):
-
-        self.decay_length = int(decay_length)
-        self.init_random = int(init_random)
-        self.min_start = self.init_random + self.decay_length
-
-        self.eps_start = float(eps_start)
-        self.eps_end = float(eps_end)
-
-        eps_delta = self.eps_start - self.eps_end
-        self.coeff = - eps_delta / self.decay_length
-
-        self.reset()
-
-    def __repr__(self): return '<class Epislon Greedy>'
-
-    def reset(self):
-        self.count = 0
-        self.decay_count = 0
-
-    @property
-    def epsilon(self):
-        #  move the counter each step
-        self.count += 1
-
-        if self.count <= self.init_random:
-            self._epsilon = 1.0
-
-        if self.count > self.init_random and self.count <= self.min_start:
-            self._epsilon = self.coeff * self.decay_count + self.eps_start
-            self.decay_count += 1
-
-        if self.count > self.min_start:
-            self._epsilon = self.eps_end
-
-        return float(self._epsilon)
-
-    @epsilon.setter
-    def epsilon(self, value):
-        self._epsilon = float(value)
 
 
 class Qfunc(object):

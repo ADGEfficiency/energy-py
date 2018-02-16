@@ -2,7 +2,7 @@ import logging
 import os
 
 from energy_py import experiment
-from energy_py.agents import DQN
+from energy_py.agents import DQN, DPG
 from energy_py.envs import CartPoleEnv, FlexEnv, BatteryEnv
 
 if __name__ == '__main__':
@@ -18,6 +18,7 @@ if __name__ == '__main__':
                     'memory_fraction': 0.4,
                     'process_observation': False,
                     'process_target': False}
+    DPGAgent = DPG
 
     env = BatteryEnv
     env_config = {'episode_length': 2016,
@@ -25,8 +26,8 @@ if __name__ == '__main__':
 
     total_steps = 1e6
 
-    data_path = './perfect_forecast',
-    results_path = '.results/perfect_battery_dqn'
+    data_path = os.getcwd()+'/perfect_forecast'
+    results_path = os.getcwd()+'/results/perfect_battery_dpg'
 
-    info = experiment(agent, agent_config, env, env_config,
+    info = experiment(DPGAgent, agent_config, env, env_config,
                       total_steps, data_path, results_path)

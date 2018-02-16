@@ -24,7 +24,7 @@ class FlexEnv(EnvWrapper):
 
         self.observation_space = self.env.observation_space
         self.obs_space_shape = self.observation_space.shape
-
+        self.observation_info = self.env.observation_info
         self.action_space = self.env.action_space
         self.action_space_shape = self.action_space.shape
 
@@ -43,7 +43,9 @@ class BatteryEnv(EnvWrapper):
         self.observation_space = self.env.observation_space
         self.obs_space_shape = self.observation_space.shape
 
+        self.observation_info = self.env.observation_info
         self.action_space = self.env.action_space
+        print(self.observation_info)
         self.action_space_shape = self.action_space.shape
 
     def discretize(self, num_discrete):

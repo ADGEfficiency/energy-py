@@ -1,6 +1,7 @@
 import logging
 
 from energy_py.agents import memories
+from energy_py import processors
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,10 @@ class BaseAgent(object):
                  env,
                  discount,
                  memory_length,
-                 memory_type='deque'):
+                 memory_type='deque',
+                 observation_processor=None,
+                 action_processor=None,
+                 target_processor=None):
 
         self.env = env
         self.discount = discount
@@ -45,9 +49,21 @@ class BaseAgent(object):
                                             self.action_shape,
                                             memory_length)
 
+        #  a counter our agent can use as it sees fit
+        self.counter = 0
+
+        if observation_processor:
+            self.observation_processor = processors[observation_processor]
+
+        if action_processor:
+            self.action_processor = processors[action_processor]
+
+        if target_processor:
+            self.target_processor = processors[target_processor]
+
     def _reset(self): raise NotImplementedError
 
-    def _act(self, **kwargs): raise NotImplementedError
+    def _act(self, observation): raise NotImplementedError
 
     def _learn(self, **kwargs): raise NotImplementedError
 
@@ -69,6 +85,10 @@ class BaseAgent(object):
             action (np array) shape=(1, num_actions)
         """
         logger.debug('Agent is acting')
+
+        if hasattr(self, 'observation_processor'):
+            observation = self.observation_processor.transform(observation)
+
         assert observation.shape[0] == 1
 
         return self._act(observation)
@@ -86,6 +106,30 @@ class BaseAgent(object):
         """
         logger.debug('Agent is learning')
         return self._learn(**kwargs)
+
+    def remember(self, observation, action, reward, next_observation, done):
+        """
+        Store experience in the agent's memory.
+
+        args
+            observation (np.array)
+            action (np.array)
+            reward (np.array)
+            next_observation (np.array)
+            done (np.array)
+        """
+        observation = observation.reshape(-1, *self.obs_shape)
+        next_observation = next_observation.reshape(-1, *self.obs_shape)
+
+        if hasattr(self, 'observation_processor'):
+            observation = self.observation_processor.transform(observation)
+            next_observation = self.observation_processor.transform(next_observation)
+
+        if hasattr(self, 'action_processor'):
+            action = self.action_processor.transform(action)
+
+        return self.memory.remember(observation, action, reward,
+                                    next_observation, done)
 
 
 class EpsilonGreedy(object):
@@ -122,6 +166,8 @@ class EpsilonGreedy(object):
         self.coeff = - eps_delta / self.decay_length
 
         self.reset()
+
+    def __repr__(self): return '<class Epislon Greedy>'
 
     def reset(self):
         self.count = 0

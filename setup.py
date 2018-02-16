@@ -18,7 +18,6 @@ setup(name='energy_py',
 
       packages=['energy_py',
                 'energy_py.agents',
-                'energy_py.agents.function_approximators',
                 'energy_py.envs',
                 'energy_py.envs.flex',
                 'energy_py.envs.battery',
