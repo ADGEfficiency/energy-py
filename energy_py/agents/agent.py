@@ -34,7 +34,8 @@ class BaseAgent(object):
                  memory_type='deque',
                  observation_processor=None,
                  action_processor=None,
-                 target_processor=None):
+                 target_processor=None,
+                 **kwargs):
 
         self.env = env
         self.discount = discount
@@ -51,6 +52,9 @@ class BaseAgent(object):
 
         #  a counter our agent can use as it sees fit
         self.counter = 0
+        #  inital number of steps not to learn from
+        #  defaults at half of memory length
+        self.initial_random = memory_length * 0.5
 
         if observation_processor:
             self.observation_processor = processors[observation_processor]

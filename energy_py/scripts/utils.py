@@ -1,11 +1,13 @@
 """
 A collection of helper functions.
 """
+import csv
 import logging
 import pickle
 import os
 
 import tensorflow as tf
+
 
 def ensure_dir(file_path):
     """
@@ -49,43 +51,86 @@ def load_pickle(name):
 
 
 def make_logger(log_path, name=None):
+    """
+    Sets up the energy_py logging stragety.  INFO to console, DEBUG to file.
 
+    args
+        log_path (str) location of the DEBUG log file
+        name (str) optional logger name
+
+    returns
+        logger (object)
+    """
     if name:
         logger = logging.getLogger(name)
     else:
         logger = logging.getLogger(__name__)
 
+    fmt = '%(asctime)s [%(levelname)s]%(name)s: %(message)s'
+
     logging.config.dictConfig({
-            'version': 1,
-            'disable_existing_loggers': False,
+        'version': 1,
+        'disable_existing_loggers': False,
 
-            'formatters': {'standard': {'format': '%(asctime)s [%(levelname)s]%(name)s: %(message)s'}},
+        'formatters': {'standard': {'format': fmt,
+                                    'datefmt': '%Y-%m-%d %H:%M:%S'}},
 
-            'handlers': {'console': {'level': 'INFO',
-                                     'class': 'logging.StreamHandler',
-                                     'formatter': 'standard'},
+        'handlers': {'console': {'level': 'INFO',
+                                 'class': 'logging.StreamHandler',
+                                 'formatter': 'standard'},
+                     'file': {'class': 'logging.FileHandler',
+                              'level': 'DEBUG',
+                              'filename': log_path,
+                              'mode': 'w',
+                              'formatter': 'standard'}},
 
-                         'file': {'class': 'logging.FileHandler',
-                                  'level': 'DEBUG',
-                                  'filename': log_path,
-                                  'mode': 'w',
-                                  'formatter': 'standard'}, },
-
-            'loggers': {'': {'handlers': ['console', 'file', ],
-                             'level': 'DEBUG',
-                             'propagate': True}}})
+        'loggers': {'': {'handlers': ['console', 'file', ],
+                         'level': 'DEBUG',
+                         'propagate': True}}})
 
     return logger
 
 
+def save_args(config, path):
+    """
+    Saves a config dictionary and optional argparse object to a text file.
+
+    args
+        config (dict)
+        path (str) path for output text file
+        argparse (object)
+
+    returns
+        writer (object) csv Writer object
+    """
+    with open(path, 'w') as outfile:
+        writer = csv.writer(outfile)
+
+        for k, v in config.items():
+            print('{} : {}'.format(k, v))
+            writer.writerow([k]+[v])
+
+    return writer
+
+
 class TensorboardHepler(object):
+    """
+    Holds a FileWriter and method for adding summaries
 
+    args
+        logdir (path)
+    """
     def __init__(self, logdir):
-
         self.writer = tf.summary.FileWriter(logdir)
         self.steps = 0
 
     def add_summaries(self, summaries):
+        """
+        Adds non-tensorflow data to tensorboard.
+
+        args
+            summaries (dict)
+        """
         self.steps += 1
         for tag, var in summaries.items():
             summary = tf.Summary(value=[tf.Summary.Value(tag=tag,

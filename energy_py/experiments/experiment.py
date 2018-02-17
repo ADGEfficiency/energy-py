@@ -9,90 +9,15 @@ Module contains:
     experiment - runs a single reinforcment learning experiment
     Timer - times experiments
 """
-import argparse
-import csv
 import logging
 import logging.config
 import os
 import time
 
 import pandas as pd
-import numpy as np
 import tensorflow as tf
 
-from energy_py import ensure_dir, make_logger, TensorboardHepler
-
-
-def expt_args(optional_args=None):
-    """
-    args
-        optional_args (list) one dict per optional parser arg required
-    """
-    parser = argparse.ArgumentParser(description='energy_py expt arg parser')
-
-    args_list = [{'name': '--ep',
-                  'type': int,
-                  'default': 10,
-                  'help': 'number of episodes to run (default: 10)'},
-                 {'name': '--len',
-                  'type': int,
-                  'default': 48,
-                  'help': 'length of a single episode (default: 48)'},
-                 {'name': '--rand',
-                  'type': bool,
-                  'default': False,
-                  'help': 'randomize start of each ep (default: False)'},
-                 {'name': '--gamma',
-                  'type': float,
-                  'default': 0.9,
-                  'help': 'discount rate (default: 0.9)'},
-                 {'name': '--out',
-                  'type': int,
-                  'default': 500,
-                  'help': 'output results every n episodes (default: n=500)'},
-                 {'name': '--log',
-                  'type': str,
-                  'default': 'INFO',
-                  'help': 'logging status (default: info)'}]
-
-    if optional_args:
-        args_list.append(optional_args)
-
-    for arg in args_list:
-        parser.add_argument(arg['name'],
-                            type=arg['type'],
-                            default=arg['default'],
-                            help=arg['help'])
-
-    args = parser.parse_args()
-
-    return parser, args
-
-
-def save_args(config, path, argparse=None):
-    """
-    Saves a config dictionary and optional argparse object to a text file.
-
-    args
-        config (dict)
-        path (str) path for output text file
-        argparse (object)
-    returns
-        writer (object) csv Writer object
-    """
-    with open(path, 'w') as outfile:
-        writer = csv.writer(outfile)
-
-        for k, v in config.items():
-            print('{} : {}'.format(k, v))
-            writer.writerow([k]+[v])
-
-        if argparse:
-            for k, v in vars(argparse).items():
-                print('{} : {}'.format(k, v))
-                writer.writerow([k]+[v])
-
-    return writer
+from energy_py import save_args, ensure_dir, make_logger, TensorboardHepler
 
 
 def make_paths(data_path, results_path):
@@ -225,4 +150,3 @@ class Runner(object):
         no_tb = ['ep', 'run_time', 'step']
         _ = [summaries.pop(key) for key in no_tb]
         self.tb_helper.add_summaries(summaries)
-

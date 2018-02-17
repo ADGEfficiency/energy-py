@@ -26,7 +26,7 @@ from energy_py.agents import BaseAgent, EpsilonGreedy
 from energy_py import Normalizer
 
 
-logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class DQN(BaseAgent):
@@ -64,8 +64,6 @@ class DQN(BaseAgent):
                  initial_random=0.1,
                  epsilon_decay_fraction=0.5,
                  memory_fraction=0.25,
-                 process_observation=False,
-                 process_target=False,
                  act_path=None,
                  learn_path=None,
                  **kwargs):
@@ -75,13 +73,14 @@ class DQN(BaseAgent):
         self.batch_size = batch_size
         memory_length = int(total_steps * memory_fraction)
 
-        super().__init__(env, discount, memory_length)
+        super().__init__(env, discount, memory_length, **kwargs)
 
-        #  number of steps where epsilon is decayed from 1.0 to 0.1
+        #  number of steps where epsilon is decayed
         decay_steps = total_steps * epsilon_decay_fraction
 
+        self.initial_random = initial_random * total_steps
         self.epsilon_getter = EpsilonGreedy(decay_steps,
-                                            init_random=initial_random)
+                                            init_random=self.initial_random)
 
         self.actions = self.env.discretize(num_discrete=20)
 
@@ -121,7 +120,7 @@ class DQN(BaseAgent):
         with tf.variable_scope('update_target_network'):
             update_ops = []
             for online, target in zip(self.online.params, self.target.params):
-                logging.debug('copying {} to {}'.format(online.name,
+                logger.debug('copying {} to {}'.format(online.name,
                                                         target.name))
                 val = tf.add(tf.multiply(online, self.tau),
                              tf.multiply(target, 1 - self.tau))
@@ -129,7 +128,6 @@ class DQN(BaseAgent):
                 operation = target.assign(val)
                 update_ops.append(operation)
         return update_ops
-
 
     def predict_target(self, observations):
         """
@@ -151,9 +149,9 @@ class DQN(BaseAgent):
         q_vals, max_q, summary = self.sess.run(fetches, feed_dict)
         self.learning_writer.add_summary(summary, self.counter)
 
-        logging.debug('predict_target - next_obs {}'.format(observations))
-        logging.debug('predict_target - q_vals {}'.format(q_vals))
-        logging.debug('predict_target - max_q {}'.format(max_q))
+        logger.debug('predict_target - next_obs {}', observations)
+        logger.debug('predict_target - q_vals {}', q_vals)
+        logger.debug('predict_target - max_q {}', max_q)
 
         return max_q.reshape(observations.shape[0], 1)
 
@@ -187,11 +185,11 @@ class DQN(BaseAgent):
         #  index at zero because TF returns an array
         action = self.actions[action_idx[0]]
 
-        logging.debug('predict_online - observation {}'.format(obs))
-        logging.debug('predict_online - pred_q_values {}'.format(q_values))
-        logging.debug('predict_online - max_q {}'.format(max_q))
-        logging.debug('predict_online - action_index {}'.format(action_idx))
-        logging.debug('predict_online - action {}'.format(action))
+        logger.debug('predict_online - observation {}'.format(obs))
+        logger.debug('predict_online - pred_q_values {}'.format(q_values))
+        logger.debug('predict_online - max_q {}'.format(max_q))
+        logger.debug('predict_online - action_index {}'.format(action_idx))
+        logger.debug('predict_online - action {}'.format(action))
 
         return action
 
@@ -201,9 +199,8 @@ class DQN(BaseAgent):
 
         Relies on the sorted lists of tf.Variables kept in each Qfunc object
         """
-        logging.debug('updating target net at count {}'.format(self.counter))
-
-        return self.sess.run(self.update_ops)
+        logger.debug('updating target net at count {}'.format(self.counter))
+        self.sess.run(self.update_ops)
 
     def _act(self, observation):
         """
@@ -219,21 +216,20 @@ class DQN(BaseAgent):
         """
         self.counter += 1
         epsilon = self.epsilon_getter.epsilon
-        logging.debug('epsilon is {}'.format(epsilon))
+        logger.debug('epsilon is {}'.format(epsilon))
 
         if epsilon > random():
             action = self.env.action_space.sample_discrete()
-            logging.debug('acting randomly - action is {}'.format(action))
+            logger.debug('acting randomly - action is {}'.format(action))
         else:
             action = self.predict_online(observation)
-            logging.debug('acting optimally action is {}'.format(action))
+            logger.debug('acting optimally action is {}'.format(action))
 
         epsilon_sum = tf.Summary(value=[tf.Summary.Value(tag='epsilon', simple_value=epsilon)])
         self.acting_writer.add_summary(epsilon_sum, self.counter)
         self.acting_writer.flush()
 
         return np.array(action).reshape(1, *self.action_shape)
-        # return action
 
     def _learn(self):
         """
@@ -263,8 +259,8 @@ class DQN(BaseAgent):
 
         if hasattr(self, 'target_processor'):
             target = self.target_processor.transform(target)
-            logging.info('target_processor_mins {}'.format(self.target_processor.mins))
-            logging.info('target_processor_maxs {}'.format(self.target_processor.maxs))
+            logger.info('target_processor_mins {}'.format(self.target_processor.mins))
+            logger.info('target_processor_maxs {}'.format(self.target_processor.maxs))
 
         indicies = np.zeros((actions.shape[0], 1), dtype=int)
 
@@ -287,19 +283,19 @@ class DQN(BaseAgent):
 
         q_vals, q_val, loss, train_op, train_sum = self.sess.run(fetches, feed_dict)
 
-        logging.debug('learning - observations {}'.format(observations))
+        logger.debug('learning - observations {}'.format(observations))
 
-        logging.debug('learning - rewards {}'.format(rewards))
-        logging.debug('learning - terminals {}'.format(terminals))
-        logging.debug('learning - next_obs_q {}'.format(next_obs_q))
+        logger.debug('learning - rewards {}'.format(rewards))
+        logger.debug('learning - terminals {}'.format(terminals))
+        logger.debug('learning - next_obs_q {}'.format(next_obs_q))
 
-        logging.debug('learning - actions {}'.format(actions))
-        logging.debug('learning - indicies {}'.format(indicies))
-        logging.debug('learning - q_values {}'.format(q_vals))
-        logging.debug('learning - q_value {}'.format(q_val))
+        logger.debug('learning - actions {}'.format(actions))
+        logger.debug('learning - indicies {}'.format(indicies))
+        logger.debug('learning - q_values {}'.format(q_vals))
+        logger.debug('learning - q_value {}'.format(q_val))
 
-        logging.debug('learning - target {}'.format(target))
-        logging.debug('learning - loss {}'.format(loss))
+        logger.debug('learning - target {}'.format(target))
+        logger.debug('learning - loss {}'.format(loss))
 
         self.learning_writer.add_summary(train_sum, self.counter)
 

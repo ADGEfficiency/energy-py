@@ -3,13 +3,12 @@ Most functionality occurs within the Actor or Critic classes. DPG agent
 only really has _act and _learn
 """
 
-
 import logging
 
 import numpy as np
 import tensorflow as tf
 
-from energy_py import Normalizer, Standardizer
+from energy_py import processors
 from energy_py.agents import BaseAgent
 
 
@@ -46,28 +45,28 @@ class DPG(BaseAgent):
         self.batch_size = batch_size
         memory_length = total_steps * memory_fraction
 
-        super().__init__(env, discount, memory_length)
+        super().__init__(env, discount, memory_length, **kwargs)
 
         actor_config = {'sess': self.sess,
-                        'input_nodes': self.obs_shape,
-                        'output_nodes': self.action_shape,
+                        'observation_shape': self.obs_shape,
+                        'action_shape': self.action_shape,
+                        'action_space': self.action_space,
                         'layers': [25, 25],
-                        'lr': 0.0025,
-                        'tau': 0.001,
-                        'action_space': self.action_space}
+                        'learning_rate': 0.0025,
+                        'tau': 0.001}
 
+        #  do I need to pass action space into critic to clip action??
         critic_config = {'sess': self.sess,
-                         'input_nodes': self.obs_shape,
+                         'observation_shape': self.obs_shape,
+                         'action_shape': self.action_shape,
                          'output_nodes': 1,
                          'layers': [25, 25],
-                         'lr': 0.0025,
-                         'tau': 0.001,
-                         'observation_space': self.observation_space,
-                         'action_space': self.action_space}
+                         'learning_rate': 0.0025,
+                         'tau': 0.001}
 
         #  create the actor & critic
-        self.actor = DPGActor(actor_config)
-        self.critic = DPGCritic(critic_config)
+        self.actor = DPGActor(**actor_config)
+        self.critic = DPGCritic(**critic_config)
 
         self.sess.run(tf.global_variables_initializer())
 
@@ -137,16 +136,20 @@ class DPGActor(object):
                  sess,
                  observation_shape,
                  action_shape,
+                 action_space,
                  layers,
                  learning_rate,
                  tau,
                  wt_init=tf.truncated_normal,
                  b_init=tf.zeros,
-                 scope='DPG_Actor'):
+                 scope='DPG_Actor',
+                 **kwargs):
 
         self.sess = sess
         self.obs_shape = observation_shape
         self.action_shape = action_shape
+        self.action_space = action_space
+
         self.layers = layers
         self.learning_rate = learning_rate
         self.tau = tau
@@ -227,14 +230,9 @@ class DPGActor(object):
             wt_init = tf.random_uniform_initializer(minval=-0.003,
                                                     maxval=0.003)
             action = tf.layers.dense(inputs=layer,
-                                     units=self.output_nodes,
+                                     units=self.action_shape[0],
                                      activation=None,
                                      kernel_initializer=wt_init)
-
-            #  clipping the action
-            lows = np.array([space.low for space in self.action_space.spaces])
-            highs = np.array([space.high for space in self.action_space.spaces])
-            action = tf.clip_by_value(action, lows, highs)
 
         return obs, action
 
@@ -249,18 +247,18 @@ class DPGActor(object):
 
         #  combine the gradients
         self.actor_gradients = tf.gradients(self.action,
-                                       self.network_param,
+                                       self.o_params,
                                        -self.action_gradient)
 
         #  clip using global norm
         #self.actor_gradients = tf.clip_by_global_norm(actor_gradients, 5)
 
         #  define the optimizer
-        self.optimizer = tf.train.AdamOptimizer(self.lr)
+        self.optimizer = tf.train.AdamOptimizer(self.learning_rate)
 
         #  improve the actor network using the DPG algorithm
         self.train_op = self.optimizer.apply_gradients(zip(self.actor_gradients,
-                                                      self.network_param))
+                                                      self.o_params))
 
 
     def get_action(self, obs):
@@ -271,9 +269,9 @@ class DPGActor(object):
         action = determ_action + self.actor_noise()
 
         #  clipping the action
-        # lows = np.array([space.low for space in self.action_space.spaces])
-        # highs = np.array([space.high for space in self.action_space.spaces])
-        # action = np.clip(action, lows, highs)
+        lows = np.array([space.low for space in self.action_space.spaces])
+        highs = np.array([space.high for space in self.action_space.spaces])
+        action = np.clip(action, lows, highs)
 
         logger.debug('determinsitic_action {}'.format(determ_action))
         logger.debug('noise {}'.format(noise))
@@ -310,7 +308,8 @@ class DPGCritic(object):
                  tau,
                  wt_init=tf.truncated_normal,
                  b_init=tf.zeros,
-                 scope='DPG_Critic'):
+                 scope='DPG_Critic',
+                 **kwargs):
 
         self.sess = sess
         self.obs_shape = observation_shape
@@ -363,7 +362,7 @@ class DPGCritic(object):
     def make_pred_graph(self, wt_init, bias_init):
 
         obs = tf.placeholder(tf.float32,
-                             (None, *self.observation_shape),
+                             (None, *self.obs_shape),
                              'obs')
 
         act = tf.placeholder(tf.float32,
@@ -382,7 +381,7 @@ class DPGCritic(object):
         #  add the actions into the second layer
         with tf.variable_scope('hidden_layer_1'):
             l1_W = tf.Variable(wt_init([self.layers[0], self.layers[1]]))
-            l2_W = tf.Variable(wt_init([self.action_space.shape[0], self.layers[1]]))
+            l2_W = tf.Variable(wt_init([*self.action_shape, self.layers[1]]))
             l2_b = tf.Variable(bias_init([self.layers[1]]))
 
             net = tf.matmul(net, l1_W) + tf.matmul(act, l2_W) + l2_b
@@ -396,13 +395,12 @@ class DPGCritic(object):
                 net = tf.nn.relu(net)
 
         #  use a linear layer as the output layer
+        #  hardcoded with a single output node
+        #  took out the weight inits
         with tf.variable_scope('output_layer'):
-            wt_init = tf.wt_init(minval=-0.003,
-                                 maxval=0.003)
             out = tf.layers.dense(inputs=net,
-                                  units=self.output_nodes,
-                                  activation=None,
-                                  kernel_initializer=wt_init)
+                                  units=1,
+                                  activation=None)
         return obs, act, out
 
     def make_learning_graph(self):
@@ -436,11 +434,6 @@ class DPGCritic(object):
     def get_action_grads(self, obs, action):
         return self.sess.run(self.action_grads, {self.obs: obs,
                                                  self.action: action})
-
-    def update_target_net(self):
-        for param, target in zip(self.network_param, self.t_network_param):
-            target.assign(tf.multiply(param, self.tau) +
-                          tf.multiply(target, 1 - self.tau))
 
 
 # Taken from https://github.com/pemami4911/deep-rl/blob/master/ddpg/ddpg.py

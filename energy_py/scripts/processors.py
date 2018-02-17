@@ -1,7 +1,6 @@
 """
-Objects to preprocess numpy arrays.
+Objects to preprocess numpy arrays
 
-M
 Module contains
     Normalizer
     Standardizer
@@ -60,24 +59,22 @@ class Standardizer(object):
     """
     Processor object for performing standardization
     Standardization = scaling for zero mean, unit variance
-    
+
     Algorithm from post by Dinesh 2011 on Stack Exchange:
     https://math.stackexchange.com/questions/20593/calculate-variance-from-a-stream-of-sample-values
-    
+
     Statistics are calculated online, without keeping entire history (ie each batch)
-    
+
     Idea is to keep three running counters
         sum(x)
         sum(x^2)
         N (count)
-    
+
     We can then calculate historical statistics by:
         mean = sum(x) / N
         variance = 1/N * [sum(x^2) - sum(x)^2 / N]
         standard deviation = sqrt(variance)
-        
-    args
-        array (np.array)
+
     """
     def __init__(self):
 
