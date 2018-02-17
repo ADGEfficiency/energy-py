@@ -12,6 +12,7 @@ Module contains:
 import logging
 import logging.config
 import os
+import os.path.join as join
 import time
 
 import pandas as pd
@@ -21,18 +22,26 @@ from energy_py import save_args, ensure_dir, make_logger, TensorboardHepler
 
 
 def make_paths(data_path, results_path):
+    """
+    Creates a dictionary of paths for use with experiments
 
-    paths = {'data_path': data_path,
-             'results': results_path,
-             'tb_rl': results_path + '/tensorboard/rl/',
-             'tb_act': results_path + '/tensorboard/act/',
-             'tb_learn': results_path + '/tensorboard/learn/',
-             'logs': results_path + 'logs.log',
-             'env_args': results_path + 'env_args.txt',
-             'agent_args': results_path + 'agent_args.txt',
-             'env_histories': results_path + '/env_histories/'}
+    args
+        data_path (str) location of state.csv, observation.csv
+        results_path (str)
+    """
+    paths = {'data_path': join(data_path),
+             'results_path': join(results_path),
 
-    for k, path in paths.items():
+             'tb_rl': join(results_path, 'tensorboard', 'rl'),
+             'tb_act': join(results_path, 'tensorboard', 'act'),
+             'tb_learn': join(results_path, 'tensorboard', 'learn'),
+
+             'logs': join(results_path, 'logs.log'),
+             'env_args': join(results_path, 'env_args.txt'),
+             'agent_args': join(results_path, 'agent_args.txt'),
+             'env_histories': join(results_path, 'env_histories')}
+
+    for key, path in paths.items():
         ensure_dir(path)
 
     return paths
