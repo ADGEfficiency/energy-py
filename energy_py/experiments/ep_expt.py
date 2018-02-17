@@ -26,8 +26,8 @@ if __name__ == '__main__':
 
     total_steps = 1e6
 
-    data_path = os.getcwd()+'/perfect_forecast'
-    results_path = os.getcwd()+'/results/perfect_battery_dpg'
+    data_path = os.getcwd()+'/perfect_forecast/'
+    results_path = os.getcwd()+'/results/perfect_battery_dpg/'
 
     info = experiment(DPGAgent, agent_config, env, env_config,
                       total_steps, data_path, results_path)

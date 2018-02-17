@@ -29,17 +29,19 @@ def make_paths(data_path, results_path):
         data_path (str) location of state.csv, observation.csv
         results_path (str)
     """
-    paths = {'data_path': join(data_path),
-             'results_path': join(results_path),
+    paths = {'data_path': data_path,
+             'results_path': results_path,
 
+             #  directories
              'tb_rl': join(results_path, 'tensorboard', 'rl'),
              'tb_act': join(results_path, 'tensorboard', 'act'),
              'tb_learn': join(results_path, 'tensorboard', 'learn'),
+             'env_histories': join(results_path, 'env_histories'),
 
-             'logs': join(results_path, 'logs.log'),
-             'env_args': join(results_path, 'env_args.txt'),
-             'agent_args': join(results_path, 'agent_args.txt'),
-             'env_histories': join(results_path, 'env_histories')}
+             #  files
+             'logs': join(results_path, '/logs.log'),
+             'env_args': join(results_path, '/env_args.txt'),
+             'agent_args': join(results_path, '/agent_args.txt'),
 
     for key, path in paths.items():
         ensure_dir(path)

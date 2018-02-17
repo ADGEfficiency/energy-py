@@ -43,7 +43,7 @@ class DequeMemory(object):
                  action_space_shape,
                  size):
 
-        self.size = size
+        self.size = int(size)
         self.experiences = deque(maxlen=self.size)
 
         #  use a dict to hold the shapes
