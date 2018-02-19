@@ -1,5 +1,7 @@
 import logging
 
+import tensorflow as tf
+
 from energy_py.agents import memories
 from energy_py import processors
 
@@ -35,6 +37,8 @@ class BaseAgent(object):
                  observation_processor=None,
                  action_processor=None,
                  target_processor=None,
+                 act_path=None,
+                 learn_path=None,
                  **kwargs):
 
         self.env = env
@@ -52,10 +56,12 @@ class BaseAgent(object):
 
         #  a counter our agent can use as it sees fit
         self.counter = 0
-        #  inital number of steps not to learn from
-        #  defaults at half of memory length
-        self.initial_random = memory_length * 0.5
 
+        #  inital number of steps not to learn from
+        #  defaults at 0
+        self.initial_random = 0
+
+        #  optional objects to process arrays before they hit neural networks
         if observation_processor:
             self.observation_processor = processors[observation_processor]
 
@@ -64,6 +70,14 @@ class BaseAgent(object):
 
         if target_processor:
             self.target_processor = processors[target_processor]
+
+        #  optional tensorflow FileWriters for acting and learning
+        if act_path:
+            self.acting_writer = tf.summary.FileWriter(act_path)
+
+        if learn_path:
+            self.learning_writer = tf.summary.FileWriter(learn_path,
+                                                         graph=self.sess.graph)
 
     def _reset(self): raise NotImplementedError
 
@@ -93,8 +107,12 @@ class BaseAgent(object):
         if hasattr(self, 'observation_processor'):
             observation = self.observation_processor.transform(observation)
 
-        assert observation.shape[0] == 1
+        #  some environments (i.e. gym) return observations as flat arrays
+        #  energy_py agents use arrays of shape(batch_size, *shape)
+        if observation.ndim == 1:
+            observation = observation.reshape(1, *self.obs_shape)
 
+        assert observation.shape[0] == 1
         return self._act(observation)
 
     def learn(self, **kwargs):
