@@ -9,10 +9,10 @@ Module contains:
     experiment - runs a single reinforcment learning experiment
     Timer - times experiments
 """
+import datetime
 import logging
 import logging.config
 import os
-import os.path.join as join
 import time
 
 import pandas as pd
@@ -29,19 +29,22 @@ def make_paths(data_path, results_path):
         data_path (str) location of state.csv, observation.csv
         results_path (str)
     """
+    tb_run = str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+    join = os.path.join
+
     paths = {'data_path': data_path,
              'results_path': results_path,
 
              #  directories
-             'tb_rl': join(results_path, 'tensorboard', 'rl'),
-             'tb_act': join(results_path, 'tensorboard', 'act'),
-             'tb_learn': join(results_path, 'tensorboard', 'learn'),
+             'tb_rl': join(results_path, 'tensorboard', tb_run, 'rl'),
+             'tb_act': join(results_path, 'tensorboard', tb_run, 'act'),
+             'tb_learn': join(results_path, 'tensorboard', tb_run,  'learn'),
              'env_histories': join(results_path, 'env_histories'),
 
              #  files
-             'logs': join(results_path, '/logs.log'),
-             'env_args': join(results_path, '/env_args.txt'),
-             'agent_args': join(results_path, '/agent_args.txt'),
+             'logs': join(results_path, 'logs.log'),
+             'env_args': join(results_path, 'env_args.txt'),
+             'agent_args': join(results_path, 'agent_args.txt')}
 
     for key, path in paths.items():
         ensure_dir(path)
@@ -90,9 +93,10 @@ def experiment(agent, agent_config, env, env_config,
         global_rewards = []
 
         #  outer while loop runs through multiple episodes
+        step = 0
         while step < total_steps:
             episode += 1
-            done, step = False, 0
+            done = False
             observation = env.reset()
             rewards = []
             #  inner while loop runs through a single episode

@@ -81,10 +81,10 @@ class DPG(BaseAgent):
         #  get batch and unpack it
         #  TODO can I explode this somehow?
         batch = self.memory.get_batch(self.batch_size)
-        obs = batch['obs']
+        obs = batch['observations']
         actions = batch['actions']
         rews = batch['rewards']
-        next_obs = batch['next_obs']
+        next_obs = batch['next_observations']
         terminal = batch['terminal']
 
         #  create a Bellman target to update our critic
@@ -130,7 +130,12 @@ class DPG(BaseAgent):
 
 class DPGActor(object):
     """
-    Policy that maps state to action deterministically
+    A neural network based acting policy
+
+    Agent maps observation to a determinstic action, then noise is added
+
+    args
+
     """
     def __init__(self,
                  sess,
@@ -161,17 +166,17 @@ class DPGActor(object):
 
             #  actor network
             with tf.variable_scope('actor_online_net'):
-                self.obs, self.action = self.make_acting_graph(wt_init, b_init)
+                self.obs, self.action, self.ao_sum = self.make_acting_graph(wt_init, b_init)
                 self.o_params = self.get_tf_params('{}/actor_online_net'.format(scope))
 
             #  target network
             with tf.variable_scope('actor_target_net'):
-                self.t_obs, self.t_action = self.make_acting_graph(wt_init, b_init)
+                self.t_obs, self.t_action, self.at_sum = self.make_acting_graph(wt_init, b_init)
                 self.t_params = self.get_tf_params('{}/actor_target_net'.format(scope))
 
             #  tf machinery to improve actor network
             with tf.variable_scope('learning'):
-                self.make_learning_graph()
+                self.learn_sum = self.make_learning_graph()
 
             #  ops to update target network
             with tf.variable_scope('target_net_update'):
@@ -208,7 +213,6 @@ class DPGActor(object):
         """
         obs = tf.placeholder(tf.float32, (None, *self.obs_shape), 'obs')
 
-        #  add the input layer
         with tf.variable_scope('input_layer'):
             layer = tf.layers.dense(inputs=obs,
                                     units=self.layers[0])
@@ -227,14 +231,15 @@ class DPGActor(object):
                 relu = tf.nn.relu(batch_norm)
 
         with tf.variable_scope('output_layer'):
-            wt_init = tf.random_uniform_initializer(minval=-0.003,
-                                                    maxval=0.003)
             action = tf.layers.dense(inputs=layer,
                                      units=self.action_shape[0],
-                                     activation=None,
-                                     kernel_initializer=wt_init)
+                                     activation=None)
 
-        return obs, action
+        #  create summaries for tensorboard
+        sums = tf.summary.merge([tf.summary.histogram('observation', obs),
+                                 tf.summary.histogram('determ_action', action)])
+
+        return obs, action, sums
 
     def make_learning_graph(self):
         """
@@ -247,8 +252,8 @@ class DPGActor(object):
 
         #  combine the gradients
         self.actor_gradients = tf.gradients(self.action,
-                                       self.o_params,
-                                       -self.action_gradient)
+                                            self.o_params,
+                                            -self.action_gradient)
 
         #  clip using global norm
         #self.actor_gradients = tf.clip_by_global_norm(actor_gradients, 5)
@@ -258,12 +263,18 @@ class DPGActor(object):
 
         #  improve the actor network using the DPG algorithm
         self.train_op = self.optimizer.apply_gradients(zip(self.actor_gradients,
-                                                      self.o_params))
+                                                           self.o_params))
 
+        #  create summaries for tensorboard
+        sums = tf.summary.merge([tf.summary.histogram('action_gradient',
+                                                      self.action_gradient)])
+                                 # tf.summary.histogram('actor_grads',
+                                 #                      self.actor_gradients)])
+        return sums
 
     def get_action(self, obs):
-        assert obs.shape[0] == 1
         #  generating an action from the policy network
+        #  TODO check what hapens if noise and batch size are different!!!
         determ_action = self.sess.run(self.action, {self.obs: obs})
         noise = self.actor_noise().reshape(-1, *self.action_shape)
         action = determ_action + self.actor_noise()
@@ -277,7 +288,7 @@ class DPGActor(object):
         logger.debug('noise {}'.format(noise))
         logger.debug('action {}'.format(action))
 
-        return np.array(action).reshape(1, *self.action_shape)
+        return np.array(action).reshape(obs.shape[0], *self.action_shape)
 
     def get_target_action(self, obs):
 
