@@ -64,6 +64,9 @@ class DQN(BaseAgent):
                  initial_random=0.1,
                  epsilon_decay_fraction=0.5,
                  memory_fraction=0.25,
+                 observation_processor=None,
+                 action_processor=None,
+                 target_processor=None,
                  act_path=None,
                  learn_path=None,
                  **kwargs):
