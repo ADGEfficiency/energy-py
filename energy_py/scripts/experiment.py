@@ -141,10 +141,10 @@ class Runner(object):
         self.logger_timer = logging.getLogger('runner')
 
         if tb_path:
-            self.tb_helper = TensorboardHepler(paths['tb_rl'])
+            self.tb_helper = TensorboardHepler(tb_path)
 
         if env_hist_path:
-            self.env_hist_path = paths['env_histories']
+            self.env_hist_path = env_hist_path
 
     def calc_time(self):
         return (time.time() - self.start_time) / 60
