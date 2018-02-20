@@ -17,6 +17,10 @@ Functionality to [track & log rewards during experiment() should be inside the R
 
 Ability to clip rewards.  Most likely should sit in self.remember() in the Memory object before the reward is added to the memory.  
 
+For energy_py environments - the raw_state.csv or state.csv, observation.csv dependency is a bit of an issue.  The idea is that the user will have their own electricity price profile, but I'd like to build in the ability for the env to generate a profile if the user doesn't supply a raw_state.csv or state.csv, observation.csv.  
+
+Remove pandas dependencies.
+
 #### Prioritized experience replay
 [Schaul et. al (2015) Prioritized Experience Replay](https://arxiv.org/abs/1511.05952).
 
