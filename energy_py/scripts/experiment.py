@@ -221,7 +221,7 @@ if __name__ == '__main__':
                 #  select an action
                 action = agent.act(observation)
                 #  take one step through the environment
-                next_observation, reward, done, info = env.step(action)
+                next_observation, reward, done, info = env.step(action[0])
                 #  store the experience
                 agent.remember(observation, action, reward,
                                next_observation, done)

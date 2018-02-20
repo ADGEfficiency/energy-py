@@ -1,4 +1,7 @@
+import random
+
 import gym
+import numpy as np
 
 from energy_py.envs.flex.env_flex import Flex
 from energy_py.envs.battery.battery_env import Battery
@@ -15,6 +18,12 @@ class EnvWrapper(object):
     def reset(self):
         return self.env.reset()
 
+    def discretize(self, num_discrete):
+        self.actions = list(self.action_space.discretize(num_discrete))
+        return self.actions
+
+    def sample_discrete(self):
+        return self.env.action_space.sample_discrete()
 
 class FlexEnv(EnvWrapper):
 
@@ -28,11 +37,6 @@ class FlexEnv(EnvWrapper):
         self.action_space = self.env.action_space
         self.action_space_shape = self.action_space.shape
 
-    def discretize(self, num_discrete):
-        """
-        Not every agent will need to do this
-        """
-        return list(self.action_space.discretize(num_discrete))
 
 class BatteryEnv(EnvWrapper):
 
@@ -45,14 +49,8 @@ class BatteryEnv(EnvWrapper):
 
         self.observation_info = self.env.observation_info
         self.action_space = self.env.action_space
-        print(self.observation_info)
         self.action_space_shape = self.action_space.shape
 
-    def discretize(self, num_discrete):
-        """
-        Not every agent will need to do this
-        """
-        return list(self.action_space.discretize(num_discrete))
 
 class CartPoleEnv(EnvWrapper):
 
@@ -67,10 +65,11 @@ class CartPoleEnv(EnvWrapper):
         self.action_space_shape = (1,)
 
     def discretize(self, num_discrete):
-        """
-        Not every agent will need to do this
-        """
-        return [act for act in range(self.action_space.n)]
+        self.actions = [act for act in range(self.action_space.n)]
+        return self.actions
+
+    def sample_discrete(self):
+        return random.choice(self.actions)
 
 
 class PendulumEnv(EnvWrapper):
@@ -89,11 +88,11 @@ class PendulumEnv(EnvWrapper):
         """
         Not every agent will need to do this
         """
-        return np.linspace(self.action_space.low,
+        self.actions = np.linspace(self.action_space.low,
                                    self.action_space.high,
                                    num=num_discrete,
                                    endpoint=True).tolist()
-
+        return self.actions
 
 class MountainCarEnv(EnvWrapper):
 
@@ -108,9 +107,5 @@ class MountainCarEnv(EnvWrapper):
         self.action_space_shape = (1,)
 
     def discretize(self, num_discrete):
-        """
-        Not every agent will need to do this
-        """
-        return [act for act in range(self.action_space.n)]
-
-
+        self.actions = [act for act in range(self.action_space.n)]
+        return self.actions
