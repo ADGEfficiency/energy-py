@@ -17,7 +17,7 @@ Functionality to [track & log rewards during experiment() should be inside the R
 
 Ability to clip rewards.  Most likely should sit in self.remember() in the Memory object before the reward is added to the memory.  
 
-###### Prioritized experience replay
+#### Prioritized experience replay
 [Schaul et. al (2015) Prioritized Experience Replay](https://arxiv.org/abs/1511.05952).
 
 Some implementations used a binary heap search tree.  The Python standard library has a [collection of functions for heap queues](https://docs.python.org/3/library/heapq.html).
@@ -30,20 +30,20 @@ Some implementations used a binary heap search tree.  The Python standard librar
 
 [Slide 20 of 'Deep Reinforcment Learning in TensorFlow'](http://web.stanford.edu/class/cs20si/lectures/slides_14.pdf) - samples using log-probabilities (not a search tree).
 
-###### Auxillary loss functions
+#### Auxillary loss functions
 [Raia Hadsell on "Deep Reinforcement Learning and Real World Challenges"](https://www.youtube.com/watch?v=0e_uGa7ic74)
 
-###### Creating a Policy class/function
+#### Creating a Policy class/function
 ie e-greedy, random, soft-max, Boltzmann
 
 [Action-Selection Strategies for Exploration](https://medium.com/emergent-future/simple-reinforcement-learning-with-tensorflow-part-7-action-selection-strategies-for-exploration-d3a97b7cceaf)
 
 [This implementation of DQN](https://ewanlee.github.io/2017/07/09/Using-Tensorflow-and-Deep-Q-Network-Double-DQN-to-Play-Breakout/) defines the policy as a method.
 
-###### Heuristic pre-processing
+#### Heuristic pre-processing
 A way to override action selection using a determinsitic heuristic.  Might be a use case for a decorator.
 
-###### Tests
+#### Tests
 Currently have a few for testing the TensorFlow implementations and the processors.
 
 ### Basic usage
