@@ -64,6 +64,9 @@ class DQN(BaseAgent):
                  initial_random=0.1,
                  epsilon_decay_fraction=0.5,
                  memory_fraction=0.25,
+                 observation_processor=None,
+                 action_processor=None,
+                 target_processor=None,
                  act_path=None,
                  learn_path=None,
                  **kwargs):
@@ -73,7 +76,8 @@ class DQN(BaseAgent):
         self.batch_size = batch_size
         memory_length = int(total_steps * memory_fraction)
 
-        super().__init__(env, discount, memory_length, **kwargs)
+        super().__init__(env, discount, memory_length,
+                         act_path=act_path, learn_path=learn_path)
 
         #  number of steps where epsilon is decayed
         decay_steps = total_steps * epsilon_decay_fraction
@@ -97,12 +101,6 @@ class DQN(BaseAgent):
         #  set up the operations to copy the online network parameters to
         #  the target network
         self.update_ops = self.make_target_net_update_ops()
-
-        self.acting_writer = tf.summary.FileWriter(act_path,
-                                                   graph=self.sess.graph)
-
-        self.learning_writer = tf.summary.FileWriter(learn_path,
-                                                     graph=self.sess.graph)
 
         sess.run(tf.global_variables_initializer())
         self.update_target_network()
@@ -147,13 +145,14 @@ class DQN(BaseAgent):
         feed_dict = {self.target.observation: observations}
 
         q_vals, max_q, summary = self.sess.run(fetches, feed_dict)
-        self.learning_writer.add_summary(summary, self.counter)
+        if hasattr(self, 'learning_writer'):
+            self.learning_writer.add_summary(summary, self.counter)
 
         logger.debug('predict_target - next_obs {}', observations)
         logger.debug('predict_target - q_vals {}', q_vals)
         logger.debug('predict_target - max_q {}', max_q)
 
-        return max_q.reshape(observations.shape[0], 1)
+        return q_vals, max_q.reshape(observations.shape[0], 1)
 
     def predict_online(self, observation):
         """
@@ -165,33 +164,37 @@ class DQN(BaseAgent):
         returns
             action
         """
-        obs = observation.reshape((1, *self.env.observation_space.shape))
+        obs = observation.reshape((-1, *self.env.observation_space.shape))
 
         fetches = [self.online.q_values,
                    self.online.max_q,
                    self.online.optimal_action_idx, self.online.acting_summary]
 
         feed_dict = {self.online.observation: obs}
-        q_values, max_q, action_idx, summary = self.sess.run(fetches, feed_dict)
-        self.acting_writer.add_summary(summary, self.counter)
+        q_vals, max_q, action_idx, summary = self.sess.run(fetches, feed_dict)
 
         max_q = max_q.flatten()[0]
         max_q_sum = tf.Summary(value=[tf.Summary.Value(tag='max_q_acting',
                                                        simple_value=max_q)])
 
-        self.acting_writer.add_summary(max_q_sum, self.counter)
-        self.acting_writer.flush()
+        if hasattr(self, 'learning_writer'):
+            self.acting_writer.add_summary(summary, self.counter)
+            self.acting_writer.add_summary(max_q_sum, self.counter)
+            self.acting_writer.flush()
+
+        q_vals = q_vals.reshape(obs.shape[0], len(self.actions))
 
         #  index at zero because TF returns an array
         action = self.actions[action_idx[0]]
+        action = np.array(action).reshape(obs.shape[0], *self.action_shape)
 
         logger.debug('predict_online - observation {}'.format(obs))
-        logger.debug('predict_online - pred_q_values {}'.format(q_values))
+        logger.debug('predict_online - pred_q_values {}'.format(q_vals))
         logger.debug('predict_online - max_q {}'.format(max_q))
         logger.debug('predict_online - action_index {}'.format(action_idx))
         logger.debug('predict_online - action {}'.format(action))
 
-        return action
+        return q_vals, action
 
     def update_target_network(self):
         """
@@ -219,15 +222,16 @@ class DQN(BaseAgent):
         logger.debug('epsilon is {}'.format(epsilon))
 
         if epsilon > random():
-            action = self.env.action_space.sample_discrete()
+            action = self.env.sample_discrete()
             logger.debug('acting randomly - action is {}'.format(action))
         else:
-            action = self.predict_online(observation)
+            _, action = self.predict_online(observation)
             logger.debug('acting optimally action is {}'.format(action))
 
-        epsilon_sum = tf.Summary(value=[tf.Summary.Value(tag='epsilon', simple_value=epsilon)])
-        self.acting_writer.add_summary(epsilon_sum, self.counter)
-        self.acting_writer.flush()
+        if hasattr(self, 'acting_writer'):
+            epsilon_sum = tf.Summary(value=[tf.Summary.Value(tag='epsilon', simple_value=epsilon)])
+            self.acting_writer.add_summary(epsilon_sum, self.counter)
+            self.acting_writer.flush()
 
         return np.array(action).reshape(1, *self.action_shape)
 
@@ -248,7 +252,10 @@ class DQN(BaseAgent):
         terminals = batch['terminal']
         next_observations = batch['next_observations']
 
-        next_obs_q = self.predict_target(next_observations)
+        t_q_vals, next_obs_q = self.predict_target(next_observations)
+
+        # if self.double:
+        #     optimal_online_action = self.predict_online(
 
         #  if next state is terminal, set the value to zero
         next_obs_q[terminals] = 0
@@ -297,7 +304,8 @@ class DQN(BaseAgent):
         logger.debug('learning - target {}'.format(target))
         logger.debug('learning - loss {}'.format(loss))
 
-        self.learning_writer.add_summary(train_sum, self.counter)
+        if hasattr(self, 'learning_writer'):
+            self.learning_writer.add_summary(train_sum, self.counter)
 
         self.update_target_network()
 

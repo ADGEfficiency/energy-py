@@ -10,26 +10,57 @@ energy_py is built and maintained by Adam Green.  This project is in rapid devel
 
 I teach a one day [introduction to reinforcement learning learning](https://github.com/ADGEfficiency/DSR_RL) class at [Data Science Retreat](https://www.datascienceretreat.com/).
 
+### Work to be done
+Problem with [Normalizer](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/scripts/processors.py) - the object remembers the min & max for each dimension for it's entire lifetime.  High initial values make the scaling silly.
+
+Functionality to [track & log rewards during experiment() should be inside the Runner class.](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/scripts/experiment.py)
+
+Ability to clip rewards.  Most likely should sit in self.remember() in the Memory object before the reward is added to the memory.  
+
+For energy_py environments - the raw_state.csv or state.csv, observation.csv dependency is a bit of an issue.  The idea is that the user will have their own electricity price profile, but I'd like to build in the ability for the env to generate a profile if the user doesn't supply a raw_state.csv or state.csv, observation.csv.  
+
+Remove pandas dependencies.
+
+#### Prioritized experience replay
+[Schaul et. al (2015) Prioritized Experience Replay](https://arxiv.org/abs/1511.05952).
+
+Some implementations used a binary heap search tree.  The Python standard library has a [collection of functions for heap queues](https://docs.python.org/3/library/heapq.html).
+
+[General intro to binary heaps with some Python implementation from scratch](http://interactivepython.org/runestone/static/pythonds/Trees/BinaryHeapImplementation.html).
+
+[Takoika/PrioritizedExperienceReplay implementation](https://github.com/takoika/PrioritizedExperienceReplay/blob/master/sum_tree.py).
+
+[TensorForce implementation](https://github.com/reinforceio/tensorforce/blob/master/tensorforce/core/memories/prioritized_replay.py)
+
+[Slide 20 of 'Deep Reinforcment Learning in TensorFlow'](http://web.stanford.edu/class/cs20si/lectures/slides_14.pdf) - samples using log-probabilities (not a search tree).
+
+#### Auxillary loss functions
+[Raia Hadsell on "Deep Reinforcement Learning and Real World Challenges"](https://www.youtube.com/watch?v=0e_uGa7ic74)
+
+#### Creating a Policy class/function
+ie e-greedy, random, soft-max, Boltzmann
+
+[Action-Selection Strategies for Exploration](https://medium.com/emergent-future/simple-reinforcement-learning-with-tensorflow-part-7-action-selection-strategies-for-exploration-d3a97b7cceaf)
+
+[This implementation of DQN](https://ewanlee.github.io/2017/07/09/Using-Tensorflow-and-Deep-Q-Network-Double-DQN-to-Play-Breakout/) defines the policy as a method.
+
+#### Heuristic pre-processing
+A way to override action selection using a determinsitic heuristic.  Might be a use case for a decorator.
+
+#### Tests
+Currently have a few for testing the TensorFlow implementations and the processors.
+
 ### Basic usage
 
 [A simple and detailed example](https://github.com/ADGEfficiency/energy_py/blob/master/notebooks/examples/Q_learning_battery.ipynb) of using the DQN agent to control the battery environment is a great place to start.
 
 
-Another way to use energy_py is to run experiments.  Below I run experiments with two different agents and two different environments. 
+Another way to use energy_py is to run experiments.
+ The script [gym_expt.py](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/experiments/gym_expt.py) will run Gym experiments.  
 
-```
-from energy_py.experiments import random_experiment, reinforce_experiment
-from energy_py.envs import BatteryEnv, FlexEnv
+The script [ep_expt.py](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/experiments/ep_expt.py) will run energy_py experiments.  The function used to run an experiment is found in [scripts/experiment.py.](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/scripts/experiment.py)
 
-
-random_outputs = random_experiment(BatteryEnv, 
-                                   data_path=data_path,
-                                   base_path='random/expt_1')
-
-dqn_outputs = dqn_experiment(FlexEnv,
-                             data_path=data_path,
-                             base_path='dqn/expt_2')
-```
+For an environment to be used it must be wrapped in the environment registry in [register.py](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/envs/register.py).  The registry allows consistency in the attributes and methods used by agents.  
 
 ### Installation
 Below I use Anaconda to create a Python 3.5 virtual environment.  You can of course use your own environment manager.
@@ -57,13 +88,17 @@ Finally install the required packages
 ```
 pip install requirements.txt
 ```
-The main dependencies of energy_py are numpy, pandas & TensorFlow.  energy_py was built using TensorFlow 1.3.0.  
+The main dependencies of energy_py are numpy, pandas & TensorFlow.  
 
 ### Project structure
 
 Environments are created by inheriting from the [BaseEnv](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/envs/env_core.py) class.
 
-Agents are created by inheriting from the [BaseAgent](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/agent.py) class.  Another key object is the [AgentMemory](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/memory.py) which holds and processes agent experience.  
+Agents are created by inheriting from the [BaseAgent](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/agent.py) class.  
+
+Agents use [Memory](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/memory.py) objects to remember and sample experience.  
+
+The logging module is used to log INFO to console and DEBUG to file.  TensorBoard is used to track data during acting, learning and for RL specific stuff like rewards.
 
 **Environments**
 
@@ -71,7 +106,7 @@ Agent and environment interaction is shown below - it follows the standard
 Open AI gym API for environments i.e. .reset, .step(action).
 
 ```
-from energy_py.agents import DQN, tfValueFunction 
+from energy_py.agents import DQN, tfValueFunction
 from energy_py.envs import BatteryEnv
 
 env = BatteryEnv()
@@ -94,12 +129,10 @@ The following environments are implemented:
 
 - [Generic flexibility action environment](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/envs/flex)
 
-- [Cooling flexibility action - in development](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/envs/precool) 
-
 In energy_py v1.0 I implemented a combined heat and power plant - not planning
 on introducing this into energy_py v2.0.
 
-I plan to make energy_py environments fully agent agnostic - so that agents built using other libraries can be used.  
+I plan to make energy_py environments fully agent agnostic by following the Open AI Gym schema.
 
 **Agents**
 
@@ -109,12 +142,6 @@ The following agents are currently implemented:
 
 - [Naive battery agent](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/naive/naive_battery.py)
 
-- [REINFORCE aka Monte Carlo policy gradient](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/policy_based/reinforce.py)
-
 - [DQN aka Q-Learning with experience replay and target network](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/Q_learning/dqn.py)
 
 - [Deterministic Policy Gradient](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/Q_learning/dpg.py)
-
-**Function approximators**
-
-energy_py is deep learning library agnostic - any framework can be used to [parameterize either policies or value functions](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/agents/function_approximators).  Classes are used to allow flexibility in combining different function approximator with different agents.  Currently all function approximators are based on TensorFlow.

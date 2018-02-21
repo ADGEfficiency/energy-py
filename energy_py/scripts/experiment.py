@@ -88,7 +88,9 @@ def experiment(agent, agent_config, env, env_config,
         save_args(agent_config, path=paths['agent_args'])
         save_args(env_config, path=paths['env_args'])
 
-        runner = Runner(paths)
+        runner = Runner(tb_path=paths['tb_rl'],
+                        env_hist_path=paths['env_histories'])
+
         step, episode = 0, 0
         global_rewards = []
 
@@ -126,20 +128,23 @@ def experiment(agent, agent_config, env, env_config,
                            'avg_rew': avg_rew},
                           env_info=info)
 
-    return global_rewards
+    return agent, env, sess
 
 
 class Runner(object):
     """
     Trying to figure out what to do here - trying this runner class
     """
-    def __init__(self, paths):
+    def __init__(self, tb_path=None, env_hist_path=None):
 
         self.start_time = time.time()
         self.logger_timer = logging.getLogger('runner')
 
-        self.tb_helper = TensorboardHepler(paths['tb_rl'])
-        self.env_hist_path = paths['env_histories']
+        if tb_path:
+            self.tb_helper = TensorboardHepler(tb_path)
+
+        if env_hist_path:
+            self.env_hist_path = env_hist_path
 
     def calc_time(self):
         return (time.time() - self.start_time) / 60
@@ -152,7 +157,7 @@ class Runner(object):
         log = ['{} : {:.2f}'.format(k, v) for k, v in summaries.items()]
         self.logger_timer.info(log)
 
-        if env_info:
+        if hasattr(self, 'env_hist_path'):
             output = pd.DataFrame().from_dict(env_info)
             output.set_index('steps', drop=True)
 
@@ -162,6 +167,77 @@ class Runner(object):
             ensure_dir(csv_path)
             output.to_csv(csv_path)
 
-        no_tb = ['ep', 'run_time', 'step']
-        _ = [summaries.pop(key) for key in no_tb]
-        self.tb_helper.add_summaries(summaries)
+        if hasattr(self, 'tb_helper'):
+            no_tb = ['ep', 'run_time', 'step']
+            _ = [summaries.pop(key) for key in no_tb]
+            self.tb_helper.add_summaries(summaries)
+
+
+if __name__ == '__main__':
+    """
+    This code is here to allow debugging of the aqgent and environment
+    in a realistic way
+    """
+    from energy_py.agents import DQN
+    from energy_py.envs import CartPoleEnv
+
+    agent_config = {'discount': 0.97,
+                    'tau': 0.001,
+                    'total_steps': 500000,
+                    'batch_size': 32,
+                    'layers': (50, 50),
+                    'learning_rate': 0.0001,
+                    'epsilon_decay_fraction': 0.3,
+                    'memory_fraction': 0.4,
+                    'process_observation': False,
+                    'process_target': False}
+
+    agent = DQN
+    total_steps = 1000
+    with tf.Session() as sess:
+        env = CartPoleEnv()
+
+        agent_config['env'] = env
+        agent_config['env_repr'] = repr(env)
+        agent_config['sess'] = sess
+        agent_config['total_steps'] = total_steps
+        agent = agent(**agent_config)
+
+        runner = Runner()
+        step, episode = 0, 0
+        global_rewards = []
+
+        #  outer while loop runs through multiple episodes
+        step = 0
+        while step < total_steps:
+            episode += 1
+            done = False
+            observation = env.reset()
+            rewards = []
+            #  inner while loop runs through a single episode
+            while not done:
+                step += 1
+
+                #  select an action
+                action = agent.act(observation)
+                #  take one step through the environment
+                next_observation, reward, done, info = env.step(action[0])
+                #  store the experience
+                agent.remember(observation, action, reward,
+                               next_observation, done)
+                #  moving to the next time step
+                observation = next_observation
+                rewards.append(reward)
+
+                if step > agent.initial_random:
+                    train_info = agent.learn()
+
+            global_rewards.append(sum(rewards))
+            avg_rew = sum(global_rewards[-100:]) / len(global_rewards[-100:])
+
+            runner.report({'ep': episode,
+                           'step': step,
+                           'ep_rew': sum(rewards),
+                           'avg_rew': avg_rew})
+
+
