@@ -19,6 +19,7 @@ Schaul reccomends second method.
 Binary tree notes
 
 """
+import random
 
 from collections import namedtuple
 import numpy as np
@@ -31,6 +32,9 @@ Experience = namedtuple('Experience', ['observation',
                                        'priority'])
 
 def generate_experience(p=None):
+    """
+    A function to generate namedtuples of experience
+    """
     obs = np.random.rand(1, 4)
     act = np.random.rand(1, 2)
     rew = np.random.randint(10)
@@ -38,7 +42,7 @@ def generate_experience(p=None):
     terminal = False
 
     if p is None:
-        prio = np.random.randint(10)
+        prio = random.random()
     else:
         prio = p
 
@@ -46,7 +50,7 @@ def generate_experience(p=None):
 
 
 def test_getChild():
-    heap = MinBinaryHeap()
+    heap = MaxBinaryHeap()
     priorities = [random.randint(0, 100) for _ in range(10)]
     [heap.insert(p) for p in priorities]
     i = 1
@@ -58,7 +62,57 @@ def test_getChild():
 
         i += 1
 
-class MinBinaryHeap(object):
+def test_removeMax():
+
+    heap = MaxBinaryHeap()
+    priorities = [random.randint(0, 100) for _ in range(10)]
+    [heap.insert(p) for p in priorities]
+    s_priorities = sorted(priorities, reverse=True)
+
+    print('sorted priorities {}'.format(s_priorities))
+    for priority in s_priorities:
+        max_p = heap.removeMax()
+        assert priority == max_p
+
+def test_maxheap():
+    heap = MaxBinaryHeap()
+    priorities = [random.random() for _ in range(100)]
+    s_priorities = sorted(priorities, reverse=True)
+
+    #  add our unsorted priorities into the tree
+    [heap.insert(p) for p in priorities]
+
+    #  grab the highest priorities
+    highest = [heap.removeMax() for _ in range(random.randint(2, 50))]
+
+    #  check the priorities that we grabbed are correct
+    for i, (val, check) in enumerate(zip(s_priorities, highest)):
+        assert val == check
+
+    #  generate a new set of priorities
+    new_priorities = [random.random() for _ in range(random.randint(2, 50))]
+
+    #  grab the priorities that are still in the tree
+    all_priorities = heap.heapList
+
+    #  add the new priorities
+    all_priorities.extend(new_priorities)
+    #  save a sorted list
+    all_p_sorted = sorted(all_priorities, reverse=True)
+    assert len(priorities) - i + len(new_priorities) == len(all_priorities)
+
+    #  add the new priorities onto the tree
+    [heap.insert(p) for p in new_priorities]
+
+    #  pull the highest priorities from the tree
+    all_highest = [heap.removeMax() for _ in range(random.randint(2, 50))]
+
+    #  check the tree got the highet values correct
+    for val, check in zip(all_p_sorted, all_highest):
+        assert val == check
+
+
+class MaxBinaryHeap(object):
     """
     http://interactivepython.org/runestone/static/pythonds/Trees/BinaryHeapImplementation.html
     """
@@ -67,13 +121,7 @@ class MinBinaryHeap(object):
         #  intialize heapList with a zero to make the int division simpler
         self.heapList = [0]
         self.currentSize = 0
-
-    def insert(self, experience):
-        self.heapList.append(experience)
-
-        self.currentSize += 1
-
-        self.percUp(self.currentSize)
+        self.maxSize = 10  #  UNUSED TODO
 
     def __getitem__(self, key):
         return self.heapList[key]
@@ -81,7 +129,25 @@ class MinBinaryHeap(object):
     def __setitem__(self, key, item):
         self.heapList[key] = item
 
+    def __repr__(self):
+        return '<MaxBinaryHeap {}/{}>'.format(self.currentSize, self.maxSize)
+
+    def insert(self, experience):
+        """
+        Adds an experience object to the end of the heapList
+
+        Reposition the object in the tree using percUp()
+        """
+        self.heapList.append(experience)
+
+        self.currentSize += 1
+
+        self.percUp(self.currentSize)
+
     def print_tree(self):
+        """
+        Prints the tree from top to bottom
+        """
         print('printing tree')
         i = 1
         while i < self.currentSize + 1:
@@ -159,48 +225,50 @@ class MinBinaryHeap(object):
             i (int) start position
         """
         print('getting child for node {} val {}'.format(i, self[i]))
-        #  if no left
+        #  if no left child then it's the end of the tree (leaf?)
         if i * 2 > self.currentSize:
             return 'no child'
 
-        #  if no right child exists
-        #  this could be an exception ina  call to get children
+        #  if no right child exists, node only has a left child
         if i * 2 + 1 > self.currentSize:
             left = self[i*2]
             print('left only {}'.format(left))
             return left, i*2
 
+        #  our node has both a left and right child
         left = self[i*2]
         right = self[i*2+1]
         print('left {} right {}'.format(left, right))
 
+        #  return the left node if it is bigger & it's index
         if left >= right:
             return left, i*2
+        #  return the right node if it is bigger & it's index
         else:
             return right, i*2 + 1
 
+    def buildHeap(self, initial_experiences):
+        """
+        """
+        i = len(initial_experiences) // 2
+        self.currentSize = len(initial_experiences)
+        self.heapList = [0] + initial_experiences[:]
+
+        while i > 0:
+            self.percDown(i)
+            i = i - 1
 
 if __name__ == '__main__':
-    import random
 
     test_getChild()
 
-    def test_removeMax():
-
-        heap = MinBinaryHeap()
-        priorities = [random.randint(0, 100) for _ in range(10)]
-        [heap.insert(p) for p in priorities]
-        s_priorities = sorted(priorities, reverse=True)
-
-        print('sorted priorities {}'.format(s_priorities))
-        for priority in s_priorities:
-            max_p = heap.removeMax()
-            assert priority == max_p
 
     test_removeMax()
 
-    heap = MinBinaryHeap()
+    heap = MaxBinaryHeap()
     priorities = [random.randint(0, 100) for _ in range(10)]
-    [heap.insert(p) for p in priorities]
+    s_priorities = sorted(priorities, reverse=True)
+    heap.buildHeap(priorities)
 
     heap.print_tree()
+
