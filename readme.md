@@ -21,6 +21,8 @@ For energy_py environments - the raw_state.csv or state.csv, observation.csv dep
 
 Remove pandas dependencies.
 
+Using a generic class for scheduling - see [Open AI Baselines schedulers](https://github.com/openai/baselines/blob/master/baselines/common/schedules.py).
+
 #### Prioritized experience replay
 [Schaul et. al (2015) Prioritized Experience Replay](https://arxiv.org/abs/1511.05952).
 
@@ -33,6 +35,11 @@ Some implementations used a binary heap search tree.  The Python standard librar
 [TensorForce implementation](https://github.com/reinforceio/tensorforce/blob/master/tensorforce/core/memories/prioritized_replay.py)
 
 [Slide 20 of 'Deep Reinforcment Learning in TensorFlow'](http://web.stanford.edu/class/cs20si/lectures/slides_14.pdf) - samples using log-probabilities (not a search tree).
+
+Open AI Baselines implementation:
+[sum tree](https://github.com/openai/baselines/blob/master/baselines/common/segment_tree.py),
+[the memory object](https://github.com/openai/baselines/blob/master/baselines/deepq/replay_buffer.py) and
+[using the memory in DQN](https://github.com/openai/baselines/blob/master/baselines/deepq/simple.py).
 
 #### Auxillary loss functions
 [Raia Hadsell on "Deep Reinforcement Learning and Real World Challenges"](https://www.youtube.com/watch?v=0e_uGa7ic74)
@@ -83,6 +90,10 @@ Move into the energy_py folder and install using setup.py.  This will install en
 ```
 cd energy_py
 python setup.py install
+```
+If you are developing the package you might want to use
+```
+python setup.py develop
 ```
 Finally install the required packages
 ```

@@ -213,20 +213,3 @@ class Battery(BaseEnv):
         self.observation = next_observation
 
         return self.observation, reward, self.done, self.info
-
-    def _output_results(self):
-        """
-        """
-        self.outputs['state_ts'] = self.state_ts
-        self.outputs['observation_ts'] = self.observation_ts
-
-        env_panel_fig = {'name': 'last_ep',
-                         'ylabels': ['Gross rate of charge/discharge [MW]',
-                                     'Battery charge at end of step [MWh]',
-                                     'Electricity price [$/MWh]'],
-                         'panels': [['gross_rate'],
-                                    ['new_charge'],
-                                    ['electricity_price']]}
-        self.outputs['env_panel_fig'] = env_panel_fig
-
-        return self.outputs

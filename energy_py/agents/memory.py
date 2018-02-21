@@ -60,8 +60,6 @@ class DequeMemory(object):
 
     def reset(self): raise NotImplementedError()
 
-    def output_results(self): raise NotImplementedError()
-
     def remember(self, observation, action, reward,
                  next_observation, terminal):
         """

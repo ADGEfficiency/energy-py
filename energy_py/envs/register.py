@@ -25,6 +25,7 @@ class EnvWrapper(object):
     def sample_discrete(self):
         return self.env.action_space.sample_discrete()
 
+
 class FlexEnv(EnvWrapper):
 
     def __init__(self, **kwargs):
@@ -93,6 +94,7 @@ class PendulumEnv(EnvWrapper):
                                    num=num_discrete,
                                    endpoint=True).tolist()
         return self.actions
+
 
 class MountainCarEnv(EnvWrapper):
 

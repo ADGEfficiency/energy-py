@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 
 from energy_py.scripts.spaces import ContinuousSpace, DiscreteSpace
-from energy_py import TensorboardHepler
 
 logger = logging.getLogger(__name__)
 
