@@ -25,5 +25,7 @@ setup(name='energy_py',
                 'energy_py.scripts'],
 
       package_data = {'':['*.csv']},
+      setup_requires=['pytest-runner'],
+      tests_require=['pytest'],
       install_requires=[]
       )
