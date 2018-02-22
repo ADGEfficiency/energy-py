@@ -69,23 +69,20 @@ class BaseEnv(object):
         self.episode_start = int(episode_start)
         self.episode_random = bool(episode_random)
 
-        #  load up the infomation from the csvs once
-        #  we do this before we init the BaseEnv so we can reset in
-        #  the BaseEnv class
+        #  loads time series infomation from disk
+        #  creates the state_info and observation_info lists
         self.raw_state_ts, self.raw_observation_ts = self.load_ts(data_path)
 
         #  hack to allow max length
         if self.episode_length == 0:
             self.episode_length = int(self.raw_observation_ts.shape[0])
 
+        logger.info('Initializing environment {}'.format(repr(self)))
+
     # Override in subclasses
     def _step(self, action): raise NotImplementedError
 
     def _reset(self): raise NotImplementedError
-
-    #  Set these in ALL subclasses
-    action_space = None
-    observation_space = None
 
     def reset(self):
         """
@@ -263,7 +260,6 @@ class BaseEnv(object):
 
         returns
             ts_info (np.array)
-
         """
         ts_info = np.array(self.state_ts.iloc[steps, :])
         ts_info = np.append(ts_info, append)

@@ -22,7 +22,7 @@ if __name__ == '__main__':
     env_config = {'episode_length': 2016,
                   'episode_random': True}
 
-    total_steps = 1e6
+    total_steps = 1e4
 
     data_path = os.getcwd()+'/perfect_forecast/'
     results_path = os.getcwd()+'/results/perfect_battery_dpg/'

@@ -153,10 +153,12 @@ class MaxBinaryHeap(object):
         while i < self.currentSize + 1:
             child = self.getChild(i)
 
-            print('node {} value {} child {} {}'.format(i,
-                                                        self[i],
-                                                        child.value,
-                                                        child.l_or_r))
+            print('node {:.0f} value {:.2f}'.format(i, self[i]))
+
+            print('max value {} {:.2f}'.format(child.l_or_r, child.value))
+
+            print('left {} right {}'.format(child.left, child.right))
+
             i += 1
 
     def percUp(self, i):
@@ -210,7 +212,7 @@ class MaxBinaryHeap(object):
         """
         #  the while loop will break when we are at a node with no children
         while (i * 2) <= self.currentSize:
-            max_child, idx, message = self.getChild(i)
+            max_child, idx, message, l, r = self.getChild(i)
 
             if self[i] < max_child:
                 temp = self[i]
@@ -227,15 +229,17 @@ class MaxBinaryHeap(object):
         """
         Child = namedtuple('child_info', ['value',
                                           'index',
-                                          'l_or_r'])
+                                          'l_or_r',
+                                          'left',
+                                          'right'])
 
         #  if no left child then it's the end of the tree (leaf?)
         if i * 2 > self.currentSize:
-            return Child(self[i], i, 'no_child')
+            return Child(self[i], i, 'no_child', None, None)
 
         #  if no right child exists, and node only has a left child
         if i * 2 + 1 > self.currentSize:
-            return Child(self[i*2], i*2, 'left_only')
+            return Child(self[i*2], i*2, 'left_only', self[i*2], None)
 
         #  our node has both a left and right child
         left = self[i*2]
@@ -243,10 +247,10 @@ class MaxBinaryHeap(object):
 
         #  return the left node if it is bigger & it's index
         if left >= right:
-            return Child(left, i*2, 'left')
+            return Child(left, i*2, 'left', left, right)
         #  return the right node if it is bigger & it's index
         else:
-            return Child(right, i*2 + 1, 'right')
+            return Child(right, i*2 + 1, 'right', left, right)
 
     def buildHeap(self, initial_experiences):
         """
@@ -270,7 +274,7 @@ class MaxBinaryHeap(object):
     def _find(self, value, index):
         Output = namedtuple('output', ['priority', 'index'])
 
-        ret_val, idx, message = self.getChild(index)
+        ret_val, idx, message, l, r = self.getChild(index)
 
         if message == 'no_child':
             return Output(ret_val, idx)

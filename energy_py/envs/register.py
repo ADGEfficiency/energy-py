@@ -12,6 +12,9 @@ class EnvWrapper(object):
     def __init__(self, env):
         self.env = env
 
+    def __repr__(self):
+        return repr(self.env)
+
     def step(self, action):
         return self.env.step(action)
 

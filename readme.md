@@ -23,6 +23,11 @@ Remove pandas dependencies.
 
 Using a generic class for scheduling - see [Open AI Baselines schedulers](https://github.com/openai/baselines/blob/master/baselines/common/schedules.py).
 
+Target network weights should be initialized the same as online at the beginning of DQN experiments.  I think this will
+mean having tau as a placeholder that is fed into the sess.run call.
+
+When Runner saves environment info to a csv, doesn't unwrap the arrays into columns
+
 #### Prioritized experience replay
 [Schaul et. al (2015) Prioritized Experience Replay](https://arxiv.org/abs/1511.05952).
 
@@ -56,6 +61,11 @@ A way to override action selection using a determinsitic heuristic.  Might be a 
 
 #### Tests
 Currently have a few for testing the TensorFlow implementations and the processors.
+
+Test on operation for copying weights from one network to another - could check using a variable tau.
+
+Test the experiment() function.  Would need to turn off all data saving functionality (tensorboard, logging etc).  Test
+would just to run the expt
 
 ### Basic usage
 

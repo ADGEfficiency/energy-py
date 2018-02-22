@@ -7,14 +7,26 @@ logger = logging.getLogger(__name__)
 
 
 class Flex(BaseEnv):
+    """
+    An environment to simulate electricity flexibility responding to the price
+    of electricity.
+
+    Model simulates a flexibiltiy cycle of three stages
+    - initial = flexing up or down
+    - final = flexing up or down (opposite of the first stage)
+    - relaxation = agent has to wait until starting the next cycle
+
+    Action space = choosing when to start the flex cycle.  Once cycle starts
+    it runs through until the end.
+
+    """
     def __init__(self,
                  data_path,
-                 tb_path=None,
                  episode_length=48,
                  episode_start=0,
                  episode_random=False,
-                 flex_initial_size=1,  # in MW
-                 flex_final_size=-1,
+                 flex_initial_size=1,  # MW
+                 flex_final_size=-1,  # MW
                  flex_time=6,  # num 5 minute periods
                  relax_time=12):  # num 5 min periods
 
@@ -26,6 +38,7 @@ class Flex(BaseEnv):
         self.relax_time = int(relax_time)
 
         if self.flex_initial_size + self.flex_final_size != 0:
+            #  this shouldn't necessiarly raise an error!
             raise ValueError('Your flex actions are not equal and opposite')
 
         self.electricity_price = None
@@ -35,22 +48,11 @@ class Flex(BaseEnv):
         self.flex_avail = None
         self.flex_action = None
 
-        #  init the parent TimeSeriesEnv
         super().__init__(data_path,
                          episode_length,
                          episode_start,
-                         episode_random,
-                         tb_path=tb_path)
-
-    def __repr__(self): return '<energy_py flexibility environment>'
-
-    def _reset(self):
+                         episode_random)
         """
-        Resets the environment
-
-        returns
-            observation (np.array) the initial observation
-
         SETTING THE ACTION SPACE
 
         Single action - whether to start the flex asset or not
@@ -61,12 +63,6 @@ class Flex(BaseEnv):
         After flex_time is over, relax_time starts
         """
         self.action_space = GlobalSpace([DiscreteSpace(1)])
-
-        #  initialize all of the
-        self.flex_avail = 1  # 0=not available, 1=available
-        self.flex_initial = 0
-        self.flex_final = 0
-        self.relax = 0
 
         """
         SETTING THE OBSERVATION SPACE
@@ -82,13 +78,30 @@ class Flex(BaseEnv):
         self.observation_info.append('flex_availability')
         self.observation_space = GlobalSpace(obs_spc)
 
+        #  set the initial observation by resetting the environment
+        self.observation = self.reset()
+
+    def __repr__(self):
+        return '<energy_py FLEX environment>'
+
+    def _reset(self):
         """
-        Resetting steps, state, observation, done status
+        Resets the environment.
+
+        returns
+            observation (np.array) the initial observation
         """
+        #  Resetting steps, state, observation, done status
         self.steps = 0
         self.state = self.get_state(steps=self.steps, append=self.flex_avail)
         self.observation = self.get_observation(self.steps, self.flex_avail)
         self.done = False
+
+        #  initialize all of the flex counters
+        self.flex_avail = 1  # 0=not available, 1=available
+        self.flex_initial = 0
+        self.flex_final = 0
+        self.relax = 0
 
         return self.observation
 
@@ -179,15 +192,6 @@ class Flex(BaseEnv):
             logger.debug('up {} down {} relax {} rew {}'.format(
                 self.flex_final, self.flex_initial, self.relax, reward))
 
-        summaries = {'electricity_price': self.electricity_price,
-                   'flex_up': self.flex_final,
-                   'flex_down': self.flex_initial,
-                   'relax': self.relax,
-                   'flex_avail': self.flex_avail,
-                   'flex_action': self.flex_action}
-
-        self.env_writer.add_summaries(summaries)
-
         self.steps += 1
         next_state = self.get_state(self.steps, append=self.flex_avail)
         next_observation = self.get_observation(self.steps, self.flex_avail)
@@ -196,7 +200,22 @@ class Flex(BaseEnv):
         if self.steps == (self.episode_length - 1):
             self.done = True
 
-        #  moving to the next time step
+        self.info = self.update_info(steps=self.steps,
+                                     state=self.state,
+                                     observation=self.observation,
+                                     action=action,
+                                     reward=reward,
+                                     next_state=next_state,
+                                     next_observation=next_observation,
+                                     done=self.done,
+
+                                     electricity_price=self.electricity_price,
+                                     flex_initial=self.flex_initial,
+                                     flex_final=self.flex_final,
+                                     relax=self.relax,
+                                     flex_avail=self.flex_avail,
+                                     flex_action=flex_action)
+
         self.state = next_state
         self.observation = next_observation
 

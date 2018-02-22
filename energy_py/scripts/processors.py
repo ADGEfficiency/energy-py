@@ -13,6 +13,22 @@ import numpy as np
 epsilon = 1e-5
 
 
+class ProcessSigmoid():
+
+    def __init__(self):
+        pass
+
+    def transform(self, x):
+        return 1 / (1 + np.exp(-x))
+
+
+class ProcessTanh():
+    def __init__(self):
+        pass
+
+    def transform(self, x):
+        return np.tanh(x)
+
 class Normalizer(object):
     """
     Normalization to range [0, 1]

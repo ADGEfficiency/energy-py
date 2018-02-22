@@ -39,13 +39,11 @@ class Battery(BaseEnv):
         self.round_trip_eff = float(round_trip_eff)  # %
         self.initial_charge = float(self.capacity * initial_charge)  # MWh
 
-        #  calling init method of the parent TimeSeriesEnv
         super().__init__(data_path,
                          episode_length,
                          episode_start,
                          episode_random,
                          **kwargs)
-
         """
         SETTING THE ACTION SPACE
 
@@ -74,14 +72,21 @@ class Battery(BaseEnv):
 
         #  create a energy_py GlobalSpace object for the observation space
         self.observation_space = GlobalSpace(observation_space)
+
+        #  set the initial observation by resetting the environment
         self.observation = self.reset()
+
+    def __repr__(self):
+        return """<energy_py BATTERY environment
+                - {} MW {} MWh>""".format(self.power_rating,
+                                          self.capacity)
 
     def _reset(self):
         """
         Resets the environment.
 
         returns
-            observation : np.array : the initial observation
+            observation (np.array) the initial observation
         """
         #  reseting the step counter, state, observation & done status
         self.steps = 0
