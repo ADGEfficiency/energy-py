@@ -19,5 +19,7 @@ setup(name='energy_py',
       packages=find_packages(exclude=['tests', 'tests.*']),
 
       package_data = {'':['*.csv']},
+      setup_requires=['pytest-runner'],
+      tests_require=['pytest'],
       install_requires=[]
       )
