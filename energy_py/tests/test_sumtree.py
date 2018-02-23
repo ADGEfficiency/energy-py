@@ -36,12 +36,41 @@ def test_rememeber():
         expected_priority = space[exp]
         assert priority == expected_priority
 
-class SumTree(object):
+def test_trees():
+    """
+    Tests the sum and min operations over the memory
+    """
+    mem = PrioritizedReplayMemory(10)
 
-    def __init__(self, capacity):
+    exp, pr = [], []
+    for _ in range(30):
+        e = random.randint(0, 100)
+        p = random.random()
+
+        exp.append(e)
+        pr.append(p)
+
+        mem.remember(e, p)
+
+    sumtree = mem.sumtree
+    mintree = mem.mintree
+
+    s1 = sumtree.sum()
+    m1 = mintree.min()
+
+    tol = 1e-6
+    assert s1 - sum(pr[-10:]) < tol
+    assert m1 - min(pr[-10:]) < tol
+
+
+class SegmentTree(object):
+
+    def __init__(self, capacity, operator, neutral_element):
 
         self.capacity = capacity
-        self.values = [0 for _ in range(2 * self.capacity)]
+        self.operation = operator
+
+        self.values = [neutral_element for _ in range(2 * self.capacity)]
 
     def __setitem__(self, idx, val):
         """
@@ -62,8 +91,8 @@ class SumTree(object):
         while idx >= 1:
             #  we set the value for the parent node using the two children
             #   left=2*p, right=2p+1
-            self.values[idx] = sum([self.values[2 * idx],
-                                   self.values[2 * idx + 1]])
+            self.values[idx] = self.operation([self.values[2 * idx],
+                                               self.values[2 * idx + 1]])
 
             #  move up to the next level of the tree (the next parent)
             idx //= 2
@@ -77,11 +106,10 @@ class SumTree(object):
         #  return the priority for that node
         return self.values[self.capacity + idx]
 
-    def sum(self, start, end):
-        return self.reduce(start, end)
-
     def reduce(self, start, end):
         #  checks on end TODO
+        if end is None:
+            end = self.capacity
 
         end -= 1
 
@@ -123,8 +151,30 @@ class SumTree(object):
                 print('COND FOUR')
                 print(arg1)
                 print(arg2)
-                return sum([self._reduce_helper(**arg1._asdict()),
+                return self.operation([self._reduce_helper(**arg1._asdict()),
                             self._reduce_helper(**arg2._asdict())])
+
+
+class MinTree(SegmentTree):
+    def __init__(self, capacity):
+        super(MinTree, self).__init__(
+            capacity=capacity,
+            operator=min,
+            neutral_element=float('inf'))
+
+    def min(self, start=0, end=None):
+        return super(MinTree, self).reduce(start, end)
+
+
+class SumTree(SegmentTree):
+    def __init__(self, capacity):
+        super(SumTree, self).__init__(
+            capacity=capacity,
+            operator=sum,
+            neutral_element=0.0)
+
+    def sum(self, start=0, end=None):
+        return super(SumTree, self).reduce(start, end)
 
     def find(self, prob):
         """
@@ -157,6 +207,7 @@ class SumTree(object):
 
         return idx - self.capacity
 
+
 class PrioritizedReplayMemory(object):
     def __init__(self, size):
         self.size = size
@@ -167,6 +218,7 @@ class PrioritizedReplayMemory(object):
             tree_capacity *= 2
 
         self.sumtree = SumTree(tree_capacity)
+        self.mintree = MinTree(tree_capacity)
         #  TODO mintree
 
         self._next_index = 0
@@ -203,14 +255,13 @@ class PrioritizedReplayMemory(object):
             priority = self.max_priority ** self.alpha
 
         self.sumtree[self._next_index] = priority
-        #  TODO mintree here
+        self.mintree[self._next_index] = priority
 
         #  modulus gives us the index of the next oldest experience
         self._next_index = (self._next_index + 1) % self.size
 
         print('{} len storage after adding exp next oldest is {}'.format(len(self.storage),
-                                                                      self._next_index))
-
+                                                                         self._next_index))
 
     def get_batch(self, batch_size, beta):
         """
@@ -226,7 +277,16 @@ class PrioritizedReplayMemory(object):
 
         #  get indexes for a batch sampled using the priorities
         indexes = self.sample_proportional(batch_size)
-        return indexes
+
+        #  the probability of sampling is defined as
+        #  P = priority / sum(priorities)
+        #  first calculate the minimum probability for the tree priorities
+        #  equn 1 Schaul (2015)
+        p_min = self.mintree.min() / self.sumtree.sum()
+
+        #  equn 2 Schaul (2015)
+        # max_weight = 
+
     def sample_proportional(self, batch_size):
         """
 
@@ -234,9 +294,8 @@ class PrioritizedReplayMemory(object):
         batch_idx = []
 
         for _ in range(batch_size):
-            prob_mass = random.random() * self.sumtree.sum(0,
-                                                           len(self.storage)-1)
-            idx = self.sumtree.find(prob_mass)
+            mass = random.random() * self.sumtree.sum(0, len(self.storage)-1)
+            idx = self.sumtree.find(mass)
             batch_idx.append(idx)
 
         return batch_idx
@@ -244,24 +303,62 @@ class PrioritizedReplayMemory(object):
 
 if __name__ == '__main__':
     test_rememeber()
+    test_trees()
+
     mem = PrioritizedReplayMemory(10)
 
+    exp, pr = [], []
     for _ in range(30):
         e = random.randint(0, 100)
         p = random.random()
 
-        exp = {'experience': e, 'priority': random.random()}
-        mem.remember(**exp)
+        exp.append(e)
+        pr.append(p)
 
-    tree = mem.sumtree
+        mem.remember(e, p)
 
-    print('experiences {}'.format(mem.storage))
-    print('tree vals {}'.format(tree.values))
+    sumtree = mem.sumtree
+    mintree = mem.mintree
 
     #  the sample proportonal call of sum()
-    s = tree.sum(start=0, end=len(mem.storage) - 1)
+    s = sumtree.sum(start=0, end=len(mem.storage) - 1)
 
-    batch = mem.get_batch(4, 0.5)
+    #  to calculate p_min we need to
+    #  call sum with defaults, ie start=0, end=None
+    s1 = sumtree.sum()
+    m1 = mintree.min()
 
-    print(batch)
-    [print(mem[idx]) for idx in batch]
+    tol = 1e-6
+    assert s1 - sum(pr[-10:]) < tol
+    assert m1 - min(pr[-10:]) < tol
+
+    #  Schaul suggests a, b = 0.7, 0.5 for rank
+    #  a,b = 0.6, 0.4 for proportional
+
+    #  beta controls the bias correction done by importance sampling
+    #  
+    beta = 1
+
+    #  get indexes for a batch sampled using the priorities
+    indexes = mem.sample_proportional(10)
+
+    #  the probability of sampling is defined as
+    #  P = priority / sum(priorities)
+    #  first calculate the minimum probability for the tree priorities
+    #  equn 1 Schaul (2015)
+    p_min = mem.mintree.min() / mem.sumtree.sum()
+
+    #  equn 2 Schaul (2015)
+    max_weight = (1 / (p_min * len(mem.storage))) ** beta
+
+    weights = []
+    for idx in indexes:
+        sample_probability = mem.sumtree[idx] / mem.sumtree.sum()
+
+        weight = (1 / (sample_probability * len(mem.storage))) ** beta
+
+        weights.append(weight/max_weight)
+
+
+
+

@@ -8,7 +8,6 @@ import logging
 import numpy as np
 import tensorflow as tf
 
-from energy_py import processors
 from energy_py.agents import BaseAgent
 
 
