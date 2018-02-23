@@ -122,10 +122,11 @@ class BaseEnv(object):
             done (boolean)
             info (dict) auxiliary information
         """
-        logger.debug('Step {}'.format(self.steps))
 
-        assert action.shape == (1, self.action_space.shape[0])
+        action = action.reshape(1, self.action_space.shape[0])
 
+        logger.debug('step {} action {}'.format(self.steps,
+                                                action))
         return self._step(action)
 
     def update_info(self, **kwargs):
