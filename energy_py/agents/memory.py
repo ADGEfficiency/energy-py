@@ -3,6 +3,7 @@ from random import sample
 
 import numpy as np
 
+#  use a namedtuple to store a single sample of experience
 Experience = namedtuple('Experience', ['observation',
                                        'action',
                                        'reward',
@@ -32,21 +33,28 @@ def calculate_returns(rewards, discount):
 class Memory(object):
     """
     Base class for agent memories
-    """
 
+    Sets the agent size and creates a shapes dictionary.  The shapes
+    dictionary can be used to reshape arrays stored in the memory
+
+    args
+        size (int)
+        obs_shape (tuple)
+        action_shape (tuple)
+    """
     def __init__(self,
-                 observation_space_shape,
-                 action_space_shape,
-                 size):
+                 size,
+                 obs_shape,
+                 action_shape):
 
         self.size = int(size)
 
         #  use a dict to hold the shapes
         #  we can use this to eaisly reshape batches of experience
-        self.shapes = {'observations': observation_space_shape,
-                       'actions': action_space_shape,
+        self.shapes = {'observations': obs_shape,
+                       'actions': action_shape,
                        'rewards': (1,),
-                       'next_observations': observation_space_shape,
+                       'next_observations': obs_shape,
                        'terminal': (1,)}
 
 
@@ -60,26 +68,26 @@ class DequeMemory(Memory):
     """
 
     def __init__(self,
-                 observation_space_shape,
-                 action_space_shape,
-                 size):
+                 size,
+                 obs_shape,
+                 action_shape):
 
-        super(DequeMemory, self).__init__(observation_space_shape,
-                                          action_space_shape,
-                                          size)
+        super(DequeMemory, self).__init__(size,
+                                          obs_shape,
+                                          action_shape)
 
         self.experiences = deque(maxlen=self.size)
 
-    def __repr__(self): return '<class Memory len={}>'.format(len(self))
+    def __repr__(self):
+        return '<class DequeMemory len={}>'.format(len(self))
 
-    def __len__(self): return len(self.experiences)
-
-    def reset(self): raise NotImplementedError()
+    def __len__(self):
+        return len(self.experiences)
 
     def remember(self, observation, action, reward,
                  next_observation, terminal):
         """
-        Adds experience to the memory.
+        Adds experience to the memory
 
         args
             observation
@@ -118,6 +126,7 @@ class DequeMemory(Memory):
             batch_dict['next_observations'].append(exp.next_observation)
             batch_dict['terminal'].append(exp.terminal)
 
+        #  use the shapes dictionary to reshape our arrays
         for key, data in batch_dict.items():
             batch_dict[key] = np.array(data).reshape(-1, *self.shapes[key])
 
@@ -133,40 +142,35 @@ class ArrayMemory(object):
     """
 
     def __init__(self,
-                 observation_space_shape,
-                 action_space_shape,
-                 size):
+                 size,
+                 obs_shape,
+                 action_shape):
 
-        self.size = size
+        super(ArrayMemory, self).__init__(size,
+                                          obs_shape,
+                                          action_shape)
 
-        #  use a dict to hold the shapes
-        #  we can use this to eaisly reshape batches of experience
-        self.shapes = {'observations': observation_space_shape,
-                       'actions': action_space_shape,
-                       'rewards': (1,),
-                       'next_observations': observation_space_shape,
-                       'terminal': (1,)}
-
-        self.reset()
-
-    def __repr__(self): return '<class Memory len={}>'.format(len(self))
-
-    def __len__(self): return self.count
-
-    def reset(self):
-
-        self.count = 0
-
+        #  create one np array for each dimension of experience
+        #  the first dimension of these arrays is the memory dimension
         self.obs = np.empty((self.size, *self.shapes['observations']))
         self.acts = np.empty((self.size, *self.shapes['actions']))
         self.rews = np.empty((self.size, *self.shapes['rewards']))
         self.n_obs = np.empty((self.size, *self.shapes['next_observations']))
         self.term = np.empty((self.size, *self.shapes['terminal']), dtype=bool)
 
+        #  keep a counter to index the numpy arrays
+        self.count = 0
+
+    def __repr__(self):
+        return '<class ArrayMemory len={}>'.format(len(self))
+
+    def __len__(self):
+        return self.count
+
     def remember(self, observation, action, reward,
                  next_observation, terminal):
         """
-        Adds experience to the memory.
+        Adds experience to the memory
 
         args
             observation
@@ -181,7 +185,11 @@ class ArrayMemory(object):
         self.n_obs[self.count] = next_observation
         self.term[self.count] = terminal
 
-        self.count += 1
+        #  conditional to reset the counter once we end of the array
+        if self.count == self.size:
+            self.count = 0
+        else:
+            self.count += 1
 
     def get_batch(self, batch_size):
         """
@@ -194,7 +202,6 @@ class ArrayMemory(object):
             batch_dict (dict)
         """
         sample_size = min(batch_size, len(self))
-
         indicies = np.random.randint(len(self), size=sample_size)
 
         batch_dict = {'observations': self.obs[indicies],

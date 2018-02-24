@@ -1,4 +1,8 @@
 from collections import namedtuple
+
+from energy_py import calculate_returns
+
+
 Experience = namedtuple('Experience', ['observation',
                                        'action',
                                        'reward',
@@ -23,3 +27,11 @@ def generate_experience(p=None):
 
     return Experience(obs, act, rew, next_obs, terminal, prio)
 
+def test_calc_returns():
+    rews = [10, 15, -4, 8, -1]
+    discount = 1
+    rtn = -1 + discount*8 + discount**2*-4 + discount**3*15 + discount**4*10
+
+    test_rtn = calculate_returns(rews, discount)
+
+    assert test_rtn[0] == rtn
