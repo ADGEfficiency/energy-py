@@ -15,29 +15,44 @@ See tests/test_priority.py
 
 
 
-
-
-
 """
+from collections import namedtuple
+
+#  namedtuple is used to store the arguments for the _reduce_helper() method
+#  of SegmentTree
 Args = namedtuple('args', ['start',
-                       'end',
-                       'node',
-                       'node_start',
-                       'node_end'])
+                           'end',
+                           'node',
+                           'node_start',
+                           'node_end'])
 
 
 class SegmentTree(object):
+    """
+    The parent class.  Implements a generic operation.
 
+    args
+        capacity (int) the length of the memory
+        operator (function) i.e. max, sum or min
+        neutral_element (float) i.e. -inf, 0 or +inf
+    """
     def __init__(self, capacity, operator, neutral_element):
+        assert capacity % 2 == 0
 
         self.capacity = capacity
         self.operation = operator
-
+        #  values list stores the node values
+        #  leaf nodes are the priorities, internal nodes depend on the operation
+        #  internal node could be the sum or min of all nodes below etc.
         self.values = [neutral_element for _ in range(2 * self.capacity)]
 
     def __setitem__(self, idx, val):
         """
         Adds a priority as a leaf node
+
+        args
+            idx (int) index in memory (not the tree index)
+            val (float) priority
         """
 
         #  the index for the priority
@@ -56,13 +71,17 @@ class SegmentTree(object):
             #   left=2*p, right=2p+1
             self.values[idx] = self.operation([self.values[2 * idx],
                                                self.values[2 * idx + 1]])
-
             #  move up to the next level of the tree (the next parent)
             idx //= 2
 
     def __getitem__(self, idx):
         """
-        Gets an item using the index of the memory (not of this tree!)
+        Gets an item using the index of the memory (not the tree index)
+
+        tree_idx = mem_idx + self.capacity
+
+        args
+            idx (int) memory index
         """
         #  check that index is less than the memory capacity
         assert 0 <= idx < self.capacity
@@ -70,10 +89,22 @@ class SegmentTree(object):
         return self.values[self.capacity + idx]
 
     def reduce(self, start, end):
+        """
+        The outer call to reduce the operation over a start and end index.
+
+        Most of the work is done by recursively calling _reduce_helper
+        Make use of a namedtuple for the _reduce_helper arguments
+
+        args
+            start (int)
+            end (int or None)
+        """
+        #  baselines has more checks on TODO here
         #  checks on end TODO
         if end is None:
             end = self.capacity
 
+        #  don't fully understand this -1
         end -= 1
 
         args = Args(start, end, node=1, node_start=0, node_end=self.capacity-1) 
@@ -82,7 +113,8 @@ class SegmentTree(object):
         return self._reduce_helper(**args._asdict())
 
     def _reduce_helper(self, start, end, node, node_start, node_end):
-
+        """
+        """
         if start == node_start and end == node_end:
             print('CONDITION ONE')
             return self.values[node]
@@ -119,6 +151,13 @@ class SegmentTree(object):
 
 
 class MinTree(SegmentTree):
+    """
+    Value of each internal node is the min of all nodes below
+    Leaf nodes are the priorities
+
+    args
+        capacity (int)
+    """
     def __init__(self, capacity):
         super(MinTree, self).__init__(
             capacity=capacity,
@@ -130,6 +169,13 @@ class MinTree(SegmentTree):
 
 
 class SumTree(SegmentTree):
+    """
+    Value of each internal node is the sum of all nodes below
+    Leaf nodes are the priorities
+
+    args
+        capacity (int)
+    """
     def __init__(self, capacity):
         super(SumTree, self).__init__(
             capacity=capacity,
@@ -151,6 +197,7 @@ class SumTree(SegmentTree):
 
         return
             idx (int) highest index that satasifies the probability constraint
+                this is the memory index
         """
         assert 0 <= prob <= self.sum(start=0, end=self.capacity) + 1e-5
 

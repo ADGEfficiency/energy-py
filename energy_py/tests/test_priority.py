@@ -10,7 +10,7 @@ baselines/common/segment_tree.py
 """
 import random
 
-from collections import namedtuple
+from collections import defaultdict, namedtuple
 
 from energy_py.agents import Memory
 from energy_py import SumTree, MinTree
@@ -63,28 +63,45 @@ def test_trees():
 
 
 class PrioritizedReplay(Memory):
-    def __init__(self, size, obs_shape, action_shape):
+    """
+    args
+        size (int)
 
-        super(PrioritizedReplay, self).__init__(observation_space_shape,
-                                          action_space_shape,
-                                          size)
-        self.size = size
+
+        alpha (float) controls prioritization
+            0->no prioritization, 1-> full priorization
+            default of 0.7 as suggested in Schaul et. al (2016)
+
+    """
+    def __init__(self, size, obs_shape, action_shape, alpha=0.7):
+
+        super(PrioritizedReplay, self).__init__(size,
+                                                obs_shape,
+                                                action_shape)
         self.experiences = []
+
         #  while loop to set the tree capacity with a factor of two
+        #  this could be put into the tree init
         tree_capacity = 1
         while tree_capacity < self.size:
             tree_capacity *= 2
 
+        #  create the trees
         self.sumtree = SumTree(tree_capacity)
         self.mintree = MinTree(tree_capacity)
-        #  TODO mintree
 
+        #  _next_index controls where we put new experiences
         self._next_index = 0
+
+        #  set the initial max priority
         self.max_priority = 1
-        self.alpha = 2
+
+        #  alpha controls prioritization
+        self.alpha = float(alpha)
+        assert self.alpha > 0
 
     def __repr__(self):
-        return '<class Memory len={}>'.format(len(self))
+        return '<class PrioritizedReplayMemory len={}>'.format(len(self))
 
     def __len__(self):
         return len(self.experiences)
@@ -136,20 +153,48 @@ class PrioritizedReplay(Memory):
             beta (float) determines strength of importance weights
                 0 -> no correction, 1 -> full correction
         """
+        #  beta controls the bias correction done by importance sampling
         beta = float(beta)
         assert 0 < beta <= 1.0
 
+        #  Schaul suggests a, b = 0.7, 0.5 for rank
+        #  a,b = 0.6, 0.4 for proportional
+
+        sample_size = min(batch_size, len(mem))
+        batch_dict = defaultdict(list)
+
         #  get indexes for a batch sampled using the priorities
-        indexes = self.sample_proportional(batch_size)
+        indexes = mem.sample_proportional(sample_size)
+        batch = [mem[idx] for idx in indexes]
 
         #  the probability of sampling is defined as
         #  P = priority / sum(priorities)
         #  first calculate the minimum probability for the tree priorities
         #  equn 1 Schaul (2015)
-        p_min = self.mintree.min() / self.sumtree.sum()
+        p_min = mem.mintree.min() / mem.sumtree.sum()
 
         #  equn 2 Schaul (2015)
-        # max_weight = 
+        max_weight = (1 / (p_min * len(mem.experiences))) ** beta
+
+        weights = []
+        for idx in indexes:
+            sample_probability = mem.sumtree[idx] / mem.sumtree.sum()
+
+            weight = (1 / (sample_probability * len(mem.experiences))) ** beta
+
+            weights.append(weight/max_weight)
+
+        for exp in batch:
+            # batch_dict['observations'].append(exp.observation)
+            # batch_dict['actions'].append(exp.action)
+            # batch_dict['rewards'].append(exp.reward)
+            # batch_dict['next_observations'].append(exp.next_observation)
+            # batch_dict['terminal'].append(exp.terminal)
+            batch_dict['exp'].append(exp)
+        # for key, data in batch_dict.items():
+        #     batch_dict[key] = np.array(data).reshape(-1, *self.shapes[key])
+
+        return batch_dict
 
     def sample_proportional(self, batch_size):
         """
@@ -163,6 +208,15 @@ class PrioritizedReplay(Memory):
             batch_idx.append(idx)
 
         return batch_idx
+
+    def update_priorities(self):
+        """
+        After learning the TD error (and therefore the priority) will change
+
+        args
+
+        """
+        raise NotImplementedError()
 
 
 if __name__ == '__main__':
@@ -180,49 +234,5 @@ if __name__ == '__main__':
         pr.append(p)
 
         mem.remember(e, p)
-
-    #  Schaul suggests a, b = 0.7, 0.5 for rank
-    #  a,b = 0.6, 0.4 for proportional
-
-    #  beta controls the bias correction done by importance sampling
-    batch_size = 10
-    beta = 1
-    import random
-    from collections import defaultdict
-
-    sample_size = min(batch_size, len(mem))
-    batch_dict = defaultdict(list)
-
-    #  get indexes for a batch sampled using the priorities
-    indexes = mem.sample_proportional(10)
-    batch = [mem[idx] for idx in indexes]
-
-    #  the probability of sampling is defined as
-    #  P = priority / sum(priorities)
-    #  first calculate the minimum probability for the tree priorities
-    #  equn 1 Schaul (2015)
-    p_min = mem.mintree.min() / mem.sumtree.sum()
-
-    #  equn 2 Schaul (2015)
-    max_weight = (1 / (p_min * len(mem.experiences))) ** beta
-
-    weights = []
-    for idx in indexes:
-        sample_probability = mem.sumtree[idx] / mem.sumtree.sum()
-
-        weight = (1 / (sample_probability * len(mem.experiences))) ** beta
-
-        weights.append(weight/max_weight)
-
-    for exp in batch:
-        # batch_dict['observations'].append(exp.observation)
-        # batch_dict['actions'].append(exp.action)
-        # batch_dict['rewards'].append(exp.reward)
-        # batch_dict['next_observations'].append(exp.next_observation)
-        # batch_dict['terminal'].append(exp.terminal)
-        batch_dict['exp'].append(exp)
-    # for key, data in batch_dict.items():
-    #     batch_dict[key] = np.array(data).reshape(-1, *self.shapes[key])
-
 
 
