@@ -1,4 +1,4 @@
-from energy_py.agents.memory import ArrayMemory, DequeMemory
+from energy_py.agents.memory import Memory, ArrayMemory, DequeMemory
 
 memories = {'array': ArrayMemory,
             'deque': DequeMemory}

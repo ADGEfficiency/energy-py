@@ -1,5 +1,9 @@
 """
 Creating a binary heap based on a maximum
+
+Ironically this isn't actually needed to do prioritized experience replay!
+
+The class in this module is not used as part of the library.
 """
 import random
 

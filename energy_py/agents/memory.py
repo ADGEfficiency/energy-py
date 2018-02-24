@@ -29,7 +29,28 @@ def calculate_returns(rewards, discount):
     return np.array(returns).reshape(-1, 1)
 
 
-class DequeMemory(object):
+class Memory(object):
+    """
+    Base class for agent memories
+    """
+
+    def __init__(self,
+                 observation_space_shape,
+                 action_space_shape,
+                 size):
+
+        self.size = int(size)
+
+        #  use a dict to hold the shapes
+        #  we can use this to eaisly reshape batches of experience
+        self.shapes = {'observations': observation_space_shape,
+                       'actions': action_space_shape,
+                       'rewards': (1,),
+                       'next_observations': observation_space_shape,
+                       'terminal': (1,)}
+
+
+class DequeMemory(Memory):
     """
     Implementation of an experience replay memory based on a deque.
 
@@ -43,16 +64,11 @@ class DequeMemory(object):
                  action_space_shape,
                  size):
 
-        self.size = int(size)
-        self.experiences = deque(maxlen=self.size)
+        super(DequeMemory, self).__init__(observation_space_shape,
+                                          action_space_shape,
+                                          size)
 
-        #  use a dict to hold the shapes
-        #  we can use this to eaisly reshape batches of experience
-        self.shapes = {'observations': observation_space_shape,
-                       'actions': action_space_shape,
-                       'rewards': (1,),
-                       'next_observations': observation_space_shape,
-                       'terminal': (1,)}
+        self.experiences = deque(maxlen=self.size)
 
     def __repr__(self): return '<class Memory len={}>'.format(len(self))
 
