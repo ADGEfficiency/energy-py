@@ -135,6 +135,7 @@ class PrioritizedReplay(Memory):
         if priority is None:
             priority = self.max_priority ** self.alpha
 
+        #  send the memory index into the trees
         self.sumtree[self._next_index] = priority
         self.mintree[self._next_index] = priority
 
@@ -164,6 +165,7 @@ class PrioritizedReplay(Memory):
         batch_dict = defaultdict(list)
 
         #  get indexes for a batch sampled using the priorities
+        #  these indexes are for the memory (not the tree!)
         indexes = mem.sample_proportional(sample_size)
         batch = [mem[idx] for idx in indexes]
 
@@ -198,25 +200,39 @@ class PrioritizedReplay(Memory):
 
     def sample_proportional(self, batch_size):
         """
-
+        Because our sumtree is summing priorities, we can sample from it
+        using a cumulative probability
         """
         batch_idx = []
 
+        total_mass = self.sumtree.sum(0, len(self)-1)
         for _ in range(batch_size):
-            mass = random.random() * self.sumtree.sum(0, len(self.experiences)-1)
+            #  find a probability to sample with
+            mass = random.random() * total_mass
+            #  find the index for this probability
             idx = self.sumtree.find(mass)
             batch_idx.append(idx)
 
         return batch_idx
 
-    def update_priorities(self):
+    def update_priorities(self, indicies, priorities):
         """
         After learning the TD error (and therefore the priority) will change
 
         args
-
+            indicies (list)
+            priorities (list)
         """
-        raise NotImplementedError()
+        assert len(indicies) == len(priorities)
+
+        for idx, priority in zip(indicies, priorities):
+            assert priority > 0
+            assert 0 <= idx < len(self)
+
+            self.sumtree[idx] = priority ** self.alpha
+            self.mintree[idx] = priority ** self.alpha
+
+            self.max_priority = max(self.max_priority, priority)
 
 
 if __name__ == '__main__':
