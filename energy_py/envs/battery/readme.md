@@ -1,9 +1,9 @@
-## battery environment readme
+## battery environment
 
 The action for this env is
 ```
 action = np.array([charge, discharge])
-         shape = (1,2)
+         shape = (1, 2)
 ```
 
 The net effect of these two actions on the battery is calculated by
