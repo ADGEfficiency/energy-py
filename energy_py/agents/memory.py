@@ -17,6 +17,9 @@ def calculate_returns(rewards, discount):
 
     args
         rewards (np.array) rewards we want to calculate the return for
+
+    returns
+        returns (np.array) the return for each state
     """
     R = 0  # return after state s
     returns = []  # return after next state s'
@@ -26,7 +29,6 @@ def calculate_returns(rewards, discount):
         R = r + discount * R  # the Bellman equation
         returns.insert(0, R)
 
-    #  turn into array
     return np.array(returns).reshape(-1, 1)
 
 
@@ -133,7 +135,7 @@ class DequeMemory(Memory):
         return batch_dict
 
 
-class ArrayMemory(object):
+class ArrayMemory(Memory):
     """
     Implementation of an experience memory replay based on numpy arrays.
 
