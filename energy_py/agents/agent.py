@@ -50,9 +50,9 @@ class BaseAgent(object):
         self.action_space = env.action_space
         self.action_shape = env.action_space.shape
 
-        self.memory = memories[memory_type](self.obs_shape,
-                                            self.action_shape,
-                                            memory_length)
+        self.memory = memories[memory_type](memory_length,
+                                            self.obs_shape,
+                                            self.action_shape)
 
         #  a counter our agent can use as it sees fit
         self.counter = 0

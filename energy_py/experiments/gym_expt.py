@@ -1,5 +1,5 @@
 import logging
-
+import os
 
 from energy_py import experiment
 from energy_py.agents import DQN
@@ -23,5 +23,13 @@ if __name__ == '__main__':
 
     total_steps = 1e5
     base_path = './gym/dqn'
-    info = experiment(agent, agent_config, env,
-                      total_steps, base_path)
+
+    data_path = os.getcwd()+'/gym/'
+    results_path = os.getcwd()+'/results/gym/'
+
+    agent, env, sess = experiment(agent=DQN, 
+                                  agent_config=agent_config, 
+                                  env=env,
+                                  total_steps=total_steps, 
+                                  data_path=data_path, 
+                                  results_path=results_path)

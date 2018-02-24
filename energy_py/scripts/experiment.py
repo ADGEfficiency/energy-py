@@ -52,8 +52,8 @@ def make_paths(data_path, results_path):
     return paths
 
 
-def experiment(agent, agent_config, env, env_config,
-               total_steps, data_path, results_path):
+def experiment(agent, agent_config, env,
+               total_steps, data_path, results_path, env_config=None):
     """
     Run an experiment.  Episodes are run until total_steps are reached.
 
@@ -73,8 +73,10 @@ def experiment(agent, agent_config, env, env_config,
     with tf.Session() as sess:
         paths = make_paths(data_path, results_path)
 
-        env_config['data_path'] = paths['data_path']
-        env = env(**env_config)
+        if env_config:
+            env_config['data_path'] = paths['data_path']
+            env = env(**env_config)
+            save_args(env_config, path=paths['env_args'])
 
         logger = make_logger(paths['logs'], 'INFO')
 
@@ -86,7 +88,6 @@ def experiment(agent, agent_config, env, env_config,
         agent = agent(**agent_config)
 
         save_args(agent_config, path=paths['agent_args'])
-        save_args(env_config, path=paths['env_args'])
 
         runner = Runner(tb_path=paths['tb_rl'],
                         env_hist_path=paths['env_histories'])
