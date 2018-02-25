@@ -1,55 +1,82 @@
 """
 Creating a sum tree for use in prioritized experience replay
 
-Priorities are stored as leaf (ie terminal) nodes with internal nodes
-containing the sums
 
-
-Reference = Open AI Baselines binary tree implementations:
-baselines/common/segment_tree.py
+References
+Open AI Baselines
+    baselines/common/segment_tree.py
+    baselines/deepq/replay_buffer.py
 """
 import random
 
 from collections import defaultdict, namedtuple
+import numpy as np
 
+from energy_py import Experience, SumTree, MinTree, calculate_returns
 from energy_py.agents import Memory
-from energy_py import SumTree, MinTree
 
 
-def test_rememeber():
-    mem = PrioritizedReplay(10)
+def generate_experience(obs_shape, action_shape):
+    """
+    A function to generate namedtuples of experience
+    """
+    obs = np.random.rand(1, *obs_shape)
+    act = np.random.rand(1, *action_shape)
+    rew = np.random.randint(10)
+    next_obs = np.random.rand(1, *obs_shape)
+    terminal = False
 
-    space = {'10': 5,
-             '5': 2,
-             '1': -1}
+    return Experience(obs, act, rew, next_obs, terminal)
 
-    for _ in range(30):
-        e = random.choice(list(space.keys()))
-        p = space[e]
 
-        exp = {'experience': e, 'priority': p}
-        mem.remember(**exp)
+def setup_memory(size, num_exps, alpha=0.7):
+    obs_shape, action_shape = (4,), (2,)
+    mem = PrioritizedReplay(10, obs_shape, action_shape, alpha)
+    exps = [generate_experience(obs_shape, action_shape) for _ in range(5)]
+    return mem, exps
 
-    for idx, exp in enumerate(mem.experiences):
-        priority = mem.sumtree[idx]
-        expected_priority = space[exp]
-        assert priority == expected_priority
+
+def test_calc_returns():
+    rews = [10, 15, -4, 8, -1]
+    discount = 1
+    rtn = -1 + discount*8 + discount**2*-4 + discount**3*15 + discount**4*10
+
+    test_rtn = calculate_returns(rews, discount)
+
+    assert test_rtn[0] == rtn
+
+
+def test_remember():
+    """
+    Checks the priorities are stored correctly
+    """
+    mem, exps = setup_memory(10, 5)
+    pr = [random.random() for _ in range(len(exps))]
+
+    #  code relies on the memory size being longer than the exps
+    assert len(exps) < mem.size
+
+    for e, p in zip(exps, pr):
+        print(e)
+        mem.remember(*e._asdict(), priority=p)
+
+    for idx, e in enumerate(mem.experiences):
+        p = mem.sumtree[idx]
+        expected = pr[idx]
+
+        assert p == expected
+
 
 def test_trees():
     """
     Tests the sum and min operations over the memory
     """
-    mem = PrioritizedReplay(10)
+    mem, exps = setup_memory(10, 5)
 
-    exp, pr = [], []
-    for _ in range(30):
-        e = random.randint(0, 100)
-        p = random.random()
+    pr = [random.random() for _ in range(len(exps))]
 
-        exp.append(e)
-        pr.append(p)
-
-        mem.remember(e, p)
+    for e, p in zip(exps, pr):
+        mem.remember(*e._asdict(), priority=p)
 
     sumtree = mem.sumtree
     mintree = mem.mintree
@@ -62,12 +89,31 @@ def test_trees():
     assert m1 - min(pr[-10:]) < tol
 
 
+def test_update_priorities():
+    mem, exps = setup_memory(10, 5, alpha=1.0)
+
+    for exp in exps:
+        #  remember experience using the default
+        mem.remember(*exp._asdict().values())
+
+    assert mem.sumtree.sum() == 5
+
+    #  get a batch
+    batch, indicies = mem.get_batch(2, beta=1)
+
+    td_errors = np.array([0.1, 100]).reshape(2, 1)
+
+    mem.update_priorities(indicies, td_errors)
+    assert mem.mintree.min() == 0.1
+    assert mem.sumtree.sum() == 100 + 3 + 0.1
+
+
 class PrioritizedReplay(Memory):
     """
     args
         size (int)
-
-
+        obs_shape (tuple) used to reshape the observation np.array
+        act_shape (tuple) used to reshape the action np.array
         alpha (float) controls prioritization
             0->no prioritization, 1-> full priorization
             default of 0.7 as suggested in Schaul et. al (2016)
@@ -86,7 +132,7 @@ class PrioritizedReplay(Memory):
         while tree_capacity < self.size:
             tree_capacity *= 2
 
-        #  create the trees
+       
         self.sumtree = SumTree(tree_capacity)
         self.mintree = MinTree(tree_capacity)
 
@@ -109,8 +155,11 @@ class PrioritizedReplay(Memory):
     def __getitem__(self, idx):
         return self.experiences[idx]
 
-    def remember(self, experience, priority=None):
+    def remember(self, observation, action, reward,
+                 next_observation, terminal, priority=None):
         """
+        Adds experience to the memory
+
         Experience is added to the experiences list at self._next_index
 
         self.experiences is a fixed length length - older experiences are
@@ -119,10 +168,26 @@ class PrioritizedReplay(Memory):
         New experience should be saved at max priority.  priority arg is
         used for testing
 
+        args
+            observation
+            action
+            reward
+            next_observation
+            terminal
+            priority
         """
+        #  create an experience named tuple
+        #  add the experience to our deque
+        #  the deque automatically keeps our memory at the correct size
+        experience = Experience(observation,
+                                action,
+                                reward,
+                                next_observation,
+                                terminal)
+
         #  save the experience into experiences
         #  if we are still filling up the experiences, append onto the list
-        if self._next_index >= len(self.experiences):
+        if self._next_index >= len(self):
             self.experiences.append(experience)
 
         #  else we replace an old experience
@@ -149,6 +214,8 @@ class PrioritizedReplay(Memory):
         """
         Samples a batch of experiences
 
+        Schaul suggests linearly decaying beta
+
         args
             batch_size (int)
             beta (float) determines strength of importance weights
@@ -161,47 +228,50 @@ class PrioritizedReplay(Memory):
         #  Schaul suggests a, b = 0.7, 0.5 for rank
         #  a,b = 0.6, 0.4 for proportional
 
-        sample_size = min(batch_size, len(mem))
-        batch_dict = defaultdict(list)
+        sample_size = min(batch_size, len(self))
 
         #  get indexes for a batch sampled using the priorities
         #  these indexes are for the memory (not the tree!)
-        indexes = mem.sample_proportional(sample_size)
-        batch = [mem[idx] for idx in indexes]
+        indexes = self.sample_proportional(sample_size)
+        batch = [self[idx] for idx in indexes]
 
         #  the probability of sampling is defined as
         #  P = priority / sum(priorities)
         #  first calculate the minimum probability for the tree priorities
         #  equn 1 Schaul (2015)
-        p_min = mem.mintree.min() / mem.sumtree.sum()
+        p_min = self.mintree.min() / self.sumtree.sum()
 
         #  equn 2 Schaul (2015)
-        max_weight = (1 / (p_min * len(mem.experiences))) ** beta
+        max_weight = (1 / (p_min * len(self.experiences))) ** beta
 
         weights = []
         for idx in indexes:
-            sample_probability = mem.sumtree[idx] / mem.sumtree.sum()
+            sample_probability = self.sumtree[idx] / self.sumtree.sum()
 
-            weight = (1 / (sample_probability * len(mem.experiences))) ** beta
+            weight = (1 / (sample_probability * len(self.experiences))) ** beta
 
             weights.append(weight/max_weight)
 
+        batch_dict = defaultdict(list)
         for exp in batch:
-            # batch_dict['observations'].append(exp.observation)
-            # batch_dict['actions'].append(exp.action)
-            # batch_dict['rewards'].append(exp.reward)
-            # batch_dict['next_observations'].append(exp.next_observation)
-            # batch_dict['terminal'].append(exp.terminal)
-            batch_dict['exp'].append(exp)
-        # for key, data in batch_dict.items():
-        #     batch_dict[key] = np.array(data).reshape(-1, *self.shapes[key])
+            batch_dict['observations'].append(exp.observation)
+            batch_dict['actions'].append(exp.action)
+            batch_dict['rewards'].append(exp.reward)
+            batch_dict['next_observations'].append(exp.next_observation)
+            batch_dict['terminal'].append(exp.terminal)
 
-        return batch_dict
+        for key, data in batch_dict.items():
+            batch_dict[key] = np.array(data).reshape(-1, *self.shapes[key])
+
+        return batch_dict, indexes
 
     def sample_proportional(self, batch_size):
         """
         Because our sumtree is summing priorities, we can sample from it
         using a cumulative probability
+
+        args
+            batch_size (int)
         """
         batch_idx = []
 
@@ -223,6 +293,7 @@ class PrioritizedReplay(Memory):
             indicies (list)
             priorities (list)
         """
+        print('updating priorities i {} p {}'.format(indicies, priorities))
         assert len(indicies) == len(priorities)
 
         for idx, priority in zip(indicies, priorities):
@@ -234,21 +305,9 @@ class PrioritizedReplay(Memory):
 
             self.max_priority = max(self.max_priority, priority)
 
+        print('finished updating prorities - new max priority {}'.format(self.max_priority))
 
 if __name__ == '__main__':
-    test_rememeber()
+    test_remember()
     test_trees()
-
-    mem = PrioritizedReplay(10)
-
-    exp, pr = [], []
-    for _ in range(30):
-        e = random.randint(0, 100)
-        p = random.random()
-
-        exp.append(e)
-        pr.append(p)
-
-        mem.remember(e, p)
-
 

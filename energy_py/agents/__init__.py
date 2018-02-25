@@ -1,5 +1,5 @@
 from energy_py.agents.memory import Memory, ArrayMemory, DequeMemory
-from energy_py.agents.memory import calculate_returns
+from energy_py.agents.memory import Experience, calculate_returns
 
 memories = {'array': ArrayMemory,
             'deque': DequeMemory}

@@ -2,6 +2,9 @@
 energy_py implementation of a SumTree and MinTree.
 Used to efficiently sample from a prioritized experience replay memory.
 
+Priorities are stored as leaf (ie terminal) nodes with internal nodes
+containing the sums
+
 refs
     Schaul et. al (2016) Prioritized Experience Replay
 

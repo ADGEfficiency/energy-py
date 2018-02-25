@@ -7,4 +7,4 @@ from energy_py.scripts.trees import MinTree, SumTree
 processors = {'normalizer':  Normalizer,
               'standardizer': Standardizer}
 
-from energy_py.agents import calculate_returns
+from energy_py.agents import Experience, calculate_returns
