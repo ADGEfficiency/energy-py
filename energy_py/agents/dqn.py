@@ -11,9 +11,6 @@ class Qfunc - an approximation of Q(s,a) using a Tensorflow feedforward net.
 
 Most functionality occurs within the DQN class.  Qfunc initializes the
 tensorflow graph but all sess.run's are within the DQN agent class.
-
-
-
 """
 
 import logging
@@ -22,8 +19,8 @@ from random import random
 import numpy as np
 import tensorflow as tf
 
-from energy_py.agents import BaseAgent, EpsilonGreedy
-from energy_py import Normalizer
+from energy_py.agents import BaseAgent
+from energy_py import LinearScheduler
 
 
 logger = logging.getLogger(__name__)
@@ -67,8 +64,6 @@ class DQN(BaseAgent):
                  observation_processor=None,
                  action_processor=None,
                  target_processor=None,
-                 act_path=None,
-                 learn_path=None,
                  **kwargs):
 
         self.sess = sess
@@ -76,15 +71,14 @@ class DQN(BaseAgent):
         self.batch_size = batch_size
         memory_length = int(total_steps * memory_fraction)
 
-        super().__init__(env, discount, memory_length,
-                         act_path=act_path, learn_path=learn_path)
+        super().__init__(env, discount, memory_length, **kwargs)
 
-        #  number of steps where epsilon is decayed
-        decay_steps = total_steps * epsilon_decay_fraction
+        eps_schd_args = {'pre_step': initial_random*total_steps,
+                         'sched_step': epsilon_decay_fraction*total_steps,
+                         'initial': 1.0,
+                         'final': 0.05}
 
-        self.initial_random = initial_random * total_steps
-        self.epsilon_getter = EpsilonGreedy(decay_steps,
-                                            init_random=self.initial_random)
+        self.epsilon = LinearScheduler(**eps_schd_args)
 
         self.actions = self.env.discretize(num_discrete=20)
 
@@ -218,7 +212,7 @@ class DQN(BaseAgent):
             action (np.array)
         """
         self.counter += 1
-        epsilon = self.epsilon_getter.epsilon
+        epsilon = self.epsilon()
         logger.debug('epsilon is {}'.format(epsilon))
 
         if epsilon > random():
@@ -245,23 +239,35 @@ class DQN(BaseAgent):
         returns
             train_info (dict)
         """
-        batch = self.memory.get_batch(self.batch_size)
+        #  TODO could just make the other memory types accept beta as an arg
+        #  and not use it
+        if self.memory_type == 'priority':
+            batch = self.memory.get_batch(self.batch_size,
+                                          beta=self.beta())
+        else:
+            batch = self.memory.get_batch(self.batch_size)
+
         observations = batch['observations']
         actions = batch['actions']
         rewards = batch['rewards']
         terminals = batch['terminal']
         next_observations = batch['next_observations']
 
-        t_q_vals, next_obs_q = self.predict_target(next_observations)
+        #  if we are doing prioritiezed experience replay then our
+        #  batch dict will have the importance weights
+        #  if not we create an array of ones
+        try:
+            importance_weights = batch['importance_weights']
+        except KeyError:
+            importance_weights = np.ones_like(rewards)
 
-        # if self.double:
-        #     optimal_online_action = self.predict_online(
+        t_q_vals, next_obs_q = self.predict_target(next_observations)
 
         #  if next state is terminal, set the value to zero
         next_obs_q[terminals] = 0
 
         #  creating a target for Q(s,a) using the Bellman equation
-        rewards = rewards.reshape(rewards.shape[0], 1)
+        # rewards = rewards.reshape(rewards.shape[0], 1)
         target = rewards + self.discount * next_obs_q
 
         if hasattr(self, 'target_processor'):
@@ -281,20 +287,26 @@ class DQN(BaseAgent):
         fetches = [self.online.q_values,
                    self.online.q_value,
                    self.online.loss,
+                   self.online.td_errors,
                    self.online.train_op,
                    self.online.learning_summary]
 
         feed_dict = {self.online.observation: observations,
                      self.online.action: indicies,
-                     self.online.target: target}
+                     self.online.target: target,
+                     self.online.importance_weights: importance_weights}
 
-        q_vals, q_val, loss, train_op, train_sum = self.sess.run(fetches, feed_dict)
+        q_vals, q_val, loss, td_errors, train_op, train_sum = self.sess.run(fetches, feed_dict)
+
+        if self.memory_type == 'priority':
+            self.memory.update_priorities(batch['indexes'],
+                                          td_errors)
 
         logger.debug('learning - observations {}'.format(observations))
-
         logger.debug('learning - rewards {}'.format(rewards))
         logger.debug('learning - terminals {}'.format(terminals))
         logger.debug('learning - next_obs_q {}'.format(next_obs_q))
+        logger.debug('learning - importance_weights {}'.format(importance_weights))
 
         logger.debug('learning - actions {}'.format(actions))
         logger.debug('learning - indicies {}'.format(indicies))
@@ -401,6 +413,10 @@ class Qfunc(object):
                                      shape=(None, 1),
                                      name='target')
 
+        self.importance_weights = tf.placeholder(tf.float32,
+                                                 shape=(None, 1),
+                                                 name='importance_weights')
+
         with tf.name_scope('input_layer'):
             #  variables for the input layer weights & biases
             w1 = tf.Variable(w_init([*input_shape, layers[0]]), 'in_w')
@@ -436,8 +452,8 @@ class Qfunc(object):
             q_value = tf.gather_nd(self.q_values, self.action, name='q_value')
             self.q_value = tf.reshape(q_value, (-1, 1))
 
-            self.error = self.target - self.q_value
-            self.loss = tf.losses.huber_loss(self.target, self.q_value)
+            self.td_errors = tf.losses.huber_loss(self.target, self.q_value)
+            self.loss = tf.reduce_mean(tf.multiply(self.td_errors, self.importance_weights))
 
             optimizer = tf.train.AdamOptimizer(learning_rate)
             self.train_op = optimizer.minimize(self.loss)
@@ -460,7 +476,7 @@ class Qfunc(object):
                      tf.summary.histogram('max_q', self.max_q),
                      tf.summary.histogram('target', self.target),
                      tf.summary.scalar('avg_batch_q_value', average_q_val),
-                     tf.summary.histogram('error', self.error),
+                     tf.summary.histogram('td_error', self.td_errors),
                      tf.summary.scalar('loss', self.loss)]
 
         self.learning_summary = tf.summary.merge(learn_sum)

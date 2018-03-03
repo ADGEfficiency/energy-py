@@ -3,7 +3,7 @@ import logging
 import tensorflow as tf
 
 from energy_py.agents import memories
-from energy_py import processors
+from energy_py import processors, LinearScheduler
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,8 @@ class BaseAgent(object):
                  env,
                  discount,
                  memory_length,
-                 memory_type='deque',
+                 total_steps=100000,
+                 memory_type='priority',
                  observation_processor=None,
                  action_processor=None,
                  target_processor=None,
@@ -50,16 +51,24 @@ class BaseAgent(object):
         self.action_space = env.action_space
         self.action_shape = env.action_space.shape
 
+        self.memory_type = memory_type
         self.memory = memories[memory_type](memory_length,
                                             self.obs_shape,
                                             self.action_shape)
+
+        if self.memory_type == 'priority':
+            beta_args = {'sched_step': total_steps,
+                         'initial': 0.4,
+                         'final': 1.0}
+
+            self.beta = LinearScheduler(**beta_args)
 
         #  a counter our agent can use as it sees fit
         self.counter = 0
 
         #  inital number of steps not to learn from
-        #  defaults at 0
-        self.initial_random = 0
+        #  defaults at 0, can be overwritten in the agent init
+        # self.initial_random = 0
 
         #  optional objects to process arrays before they hit neural networks
         if observation_processor:
@@ -152,5 +161,3 @@ class BaseAgent(object):
 
         return self.memory.remember(observation, action, reward,
                                     next_observation, done)
-
-

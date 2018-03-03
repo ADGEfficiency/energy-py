@@ -7,6 +7,7 @@ from energy_py.envs import CartPoleEnv
 
 if __name__ == '__main__':
 
+    total_steps = 1e5
     agent = DQN
     agent_config = {'discount': 0.97,
                     'tau': 0.001,
@@ -15,13 +16,12 @@ if __name__ == '__main__':
                     'layers': (50, 50),
                     'learning_rate': 0.0001,
                     'epsilon_decay_fraction': 0.3,
-                    'memory_fraction': 0.4,
-                    'process_observation': False,
-                    'process_target': True}
+                    'memory_fraction': 0.1,
+                    'memory_type': 'priority',
+                    'total_steps': total_steps}
 
     env = CartPoleEnv()
 
-    total_steps = 1e5
     base_path = './gym/dqn'
 
     data_path = os.getcwd()+'/gym/'

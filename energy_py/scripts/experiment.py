@@ -86,7 +86,7 @@ def experiment(agent, agent_config, env,
         agent_config['act_path'] = paths['tb_act']
         agent_config['learn_path'] = paths['tb_learn']
         agent = agent(**agent_config)
-
+        agent_config['tree_sizes'] = agent.memory.sumtree.capacity
         save_args(agent_config, path=paths['agent_args'])
 
         runner = Runner(tb_path=paths['tb_rl'],
@@ -117,7 +117,7 @@ def experiment(agent, agent_config, env,
                 observation = next_observation
                 rewards.append(reward)
 
-                if step > agent.initial_random:
+                if step > int(agent.memory.size * 0.5):
                     train_info = agent.learn()
 
             global_rewards.append(sum(rewards))
@@ -158,9 +158,11 @@ class Runner(object):
         log = ['{} : {:.2f}'.format(k, v) for k, v in summaries.items()]
         self.logger_timer.info(log)
 
-        if hasattr(self, 'env_hist_path'):
+        if env_info:
             output = pd.DataFrame().from_dict(env_info)
-            output.set_index('steps', drop=True)
+
+            # try:
+            #     output.set_index('steps', drop=True)
 
             csv_path = os.path.join(self.env_hist_path,
                                     'ep_{}'.format(summaries['ep']),
@@ -230,7 +232,9 @@ if __name__ == '__main__':
                 observation = next_observation
                 rewards.append(reward)
 
-                if step > agent.initial_random:
+                print(step)
+                if step > agent.memory.size * 0.5:
+                    print('LEARNING')
                     train_info = agent.learn()
 
             global_rewards.append(sum(rewards))

@@ -57,8 +57,9 @@ class Memory(object):
                        'actions': action_shape,
                        'rewards': (1,),
                        'next_observations': obs_shape,
-                       'terminal': (1,)}
-
+                       'terminal': (1,),
+                       'importance_weights': (1,),
+                       'indexes': (1,)}
 
 class DequeMemory(Memory):
     """
@@ -213,3 +214,5 @@ class ArrayMemory(Memory):
                       'terminal': self.term[indicies]}
 
         return batch_dict
+
+

@@ -15,6 +15,7 @@ if __name__ == '__main__':
                     'learning_rate': 0.0001,
                     'epsilon_decay_fraction': 0.3,
                     'memory_fraction': 0.4,
+                    'memory_type': 'priority',
                     'process_observation': False,
                     'process_target': False}
 

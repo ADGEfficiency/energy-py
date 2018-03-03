@@ -1,10 +1,12 @@
 from energy_py.agents.memory import Memory, ArrayMemory, DequeMemory
 from energy_py.agents.memory import Experience, calculate_returns
+from energy_py.agents.priority_memory import PrioritizedReplay
 
 memories = {'array': ArrayMemory,
-            'deque': DequeMemory}
+            'deque': DequeMemory,
+            'priority': PrioritizedReplay}
 
-from energy_py.agents.agent import BaseAgent, EpsilonGreedy
+from energy_py.agents.agent import BaseAgent
 
 from energy_py.agents.rand import RandomAgent
 from energy_py.agents.naive import NaiveBatteryAgent, DispatchAgent, NaiveFlex, ClassifierAgent

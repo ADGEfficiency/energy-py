@@ -56,6 +56,7 @@ class Normalizer(object):
         """
         assert batch.ndim == 2
 
+        #  catching the unitialized processor
         if self.mins is None:
             self.shape = batch.shape[1:]
             self.mins = batch.min(axis=0).reshape(1, *self.shape)

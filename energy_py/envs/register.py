@@ -68,6 +68,10 @@ class CartPoleEnv(EnvWrapper):
         self.action_space = self.env.action_space
         self.action_space_shape = (1,)
 
+    def step(self, action):
+        #  cartpole doesn't accept an array!
+        return self.env.step(action[0])
+
     def discretize(self, num_discrete):
         self.actions = [act for act in range(self.action_space.n)]
         return self.actions
