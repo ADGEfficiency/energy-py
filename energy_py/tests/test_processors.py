@@ -6,7 +6,7 @@ from energy_py import Normalizer, Standardizer
 batch = np.random.rand(10, 6)
 
 def test_normalizer():
-    norm = Normalizer()
+    norm = Normalizer(use_history=True)
     
     _ = norm.transform(batch[1:5])
     _ = norm.transform(batch[5:])

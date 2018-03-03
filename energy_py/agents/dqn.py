@@ -77,7 +77,7 @@ class DQN(BaseAgent):
                          'sched_step': epsilon_decay_fraction*total_steps,
                          'initial': 1.0,
                          'final': 0.05}
-
+        logger.debug('epsilon sched args {}'.format(eps_schd_args))
         self.epsilon = LinearScheduler(**eps_schd_args)
 
         self.actions = self.env.discretize(num_discrete=20)
@@ -142,9 +142,9 @@ class DQN(BaseAgent):
         if hasattr(self, 'learning_writer'):
             self.learning_writer.add_summary(summary, self.counter)
 
-        logger.debug('predict_target - next_obs {}', observations)
-        logger.debug('predict_target - q_vals {}', q_vals)
-        logger.debug('predict_target - max_q {}', max_q)
+        logger.debug('predict_target - next_obs {}'.format(observations))
+        logger.debug('predict_target - q_vals {}'.format(q_vals))
+        logger.debug('predict_target - max_q {}'.format(max_q))
 
         return q_vals, max_q.reshape(observations.shape[0], 1)
 
@@ -212,10 +212,10 @@ class DQN(BaseAgent):
             action (np.array)
         """
         self.counter += 1
-        epsilon = self.epsilon()
-        logger.debug('epsilon is {}'.format(epsilon))
+        eps = self.epsilon()
+        logger.debug('epsilon is {}'.format(eps))
 
-        if epsilon > random():
+        if eps > random():
             action = self.env.sample_discrete()
             logger.debug('acting randomly - action is {}'.format(action))
         else:
@@ -223,7 +223,7 @@ class DQN(BaseAgent):
             logger.debug('acting optimally action is {}'.format(action))
 
         if hasattr(self, 'acting_writer'):
-            epsilon_sum = tf.Summary(value=[tf.Summary.Value(tag='epsilon', simple_value=epsilon)])
+            epsilon_sum = tf.Summary(value=[tf.Summary.Value(tag='epsilon', simple_value=eps)])
             self.acting_writer.add_summary(epsilon_sum, self.counter)
             self.acting_writer.flush()
 
@@ -241,6 +241,7 @@ class DQN(BaseAgent):
         """
         #  TODO could just make the other memory types accept beta as an arg
         #  and not use it
+        logger.debug('getting batch from memory')
         if self.memory_type == 'priority':
             batch = self.memory.get_batch(self.batch_size,
                                           beta=self.beta())
@@ -298,10 +299,6 @@ class DQN(BaseAgent):
 
         q_vals, q_val, loss, td_errors, train_op, train_sum = self.sess.run(fetches, feed_dict)
 
-        if self.memory_type == 'priority':
-            self.memory.update_priorities(batch['indexes'],
-                                          td_errors)
-
         logger.debug('learning - observations {}'.format(observations))
         logger.debug('learning - rewards {}'.format(rewards))
         logger.debug('learning - terminals {}'.format(terminals))
@@ -315,6 +312,11 @@ class DQN(BaseAgent):
 
         logger.debug('learning - target {}'.format(target))
         logger.debug('learning - loss {}'.format(loss))
+        logger.debug('learning - td_errors {}'.format(td_errors))
+        if self.memory_type == 'priority':
+            self.memory.update_priorities(batch['indexes'],
+                                          td_errors)
+
 
         if hasattr(self, 'learning_writer'):
             self.learning_writer.add_summary(train_sum, self.counter)
@@ -388,10 +390,10 @@ class Qfunc(object):
             wt_init (function) tf function used to initialize weights
             b_init (function) tf function used to initialize the biases
         """
-        print('making tf graph for {}'.format(self.scope))
-        print('input shape {}'.format(input_shape))
-        print('output shape {}'.format(output_shape))
-        print('layers {}'.format(layers))
+        logger.info('making tf graph for {}'.format(self.scope))
+        logger.info('input shape {}'.format(input_shape))
+        logger.info('output shape {}'.format(output_shape))
+        logger.info('layers {}'.format(layers))
 
         #  aka state - the input to the network
         self.observation = tf.placeholder(tf.float32,
@@ -452,8 +454,11 @@ class Qfunc(object):
             q_value = tf.gather_nd(self.q_values, self.action, name='q_value')
             self.q_value = tf.reshape(q_value, (-1, 1))
 
-            self.td_errors = tf.losses.huber_loss(self.target, self.q_value)
-            self.loss = tf.reduce_mean(tf.multiply(self.td_errors, self.importance_weights))
+            self.td_errors = tf.subtract(self.q_value, self.target)
+
+            self.loss = tf.losses.huber_loss(labels=self.target,
+                                             predictions=self.q_value,
+                                             weights=self.importance_weights)
 
             optimizer = tf.train.AdamOptimizer(learning_rate)
             self.train_op = optimizer.minimize(self.loss)

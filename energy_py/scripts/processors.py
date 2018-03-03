@@ -29,6 +29,7 @@ class ProcessTanh():
     def transform(self, x):
         return np.tanh(x)
 
+
 class Normalizer(object):
     """
     Normalization to range [0, 1]
@@ -39,12 +40,22 @@ class Normalizer(object):
         array (np.array)
     """
 
-    def __init__(self):
+    def __init__(self, use_history=False):
         self.shape = None
         self.mins = None
         self.maxs = None
+        self.use_history = use_history
 
     def transform(self, batch):
+        if self.use_history:
+            return self.transform_hist(batch)
+
+        else:
+            mins = np.min(batch)
+            maxs = np.max(batch)
+            return (batch - mins) / (maxs - mins + epsilon)
+
+    def transform_hist(self, batch):
         """
         Normalizes an array.
 

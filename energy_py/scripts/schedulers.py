@@ -3,6 +3,7 @@ Objects to schedule parameters used in experiments - for example to decay
 epsilon in an e-greedy policy
 """
 
+
 def test_linear_decay():
 
     sch_args = {'pre_step': 10,

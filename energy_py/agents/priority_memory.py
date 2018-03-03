@@ -109,8 +109,6 @@ class PrioritizedReplay(Memory):
         #  modulus gives us the index of the next oldest experience
         self._next_index = (self._next_index + 1) % self.size
 
-        print('{} len experiences after adding exp next oldest is {}'.format(len(self.experiences),
-                                                                         self._next_index))
 
     def get_batch(self, batch_size, beta):
         """
@@ -146,6 +144,7 @@ class PrioritizedReplay(Memory):
         max_weight = (1 / (p_min * len(self.experiences))) ** beta
 
         weights = []
+        logging.debug('p min {} max weight {}'.format(p_min, max_weight))
         for idx in indexes:
             sample_probability = self.sumtree[idx] / self.sumtree.sum()
             weight = (1 / (sample_probability * len(self.experiences))) ** beta
@@ -199,10 +198,10 @@ class PrioritizedReplay(Memory):
         #  cleaning up the td errors
         priorities = np.abs(td_errors) + 1e-6
 
-        print('updating priorities i {} p {}'.format(indicies, priorities))
-        indicies = indicies.tolist()
-        priorities = priorities.tolist()
+        indicies = indicies.flatten().tolist()
+        priorities = priorities.flatten().tolist()
 
+        logger.debug('updating priorities i {} p {}'.format(indicies, priorities))
         assert len(indicies) == len(priorities)
 
         for idx, priority in zip(indicies, priorities):

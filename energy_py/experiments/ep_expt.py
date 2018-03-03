@@ -6,13 +6,14 @@ from energy_py.agents import DQN, DPG
 from energy_py.envs import CartPoleEnv, FlexEnv, BatteryEnv
 
 if __name__ == '__main__':
-
+    total_steps = 1e6
     agent_config = {'discount': 0.97,
                     'tau': 0.001,
-                    'total_steps': 500000,
+                    'total_steps': total_steps,
                     'batch_size': 32,
                     'layers': (50, 50),
                     'learning_rate': 0.0001,
+                    'initial_random': 0.0,
                     'epsilon_decay_fraction': 0.3,
                     'memory_fraction': 0.4,
                     'memory_type': 'priority',
@@ -22,8 +23,6 @@ if __name__ == '__main__':
     env = BatteryEnv
     env_config = {'episode_length': 2016,
                   'episode_random': True}
-
-    total_steps = 1e4
 
     data_path = os.getcwd()+'/perfect_forecast/'
     results_path = os.getcwd()+'/results/perfect_battery_dpg/'
