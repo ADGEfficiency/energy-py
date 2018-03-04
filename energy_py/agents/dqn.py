@@ -77,6 +77,7 @@ class DQN(BaseAgent):
                          'sched_step': epsilon_decay_fraction*total_steps,
                          'initial': 1.0,
                          'final': 0.05}
+
         logger.debug('epsilon sched args {}'.format(eps_schd_args))
         self.epsilon = LinearScheduler(**eps_schd_args)
 
@@ -257,9 +258,9 @@ class DQN(BaseAgent):
         #  if we are doing prioritiezed experience replay then our
         #  batch dict will have the importance weights
         #  if not we create an array of ones
-        try:
+        if self.memory_type == 'priority':
             importance_weights = batch['importance_weights']
-        except KeyError:
+        else:
             importance_weights = np.ones_like(rewards)
 
         t_q_vals, next_obs_q = self.predict_target(next_observations)

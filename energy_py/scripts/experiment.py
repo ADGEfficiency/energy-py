@@ -21,7 +21,7 @@ import tensorflow as tf
 from energy_py import save_args, ensure_dir, make_logger, TensorboardHepler
 
 
-def make_paths(data_path, results_path):
+def make_paths(data_path, results_path, tb_run=None):
     """
     Creates a dictionary of paths for use with experiments
 
@@ -29,7 +29,10 @@ def make_paths(data_path, results_path):
         data_path (str) location of state.csv, observation.csv
         results_path (str)
     """
-    tb_run = str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+    if tb_run is None:
+        tb_run = str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+
+    #  makes the code below a bit cleaner
     join = os.path.join
 
     paths = {'data_path': data_path,
@@ -67,12 +70,14 @@ def experiment(agent, agent_config, env,
         results_path (str)
 
     returns
-
+        agent (object)
+        env (object)
+        sess (tf.Session)
     """
-
     with tf.Session() as sess:
         paths = make_paths(data_path, results_path)
 
+        #  some env's don't need to be configured
         if env_config:
             env_config['data_path'] = paths['data_path']
             env = env(**env_config)
@@ -85,8 +90,8 @@ def experiment(agent, agent_config, env,
         agent_config['sess'] = sess
         agent_config['act_path'] = paths['tb_act']
         agent_config['learn_path'] = paths['tb_learn']
+
         agent = agent(**agent_config)
-        agent_config['tree_sizes'] = agent.memory.sumtree.capacity
         save_args(agent_config, path=paths['agent_args'])
 
         runner = Runner(tb_path=paths['tb_rl'],
@@ -115,18 +120,16 @@ def experiment(agent, agent_config, env,
                                next_observation, done)
                 #  moving to the next time step
                 observation = next_observation
-                rewards.append(reward)
+                runner.append(reward)
 
+                #  fill the memory up halfway before we learn
                 if step > int(agent.memory.size * 0.5):
                     train_info = agent.learn()
 
             global_rewards.append(sum(rewards))
-            avg_rew = sum(global_rewards[-100:]) / len(global_rewards[-100:])
 
             runner.report({'ep': episode,
-                           'step': step,
-                           'ep_rew': sum(rewards),
-                           'avg_rew': avg_rew},
+                           'step': step},
                           env_info=info)
 
     return agent, env, sess
@@ -147,22 +150,26 @@ class Runner(object):
         if env_hist_path:
             self.env_hist_path = env_hist_path
 
+        #  a list to hold the rewards for a single episode
+        self.ep_rewards = []
+        #  a list to hold rewards for all episodes
+        self.global_rewards = []
+
+    def append(self, reward):
+        self.ep_rewards.append(reward)
+
     def calc_time(self):
         return (time.time() - self.start_time) / 60
 
     def report(self, summaries, env_info=None):
         """
         The main functionality of this class
+
+        Should be run at the end of each episode
         """
-        summaries['run_time'] = self.calc_time()
-        log = ['{} : {:.2f}'.format(k, v) for k, v in summaries.items()]
-        self.logger_timer.info(log)
 
         if env_info:
             output = pd.DataFrame().from_dict(env_info)
-
-            # try:
-            #     output.set_index('steps', drop=True)
 
             csv_path = os.path.join(self.env_hist_path,
                                     'ep_{}'.format(summaries['ep']),
@@ -170,16 +177,34 @@ class Runner(object):
             ensure_dir(csv_path)
             output.to_csv(csv_path)
 
+        #  now episode has finished, we save our rewards onto our global list
+        self.global_rewards.append(self.ep_rewards)
+
+        avg_rew = sum(self.global_rewards[-100:]) / len(self.global_rewards[-100:])
+
+        summaries['ep_rew'] = sum(self.ep_rewards)
+        summaries['avg_rew'] = avg_rew
+
         if hasattr(self, 'tb_helper'):
             no_tb = ['ep', 'run_time', 'step']
             _ = [summaries.pop(key) for key in no_tb]
             self.tb_helper.add_summaries(summaries)
 
+        #  add the run time so we can log the summaries
+        summaries['run_time'] = self.calc_time()
+        log = ['{} : {:.2f}'.format(k, v) for k, v in summaries.items()]
+        self.logger_timer.info(log)
+
+        #  reset the counter for episode rewards
+        self.ep_rewards = []
+
 
 if __name__ == '__main__':
     """
-    This code is here to allow debugging of the aqgent and environment
+    This code is here to allow debugging of the agent and environment
     in a realistic way
+
+    Might not be up to date with experiment()
     """
     from energy_py.agents import DQN
     from energy_py.envs import CartPoleEnv

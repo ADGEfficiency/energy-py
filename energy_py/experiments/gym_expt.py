@@ -7,7 +7,7 @@ from energy_py.envs import CartPoleEnv
 
 if __name__ == '__main__':
 
-    total_steps = 1e5
+    total_steps = 4e5
     agent = DQN
     agent_config = {'discount': 0.97,
                     'tau': 0.001,
@@ -17,7 +17,7 @@ if __name__ == '__main__':
                     'epsilon_decay_fraction': 0.3,
                     'initial_random': 0.1,
                     'memory_fraction': 0.1,
-                    'memory_type': 'priority',
+                    'memory_type': 'deque',
                     'total_steps': total_steps,
                     'observation_processor': 'Normalizer'}
 

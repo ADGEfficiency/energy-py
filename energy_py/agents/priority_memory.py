@@ -214,4 +214,4 @@ class PrioritizedReplay(Memory):
 
             self.max_priority = max(self.max_priority, priority)
 
-        print('finished updating prorities - new max priority {}'.format(self.max_priority))
+        logger.debug('finished updating prorities - new max priority {}'.format(self.max_priority))
