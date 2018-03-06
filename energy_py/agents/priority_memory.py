@@ -128,7 +128,7 @@ class PrioritizedReplay(Memory):
         logger.debug('getting batch with beta {}'.format(beta))
         sample_size = min(batch_size, len(self))
 
-        #  get indexes for a batch sampled using the priorities
+        ###  get indexes for a batch sampled using the priorities
         #  these indexes are for the memory (not the tree!)
         indexes = self.sample_proportional(sample_size)
         logger.debug('indexes {}'.format(indexes))

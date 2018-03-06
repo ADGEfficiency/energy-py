@@ -89,10 +89,10 @@ def test_update_priorities():
     assert mem.sumtree.sum() == 5
 
     #  get a batch
-    batch, indicies = mem.get_batch(2, beta=1)
+    batch = mem.get_batch(2, beta=1)
 
     td_errors = np.array([0.1, 100]).reshape(2, 1)
-
+    indicies = batch['indexes']
     mem.update_priorities(indicies, td_errors)
     assert mem.mintree.min() == 0.1
     assert mem.sumtree.sum() == 100 + 3 + 0.1
