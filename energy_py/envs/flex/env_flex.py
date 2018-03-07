@@ -32,7 +32,7 @@ class Flex(BaseEnv):
                  flex_effy=1.2):  # additional consumption in flex up
 
         #  technical energy inputs
-        self.flex_down_size = flex_size
+        self.flex_down_size = float(flex_size)
         #  flex up we increase consumption by more than when we flex down
         self.flex_up_size = -float(flex_size * flex_effy)
 
@@ -49,6 +49,8 @@ class Flex(BaseEnv):
         self.flex_avail = None
         self.flex_action = None
         self.action = None
+        self.flex_counter = 0
+        self.action_counter = 0
 
         super().__init__(data_path,
                          episode_length,
@@ -94,12 +96,6 @@ class Flex(BaseEnv):
         returns
             observation (np.array) the initial observation
         """
-        #  Resetting steps, state, observation, done status
-        self.steps = 0
-        self.state = self.get_state(steps=self.steps, append=self.flex_avail)
-        self.observation = self.get_observation(self.steps, self.flex_avail)
-        self.done = False
-
         #  initialize all of the flex counters
         self.flex_avail = 1  # 0=not available, 1=available
         self.flex_down = 0
@@ -108,6 +104,14 @@ class Flex(BaseEnv):
 
         #  initialize our action checker
         self.action = 0
+        #  our env also keeps a list of the times when we started flexing
+        self.flex_start_steps = []
+
+        #  Resetting steps, state, observation, done status
+        self.steps = 0
+        self.state = self.get_state(steps=self.steps, append=self.flex_avail)
+        self.observation = self.get_observation(self.steps, self.flex_avail)
+        self.done = False
 
         return self.observation
 
@@ -186,6 +190,7 @@ class Flex(BaseEnv):
             self.flex_down = 1
             self.flex_avail = 0
             self.action = action
+            self.flex_counter += 1
 
         #  if we are not doing anything but want to start the flex up cycle
         total_counters = sum([self.flex_up, self.flex_down, self.relax])
@@ -193,6 +198,7 @@ class Flex(BaseEnv):
             self.flex_up = 1
             self.flex_avail = 0
             self.action = action
+            self.flex_counter += 1
 
         #  we set the default action to do nothing
         flex_action = 0
@@ -207,6 +213,11 @@ class Flex(BaseEnv):
         #  now we set reward based on whether we are in a cycle or not
         #  /12 so we get reward in terms of £/5 minutes
         reward = flex_action * self.electricity_price / 12
+
+        if flex_action == 0:
+            flex_counter = 'not_flexing'
+        else:
+            flex_counter = 'flex_action_{}'.format(self.flex_counter)
 
         total_counters = self.check_counters()
 
@@ -241,7 +252,8 @@ class Flex(BaseEnv):
                                      flex_up=self.flex_up,
                                      relax=self.relax,
                                      flex_avail=self.flex_avail,
-                                     flex_action=flex_action)
+                                     flex_action=flex_action,
+                                     flex_counter=flex_counter)
 
         self.state = next_state
         self.observation = next_observation

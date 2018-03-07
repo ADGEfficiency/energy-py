@@ -122,7 +122,7 @@ class BaseEnv(object):
             done (boolean)
             info (dict) auxiliary information
         """
-
+        action = np.array(action)
         action = action.reshape(1, self.action_space.shape[0])
 
         logger.debug('step {} action {}'.format(self.steps,

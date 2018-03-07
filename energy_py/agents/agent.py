@@ -47,6 +47,7 @@ class BaseAgent(object):
 
         self.observation_space = env.observation_space
         self.obs_shape = env.observation_space.shape
+        self.observation_info = env.observation_info
 
         self.action_space = env.action_space
         self.action_shape = env.action_space.shape

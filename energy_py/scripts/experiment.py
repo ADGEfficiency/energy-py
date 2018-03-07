@@ -13,6 +13,7 @@ import datetime
 import logging
 import logging.config
 import os
+import pdb
 import time
 
 import pandas as pd
@@ -178,22 +179,22 @@ class Runner(object):
             output.to_csv(csv_path)
 
         #  now episode has finished, we save our rewards onto our global list
-        self.global_rewards.append(self.ep_rewards)
+        self.global_rewards.append(sum(self.ep_rewards))
 
         avg_rew = sum(self.global_rewards[-100:]) / len(self.global_rewards[-100:])
 
         summaries['ep_rew'] = sum(self.ep_rewards)
         summaries['avg_rew'] = avg_rew
 
-        if hasattr(self, 'tb_helper'):
-            no_tb = ['ep', 'run_time', 'step']
-            _ = [summaries.pop(key) for key in no_tb]
-            self.tb_helper.add_summaries(summaries)
-
         #  add the run time so we can log the summaries
         summaries['run_time'] = self.calc_time()
         log = ['{} : {:.2f}'.format(k, v) for k, v in summaries.items()]
         self.logger_timer.info(log)
+
+        if hasattr(self, 'tb_helper'):
+            no_tb = ['ep', 'run_time', 'step']
+            _ = [summaries.pop(key) for key in no_tb]
+            self.tb_helper.add_summaries(summaries)
 
         #  reset the counter for episode rewards
         self.ep_rewards = []
@@ -222,6 +223,7 @@ if __name__ == '__main__':
 
     agent = DQN
     total_steps = 1000
+
     with tf.Session() as sess:
         env = CartPoleEnv()
 

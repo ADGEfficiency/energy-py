@@ -11,6 +11,7 @@ class EnvWrapper(object):
 
     def __init__(self, env):
         self.env = env
+        self.observation_info = env.observation_info
 
     def __repr__(self):
         return repr(self.env)
@@ -27,6 +28,7 @@ class EnvWrapper(object):
 
     def sample_discrete(self):
         return self.env.action_space.sample_discrete()
+
 
 
 class FlexEnv(EnvWrapper):
