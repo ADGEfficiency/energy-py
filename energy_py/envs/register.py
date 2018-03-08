@@ -11,7 +11,7 @@ class EnvWrapper(object):
 
     def __init__(self, env):
         self.env = env
-        self.observation_info = env.observation_info
+        self.observation_info = None
 
     def __repr__(self):
         return repr(self.env)
@@ -30,7 +30,6 @@ class EnvWrapper(object):
         return self.env.action_space.sample_discrete()
 
 
-
 class FlexEnv(EnvWrapper):
 
     def __init__(self, **kwargs):
@@ -42,6 +41,8 @@ class FlexEnv(EnvWrapper):
         self.observation_info = self.env.observation_info
         self.action_space = self.env.action_space
         self.action_space_shape = self.action_space.shape
+
+        self.observation_info = env.observation_info
 
 
 class BatteryEnv(EnvWrapper):
@@ -56,6 +57,8 @@ class BatteryEnv(EnvWrapper):
         self.observation_info = self.env.observation_info
         self.action_space = self.env.action_space
         self.action_space_shape = self.action_space.shape
+
+        self.observation_info = env.observation_info
 
 
 class CartPoleEnv(EnvWrapper):

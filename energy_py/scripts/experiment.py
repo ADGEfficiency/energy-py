@@ -132,7 +132,12 @@ def experiment(agent, agent_config, env,
 
 class Runner(object):
     """
-    Trying to figure out what to do here - trying this runner class
+    Class to help run experiments.
+
+    Currently performs three roles
+        keeping track of rewards
+        keeping track of run time
+        processing environment history
     """
     def __init__(self, tb_path=None, env_hist_path=None):
 

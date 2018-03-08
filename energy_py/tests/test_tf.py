@@ -1,6 +1,4 @@
 """
-TODO
-- test target net update at different taus
 """
 
 import numpy as np
