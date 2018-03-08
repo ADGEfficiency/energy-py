@@ -99,15 +99,11 @@ def experiment(agent, agent_config, env,
                         env_hist_path=paths['env_histories'])
 
         step, episode = 0, 0
-        global_rewards = []
-
         #  outer while loop runs through multiple episodes
-        step = 0
         while step < total_steps:
             episode += 1
             done = False
             observation = env.reset()
-            rewards = []
             #  inner while loop runs through a single episode
             while not done:
                 step += 1
@@ -126,8 +122,6 @@ def experiment(agent, agent_config, env,
                 #  fill the memory up halfway before we learn
                 if step > int(agent.memory.size * 0.5):
                     train_info = agent.learn()
-
-            global_rewards.append(sum(rewards))
 
             runner.report({'ep': episode,
                            'step': step},
@@ -181,10 +175,10 @@ class Runner(object):
         #  now episode has finished, we save our rewards onto our global list
         self.global_rewards.append(sum(self.ep_rewards))
 
-        avg_rew = sum(self.global_rewards[-100:]) / len(self.global_rewards[-100:])
+        self.avg_rew = sum(self.global_rewards[-100:]) / len(self.global_rewards[-100:])
 
         summaries['ep_rew'] = sum(self.ep_rewards)
-        summaries['avg_rew'] = avg_rew
+        summaries['avg_rew'] = self.avg_rew
 
         #  add the run time so we can log the summaries
         summaries['run_time'] = self.calc_time()
