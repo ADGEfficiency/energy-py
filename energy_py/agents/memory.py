@@ -61,6 +61,7 @@ class Memory(object):
                        'importance_weights': (1,),
                        'indexes': (1,)}
 
+
 class DequeMemory(Memory):
     """
     Implementation of an experience replay memory based on a deque.
@@ -214,5 +215,3 @@ class ArrayMemory(Memory):
                       'terminal': self.term[indicies]}
 
         return batch_dict
-
-
