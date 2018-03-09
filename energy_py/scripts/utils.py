@@ -50,12 +50,12 @@ def load_pickle(name):
     return obj
 
 
-def make_logger(log_path, name=None):
+def make_logger(paths, name=None):
     """
     Sets up the energy_py logging stragety.  INFO to console, DEBUG to file.
 
     args
-        log_path (str) location of the DEBUG log file
+        paths (dict)
         name (str) optional logger name
 
     returns
@@ -78,11 +78,18 @@ def make_logger(log_path, name=None):
         'handlers': {'console': {'level': 'INFO',
                                  'class': 'logging.StreamHandler',
                                  'formatter': 'standard'},
-                     'file': {'class': 'logging.FileHandler',
-                              'level': 'DEBUG',
-                              'filename': log_path,
-                              'mode': 'w',
-                              'formatter': 'standard'}},
+
+                     'debug_file': {'class': 'logging.FileHandler',
+                                    'level': 'DEBUG',
+                                    'filename': paths['debug_log'],
+                                    'mode': 'w',
+                                    'formatter': 'standard'},
+
+                     'info_file': {'class': 'logging.FileHandler',
+                                   'level': 'INFO',
+                                   'filename': paths['info_log'],
+                                   'mode': 'w',
+                                   'formatter': 'standard'}},
 
         'loggers': {'': {'handlers': ['console', 'file', ],
                          'level': 'DEBUG',

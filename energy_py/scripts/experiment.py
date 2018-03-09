@@ -46,7 +46,8 @@ def make_paths(data_path, results_path, tb_run=None):
              'env_histories': join(results_path, 'env_histories'),
 
              #  files
-             'logs': join(results_path, 'logs.log'),
+             'debug_log': join(results_path, 'debug.log'),
+             'info_log': join(results_path, 'info.log'),
              'env_args': join(results_path, 'env_args.txt'),
              'agent_args': join(results_path, 'agent_args.txt')}
 
@@ -84,7 +85,7 @@ def experiment(agent, agent_config, env,
             env = env(**env_config)
             save_args(env_config, path=paths['env_args'])
 
-        logger = make_logger(paths['logs'], 'INFO')
+        logger = make_logger(paths, name='experiment')
 
         agent_config['env'] = env
         agent_config['env_repr'] = repr(env)
