@@ -1,9 +1,12 @@
-##  flexibility environment
+##  Flexibility environment
+Environment to simulate a flexbile electricity asset - ie a chiller.  Also known as demnad side response.
 
-Action space is a binary action space.  
+Action space is a discrete action space.  
 ```
-action = np.array([flex_on])
-         shape=(1, 2)
+action = np.array([flex_action])
+    action = 0 -> no op
+    action = 1 -> flex up then down
+    action = 2 -> flex down then up
 ```
 Reward is the net effect of the flexibility action 
 ```
@@ -11,14 +14,11 @@ reward = flex_action * electricity price
 $ / 5min = MW * $/MW / 12
 ```
 
-Environment simulates a electricity flexiblity action.  The flexibility action is composed of three parts.
+A flexibility action consists of a period of flexing up (increasing consumption), a period of decreasing consumption and
+a relaxation period.
 
-1 - flex_initial
-2 - flex_final
-3 - relaxation
+The agent can choose to start either a up/down/relax or a down/up/relax.
 
-The user can define the size [MW] of the flexibility during the initial and final stages.  The environment forces these
-to be equal ad opposite.
+Once a flex action is started it runs its full cycle.
 
-After the intial & final stages are over a relaxation period starts.  The flex_action is zero for this period (ie reward
-is zero).
+Option to apply an efficiency (the flex up becomes more than the flex down).
