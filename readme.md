@@ -10,63 +10,6 @@ energy_py is built and maintained by Adam Green.  This project is in rapid devel
 
 I teach a one day [introduction to reinforcement learning learning](https://github.com/ADGEfficiency/DSR_RL) class at [Data Science Retreat](https://www.datascienceretreat.com/).
 
-### Work to be done
-Problem with [Normalizer](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/scripts/processors.py) - the object remembers the min & max for each dimension for it's entire lifetime.  High initial values make the scaling silly.
-
-Functionality to [track & log rewards during experiment() should be inside the Runner class.](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/scripts/experiment.py)
-
-Ability to clip rewards.  Most likely should sit in self.remember() in the Memory object before the reward is added to the memory.  
-
-For energy_py environments - the raw_state.csv or state.csv, observation.csv dependency is a bit of an issue.  The idea is that the user will have their own electricity price profile, but I'd like to build in the ability for the env to generate a profile if the user doesn't supply a raw_state.csv or state.csv, observation.csv.  
-
-Remove pandas dependencies.
-
-Using a generic class for scheduling - see [Open AI Baselines schedulers](https://github.com/openai/baselines/blob/master/baselines/common/schedules.py).
-
-Target network weights should be initialized the same as online at the beginning of DQN experiments.  I think this will
-mean having tau as a placeholder that is fed into the sess.run call.
-
-When Runner saves environment info to a csv, doesn't unwrap the arrays into columns
-
-#### Prioritized experience replay
-[Schaul et. al (2015) Prioritized Experience Replay](https://arxiv.org/abs/1511.05952).
-
-Some implementations used a binary heap search tree.  The Python standard library has a [collection of functions for heap queues](https://docs.python.org/3/library/heapq.html).
-
-[General intro to binary heaps with some Python implementation from scratch](http://interactivepython.org/runestone/static/pythonds/Trees/BinaryHeapImplementation.html).
-
-[Takoika/PrioritizedExperienceReplay implementation](https://github.com/takoika/PrioritizedExperienceReplay/blob/master/sum_tree.py).
-
-[TensorForce implementation](https://github.com/reinforceio/tensorforce/blob/master/tensorforce/core/memories/prioritized_replay.py)
-
-[Slide 20 of 'Deep Reinforcment Learning in TensorFlow'](http://web.stanford.edu/class/cs20si/lectures/slides_14.pdf) - samples using log-probabilities (not a search tree).
-
-Open AI Baselines implementation:
-[sum tree](https://github.com/openai/baselines/blob/master/baselines/common/segment_tree.py),
-[the memory object](https://github.com/openai/baselines/blob/master/baselines/deepq/replay_buffer.py) and
-[using the memory in DQN](https://github.com/openai/baselines/blob/master/baselines/deepq/simple.py).
-
-#### Auxillary loss functions
-[Raia Hadsell on "Deep Reinforcement Learning and Real World Challenges"](https://www.youtube.com/watch?v=0e_uGa7ic74)
-
-#### Creating a Policy class/function
-ie e-greedy, random, soft-max, Boltzmann
-
-[Action-Selection Strategies for Exploration](https://medium.com/emergent-future/simple-reinforcement-learning-with-tensorflow-part-7-action-selection-strategies-for-exploration-d3a97b7cceaf)
-
-[This implementation of DQN](https://ewanlee.github.io/2017/07/09/Using-Tensorflow-and-Deep-Q-Network-Double-DQN-to-Play-Breakout/) defines the policy as a method.
-
-#### Heuristic pre-processing
-A way to override action selection using a determinsitic heuristic.  Might be a use case for a decorator.
-
-#### Tests
-Currently have a few for testing the TensorFlow implementations and the processors.
-
-Test on operation for copying weights from one network to another - could check using a variable tau.
-
-Test the experiment() function.  Would need to turn off all data saving functionality (tensorboard, logging etc).  Test
-would just to run the expt
-
 ### Basic usage
 
 [A simple and detailed example](https://github.com/ADGEfficiency/energy_py/blob/master/notebooks/examples/Q_learning_battery.ipynb) of using the DQN agent to control the battery environment is a great place to start.
