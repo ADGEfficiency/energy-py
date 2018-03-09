@@ -11,11 +11,11 @@ if __name__ == '__main__':
                     'tau': 0.001,
                     'total_steps': total_steps,
                     'batch_size': 32,
-                    'layers': (50, 50),
+                    'layers': (100, 100, 100),
                     'learning_rate': 0.0001,
                     'initial_random': 0.0,
                     'epsilon_decay_fraction': 0.3,
-                    'memory_fraction': 0.4,
+                    'memory_fraction': 0.15,
                     'memory_type': 'priority',
                     'process_observation': 'normalizer',
                     'process_target': 'standardizer'}

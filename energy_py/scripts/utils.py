@@ -91,7 +91,7 @@ def make_logger(paths, name=None):
                                    'mode': 'w',
                                    'formatter': 'standard'}},
 
-        'loggers': {'': {'handlers': ['console', 'file', ],
+        'loggers': {'': {'handlers': ['console', 'debug_file', 'info_file', ],
                          'level': 'DEBUG',
                          'propagate': True}}})
 
