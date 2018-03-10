@@ -140,6 +140,7 @@ class DQN(BaseAgent):
         feed_dict = {self.target.observation: observations}
 
         q_vals, max_q, summary = self.sess.run(fetches, feed_dict)
+
         if hasattr(self, 'learning_writer'):
             self.learning_writer.add_summary(summary, self.counter)
 
@@ -314,10 +315,10 @@ class DQN(BaseAgent):
         logger.debug('learning - target {}'.format(target))
         logger.debug('learning - loss {}'.format(loss))
         logger.debug('learning - td_errors {}'.format(td_errors))
+
         if self.memory_type == 'priority':
             self.memory.update_priorities(batch['indexes'],
                                           td_errors)
-
 
         if hasattr(self, 'learning_writer'):
             self.learning_writer.add_summary(train_sum, self.counter)

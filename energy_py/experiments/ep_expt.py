@@ -1,4 +1,3 @@
-import logging
 import os
 
 from energy_py import experiment
@@ -6,7 +5,7 @@ from energy_py.agents import DQN, DPG
 from energy_py.envs import FlexEnv, BatteryEnv
 
 if __name__ == '__main__':
-    total_steps = 1e6
+    total_steps = 1e7
     agent_config = {'discount': 0.97,
                     'tau': 0.001,
                     'total_steps': total_steps,

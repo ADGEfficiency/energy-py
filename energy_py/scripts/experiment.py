@@ -7,8 +7,9 @@ Module contains:
     make_paths - creates a dictionary of paths
     make_logger - DEBUG to file, INFO to console
     experiment - runs a single reinforcment learning experiment
-    Timer - times experiments
+    Runner - class to save environment data & TensorBoard
 """
+
 import datetime
 import logging
 import logging.config
@@ -22,35 +23,42 @@ import tensorflow as tf
 from energy_py import save_args, ensure_dir, make_logger, TensorboardHepler
 
 
-def make_paths(data_path, results_path, tb_run=None):
+def make_paths(data_path, results_path, run_name=None):
     """
     Creates a dictionary of paths for use with experiments
 
     args
         data_path (str) location of state.csv, observation.csv
         results_path (str)
+        run_name (str) optional name for the tensorboard run
     """
-    if tb_run is None:
-        tb_run = str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+    #  use a timestamp if no run_name is supplied
+    if run_name is None:
+        run_name = str(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
 
-    #  makes the code below a bit cleaner
+    #  rename the join function to make code below eaiser to read
     join = os.path.join
 
+    #  run_path is the folder where output from this run will be saved in
+    run_path = join(results_path, run_name),
+
     paths = {'data_path': data_path,
-             'results_path': results_path,
+             'run_path': run_path,
 
-             #  directories
-             'tb_rl': join(results_path, 'tensorboard', tb_run, 'rl'),
-             'tb_act': join(results_path, 'tensorboard', tb_run, 'act'),
-             'tb_learn': join(results_path, 'tensorboard', tb_run,  'learn'),
-             'env_histories': join(results_path, 'env_histories'),
+             #  tensorboard runs are all in the tensoboard folder
+             #  this is for easy comparision of run
+             'tb_rl': join(results_path, 'tensorboard', run_name, 'rl'),
+             'tb_act': join(results_path, 'tensorboard', run_name, 'act'),
+             'tb_learn': join(results_path, 'tensorboard', run_name,  'learn'),
+             'env_histories': join(run_path, 'env_histories'),
 
-             #  files
-             'debug_log': join(results_path, 'debug.log'),
-             'info_log': join(results_path, 'info.log'),
-             'env_args': join(results_path, 'env_args.txt'),
-             'agent_args': join(results_path, 'agent_args.txt')}
+             #  run specific folders are in another folder
+             'debug_log': join(run_path, 'debug.log'),
+             'info_log': join(run_path, 'info.log'),
+             'env_args': join(run_path, 'env_args.txt'),
+             'agent_args': join(run_path, 'agent_args.txt')}
 
+    #  check that all our paths exist
     for key, path in paths.items():
         ensure_dir(path)
 
@@ -76,7 +84,10 @@ def experiment(agent, agent_config, env,
         env (object)
         sess (tf.Session)
     """
+    #  start a new tensorflow session
     with tf.Session() as sess:
+
+        #  create a dictionary of paths
         paths = make_paths(data_path, results_path)
 
         #  some env's don't need to be configured
@@ -85,30 +96,34 @@ def experiment(agent, agent_config, env,
             env = env(**env_config)
             save_args(env_config, path=paths['env_args'])
 
+        #  setup the logging config
         logger = make_logger(paths, name='experiment')
 
+        #  add stuff into the agent config dict
         agent_config['env'] = env
         agent_config['env_repr'] = repr(env)
         agent_config['sess'] = sess
         agent_config['act_path'] = paths['tb_act']
         agent_config['learn_path'] = paths['tb_learn']
 
+        #  init agent and save args
         agent = agent(**agent_config)
         save_args(agent_config, path=paths['agent_args'])
 
+        #  runner helps to manage our experiment
         runner = Runner(tb_path=paths['tb_rl'],
                         env_hist_path=paths['env_histories'])
 
-        step, episode = 0, 0
         #  outer while loop runs through multiple episodes
+        step, episode = 0, 0
         while step < total_steps:
             episode += 1
             done = False
             observation = env.reset()
+
             #  inner while loop runs through a single episode
             while not done:
                 step += 1
-
                 #  select an action
                 action = agent.act(observation)
                 #  take one step through the environment
@@ -139,6 +154,10 @@ class Runner(object):
         keeping track of rewards
         keeping track of run time
         processing environment history
+
+    args
+        tb_path (str)  path where tb logs sit
+        env_hist_path (str)  path to save env data too
     """
     def __init__(self, tb_path=None, env_hist_path=None):
 
