@@ -40,7 +40,7 @@ def make_paths(data_path, results_path, run_name=None):
     join = os.path.join
 
     #  run_path is the folder where output from this run will be saved in
-    run_path = join(results_path, run_name),
+    run_path = join(results_path, run_name)
 
     paths = {'data_path': data_path,
              'run_path': run_path,
