@@ -94,9 +94,9 @@ def test_update_priorities():
     td_errors = np.array([0.1, 100]).reshape(2, 1)
     indicies = batch['indexes']
     mem.update_priorities(indicies, td_errors)
-    assert mem.mintree.min() == 0.1
-    assert mem.sumtree.sum() == 100 + 3 + 0.1
 
+    np.testing.assert_allclose(mem.mintree.min(), 0.1, rtol=1e-3)
+    np.testing.assert_allclose(mem.sumtree.sum(), 100+3+0.1, rtol=1e-3)
 
 if __name__ == '__main__':
     test_remember()

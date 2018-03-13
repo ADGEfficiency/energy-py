@@ -100,8 +100,8 @@ class DQN(BaseAgent):
         self.update_ops = self.make_target_net_update_ops()
 
         sess.run(tf.global_variables_initializer())
-        #  TODO this should be with tau = 1
-        self.update_target_network()
+
+        self.update_target_network(tau=1.0)
 
     def __repr__(self): return '<class DQN Agent>'
 
@@ -114,15 +114,27 @@ class DQN(BaseAgent):
         are assigned to the target network
         """
         with tf.variable_scope('update_target_network'):
+
+            self.tf_tau = tf.placeholder(tf.float32,
+                                 shape=(),
+                                 name='tau')
+
             update_ops = []
             for online, target in zip(self.online.params, self.target.params):
+
+                o_name, t_name = online.name.split('/')[1:], target.name.split('/')[1:]
+                print('copying {} to {}'.format(o_name, t_name))
+
                 logger.debug('copying {} to {}'.format(online.name,
                                                         target.name))
-                val = tf.add(tf.multiply(online, self.tau),
-                             tf.multiply(target, 1 - self.tau))
+
+                assert o_name == t_name 
+                val = tf.add(tf.multiply(online, self.tf_tau),
+                             tf.multiply(target, 1 - self.tf_tau))
 
                 operation = target.assign(val)
                 update_ops.append(operation)
+
         return update_ops
 
     def predict_target(self, observations):
@@ -197,14 +209,18 @@ class DQN(BaseAgent):
 
         return q_vals, action_idx, action
 
-    def update_target_network(self):
+    def update_target_network(self, tau=None):
         """
         Updates the target network weights using the parameter tau
 
         Relies on the sorted lists of tf.Variables kept in each Qfunc object
         """
+        if tau is None:
+            tau = self.tau
+        print('TAU IS {}'.format(tau))
         logger.debug('updating target net at count {}'.format(self.counter))
-        self.sess.run(self.update_ops)
+
+        self.sess.run(self.update_ops, {self.tf_tau: tau})
 
     def _act(self, observation):
         """
@@ -274,7 +290,6 @@ class DQN(BaseAgent):
 
             #  max across the target network
             _, next_obs_q = self.predict_target(next_observations)
-            #  if next state is terminal, set the value to zero
 
         if self.double_Q:
             #  argmax across the online network to find the action 
@@ -288,6 +303,7 @@ class DQN(BaseAgent):
                                             action_index]
 
         next_obs_q = next_obs_q.reshape(next_observations.shape[0], 1)
+        #  if next state is terminal, set the value to zero
         next_obs_q[terminals] = 0
 
         #  creating a target for Q(s,a) using the Bellman equation
