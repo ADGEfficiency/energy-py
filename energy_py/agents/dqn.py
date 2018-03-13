@@ -15,7 +15,7 @@ tensorflow graph but all sess.run's are within the DQN agent class.
 
 import logging
 from random import random
-
+import pdb
 import numpy as np
 import tensorflow as tf
 
@@ -58,6 +58,7 @@ class DQN(BaseAgent):
                  batch_size,
                  layers,
                  learning_rate,
+                 double_Q=False,
                  initial_random=0.1,
                  epsilon_decay_fraction=0.5,
                  memory_fraction=0.25,
@@ -69,6 +70,7 @@ class DQN(BaseAgent):
         self.sess = sess
         self.tau = tau
         self.batch_size = batch_size
+        self.double_Q = double_Q
         memory_length = int(total_steps * memory_fraction)
 
         super().__init__(env, discount, memory_length, **kwargs)
@@ -98,6 +100,7 @@ class DQN(BaseAgent):
         self.update_ops = self.make_target_net_update_ops()
 
         sess.run(tf.global_variables_initializer())
+        #  TODO this should be with tau = 1
         self.update_target_network()
 
     def __repr__(self): return '<class DQN Agent>'
@@ -180,8 +183,10 @@ class DQN(BaseAgent):
 
         q_vals = q_vals.reshape(obs.shape[0], len(self.actions))
 
-        #  index at zero because TF returns an array
-        action = self.actions[action_idx[0]]
+        #  create a tiled array of actions
+        tiled = np.tile(self.actions, obs.shape[0]).reshape(obs.shape[0], -1)
+        #  index out the action
+        action = tiled[np.arange(obs.shape[0]), action_idx]
         action = np.array(action).reshape(obs.shape[0], *self.action_shape)
 
         logger.debug('predict_online - observation {}'.format(obs))
@@ -190,7 +195,7 @@ class DQN(BaseAgent):
         logger.debug('predict_online - action_index {}'.format(action_idx))
         logger.debug('predict_online - action {}'.format(action))
 
-        return q_vals, action
+        return q_vals, action_idx, action
 
     def update_target_network(self):
         """
@@ -221,7 +226,7 @@ class DQN(BaseAgent):
             action = self.env.sample_discrete()
             logger.debug('acting randomly - action is {}'.format(action))
         else:
-            _, action = self.predict_online(observation)
+            _, _, action = self.predict_online(observation)
             logger.debug('acting optimally action is {}'.format(action))
 
         if hasattr(self, 'acting_writer'):
@@ -264,13 +269,28 @@ class DQN(BaseAgent):
         else:
             importance_weights = np.ones_like(rewards)
 
-        t_q_vals, next_obs_q = self.predict_target(next_observations)
+        if self.double_Q == False:
+            #  the DQN update
 
-        #  if next state is terminal, set the value to zero
+            #  max across the target network
+            _, next_obs_q = self.predict_target(next_observations)
+            #  if next state is terminal, set the value to zero
+
+        if self.double_Q:
+            #  argmax across the online network to find the action 
+            #  the online net thinks is optimal
+            _, action_index, _ = self.predict_online(next_observations)
+
+            #  get the predicted Q values for the target network
+            t_q_vals, _ = self.predict_target(next_observations)
+
+            next_obs_q = t_q_vals[np.arange(next_observations.shape[0]),
+                                            action_index]
+
+        next_obs_q = next_obs_q.reshape(next_observations.shape[0], 1)
         next_obs_q[terminals] = 0
 
         #  creating a target for Q(s,a) using the Bellman equation
-        # rewards = rewards.reshape(rewards.shape[0], 1)
         target = rewards + self.discount * next_obs_q
 
         if hasattr(self, 'target_processor'):

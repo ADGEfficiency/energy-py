@@ -50,7 +50,7 @@ class BaseAgent(object):
         self.observation_info = env.observation_info
 
         self.action_space = env.action_space
-        self.action_shape = env.action_space.shape
+        self.action_shape = env.action_space_shape
 
         self.memory_type = memory_type
         self.memory = memories[memory_type](memory_length,
