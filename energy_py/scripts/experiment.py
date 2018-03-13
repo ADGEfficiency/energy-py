@@ -66,7 +66,8 @@ def make_paths(data_path, results_path, run_name=None):
 
 
 def experiment(agent, agent_config, env,
-               total_steps, data_path, results_path, env_config=None):
+               total_steps, data_path, results_path, 
+               run_name=None, env_config=None):
     """
     Run an experiment.  Episodes are run until total_steps are reached.
 
@@ -88,7 +89,7 @@ def experiment(agent, agent_config, env,
     with tf.Session() as sess:
 
         #  create a dictionary of paths
-        paths = make_paths(data_path, results_path)
+        paths = make_paths(data_path, results_path, run_name)
 
         #  some env's don't need to be configured
         if env_config:

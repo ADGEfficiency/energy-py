@@ -58,7 +58,7 @@ class DQN(BaseAgent):
                  batch_size,
                  layers,
                  learning_rate,
-                 double_Q=False,
+                 double_q=False,
                  initial_random=0.1,
                  epsilon_decay_fraction=0.5,
                  memory_fraction=0.25,
@@ -70,7 +70,7 @@ class DQN(BaseAgent):
         self.sess = sess
         self.tau = tau
         self.batch_size = batch_size
-        self.double_Q = double_Q
+        self.double_q = double_q
         memory_length = int(total_steps * memory_fraction)
 
         super().__init__(env, discount, memory_length, **kwargs)
@@ -84,6 +84,7 @@ class DQN(BaseAgent):
         self.epsilon = LinearScheduler(**eps_schd_args)
 
         self.actions = self.env.discretize(num_discrete=20)
+        logger.debug('actions list is {}'.format(self.actions))
 
         model_config = {'input_shape': self.obs_shape,
                         'output_shape': (len(self.actions),),
@@ -217,8 +218,8 @@ class DQN(BaseAgent):
         """
         if tau is None:
             tau = self.tau
-        print('TAU IS {}'.format(tau))
-        logger.debug('updating target net at count {}'.format(self.counter))
+        logger.debug('updating target net count {} tau {}'.format(self.counter,
+                                                                  tau))
 
         self.sess.run(self.update_ops, {self.tf_tau: tau})
 
@@ -285,13 +286,13 @@ class DQN(BaseAgent):
         else:
             importance_weights = np.ones_like(rewards)
 
-        if self.double_Q == False:
+        if self.double_q == False:
             #  the DQN update
 
             #  max across the target network
             _, next_obs_q = self.predict_target(next_observations)
 
-        if self.double_Q:
+        if self.double_q:
             #  argmax across the online network to find the action 
             #  the online net thinks is optimal
             _, action_index, _ = self.predict_online(next_observations)
@@ -477,7 +478,7 @@ class Qfunc(object):
             wout = tf.Variable(w_init([nodes, *output_shape]), 'out_w')
             bout = tf.Variable(b_init(*output_shape), 'out_b')
 
-            #  no activation function on the output layer (i.e. linear)
+            #  nr activation function on the output layer (i.e. linear)
             self.q_values = tf.add(tf.matmul(layer, wout), bout)
 
         with tf.variable_scope('argmax'):

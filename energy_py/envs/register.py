@@ -78,7 +78,7 @@ class CartPoleEnv(EnvWrapper):
         return self.env.step(action[0][0])
 
     def discretize(self, num_discrete):
-        self.actions = [act for act in range(self.action_space.n)]
+        self.actions = [np.array(act) for act in range(self.action_space.n)]
         return self.actions
 
     def sample_discrete(self):

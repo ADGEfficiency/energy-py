@@ -50,7 +50,7 @@ class DiscreteSpace(object):
 
     def discretize(self, n_discr=[]):
         #  we don't use num discrete here
-        return np.arange(0, self.high + 1).tolist()
+        return np.arange(0, self.high + 1)
 
 
 class ContinuousSpace(object):
@@ -123,7 +123,8 @@ class GlobalSpace(object):
             n_discr (int) number of discrete spaces in the action space
         """
         disc = [spc.discretize(n_discr) for spc in self.spaces]
-        self.discrete_spaces = np.array([a for a in itertools.product(*disc)]).tolist()
+        discrete_spaces = [a for a in itertools.product(*disc)]
+        self.discrete_spaces = [np.array(a) for a in discrete_spaces]
         return self.discrete_spaces
 
     def append(self, space):
