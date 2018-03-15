@@ -40,9 +40,10 @@ class PrioritizedReplay(Memory):
         alpha (float) controls prioritization
             0->no prioritization, 1-> full priorization
             default of 0.6 or 0.7 suggested in Schaul et. al (2016)
+            Hessel et. al (2017) Rainbow reccomends 0.5
 
     """
-    def __init__(self, size, obs_shape, action_shape, alpha=0.65):
+    def __init__(self, size, obs_shape, action_shape, alpha=0.5):
 
         super(PrioritizedReplay, self).__init__(size,
                                                 obs_shape,

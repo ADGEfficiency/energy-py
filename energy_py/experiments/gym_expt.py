@@ -14,19 +14,15 @@ if __name__ == '__main__':
                     'batch_size': 32,
                     'layers': (10, 10, 10),
                     'learning_rate': 0.0001,
-                    'double_Q': True,
                     'epsilon_decay_fraction': 0.3,
-                    'initial_random': 0.1,
                     'memory_fraction': 0.1,
                     'memory_type': 'deque',
-                    'double_q': False,
+                    'double_q': True,
                     'total_steps': total_steps,
                     'target_processor': 'normalizer',
                     'observation_processor': 'standardizer'}
 
     env = CartPoleEnv()
-
-    base_path = './gym/dqn'
 
     data_path = os.getcwd()+'/gym/'
     results_path = os.getcwd()+'/results/cartpole/'
@@ -37,4 +33,4 @@ if __name__ == '__main__':
                                   total_steps=total_steps, 
                                   data_path=data_path, 
                                   results_path=results_path,
-                                  run_name='DQN')
+                                  run_name='DDQN')

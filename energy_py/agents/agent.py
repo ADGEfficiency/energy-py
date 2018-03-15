@@ -57,6 +57,8 @@ class BaseAgent(object):
                                             self.obs_shape,
                                             self.action_shape)
 
+        #  0.4 to 1 reccomended by Schaul et. al 2015 
+        #  and Hessel et. al (2017) Rainbow
         if self.memory_type == 'priority':
             beta_args = {'sched_step': total_steps,
                          'initial': 0.4,
