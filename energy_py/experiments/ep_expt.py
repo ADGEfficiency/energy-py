@@ -23,7 +23,7 @@ if __name__ == '__main__':
     env_config = {'episode_length': 2016,
                   'episode_random': True}
 
-    data_path = os.getcwd()+'/perfect_forecast/'
+    data_path = os.getcwd()+'/datasets/perfect_forecast/'
     results_path = os.getcwd()+'/results/priority_dqn_batt/'
 
     agent, env, sess = experiment(agent=DQN,

@@ -197,9 +197,13 @@ class DQN(BaseAgent):
         q_vals = q_vals.reshape(obs.shape[0], len(self.actions))
 
         #  create a tiled array of actions
-        tiled = np.tile(self.actions, obs.shape[0]).reshape(obs.shape[0], -1)
+        tiled = np.tile(np.array(self.actions),
+                        obs.shape[0]).reshape(obs.shape[0],
+                                              len(self.actions),
+                                              *self.action_shape)
+
         #  index out the action
-        action = tiled[np.arange(obs.shape[0]), action_idx]
+        action = tiled[np.arange(obs.shape[0]), action_idx, :]
         action = np.array(action).reshape(obs.shape[0], *self.action_shape)
 
         logger.debug('predict_online - observation {}'.format(obs))
@@ -247,7 +251,8 @@ class DQN(BaseAgent):
             logger.debug('acting optimally action is {}'.format(action))
 
         if hasattr(self, 'acting_writer'):
-            epsilon_sum = tf.Summary(value=[tf.Summary.Value(tag='epsilon', simple_value=eps)])
+            epsilon_sum = tf.Summary(value=[tf.Summary.Value(tag='epsilon',
+                                                             simple_value=eps)])
             self.acting_writer.add_summary(epsilon_sum, self.counter)
             self.acting_writer.flush()
 
@@ -266,9 +271,18 @@ class DQN(BaseAgent):
         #  TODO could just make the other memory types accept beta as an arg
         #  and not use it
         logger.debug('getting batch from memory')
+
         if self.memory_type == 'priority':
+            beta = self.beta()
             batch = self.memory.get_batch(self.batch_size,
-                                          beta=self.beta())
+                                          beta=beta)
+
+            if hasattr(self, 'acting_writer'):
+                beta_sum = tf.Summary(value=[tf.Summary.Value(tag='beta',
+                                                              simple_value=beta)])
+                self.acting_writer.add_summary(beta_sum, self.counter)
+                self.acting_writer.flush()
+
         else:
             batch = self.memory.get_batch(self.batch_size)
 
@@ -286,13 +300,14 @@ class DQN(BaseAgent):
         else:
             importance_weights = np.ones_like(rewards)
 
-        if self.double_q == False:
+        if self.double_q is False:
             #  the DQN update
-
             #  max across the target network
+            logger.debug('DQN update')
             _, next_obs_q = self.predict_target(next_observations)
 
         if self.double_q:
+            logger.debug('DDQN update')
             #  argmax across the online network to find the action 
             #  the online net thinks is optimal
             _, action_index, _ = self.predict_online(next_observations)
@@ -301,9 +316,10 @@ class DQN(BaseAgent):
             t_q_vals, _ = self.predict_target(next_observations)
 
             next_obs_q = t_q_vals[np.arange(next_observations.shape[0]),
-                                            action_index]
+                                  action_index]
 
         next_obs_q = next_obs_q.reshape(next_observations.shape[0], 1)
+
         #  if next state is terminal, set the value to zero
         next_obs_q[terminals] = 0
 

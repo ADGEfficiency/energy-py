@@ -38,6 +38,7 @@ class BaseAgent(object):
                  observation_processor=None,
                  action_processor=None,
                  target_processor=None,
+                 reward_clip=None,
                  act_path=None,
                  learn_path=None,
                  **kwargs):
@@ -57,7 +58,13 @@ class BaseAgent(object):
                                             self.obs_shape,
                                             self.action_shape)
 
-        #  0.4 to 1 reccomended by Schaul et. al 2015 
+        #  there must be a better way
+        if reward_clip:
+            self.reward_clip = float(reward_clip)
+        else:
+            self.reward_clip = None
+
+        #  0.4 to 1 reccomended by Schaul et. al 2015
         #  and Hessel et. al (2017) Rainbow
         if self.memory_type == 'priority':
             beta_args = {'sched_step': total_steps,
@@ -68,10 +75,6 @@ class BaseAgent(object):
 
         #  a counter our agent can use as it sees fit
         self.counter = 0
-
-        #  inital number of steps not to learn from
-        #  defaults at 0, can be overwritten in the agent init
-        # self.initial_random = 0
 
         #  optional objects to process arrays before they hit neural networks
         if observation_processor:
@@ -161,6 +164,9 @@ class BaseAgent(object):
 
         if hasattr(self, 'action_processor'):
             action = self.action_processor.transform(action)
+
+        if self.reward_clip:
+            reward = min(reward, self.reward_clip)
 
         return self.memory.remember(observation, action, reward,
                                     next_observation, done)
