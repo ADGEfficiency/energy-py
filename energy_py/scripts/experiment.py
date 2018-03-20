@@ -66,8 +66,8 @@ def make_paths(data_path, results_path, run_name=None):
 
 
 def experiment(agent, agent_config, env,
-               total_steps, data_path, results_path, 
-               run_name=None, env_config=None):
+               total_steps, data_path, results_path,
+               run_name=None, env_config=None, seed=None):
     """
     Run an experiment.  Episodes are run until total_steps are reached.
 
@@ -79,6 +79,7 @@ def experiment(agent, agent_config, env,
         total_steps (int)
         data_path (str)
         results_path (str)
+        seed (int)
 
     returns
         agent (object)
@@ -87,6 +88,11 @@ def experiment(agent, agent_config, env,
     """
     #  start a new tensorflow session
     with tf.Session() as sess:
+
+        #  optionally set random seeds
+        if seed:
+            tf.set_random_seed(seed)
+            np.random.seed(seed)
 
         #  create a dictionary of paths
         paths = make_paths(data_path, results_path, run_name)
