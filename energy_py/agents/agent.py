@@ -33,7 +33,7 @@ class BaseAgent(object):
                  env,
                  discount,
                  memory_length,
-                 total_steps=100000,
+                 total_steps,
                  memory_type='priority',
                  observation_processor=None,
                  action_processor=None,
