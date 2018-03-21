@@ -521,12 +521,13 @@ class Qfunc(object):
         #  averages across the batch (ie a scalar to represent the whole batch)
         average_q_val = tf.reduce_mean(self.q_value)
 
-        acting_sum = [tf.summary.histogram('observation_act', self.observation),
-                      tf.summary.histogram('input_weights', w1),
-                      tf.summary.histogram('input_bias', b1),
-                      tf.summary.histogram('output_weights', wout),
-                      tf.summary.histogram('output_bias', bout),
-                      tf.summary.histogram('q_values', self.q_values),
+        # acting_sum = [tf.summary.histogram('observation_act', self.observation),
+        #               tf.summary.histogram('input_weights', w1),
+        #               tf.summary.histogram('input_bias', b1),
+        #               tf.summary.histogram('output_weights', wout),
+        #               tf.summary.histogram('output_bias', bout),
+
+        acting_sum = [tf.summary.histogram('q_values', self.q_values),
                       tf.summary.histogram('max_q', self.max_q)]
 
         self.acting_summary = tf.summary.merge(acting_sum)
