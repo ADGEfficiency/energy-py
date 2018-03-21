@@ -1,4 +1,5 @@
 import logging
+from random import random
 
 from energy_py.envs import BaseEnv
 from energy_py.scripts.spaces import ContinuousSpace, GlobalSpace
@@ -19,7 +20,8 @@ class Battery(BaseEnv):
         power_rating (float) maximum rate of battery charge or discharge [MW]
         capacity (float) amount of electricity that can be stored [MWh]
         round_trip_eff (float) round trip efficiency of storage [%]
-        initial_charge (float) inital charge as pct of capacity [%]
+        initial_charge (float or str) inital charge as pct of capacity [%]
+                               also possible to pass 'random'
 
     """
     def __init__(self,
@@ -34,10 +36,11 @@ class Battery(BaseEnv):
                  **kwargs):
 
         #  technical energy inputs
+        #  initial charge is set during reset()
         self.power_rating = float(power_rating)  # MW
         self.capacity = float(capacity)  # MWh
         self.round_trip_eff = float(round_trip_eff)  # %
-        self.initial_charge = float(self.capacity * initial_charge)  # MWh
+        self.initial_charge = initial_charge
 
         super().__init__(data_path,
                          episode_length,
@@ -77,28 +80,40 @@ class Battery(BaseEnv):
         self.observation = self.reset()
 
     def __repr__(self):
-        return """<energy_py BATTERY environment
-                - {} MW {} MWh>""".format(self.power_rating,
-                                          self.capacity)
+        repr = '<energy_py BATTERY environment - {} MW {} MWh>'
+        return repr.format(self.power_rating, self.capacity)
 
     def _reset(self):
         """
-        Resets the environment.
+        Resets the environment
 
         returns
             observation (np.array) the initial observation
         """
+        #  setting the initial charge
+        if self.initial_charge == 'random':
+            initial_charge = random()  # %
+        else:
+            initial_charge = float(self.initial_charge)  # %
+
+        initial_charge = float(self.capacity * initial_charge)  # MWh
+
         #  reseting the step counter, state, observation & done status
         self.steps = 0
-        self.state = self.get_state(steps=self.steps, append=self.initial_charge)
-        self.observation = self.get_observation(steps=self.steps, append=self.initial_charge)
         self.done = False
 
-        #  checking the initial charge
+        self.state = self.get_state(steps=self.steps,
+                                    append=initial_charge)
+
+        self.observation = self.get_observation(steps=self.steps,
+                                                append=initial_charge)
+
+        #  pull the charge out of the state variable to check it
         initial_charge = self.state[0][-1]
         assert initial_charge <= self.capacity
         assert initial_charge >= 0
 
+        logger.info('resetting environment')
         logger.debug('initial state is {}'.format(self.state))
         logger.debug('initial obs is {}'.format(self.observation))
         logger.debug('initial charge is {}'.format(initial_charge))
