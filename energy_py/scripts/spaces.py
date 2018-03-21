@@ -123,8 +123,7 @@ class GlobalSpace(object):
             n_discr (int) number of discrete spaces in the action space
         """
         disc = [spc.discretize(n_discr) for spc in self.spaces]
-        discrete_spaces = [a for a in itertools.product(*disc)]
-        self.discrete_spaces = [np.array(a) for a in discrete_spaces]
+        self.discrete_spaces = [list(a) for a in itertools.product(*disc)]
         return self.discrete_spaces
 
     def append(self, space):

@@ -334,7 +334,7 @@ class DQN(BaseAgent):
         indicies = np.zeros((actions.shape[0], 1), dtype=int)
 
         for arr, action in zip(indicies, actions):
-            idx = self.actions.index(action)
+            idx = self.actions.index(action.tolist())
             arr[0] = idx
 
         rng = np.arange(actions.shape[0]).reshape(actions.shape[0], 1)
