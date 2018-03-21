@@ -12,7 +12,6 @@ if __name__ == '__main__':
                     'batch_size': 32,
                     'layers': (25, 25, 25),
                     'learning_rate': 0.0001,
-                    'initial_random': 0.0,
                     'epsilon_decay_fraction': 0.3,
                     'memory_fraction': 0.15,
                     'memory_type': 'priority',
