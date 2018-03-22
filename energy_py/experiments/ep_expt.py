@@ -15,15 +15,17 @@ if __name__ == '__main__':
                     'epsilon_decay_fraction': 0.3,
                     'memory_fraction': 0.15,
                     'memory_type': 'priority',
+		    'double_q': True,
                     'process_observation': 'normalizer',
                     'process_target': 'standardizer'}
 
     env = BatteryEnv
     env_config = {'episode_length': 2016,
+		  'initial_charge': 'random',
                   'episode_random': True}
 
     data_path = os.getcwd()+'/datasets/perfect_forecast/'
-    results_path = os.getcwd()+'/results/priority_dqn_batt/'
+    results_path = os.getcwd()+'/results/battery/'
 
     agent, env, sess = experiment(agent=DQN,
                                   agent_config=agent_config,
@@ -31,4 +33,5 @@ if __name__ == '__main__':
                                   env_config=env_config,
                                   total_steps=total_steps,
                                   data_path=data_path,
-                                  results_path=results_path)
+                                  results_path=results_path,
+				  run_name='DDQN_priority')
