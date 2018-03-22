@@ -80,4 +80,4 @@ class ClassifierAgent(BaseAgent):
         self.strageties = strageties
 
     def _act(self, observation):
-
+        pass
