@@ -28,10 +28,14 @@ weights = np.ones(1).reshape(1,1)
 
 def test_train_op():
     with tf.Session() as sess:
-        q = Qfunc(config, scope='test')
+        q = Qfunc(config, scope='test_train_op')
 
         sess.run(tf.global_variables_initializer())
-        before = sess.run(tf.trainable_variables())
+
+        params = [p for p in tf.trainable_variables()
+                  if p.name.startswith('test_train_op')]
+
+        before = sess.run(params)
 
         _ = sess.run(q.train_op,
                      feed_dict={q.observation: observation,
@@ -39,7 +43,7 @@ def test_train_op():
                                 q.action: action,
                                 q.importance_weights: weights}) 
 
-        after = sess.run(tf.trainable_variables())
+        after = sess.run(params)
 
         for b, a in zip(before, after):
             assert(b != a).any()
