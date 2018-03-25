@@ -78,9 +78,17 @@ class Flex(BaseEnv):
         """
         obs_spc, self.observation_ts, self.state_ts = self.get_state_obs()
 
-        #  add on a space to represent the flex availability
-        obs_spc.append(DiscreteSpace(1))
-        self.observation_info.append('flex_availability')
+        #  add infomation onto our observation
+        obs_spc.extend(DiscreteSpace(1),
+                       DiscreteSpace(self.flex_down_time),
+                       DiscreteSpace(self.flex_up_time),
+                       DiscreteSpace(self.relax_time))
+
+        self.observation_info.extend('flex_availability',
+                                     'flex_down_cycle',
+                                     'flex_up_cycle',
+                                     'relax_cycle')
+
         self.observation_space = GlobalSpace(obs_spc)
 
         #  set the initial observation by resetting the environment
@@ -109,8 +117,12 @@ class Flex(BaseEnv):
 
         #  Resetting steps, state, observation, done status
         self.steps = 0
-        self.state = self.get_state(steps=self.steps, append=self.flex_avail)
-        self.observation = self.get_observation(self.steps, self.flex_avail)
+        self.state = self.get_state(steps=self.steps)
+        self.observation = self.get_observation(self.steps,
+                                                self.flex_avail,
+                                                self.flex_down,
+                                                self.flex_up,
+                                                self.relax)
         self.done = False
 
         return self.observation
@@ -132,8 +144,8 @@ class Flex(BaseEnv):
             info (dict)
         """
         #  pull the electricity price out of the state
-        elect_price_index = self.state_info.index('C_electricity_price_[$/MWh]')
-        self.electricity_price = self.state[0][elect_price_index]
+        price_index = self.state_info.index('C_electricity_price_[$/MWh]')
+        self.electricity_price = self.state[0][price_index]
 
         #  grab the action
         assert action.shape == (1, 1)

@@ -10,40 +10,6 @@ from energy_py.scripts.spaces import ContinuousSpace, DiscreteSpace
 logger = logging.getLogger(__name__)
 
 
-def make_observation(path, horizion=5):
-    """
-    Creates the state.csv and observation.csv.
-
-    Currently only supports giving the agent a forecast.
-
-    args
-        horizion (int) number of steps for the observation forecast
-    """
-    print('creating new state.csv and observation.csv')
-    #  load the raw state infomation
-    raw_state_path = os.path.join(path, 'raw_state.csv')
-    raw_state = pd.read_csv(raw_state_path, index_col=0, parse_dates=True)
-
-    #  create the observation, which is a perfect forecast
-    observations = [raw_state.shift(-i) for i in range(horizion)]
-    observation = pd.concat(observations, axis=1).dropna()
-
-    #  we dropped na's we now need to realign
-    state, observation = raw_state.align(observation, axis=0, join='inner')
-
-    #  add a counter for agent to learn from
-    observation['D_counter'] = np.arange(observation.shape[0])
-
-    #  add some datetime features
-    observation.index = state.index
-    observation['D_hour'] = observation.index.hour
-
-    state.to_csv(os.path.join(path, 'state.csv'))
-    observation.to_csv(os.path.join(path, 'observation.csv'))
-
-    return state, observation
-
-
 class BaseEnv(object):
     """
     The base environment class for time series environments
@@ -160,7 +126,8 @@ class BaseEnv(object):
 
         except FileNotFoundError:
             #  create observation from scratch
-            state, observation = make_observation(data_path)
+            raise FileNotFoundError(('state.csv & observation.csv'
+                                     'are missing from {}'.format(data_path)))
 
         #  grab the column name so we can index state & obs arrays
         self.state_info = state.columns.tolist()
@@ -249,6 +216,7 @@ class BaseEnv(object):
         Helper function to get a state.
 
         Also takes an optional argument to append onto the end of the array.
+
         This is so that environment specific info can be added onto the
         state array.
 
@@ -260,29 +228,39 @@ class BaseEnv(object):
             append (list) optional array to append onto the state
 
         returns
-            ts_info (np.array)
+            state (np.array)
         """
-        ts_info = np.array(self.state_ts.iloc[steps, :])
-        ts_info = np.append(ts_info, append)
+        state = np.array(self.state_ts.iloc[steps, :])
+        state = np.append(state, append)
 
-        return ts_info.reshape(1, -1)
+        state = state.reshape(1, -1)
+        assert state.shape[1] == len(self.state_info)
+
+        return state
 
     def get_observation(self, steps, append=[]):
         """
         Helper function to get a observation.
 
         Also takes an optional argument to append onto the end of the array.
+
         This is so that environment specific info can be added onto the
         observation array.
+
+        Repeated code with get_observation but I think having two functions
+        is cleaner when using in the child class.
 
         args
             steps (int) used as a row index
             append (list) optional array to append onto the observation
 
         returns
-            ts_info (np.array)
+            observation (np.array)
         """
-        ts_info = np.array(self.observation_ts.iloc[steps, :])
-        ts_info = np.append(ts_info, np.array(append))
+        observation = np.array(self.observation_ts.iloc[steps, :])
+        observation = np.append(observation, np.array(append))
 
-        return ts_info.reshape(1, -1)
+        observation = observation.reshape(1, -1)
+        assert observation.shape[1] == len(self.observation_info)
+
+        return observation

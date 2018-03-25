@@ -126,12 +126,12 @@ class GlobalSpace(object):
         self.discrete_spaces = [list(a) for a in itertools.product(*disc)]
         return self.discrete_spaces
 
-    def append(self, space):
+    def extend(self, space):
         """
         args
             space (object) energy_py space object
         """
-        self.spaces.append(space)
+        self.spaces.extend(space)
 
     @property
     def shape(self):
