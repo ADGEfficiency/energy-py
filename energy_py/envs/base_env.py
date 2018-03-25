@@ -231,14 +231,15 @@ class BaseEnv(object):
             state (np.array)
         """
         state = np.array(self.state_ts.iloc[steps, :])
-        state = np.append(state, append)
+        if append:
+            state = np.append(state, append)
 
         state = state.reshape(1, -1)
         assert state.shape[1] == len(self.state_info)
 
         return state
 
-    def get_observation(self, steps, append=[]):
+    def get_observation(self, steps, append=None):
         """
         Helper function to get a observation.
 
@@ -258,7 +259,8 @@ class BaseEnv(object):
             observation (np.array)
         """
         observation = np.array(self.observation_ts.iloc[steps, :])
-        observation = np.append(observation, np.array(append))
+        if append:
+            observation = np.append(observation, np.array(append))
 
         observation = observation.reshape(1, -1)
         assert observation.shape[1] == len(self.observation_info)

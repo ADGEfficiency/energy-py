@@ -16,7 +16,7 @@ from energy_py import experiment
 
 DATA_PATH = os.getcwd()+'/data/'
 RESULTS_PATH = os.getcwd()+'/results/'
-TOTAL_STEPS = 200
+TOTAL_STEPS = 200 
 
 AGENT_CONFIG = {'discount': 0.97,
                 'tau': 0.001,
@@ -90,7 +90,7 @@ if __name__ == '__main__':
 
     agent_config = {'discount': 0.97,
                     'tau': 0.001,
-                    'total_steps': 500000,
+                    'total_steps': TOTAL_STEPS,
                     'batch_size': 32,
                     'layers': (50, 50),
                     'learning_rate': 0.0001,
@@ -99,11 +99,10 @@ if __name__ == '__main__':
                     'process_observation': False,
                     'process_target': False}
 
-    env_config = {'episode_length': 100,
+    env_config = {'episode_length': 50,
                   'episode_random': False}
 
     agent = DQN
-    total_steps = 1000
     env = FlexEnv
     data_path = DATA_PATH
     results_path = RESULTS_PATH
@@ -136,7 +135,7 @@ if __name__ == '__main__':
 
         #  outer while loop runs through multiple episodes
         step, episode = 0, 0
-        while step < total_steps:
+        while step < TOTAL_STEPS:
             episode += 1
             done = False
             observation = env.reset()

@@ -79,15 +79,15 @@ class Flex(BaseEnv):
         obs_spc, self.observation_ts, self.state_ts = self.get_state_obs()
 
         #  add infomation onto our observation
-        obs_spc.extend(DiscreteSpace(1),
+        obs_spc.extend([DiscreteSpace(1),
                        DiscreteSpace(self.flex_down_time),
                        DiscreteSpace(self.flex_up_time),
-                       DiscreteSpace(self.relax_time))
+                       DiscreteSpace(self.relax_time)])
 
-        self.observation_info.extend('flex_availability',
+        self.observation_info.extend(['flex_availability',
                                      'flex_down_cycle',
                                      'flex_up_cycle',
-                                     'relax_cycle')
+                                     'relax_cycle'])
 
         self.observation_space = GlobalSpace(obs_spc)
 
@@ -118,11 +118,12 @@ class Flex(BaseEnv):
         #  Resetting steps, state, observation, done status
         self.steps = 0
         self.state = self.get_state(steps=self.steps)
+        import pdb; pdb.set_trace()
         self.observation = self.get_observation(self.steps,
-                                                self.flex_avail,
+                                                append=[self.flex_avail,
                                                 self.flex_down,
                                                 self.flex_up,
-                                                self.relax)
+                                                self.relax])
         self.done = False
 
         return self.observation
@@ -243,8 +244,12 @@ class Flex(BaseEnv):
                 self.flex_up, self.flex_down, self.relax, reward))
 
         self.steps += 1
-        next_state = self.get_state(self.steps, append=self.flex_avail)
-        next_observation = self.get_observation(self.steps, self.flex_avail)
+        next_state = self.get_state(self.steps)
+        next_observation = self.get_observation(self.steps,
+                                                append=[self.flex_avail,
+                                                        self.flex_down,
+                                                        self.flex_up,
+                                                        self.relax])
 
         #  check to see if we are done
         if self.steps == (self.episode_length - 1):
