@@ -93,6 +93,7 @@ def experiment(agent, agent_config, env,
         if seed:
             tf.set_random_seed(seed)
             np.random.seed(seed)
+            agent_config['seed'] = seed
 
         #  create a dictionary of paths
         paths = make_paths(data_path, results_path, run_name)
