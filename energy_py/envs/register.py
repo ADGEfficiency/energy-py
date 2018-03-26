@@ -88,7 +88,7 @@ class CartPoleEnv(EnvWrapper):
 class PendulumEnv(EnvWrapper):
 
     def __init__(self):
-        env = gym.make('Pendulum-V0')
+        env = gym.make('Pendulum-v0')
         super(PendulumEnv, self).__init__(env)
 
         self.observation_space = self.env.observation_space
@@ -111,7 +111,7 @@ class PendulumEnv(EnvWrapper):
 class MountainCarEnv(EnvWrapper):
 
     def __init__(self):
-        env = gym.make('Pendulum-V0')
+        env = gym.make('MountainCar-V0')
         super(MountainCarEnv, self).__init__(env)
 
         self.observation_space = self.env.observation_space

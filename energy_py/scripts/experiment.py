@@ -99,7 +99,7 @@ def experiment(agent, agent_config, env,
 
         #  some env's don't need to be configured
         if env_config:
-            env_config['data_path'] = paths['data_path']
+            env_config['data_path'] = 'data_path'
             env = env(**env_config)
             save_args(env_config, path=paths['env_args'])
 
