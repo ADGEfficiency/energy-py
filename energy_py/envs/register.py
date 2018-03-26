@@ -87,7 +87,7 @@ class CartPoleEnv(EnvWrapper):
 
 class PendulumEnv(EnvWrapper):
 
-    def __init__(self, num_discrete):
+    def __init__(self):
         env = gym.make('Pendulum-V0')
         super(PendulumEnv, self).__init__(env)
 

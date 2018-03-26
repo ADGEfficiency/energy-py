@@ -2,7 +2,7 @@ import logging
 import os
 
 from energy_py import experiment
-from energy_py.agents import DQN
+from energy_py.agents import DPG, DQN
 from energy_py.envs import CartPoleEnv, PendulumEnv
 
 if __name__ == '__main__':
@@ -26,9 +26,9 @@ if __name__ == '__main__':
 
     results_path = os.getcwd()+'/results/PendulumEnv/'
 
-    agent, env, sess = experiment(agent=DQN, 
-                                  agent_config=agent_config, 
+    agent, env, sess = experiment(agent=DPG,
+                                  agent_config=agent_config,
                                   env=env,
-                                  total_steps=total_steps, 
+                                  total_steps=total_steps,
                                   results_path=results_path,
                                   run_name='DDQN')
