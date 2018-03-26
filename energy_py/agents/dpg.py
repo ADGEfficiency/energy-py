@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class DPG(BaseAgent):
     """
-    energy_py implementation of Determinstic Policy Gradients
+    energy_py implementation of Determinstic Policy Gradient
 
     args
         env (object) energy_py environment

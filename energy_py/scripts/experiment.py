@@ -23,7 +23,7 @@ import tensorflow as tf
 from energy_py import save_args, ensure_dir, make_logger, TensorboardHepler
 
 
-def make_paths(data_path, results_path, run_name=None):
+def make_paths(results_path, run_name=None):
     """
     Creates a dictionary of paths for use with experiments
 
@@ -42,8 +42,7 @@ def make_paths(data_path, results_path, run_name=None):
     #  run_path is the folder where output from this run will be saved in
     run_path = join(results_path, run_name)
 
-    paths = {'data_path': data_path,
-             'run_path': run_path,
+    paths = {'run_path': run_path,
 
              #  tensorboard runs are all in the tensoboard folder
              #  this is for easy comparision of run
@@ -66,7 +65,7 @@ def make_paths(data_path, results_path, run_name=None):
 
 
 def experiment(agent, agent_config, env,
-               total_steps, data_path, results_path,
+               total_steps, results_path, data_path=None,
                run_name=None, env_config=None, seed=None):
     """
     Run an experiment.  Episodes are run until total_steps are reached.
@@ -96,7 +95,7 @@ def experiment(agent, agent_config, env,
             agent_config['seed'] = seed
 
         #  create a dictionary of paths
-        paths = make_paths(data_path, results_path, run_name)
+        paths = make_paths(results_path, run_name)
 
         #  some env's don't need to be configured
         if env_config:
