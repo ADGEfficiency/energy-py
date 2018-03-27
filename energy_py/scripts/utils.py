@@ -140,6 +140,7 @@ class TensorboardHepler(object):
         """
         self.steps += 1
         for tag, var in summaries.items():
+            var = float(var)
             summary = tf.Summary(value=[tf.Summary.Value(tag=tag,
                                                          simple_value=var)])
             self.writer.add_summary(summary, self.steps)

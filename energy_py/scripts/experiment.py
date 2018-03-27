@@ -99,7 +99,7 @@ def experiment(agent, agent_config, env,
 
         #  some env's don't need to be configured
         if env_config:
-            env_config['data_path'] = 'data_path'
+            env_config['data_path'] = data_path
             env = env(**env_config)
             save_args(env_config, path=paths['env_args'])
 
@@ -188,7 +188,7 @@ class Runner(object):
     def calc_time(self):
         return (time.time() - self.start_time) / 60
 
-    def report(self, summaries, env_info=None):
+    def report(self, summaries={}, env_info=None):
         """
         The main functionality of this class
 
@@ -214,7 +214,7 @@ class Runner(object):
 
         #  add the run time so we can log the summaries
         summaries['run_time'] = self.calc_time()
-        log = ['{} : {:.2f}'.format(k, v) for k, v in summaries.items()]
+        log = ['{} : {}'.format(k, v) for k, v in summaries.items()]
         self.logger_timer.info(log)
 
         if hasattr(self, 'tb_helper'):

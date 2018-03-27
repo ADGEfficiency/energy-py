@@ -78,13 +78,13 @@ class BaseAgent(object):
 
         #  optional objects to process arrays before they hit neural networks
         if observation_processor:
-            self.observation_processor = processors[observation_processor]
+            self.observation_processor = processors[observation_processor]()
 
         if action_processor:
-            self.action_processor = processors[action_processor]
+            self.action_processor = processors[action_processor]()
 
         if target_processor:
-            self.target_processor = processors[target_processor]
+            self.target_processor = processors[target_processor]()
 
         #  optional tensorflow FileWriters for acting and learning
         if act_path:
@@ -119,15 +119,13 @@ class BaseAgent(object):
         """
         logger.debug('Agent is acting')
 
+        #  some environments (i.e. gym) return observations as flat arrays
+        #  energy_py agents use arrays of shape(batch_size, *shape)
+        observation = observation.reshape(1, *self.obs_shape)
+
         if hasattr(self, 'observation_processor'):
             observation = self.observation_processor.transform(observation)
 
-        #  some environments (i.e. gym) return observations as flat arrays
-        #  energy_py agents use arrays of shape(batch_size, *shape)
-        if observation.ndim == 1:
-            observation = observation.reshape(1, *self.obs_shape)
-
-        assert observation.shape[0] == 1
         return self._act(observation)
 
     def learn(self, **kwargs):

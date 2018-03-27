@@ -3,6 +3,7 @@ import random
 import gym
 import numpy as np
 
+from energy_py import GlobalSpace
 from energy_py.envs.flex.env_flex import Flex
 from energy_py.envs.battery.battery_env import Battery
 
@@ -94,7 +95,7 @@ class PendulumEnv(EnvWrapper):
         self.observation_space = self.env.observation_space
         self.obs_space_shape = self.observation_space.shape
 
-        self.action_space = self.env.action_space
+        self.action_space = GlobalSpace([self.env.action_space])
         self.action_space_shape = self.action_space.shape
 
     def discretize(self, num_discrete):

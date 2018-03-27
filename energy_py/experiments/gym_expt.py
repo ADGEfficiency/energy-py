@@ -31,4 +31,4 @@ if __name__ == '__main__':
                                   env=env,
                                   total_steps=total_steps,
                                   results_path=results_path,
-                                  run_name='DDQN')
+                                  run_name='DPG')

@@ -44,7 +44,7 @@ class DPG(BaseAgent):
         self.batch_size = batch_size
         memory_length = total_steps * memory_fraction
 
-        super().__init__(env, discount, memory_length, **kwargs)
+        super().__init__(env, discount, memory_length, total_steps, **kwargs)
 
         actor_config = {'sess': self.sess,
                         'observation_shape': self.obs_shape,
@@ -89,6 +89,7 @@ class DPG(BaseAgent):
         #  create a Bellman target to update our critic
         #  get an estimate of next state value using target network
         #  we use the target network to generate actions
+        #  TODO should I add noise here??????
         t_actions = self.actor.get_target_action(next_obs)
 
         if hasattr(self, 'action_processor'):
@@ -273,9 +274,12 @@ class DPGActor(object):
 
     def get_action(self, obs):
         #  generating an action from the policy network
-        #  TODO check what hapens if noise and batch size are different!!!
         determ_action = self.sess.run(self.action, {self.obs: obs})
-        noise = self.actor_noise().reshape(-1, *self.action_shape)
+
+        noise = [self.actor_noise() for _ in range(obs.shape[0])]
+
+        noise = np.array(noise).reshape(obs.shape[0], *self.action_shape)
+
         action = determ_action + self.actor_noise()
 
         #  clipping the action

@@ -118,7 +118,6 @@ class Flex(BaseEnv):
         #  Resetting steps, state, observation, done status
         self.steps = 0
         self.state = self.get_state(steps=self.steps)
-        import pdb; pdb.set_trace()
         self.observation = self.get_observation(self.steps,
                                                 append=[self.flex_avail,
                                                 self.flex_down,

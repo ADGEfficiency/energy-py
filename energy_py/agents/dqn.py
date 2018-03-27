@@ -15,7 +15,6 @@ tensorflow graph but all sess.run's are within the DQN agent class.
 
 import logging
 from random import random
-import pdb
 import numpy as np
 import tensorflow as tf
 
