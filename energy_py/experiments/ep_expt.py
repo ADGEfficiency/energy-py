@@ -19,13 +19,13 @@ if __name__ == '__main__':
                     'process_observation': 'normalizer',
                     'process_target': 'standardizer'}
 
-    env = BatteryEnv
+    env = FlexEnv
     env_config = {'episode_length': 2016,
-                  'initial_charge': 'random',
+                 # 'initial_charge': 'random',
                   'episode_random': True}
 
     data_path = os.getcwd()+'/datasets/perfect_forecast/'
-    results_path = os.getcwd()+'/results/battery/'
+    results_path = os.getcwd()+'/results/flex/'
 
     agent, env, sess = experiment(agent=DQN,
                                   agent_config=agent_config,

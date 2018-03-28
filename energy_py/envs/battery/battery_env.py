@@ -70,8 +70,8 @@ class Battery(BaseEnv):
         observation_space, self.observation_ts, self.state_ts = self.get_state_obs()
 
         #  append on any additional variables we want our agent to see
-        observation_space.extend(ContinuousSpace(0, self.capacity))
-        self.observation_info.extend('C_charge_level_[MWh]')
+        observation_space.extend([ContinuousSpace(0, self.capacity)])
+        self.observation_info.extend(['C_charge_level_[MWh]'])
 
         #  create a energy_py GlobalSpace object for the observation space
         self.observation_space = GlobalSpace(observation_space)
@@ -102,8 +102,7 @@ class Battery(BaseEnv):
         self.steps = 0
         self.done = False
 
-        self.state = self.get_state(steps=self.steps,
-                                    append=initial_charge)
+        self.state = self.get_state(steps=self.steps)
 
         self.observation = self.get_observation(steps=self.steps,
                                                 append=initial_charge)
