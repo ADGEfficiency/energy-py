@@ -11,6 +11,7 @@ Module contains:
 """
 
 import datetime
+import csv
 import logging
 import logging.config
 import os
@@ -55,7 +56,8 @@ def make_paths(results_path, run_name=None):
              'debug_log': join(run_path, 'debug.log'),
              'info_log': join(run_path, 'info.log'),
              'env_args': join(run_path, 'env_args.txt'),
-             'agent_args': join(run_path, 'agent_args.txt')}
+             'agent_args': join(run_path, 'agent_args.txt'),
+             'ep_rewards': join(run_path, 'ep_rewards.csv')}
 
     #  check that all our paths exist
     for key, path in paths.items():
@@ -118,7 +120,8 @@ def experiment(agent, agent_config, env,
         save_args(agent_config, path=paths['agent_args'])
 
         #  runner helps to manage our experiment
-        runner = Runner(tb_path=paths['tb_rl'],
+        runner = Runner(rewards_path=paths['ep_rewards'],
+                        tb_path=paths['tb_rl'],
                         env_hist_path=paths['env_histories'])
 
         #  outer while loop runs through multiple episodes
@@ -150,6 +153,9 @@ def experiment(agent, agent_config, env,
                            'step': step},
                           env_info=info)
 
+        #  save the episode rewards as a csv
+        runner.save_rewards()
+
     return agent, env, sess
 
 
@@ -166,10 +172,16 @@ class Runner(object):
         tb_path (str)  path where tb logs sit
         env_hist_path (str)  path to save env data too
     """
-    def __init__(self, tb_path=None, env_hist_path=None):
+    def __init__(self,
+                 rewards_path=None,
+                 tb_path=None,
+                 env_hist_path=None):
 
         self.start_time = time.time()
         self.logger_timer = logging.getLogger('runner')
+
+        if rewards_path:
+            self.rewards_path = rewards_path
 
         if tb_path:
             self.tb_helper = TensorboardHepler(tb_path)
@@ -224,3 +236,14 @@ class Runner(object):
 
         #  reset the counter for episode rewards
         self.ep_rewards = []
+
+    def save_rewards(self):
+        """
+        Saves the global rewards list to a csv
+        """
+        import pdb; pdb.set_trace()
+        with open(self.rewards_path, 'w') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(self.global_rewards)
+
+

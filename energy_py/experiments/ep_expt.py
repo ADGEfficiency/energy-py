@@ -16,8 +16,8 @@ if __name__ == '__main__':
                     'memory_fraction': 0.15,
                     'memory_type': 'priority',
                     'double_q': True,
-                    'process_observation': 'normalizer',
-                    'process_target': 'standardizer'}
+                    'process_observation': 'standardizer',
+                    'process_target': 'normalizer'}
 
     env = FlexEnv
     env_config = {'episode_length': 2016,

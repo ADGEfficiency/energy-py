@@ -7,7 +7,7 @@ from energy_py.envs import CartPoleEnv, PendulumEnv
 
 if __name__ == '__main__':
 
-    total_steps = 1e5
+    total_steps = 1e2
     agent = DQN
     agent_config = {'discount': 0.97,
                     'tau': 0.001,
