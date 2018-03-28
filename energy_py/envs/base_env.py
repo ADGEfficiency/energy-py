@@ -148,7 +148,6 @@ class BaseEnv(object):
             observation_space (object) energy_py GlobalSpace
             observation_ts (pd.DataFrame)
             state_ts (pd.DataFrame)
-
         """
         start, end = self.get_ts_row_idx()
 

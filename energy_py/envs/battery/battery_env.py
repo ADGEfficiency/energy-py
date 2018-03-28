@@ -96,7 +96,7 @@ class Battery(BaseEnv):
         else:
             initial_charge = float(self.initial_charge)  # %
 
-        initial_charge = float(self.capacity * initial_charge)  # MWh
+        self.charge = float(self.capacity * initial_charge)  # MWh
 
         #  reseting the step counter, state, observation & done status
         self.steps = 0
@@ -105,17 +105,16 @@ class Battery(BaseEnv):
         self.state = self.get_state(steps=self.steps)
 
         self.observation = self.get_observation(steps=self.steps,
-                                                append=initial_charge)
+                                                append=self.charge)
 
         #  pull the charge out of the state variable to check it
-        initial_charge = self.state[0][-1]
-        assert initial_charge <= self.capacity
-        assert initial_charge >= 0
+        assert self.charge <= self.capacity
+        assert self.charge >= 0
 
         logger.info('resetting environment')
         logger.debug('initial state is {}'.format(self.state))
         logger.debug('initial obs is {}'.format(self.observation))
-        logger.debug('initial charge is {}'.format(initial_charge))
+        logger.debug('initial charge is {}'.format(self.charge))
 
         return self.observation
 
@@ -139,7 +138,8 @@ class Battery(BaseEnv):
         #  pulling out the state infomation
         elect_price_index = self.state_info.index('C_electricity_price_[$/MWh]')
         electricity_price = self.state[0][elect_price_index]
-        old_charge = self.state[0][-1]
+
+        old_charge = self.charge
 
         #  our action is sent to the environment as (1, num_actions)
         assert action.shape == (1, 2)
@@ -172,16 +172,16 @@ class Battery(BaseEnv):
             losses = 0
 
         #  we can now calculate the new charge of the battery after losses
-        new_charge = old_charge + gross_rate / 12 - losses
+        self.charge = old_charge + gross_rate / 12 - losses
         #  this allows us to calculate how much electricity we actually store
-        net_stored = new_charge - old_charge
+        net_stored = self.charge - old_charge
         #  and to calculate our actual rate of charge or discharge
         net_rate = net_stored * 12
 
         #  set a tolerance for the energy balances
         tolerance = 1e-10
         #  energy balance
-        assert (new_charge) - (old_charge + net_stored) < tolerance
+        assert (self.charge) - (old_charge + net_stored) < tolerance
         #  check that our net_rate and net_stored are consistent
         assert (net_rate) - (12 * net_stored) < tolerance
 
@@ -195,15 +195,16 @@ class Battery(BaseEnv):
         logger.debug('step is {:.3f}'.format(self.steps))
         logger.debug('action was {}'.format(action))
         logger.debug('old charge was {:.3f} MWh'.format(old_charge))
-        logger.debug('new charge is {:.3f} MWh'.format(new_charge))
+        logger.debug('new charge is {:.3f} MWh'.format(self.charge))
         logger.debug('gross rate is {:.3f} MW'.format(gross_rate))
         logger.debug('losses were {:.3f} MWh'.format(losses))
         logger.debug('net rate is {:.3f} MW'.format(net_rate))
         logger.debug('reward is {:.3f} $/5min'.format(reward))
 
         self.steps += 1
-        next_state = self.get_state(self.steps, append=float(new_charge))
-        next_observation = self.get_observation(self.steps, append=float(new_charge))
+        next_state = self.get_state(self.steps)
+        next_observation = self.get_observation(self.steps,
+                                                append=float(self.charge))
 
         #  check to see if episode is done
         #  -1 in here because of the zero index
@@ -223,7 +224,7 @@ class Battery(BaseEnv):
                                      electricity_price=electricity_price,
                                      gross_rate=gross_rate,
                                      losses=losses,
-                                     new_charge=new_charge,
+                                     new_charge=self.charge,
                                      old_charge=old_charge,
                                      net_stored=net_stored)
 

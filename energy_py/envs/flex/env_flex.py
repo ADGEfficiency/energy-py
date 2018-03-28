@@ -85,9 +85,9 @@ class Flex(BaseEnv):
                        DiscreteSpace(self.relax_time)])
 
         self.observation_info.extend(['flex_availability',
-                                     'flex_down_cycle',
-                                     'flex_up_cycle',
-                                     'relax_cycle'])
+                                      'flex_down_cycle',
+                                      'flex_up_cycle',
+                                      'relax_cycle'])
 
         self.observation_space = GlobalSpace(obs_spc)
 
