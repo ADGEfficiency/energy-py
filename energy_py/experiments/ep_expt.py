@@ -34,5 +34,5 @@ if __name__ == '__main__':
                                   total_steps=total_steps,
                                   data_path=data_path,
                                   results_path=results_path,
-				  seed=10,
-                                  run_name='DQN_2')
+				  seed=15,
+                                  run_name='DQN_4')
