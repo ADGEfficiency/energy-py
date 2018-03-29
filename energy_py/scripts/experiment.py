@@ -92,6 +92,7 @@ def experiment(agent, agent_config, env,
 
         #  optionally set random seeds
         if seed:
+	    random.seed(seed)
             tf.set_random_seed(seed)
             np.random.seed(seed)
             agent_config['seed'] = seed
