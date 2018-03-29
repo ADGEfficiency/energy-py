@@ -15,9 +15,9 @@ import csv
 import logging
 import logging.config
 import os
-import pdb
 import time
 
+import numpy as np
 import pandas as pd
 import tensorflow as tf
 
