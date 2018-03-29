@@ -125,7 +125,6 @@ class BaseEnv(object):
             observation = pd.read_csv(obs_path, index_col=0)
 
         except FileNotFoundError:
-            #  create observation from scratch
             raise FileNotFoundError(('state.csv & observation.csv'
                                      'are missing from {}'.format(data_path)))
 
