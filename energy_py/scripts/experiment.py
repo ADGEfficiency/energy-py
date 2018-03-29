@@ -241,7 +241,6 @@ class Runner(object):
         """
         Saves the global rewards list to a csv
         """
-        import pdb; pdb.set_trace()
         with open(self.rewards_path, 'w') as myfile:
             wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
             wr.writerow(self.global_rewards)

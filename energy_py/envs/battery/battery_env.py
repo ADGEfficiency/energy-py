@@ -104,8 +104,9 @@ class Battery(BaseEnv):
 
         self.state = self.get_state(steps=self.steps)
 
+        #  charge is passed as a list because 0 will evaluate to falsey
         self.observation = self.get_observation(steps=self.steps,
-                                                append=self.charge)
+                                                append=[self.charge])
 
         #  pull the charge out of the state variable to check it
         assert self.charge <= self.capacity

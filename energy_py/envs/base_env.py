@@ -230,6 +230,7 @@ class BaseEnv(object):
             state (np.array)
         """
         state = np.array(self.state_ts.iloc[steps, :])
+
         if append:
             state = np.append(state, append)
 
@@ -258,6 +259,7 @@ class BaseEnv(object):
             observation (np.array)
         """
         observation = np.array(self.observation_ts.iloc[steps, :])
+
         if append:
             observation = np.append(observation, np.array(append))
 
