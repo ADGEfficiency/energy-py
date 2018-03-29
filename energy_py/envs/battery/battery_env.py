@@ -205,7 +205,7 @@ class Battery(BaseEnv):
         self.steps += 1
         next_state = self.get_state(self.steps)
         next_observation = self.get_observation(self.steps,
-                                                append=float(self.charge))
+                                                append=[float(self.charge)])
 
         #  check to see if episode is done
         #  -1 in here because of the zero index
