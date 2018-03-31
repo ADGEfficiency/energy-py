@@ -1,11 +1,13 @@
 import os
 
-from energy_py import experiment
+from energy_py import experiment, make_expt_parser
 from energy_py.agents import DQN, DPG
 from energy_py.envs import FlexEnv, BatteryEnv
 
 if __name__ == '__main__':
-    total_steps = 1e6
+    args = make_expt_parser()
+
+    total_steps = 1e2
     agent_config = {'discount': 0.99,
                     'tau': 0.001,
                     'total_steps': total_steps,
@@ -34,5 +36,5 @@ if __name__ == '__main__':
                                   total_steps=total_steps,
                                   data_path=data_path,
                                   results_path=results_path,
-				  seed=20,
-                                  run_name='priority_3')
+                                  seed=args.seed,
+                                  run_name=args.name)

@@ -2,7 +2,7 @@
 A collection of functions to run experiments.
 
 Module contains:
-    expt_args - creates and parses command line arguments
+    make_expt_parser - parses command line arguments for experiments
     save_args - saves dictionaries or argparses to text files
     make_paths - creates a dictionary of paths
     make_logger - DEBUG to file, INFO to console
@@ -10,6 +10,7 @@ Module contains:
     Runner - class to save environment data & TensorBoard
 """
 
+import argparse
 import datetime
 import csv
 import logging
@@ -23,6 +24,23 @@ import pandas as pd
 import tensorflow as tf
 
 from energy_py import save_args, ensure_dir, make_logger, TensorboardHepler
+
+
+def make_expt_parser():
+    """
+    Parses arguments from the command line for running experiments
+
+    returns
+        args (argparse NameSpace)
+    """
+    parser = argparse.ArgumentParser(description='energy_py experiment argparser')
+
+    parser.add_argument('--name', default=None, type=str)
+    parser.add_argument('--seed', default=None, type=int)
+
+    args = parser.parse_args()
+
+    return args
 
 
 def make_paths(results_path, run_name=None):
