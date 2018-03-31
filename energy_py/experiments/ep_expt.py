@@ -14,7 +14,7 @@ if __name__ == '__main__':
                     'learning_rate': 0.0001,
                     'epsilon_decay_fraction': 0.4,
                     'memory_fraction': 0.15,
-                    'memory_type': 'deque',
+                    'memory_type': 'priority',
                     'double_q': False,
                     'process_observation': 'standardizer',
                     'process_target': 'normalizer'}
@@ -34,5 +34,5 @@ if __name__ == '__main__':
                                   total_steps=total_steps,
                                   data_path=data_path,
                                   results_path=results_path,
-				  seed=15,
-                                  run_name='DQN_4')
+				  seed=20,
+                                  run_name='priority_3')
