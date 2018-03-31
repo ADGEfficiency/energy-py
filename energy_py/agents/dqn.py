@@ -72,7 +72,8 @@ class DQN(BaseAgent):
         self.double_q = double_q
         memory_length = int(total_steps * memory_fraction)
 
-        super().__init__(env, discount, memory_length, total_steps, **kwargs)
+        super().__init__(env, discount, memory_length, total_steps, 
+                         initial_random, **kwargs)
 
         eps_schd_args = {'pre_step': initial_random*total_steps,
                          'sched_step': epsilon_decay_fraction*total_steps,

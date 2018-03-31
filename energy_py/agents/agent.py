@@ -34,6 +34,7 @@ class BaseAgent(object):
                  discount,
                  memory_length,
                  total_steps,
+                 initial_random=0,
                  memory_type='priority',
                  observation_processor=None,
                  action_processor=None,
@@ -67,7 +68,8 @@ class BaseAgent(object):
         #  0.4 to 1 reccomended by Schaul et. al 2015
         #  and Hessel et. al (2017) Rainbow
         if self.memory_type == 'priority':
-            beta_args = {'sched_step': total_steps,
+            beta_args = {'pre_step': initial_random*total_steps,
+                         'sched_step': total_steps,
                          'initial': 0.4,
                          'final': 1.0}
 
