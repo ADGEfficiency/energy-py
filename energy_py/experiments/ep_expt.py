@@ -29,9 +29,7 @@ if __name__ == '__main__':
     agent, env, sess = experiment(agent=DQN,
                                   agent_config=agent_config,
                                   env=env,
-                                  env_config=env_config,
                                   total_steps=total_steps,
-                                  data_path=data_path,
-                                  results_path=results_path,
+                                  paths=paths,
                                   seed=args.seed,
                                   run_name=args.name)

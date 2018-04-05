@@ -137,10 +137,10 @@ env_register = {'FlexEnv': FlexEnv,
                 'MountainCarEnv': MountainCarEnv}
 
 
-def make(env_id, **kwargs):
+def make_env(env_id, **kwargs):
     logger.info('Making env {}'.format(env_id))
 
-    [logger.info('{}_{}'.format(k, v)) for k, v in kwargs.items()]
+    [logger.info('{}: {}'.format(k, v)) for k, v in kwargs.items()]
 
     env = env_register[env_id]
 

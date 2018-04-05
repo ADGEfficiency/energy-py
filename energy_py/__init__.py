@@ -14,6 +14,6 @@ from energy_py.scripts.schedulers import LinearScheduler
 processors = {'normalizer':  Normalizer,
               'standardizer': Standardizer}
 
-from energy_py.agents import Experience, calculate_returns
+from energy_py.agents import Experience, calculate_returns, make_agent
 
-from energy_py.envs import make
+from energy_py.envs import make_env

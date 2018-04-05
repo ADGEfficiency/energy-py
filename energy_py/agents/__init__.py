@@ -8,16 +8,4 @@ memories = {'array': ArrayMemory,
             'priority': PrioritizedReplay}
 
 from energy_py.agents.agent import BaseAgent
-
-from energy_py.agents.rand import RandomAgent
-from energy_py.agents.naive import NaiveBatteryAgent
-from energy_py.agents.naive import DispatchAgent
-from energy_py.agents.naive import NaiveFlex
-
-from energy_py.agents.dqn import DQN, Qfunc
-from energy_py.agents.dpg import DPG
-
-from energy_py.agents.classifier_agent import ClassifierCondition
-from energy_py.agents.classifier_agent import ClassifierStragety
-from energy_py.agents.classifier_agent import ClassifierAgent
-
+from energy_py.agents.register import make_agent

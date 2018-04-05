@@ -41,8 +41,8 @@ class DQN(BaseAgent):
         learning_rate (float)
         epsilon_decay_fraction (float) % of total steps to decay epsilon over
         memory_fraction (float) as a % of total steps
-        process_observation (bool) TODO
-        process_target (bool)
+        process_observation (str)
+        process_target (str)
 
     references
         Minh et. al (2015)
@@ -67,13 +67,17 @@ class DQN(BaseAgent):
                  **kwargs):
 
         self.sess = sess
-        self.tau = tau
-        self.batch_size = batch_size
-        self.double_q = double_q
+        self.tau = float(tau)
+        self.batch_size = int(batch_size)
+        self.double_q = bool(double_q)
         memory_length = int(total_steps * memory_fraction)
 
-        super().__init__(env, discount, memory_length, total_steps, 
-                         initial_random, **kwargs)
+        super().__init__(env,
+                         float(discount),
+                         int(memory_length),
+                         int(total_steps),
+                         int(initial_random),
+                         **kwargs)
 
         eps_schd_args = {'pre_step': initial_random*total_steps,
                          'sched_step': epsilon_decay_fraction*total_steps,

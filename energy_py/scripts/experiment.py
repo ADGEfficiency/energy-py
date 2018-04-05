@@ -24,6 +24,7 @@ import tensorflow as tf
 
 from energy_py import save_args, ensure_dir, make_logger, TensorboardHepler
 
+logger = logging.getLogger(__name__)
 
 def make_expt_parser():
     """
@@ -88,7 +89,7 @@ def make_paths(results_path, run_name=None):
 
 
 def experiment(agent, agent_config, env,
-               total_steps, results_path, data_path=None,
+               total_steps, paths,
                run_name=None, env_config=None, seed=None):
     """
     Run an experiment.  Episodes are run until total_steps are reached.
@@ -99,8 +100,7 @@ def experiment(agent, agent_config, env,
         env (object) reinforcment learning environment
         env_config (dict)
         total_steps (int)
-        data_path (str)
-        results_path (str)
+        paths (dict)
         seed (int)
 
     returns
@@ -118,8 +118,8 @@ def experiment(agent, agent_config, env,
             np.random.seed(seed)
             agent_config['seed'] = seed
 
-        #  create a dictionary of paths
-        paths = make_paths(results_path, run_name)
+        # #  create a dictionary of paths
+        # paths = make_paths(results_path, run_name)
 
         #  some env's don't need to be configured
         # if env_config:
