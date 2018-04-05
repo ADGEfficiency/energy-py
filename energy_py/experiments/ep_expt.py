@@ -26,9 +26,6 @@ if __name__ == '__main__':
                   'initial_charge': 'random',
                   'episode_random': True}
 
-    data_path = os.getcwd()+'/datasets/perfect_forecast/'
-    results_path = os.getcwd()+'/results/battery_tests/'
-
     agent, env, sess = experiment(agent=DQN,
                                   agent_config=agent_config,
                                   env=env,

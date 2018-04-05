@@ -1,3 +1,4 @@
+import logging
 import random
 
 import gym
@@ -6,6 +7,9 @@ import numpy as np
 from energy_py import GlobalSpace
 from energy_py.envs.flex.env_flex import Flex
 from energy_py.envs.battery.battery_env import Battery
+
+logger = logging.getLogger(__name__)
+
 
 
 class EnvWrapper(object):
@@ -124,3 +128,20 @@ class MountainCarEnv(EnvWrapper):
     def discretize(self, num_discrete):
         self.actions = [act for act in range(self.action_space.n)]
         return self.actions
+
+
+env_register = {'FlexEnv': FlexEnv,
+                'BatteryEnv': BatteryEnv,
+                'CartPoleEnv': CartPoleEnv,
+                'PendulumEnv': PendulumEnv,
+                'MountainCarEnv': MountainCarEnv}
+
+
+def make(env_id, **kwargs):
+    logger.info('Making env {}'.format(env_id))
+
+    [logger.info('{}_{}'.format(k, v)) for k, v in kwargs.items()]
+
+    env = env_register[env_id]
+
+    return env(**kwargs)

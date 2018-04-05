@@ -5,7 +5,6 @@ Module contains:
     make_expt_parser - parses command line arguments for experiments
     save_args - saves dictionaries or argparses to text files
     make_paths - creates a dictionary of paths
-    make_logger - DEBUG to file, INFO to console
     experiment - runs a single reinforcment learning experiment
     Runner - class to save environment data & TensorBoard
 """
@@ -64,6 +63,9 @@ def make_paths(results_path, run_name=None):
 
     paths = {'run_path': run_path,
 
+             #  config files
+             'common': join(results_path, 'common.ini'),
+
              #  tensorboard runs are all in the tensoboard folder
              #  this is for easy comparision of run
              'tb_rl': join(results_path, 'tensorboard', run_name, 'rl'),
@@ -120,10 +122,10 @@ def experiment(agent, agent_config, env,
         paths = make_paths(results_path, run_name)
 
         #  some env's don't need to be configured
-        if env_config:
-            env_config['data_path'] = data_path
-            env = env(**env_config)
-            save_args(env_config, path=paths['env_args'])
+        # if env_config:
+        #     env_config['data_path'] = data_path
+        #     env = env(**env_config)
+        #     save_args(env_config, path=paths['env_args'])
 
         #  setup the logging config
         logger = make_logger(paths, name='experiment')
@@ -146,7 +148,7 @@ def experiment(agent, agent_config, env,
 
         #  outer while loop runs through multiple episodes
         step, episode = 0, 0
-        while step < total_steps:
+        while step < int(total_steps):
             episode += 1
             done = False
             observation = env.reset()
