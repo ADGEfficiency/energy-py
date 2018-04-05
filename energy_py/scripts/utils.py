@@ -1,12 +1,17 @@
 """
 A collection of helper functions.
 """
+
+import configparser
 import csv
 import logging
 import pickle
 import os
 
 import tensorflow as tf
+
+
+logger = logging.getLogger(__name__)
 
 
 def ensure_dir(file_path):
@@ -20,6 +25,36 @@ def ensure_dir(file_path):
 
     if not os.path.exists(directory):
         os.makedirs(directory)
+
+
+def parse_ini(filepath, section):
+    """
+    Reads a single ini file
+
+    args
+        filepath (str) location of the .ini
+        section (str) section of the ini to read
+
+    returns
+        config_dict (dict)
+
+    Also converts boolean arguments from str to bool
+    """
+    logger.info('reading {}'.format(filepath))
+    config = configparser.ConfigParser()
+    config.read(filepath)
+
+    #  check to convert boolean strings to real booleans
+    config_dict = dict(config[section])
+
+    for k, val in config_dict.items():
+        if val == 'True':
+            config_dict[k] = True
+
+        if val == 'False':
+            config_dict[k] = False
+
+    return config_dict
 
 
 def dump_pickle(obj, name):
@@ -100,12 +135,11 @@ def make_logger(paths, name=None):
 
 def save_args(config, path):
     """
-    Saves a config dictionary and optional argparse object to a text file.
+    Saves a config dictionary to a text file
 
     args
         config (dict)
         path (str) path for output text file
-        argparse (object)
 
     returns
         writer (object) csv Writer object

@@ -32,4 +32,4 @@ if __name__ == '__main__':
                                   total_steps=total_steps,
                                   paths=paths,
                                   seed=args.seed,
-                                  run_name=args.name)
+                                  run_name=args.run_name)

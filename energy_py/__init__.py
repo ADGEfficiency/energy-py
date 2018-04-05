@@ -1,7 +1,7 @@
 from energy_py.scripts.utils import *
 
 from energy_py.scripts.experiment import make_expt_parser, make_paths
-from energy_py.scripts.experiment import experiment, Runner
+from energy_py.scripts.experiment import run_config_expt, experiment, Runner
 
 from energy_py.scripts.processors import Normalizer, Standardizer
 

@@ -5,6 +5,7 @@ Module contains:
     make_expt_parser - parses command line arguments for experiments
     save_args - saves dictionaries or argparses to text files
     make_paths - creates a dictionary of paths
+    run_config_expt - runs an experiment using a config file
     experiment - runs a single reinforcment learning experiment
     Runner - class to save environment data & TensorBoard
 """
@@ -24,8 +25,11 @@ import tensorflow as tf
 
 import energy_py
 from energy_py import save_args, ensure_dir, make_logger, TensorboardHepler
+from energy_py import parse_ini
+
 
 logger = logging.getLogger(__name__)
+
 
 def make_expt_parser():
     """
@@ -36,7 +40,8 @@ def make_expt_parser():
     """
     parser = argparse.ArgumentParser(description='energy_py experiment argparser')
 
-    parser.add_argument('--name', default=None, type=str)
+    parser.add_argument('--expt_name', default=None, type=str)
+    parser.add_argument('--run_name', default=None, type=str)
     parser.add_argument('--seed', default=None, type=int)
 
     args = parser.parse_args()
@@ -90,6 +95,32 @@ def make_paths(results_path, run_name=None):
     return paths
 
 
+def run_config_expt(expt_name, run_name, expt_path):
+    """
+    Runs a single experiment, reading experiment setup from a .ini
+
+    args
+        expt_name (str)
+        run_name (str)
+        expt_path (str)
+
+    Each experiment is made of multiple runs.  This function will load one run
+    and run an experiment.
+    """
+
+    paths = make_paths(expt_path, run_name=run_name)
+    logger = make_logger(paths, 'master')
+
+    env_config = parse_ini(paths['common_config'], 'env')
+    agent_config = parse_ini(paths['run_configs'], run_name)
+
+    experiment(agent_config,
+               env_config,
+               agent_config['total_steps'],
+               paths,
+               seed=agent_config['seed'])
+
+
 def experiment(agent_config,
                env_config,
                total_steps,
@@ -104,11 +135,6 @@ def experiment(agent_config,
         total_steps (int)
         paths (dict)
         seed (int)
-
-    returns
-        agent (object)
-        env (object)
-        sess (tf.Session)
     """
     #  start a new tensorflow session
     with tf.Session() as sess:
@@ -171,8 +197,6 @@ def experiment(agent_config,
 
         #  save the episode rewards as a csv
         runner.save_rewards()
-
-    return agent, env, sess
 
 
 class Runner(object):
