@@ -22,6 +22,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
+import energy_py
 from energy_py import save_args, ensure_dir, make_logger, TensorboardHepler
 
 logger = logging.getLogger(__name__)
@@ -65,7 +66,8 @@ def make_paths(results_path, run_name=None):
     paths = {'run_path': run_path,
 
              #  config files
-             'common': join(results_path, 'common.ini'),
+             'common_config': join(results_path, 'common.ini'),
+             'run_configs': join(results_path, 'run_configs.ini'),
 
              #  tensorboard runs are all in the tensoboard folder
              #  this is for easy comparision of run
@@ -88,16 +90,16 @@ def make_paths(results_path, run_name=None):
     return paths
 
 
-def experiment(agent, agent_config, env,
-               total_steps, paths,
-               run_name=None, env_config=None, seed=None):
+def experiment(agent_config,
+               env_config,
+               total_steps,
+               paths,
+               seed=None):
     """
     Run an experiment.  Episodes are run until total_steps are reached.
 
     args
-        agent (object) learner & decision maker
         agent_config (dict)
-        env (object) reinforcment learning environment
         env_config (dict)
         total_steps (int)
         paths (dict)
@@ -112,23 +114,15 @@ def experiment(agent, agent_config, env,
     with tf.Session() as sess:
 
         #  optionally set random seeds
+        logger.info('random seed is {}'.format(seed))
         if seed:
+            seed = int(seed)
             random.seed(seed)
             tf.set_random_seed(seed)
             np.random.seed(seed)
-            agent_config['seed'] = seed
 
-        # #  create a dictionary of paths
-        # paths = make_paths(results_path, run_name)
-
-        #  some env's don't need to be configured
-        # if env_config:
-        #     env_config['data_path'] = data_path
-        #     env = env(**env_config)
-        #     save_args(env_config, path=paths['env_args'])
-
-        #  setup the logging config
-        logger = make_logger(paths, name='experiment')
+        env = energy_py.make_env(**env_config)
+        save_args(env_config, path=paths['env_args'])
 
         #  add stuff into the agent config dict
         agent_config['env'] = env
@@ -138,7 +132,7 @@ def experiment(agent, agent_config, env,
         agent_config['learn_path'] = paths['tb_learn']
 
         #  init agent and save args
-        agent = agent(**agent_config)
+        agent = energy_py.make_agent(**agent_config)
         save_args(agent_config, path=paths['agent_args'])
 
         #  runner helps to manage our experiment
