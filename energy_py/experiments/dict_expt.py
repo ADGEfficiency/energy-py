@@ -44,8 +44,8 @@ if __name__ == '__main__':
     paths = make_paths(expt_path, run_name=args.run_name)
     logger = make_logger(paths, 'master')
 
-    agent, env, sess = experiment(agent_config=agent_config,
-                                  env_config=env_config,
-                                  total_steps=total_steps,
-                                  paths=paths,
-                                  seed=args.seed)
+    experiment(agent_config=agent_config,
+               env_config=env_config,
+               total_steps=total_steps,
+               paths=paths,
+               seed=args.seed)
