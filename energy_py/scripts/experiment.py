@@ -3,7 +3,6 @@ A collection of functions to run experiments.
 
 Module contains:
     make_expt_parser - parses command line arguments for experiments
-    save_args - saves dictionaries or argparses to text files
     make_paths - creates a dictionary of paths
     run_config_expt - runs an experiment using a config file
     experiment - runs a single reinforcment learning experiment
@@ -64,7 +63,7 @@ def make_paths(expt_path, run_name=None):
         paths (dict) {name: path}
 
     Folder structure
-        experiments/results/expt_name/run_path/tensoboard/run_name/rl
+        experiments/results/expt_name/run_name/tensoboard/run_name/rl
                                                                   /act
                                                                   /learn
                                                env_histories/ep_1/hist.csv
@@ -308,5 +307,3 @@ class Runner(object):
         with open(self.rewards_path, 'w') as myfile:
             wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
             wr.writerow(self.global_rewards)
-
-
