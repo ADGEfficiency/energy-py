@@ -8,7 +8,7 @@ Command line args
     --seed (optional)
 
 To run the example experiment
-    python dict_expt.py example example
+    python dict_expt.py example_dict example
 """
 
 import os
@@ -36,7 +36,7 @@ if __name__ == '__main__':
                     'process_target': 'normalizer'}
 
     env_config = {'env_id': 'BatteryEnv',
-                  'episode_length': 2016,
+                  'episode_length': 168,
                   'initial_charge': 'random',
                   'episode_random': True}
 

@@ -11,7 +11,7 @@ Note that here the run_name must be specified, because we need to find the
 correct section in run_configs.ini
 
 To run the example experiment
-    python config_expt.py example example --run_name DQN_1
+    python config_expt.py example_config example --run_name DQN_1
 
 Config files are
    experiments/results/expt_name/common.ini
