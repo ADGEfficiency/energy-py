@@ -52,14 +52,30 @@ def make_expt_parser():
     return args
 
 
-def make_paths(results_path, run_name=None):
+def make_paths(expt_path, run_name=None):
     """
     Creates a dictionary of paths for use with experiments
 
     args
-        data_path (str) location of state.csv, observation.csv
-        results_path (str)
-        run_name (str) optional name for the tensorboard run
+        expt_path (str)
+        run_name (str) optional name for run.  Timestamp used if not given
+
+    returns
+        paths (dict) {name: path}
+
+    Folder structure
+        experiments/results/expt_name/run_path/tensoboard/run_name/rl
+                                                                  /act
+                                                                  /learn
+                                               env_histories/ep_1/hist.csv
+                                                             ep_2/hist.csv
+                                                             ...
+                                               common.ini
+                                               run_configs.ini
+                                               agent_args.txt
+                                               env_args.txt
+                                               info.log
+                                               debug.log
     """
     #  use a timestamp if no run_name is supplied
     if run_name is None:
@@ -69,19 +85,19 @@ def make_paths(results_path, run_name=None):
     join = os.path.join
 
     #  run_path is the folder where output from this run will be saved in
-    run_path = join(results_path, run_name)
+    run_path = join(expt_path, run_name)
 
     paths = {'run_path': run_path,
 
              #  config files
-             'common_config': join(results_path, 'common.ini'),
-             'run_configs': join(results_path, 'run_configs.ini'),
+             'common_config': join(expt_path, 'common.ini'),
+             'run_configs': join(expt_path, 'run_configs.ini'),
 
              #  tensorboard runs are all in the tensoboard folder
              #  this is for easy comparision of run
-             'tb_rl': join(results_path, 'tensorboard', run_name, 'rl'),
-             'tb_act': join(results_path, 'tensorboard', run_name, 'act'),
-             'tb_learn': join(results_path, 'tensorboard', run_name,  'learn'),
+             'tb_rl': join(expt_path, 'tensorboard', run_name, 'rl'),
+             'tb_act': join(expt_path, 'tensorboard', run_name, 'act'),
+             'tb_learn': join(expt_path, 'tensorboard', run_name,  'learn'),
              'env_histories': join(run_path, 'env_histories'),
 
              #  run specific folders are in another folder
