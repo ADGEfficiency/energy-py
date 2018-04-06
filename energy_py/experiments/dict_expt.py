@@ -10,7 +10,7 @@ Command line args
 import os
 
 from energy_py import experiment, make_expt_parser, make_paths, make_logger
-
+from energy_py import get_dataset_path
 
 if __name__ == '__main__':
     args = make_expt_parser()
@@ -35,7 +35,13 @@ if __name__ == '__main__':
                   'initial_charge': 'random',
                   'episode_random': True}
 
-    paths = make_paths(args.expt_name, run_name=args.run_name)
+    env_config['data_path'] = get_dataset_path(args.dataset_name)
+
+    expt_path = os.path.join(os.getcwd(),
+                             'results',
+                             args.expt_name)
+
+    paths = make_paths(expt_path, run_name=args.run_name)
     logger = make_logger(paths, 'master')
 
     agent, env, sess = experiment(agent_config=agent_config,

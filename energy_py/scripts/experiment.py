@@ -40,7 +40,10 @@ def make_expt_parser():
     """
     parser = argparse.ArgumentParser(description='energy_py experiment argparser')
 
-    parser.add_argument('--expt_name', default=None, type=str)
+    #  required
+    parser.add_argument('expt_name', default=None, type=str)
+    parser.add_argument('dataset_name', default=None, type=str)
+    #  optional
     parser.add_argument('--run_name', default=None, type=str)
     parser.add_argument('--seed', default=None, type=int)
 
