@@ -25,7 +25,7 @@ import tensorflow as tf
 
 import energy_py
 from energy_py import save_args, ensure_dir, make_logger, TensorboardHepler
-from energy_py import parse_ini
+from energy_py import parse_ini, get_dataset_path
 
 
 logger = logging.getLogger(__name__)
@@ -112,6 +112,9 @@ def run_config_expt(expt_name, run_name, expt_path):
     logger = make_logger(paths, 'master')
 
     env_config = parse_ini(paths['common_config'], 'env')
+    env_config['data_path'] = get_dataset_path(env_config['dataset_name'])
+    env_config.pop('dataset_name')
+
     agent_config = parse_ini(paths['run_configs'], run_name)
 
     experiment(agent_config,
@@ -135,6 +138,8 @@ def experiment(agent_config,
         total_steps (int)
         paths (dict)
         seed (int)
+
+    Agent and environment are created from config dictionaries.
     """
     #  start a new tensorflow session
     with tf.Session() as sess:

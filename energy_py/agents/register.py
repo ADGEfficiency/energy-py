@@ -1,3 +1,7 @@
+"""
+A registry for agents
+"""
+
 import logging
 
 from energy_py.agents.rand import RandomAgent
