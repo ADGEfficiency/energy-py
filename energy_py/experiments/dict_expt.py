@@ -1,16 +1,21 @@
 """
-Runs a single experiment using config dictionaries.
+Runs a single experiment using config dictionaries
 
 Command line args
-    --expt_name - the directory where run results will sit
+    expt_name - the directory where run results will sit
+    dataset_name - name of the dataset folder in experiments/dataset
     --run_name (optional)
     --seed (optional)
+
+To run the example experiment
+    python dict_expt.py example example
 """
 
 import os
 
 from energy_py import experiment, make_expt_parser, make_paths, make_logger
 from energy_py import get_dataset_path
+
 
 if __name__ == '__main__':
     args = make_expt_parser()
