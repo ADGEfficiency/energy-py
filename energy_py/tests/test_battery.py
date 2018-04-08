@@ -1,20 +1,29 @@
 import os
-from energy_py.envs import BatteryEnv
+
 import numpy as np
 
-data_path = os.path.join(os.getcwd(), 'data')
+import energy_py
 
-env = BatteryEnv(data_path=data_path,
-                 initial_charge=0,
-                 round_trip_eff=0.9)
+DATASET_NAME = 'test'
+DATA_PATH = energy_py.get_dataset_path(DATASET_NAME)
 
+config = {'env_id': 'BatteryEnv',
+          'data_path': DATA_PATH,
+          'initial_charge': 0,
+          'round_trip_eff': 0.9}
+
+env = energy_py.make_env(**config)
 charge_index = env.observation_info.index('C_charge_level_[MWh]')
 
 
 def test_charge():
-    env = BatteryEnv(data_path=data_path,
-                     initial_charge=0,
-                     round_trip_eff=0.9)
+    config = {'env_id': 'BatteryEnv',
+              'data_path': DATA_PATH,
+              'initial_charge': 0.0,
+              'round_trip_eff': 0.9}
+
+    env = energy_py.make_env(**config)
+
     output = env.step(action=np.array([1.0, 0.0]).reshape(1,2))
     observation = output[0]
     charge = observation[0][charge_index]
@@ -25,10 +34,12 @@ def test_charge():
 
 
 def test_discharge():
-    env = BatteryEnv(data_path=data_path,
-                     capacity=4,
-                     initial_charge=1.0,
-                     round_trip_eff=0.9)
+    config = {'env_id': 'BatteryEnv',
+              'data_path': DATA_PATH,
+              'capacity': 4.0,
+              'initial_charge': 1.0,
+              'round_trip_eff': 0.9}
+    env = energy_py.make_env(**config)
 
     output = env.step(action=np.array([0.0, 1.0]).reshape(1, 2))
     observation = output[0]
@@ -39,10 +50,13 @@ def test_discharge():
 
 
 def test_no_op():
-    env = BatteryEnv(data_path=data_path,
-                     capacity=4,
-                     initial_charge=0.5,
-                     round_trip_eff=0.9)
+
+    config = {'env_id': 'BatteryEnv',
+              'data_path': DATA_PATH,
+              'capacity': 4.0,
+              'initial_charge': 0.5,
+              'round_trip_eff': 0.9}
+    env = energy_py.make_env(**config)
 
     output = env.step(action=np.array([0.0, 0.0]).reshape(1, 2))
     observation = output[0]

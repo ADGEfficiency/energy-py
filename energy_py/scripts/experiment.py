@@ -214,8 +214,8 @@ def experiment(agent_config,
                 if step > int(agent.memory.size * 0.5):
                     train_info = agent.learn()
 
-            runner.report({'ep': episode,
-                           'step': step},
+            runner.report(summaries={'ep': episode,
+                                     'step': step},
                           env_info=info)
 
         #  save the episode rewards as a csv
@@ -263,7 +263,7 @@ class Runner(object):
     def calc_time(self):
         return (time.time() - self.start_time) / 60
 
-    def report(self, summaries={}, env_info=None):
+    def report(self, summaries, env_info=None):
         """
         The main functionality of this class
 
@@ -282,6 +282,10 @@ class Runner(object):
         log = ['{} : {}'.format(k, v) for k, v in summaries.items()]
         self.logger_timer.info(log)
 
+        #  save the environment info dictionary to a csv
+        if env_info:
+            self.save_env_hist(env_info, summaries['ep'])
+
         #  send the summaries to TensorBoard
         if hasattr(self, 'tb_helper'):
             no_tb = ['ep', 'run_time', 'step']
@@ -291,9 +295,6 @@ class Runner(object):
         #  reset the counter for episode rewards
         self.ep_rewards = []
 
-        #  save the environment info dictionary to a csv
-        if env_info:
-            self.save_env_hist()
 
     def save_rewards(self):
         """
@@ -303,14 +304,18 @@ class Runner(object):
             wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
             wr.writerow(self.global_rewards)
 
-    def save_env_hist(self):
+    def save_env_hist(self, env_info, episode):
         """
         Saves the environment info dictionary to a csv
+
+        args
+            env_info (dict) the info dict returned from env.step()
+            episode (int)
         """
         output = pd.DataFrame().from_dict(env_info)
 
         csv_path = os.path.join(self.env_hist_path,
-                                'ep_{}'.format(summaries['ep']),
+                                'ep_{}'.format(episode),
                                 'hist.csv')
         ensure_dir(csv_path)
         output.to_csv(csv_path)

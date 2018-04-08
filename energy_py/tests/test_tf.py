@@ -4,7 +4,8 @@
 import numpy as np
 import tensorflow as tf
 
-from energy_py.agents import Qfunc
+import energy_py
+from energy_py.agents.dqn import DQN, Qfunc
 
 epsilon = 1e-5
 
@@ -25,6 +26,7 @@ observation = np.random.uniform(size=input_shape).reshape(1, -1)
 action = np.array([0, 1]).reshape(1, 2)
 target = np.ones((1,1))
 weights = np.ones(1).reshape(1,1)
+
 
 def test_train_op():
     with tf.Session() as sess:
@@ -48,8 +50,6 @@ def test_train_op():
         for b, a in zip(before, after):
             assert(b != a).any()
 
-from energy_py.envs import CartPoleEnv
-from energy_py.agents import DQN
 
 def test_target_net():
     agent_config = {'discount': 0.97,
@@ -66,7 +66,7 @@ def test_target_net():
 
 
     with tf.Session() as sess:
-        env = CartPoleEnv()
+        env = energy_py.make_env('CartPoleEnv') 
 
         agent_config['env'] = env
         agent_config['sess'] = sess

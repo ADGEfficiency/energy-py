@@ -2,7 +2,7 @@ from collections import namedtuple
 
 import numpy as np
 
-from energy_py.agents import ClassifierStragety, ClassifierCondition
+from energy_py.agents.classifier_agent import ClassifierStragety, ClassifierCondition
 
 
 string = 'D_h_{}_Predicted_Price_Bin_{}'
