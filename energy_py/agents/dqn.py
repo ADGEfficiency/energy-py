@@ -41,8 +41,8 @@ class DQN(BaseAgent):
         learning_rate (float)
         epsilon_decay_fraction (float) % of total steps to decay epsilon over
         memory_fraction (float) as a % of total steps
-        process_observation (bool) TODO
-        process_target (bool)
+        process_observation (str)
+        process_target (str)
 
     references
         Minh et. al (2015)
@@ -61,18 +61,36 @@ class DQN(BaseAgent):
                  initial_random=0.1,
                  epsilon_decay_fraction=0.5,
                  memory_fraction=0.25,
-                 observation_processor=None,
-                 action_processor=None,
-                 target_processor=None,
                  **kwargs):
 
         self.sess = sess
-        self.tau = tau
-        self.batch_size = batch_size
-        self.double_q = double_q
+        discount = float(discount)
+        self.tau = float(tau)
+        total_steps = int(total_steps)
+        self.batch_size = int(batch_size)
+
+        #  ConfigParser will read the layers as strings
+        #  this conditional will turn the strings into a list
+        if isinstance(layers, str):
+            layers = layers.split(',')
+            layers = [int(nodes) for nodes in layers]
+        else:
+            layers = tuple(layers)
+
+        learning_rate = float(learning_rate)
+        self.double_q = bool(double_q)
+        initial_random = float(initial_random)
+        epsilon_decay_fraction = float(epsilon_decay_fraction)
+        memory_fraction = float(memory_fraction)
+
         memory_length = int(total_steps * memory_fraction)
 
-        super().__init__(env, discount, memory_length, total_steps, **kwargs)
+        super().__init__(env,
+                         discount,
+                         memory_length,
+                         total_steps,
+                         initial_random,
+                         **kwargs)
 
         eps_schd_args = {'pre_step': initial_random*total_steps,
                          'sched_step': epsilon_decay_fraction*total_steps,

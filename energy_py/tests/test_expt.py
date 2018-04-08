@@ -9,16 +9,16 @@ test_cartpole_expt()
 """
 import os
 
-from energy_py.agents import DQN
-from energy_py.envs import BatteryEnv, CartPoleEnv, FlexEnv
-from energy_py import experiment
+import energy_py
+from energy_py.agents.dqn import DQN
+from energy_py import experiment, make_paths, get_dataset_path
 
-
-DATA_PATH = os.getcwd()+'/data/'
-RESULTS_PATH = os.getcwd()+'/results/'
+PATHS = make_paths(os.getcwd()+'/results')
+DATA_PATH = get_dataset_path('test')
 TOTAL_STEPS = 200 
 
-AGENT_CONFIG = {'discount': 0.97,
+AGENT_CONFIG = {'agent_id': 'DQN',
+                'discount': 0.97,
                 'tau': 0.001,
                 'total_steps': TOTAL_STEPS,
                 'batch_size': 32,
@@ -34,46 +34,40 @@ AGENT_CONFIG = {'discount': 0.97,
 
 def test_battery_expt():
 
-    env = BatteryEnv
-
-    env_config = {'episode_length': 10,
+    env_config = {'env_id': 'BatteryEnv',
+                  'data_path': DATA_PATH,
+                  'episode_length': 10,
                   'episode_random': True,
                   'initial_charge': 'random'}
 
-    agent, env, sess = experiment(agent=DQN,
-                                  agent_config=AGENT_CONFIG,
-                                  env=env,
-                                  env_config=env_config,
-                                  total_steps=TOTAL_STEPS,
-                                  data_path=DATA_PATH,
-                                  results_path=RESULTS_PATH)
+    experiment(agent_config=AGENT_CONFIG,
+               env_config=env_config,
+               total_steps=TOTAL_STEPS,
+               paths=PATHS)
 
 
 def test_flex_expt():
 
-    env = FlexEnv
-
-    env_config = {'episode_length': 10,
+    env_config = {'env_id': 'FlexEnv',
+                  'data_path': DATA_PATH,
+                  'episode_length': 10,
                   'episode_random': True}
 
-    agent, env, sess = experiment(agent=DQN,
-                                  agent_config=AGENT_CONFIG,
-                                  env=env,
-                                  env_config=env_config,
-                                  total_steps=TOTAL_STEPS,
-                                  data_path=DATA_PATH,
-                                  results_path=RESULTS_PATH)
+    experiment(agent_config=AGENT_CONFIG,
+               env_config=env_config,
+               total_steps=TOTAL_STEPS,
+               paths=PATHS)
+
 
 def test_cartpole_expt():
 
-    env = CartPoleEnv()
+    env_config = {'env_id': 'CartPoleEnv'}
 
-    agent, env, sess = experiment(agent=DQN,
-                                  agent_config=AGENT_CONFIG,
-                                  env=env,
-                                  total_steps=TOTAL_STEPS,
-                                  data_path=DATA_PATH,
-                                  results_path=RESULTS_PATH)
+    experiment(agent_config=AGENT_CONFIG,
+               env_config=env_config,
+               total_steps=TOTAL_STEPS,
+               paths=PATHS)
+
 
 if __name__ == '__main__':
     """

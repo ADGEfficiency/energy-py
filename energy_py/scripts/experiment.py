@@ -2,36 +2,79 @@
 A collection of functions to run experiments.
 
 Module contains:
-    expt_args - creates and parses command line arguments
-    save_args - saves dictionaries or argparses to text files
+    make_expt_parser - parses command line arguments for experiments
     make_paths - creates a dictionary of paths
-    make_logger - DEBUG to file, INFO to console
+    run_config_expt - runs an experiment using a config file
     experiment - runs a single reinforcment learning experiment
     Runner - class to save environment data & TensorBoard
 """
 
+import argparse
 import datetime
 import csv
 import logging
 import logging.config
 import os
+import random
 import time
 
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 
+import energy_py
 from energy_py import save_args, ensure_dir, make_logger, TensorboardHepler
+from energy_py import parse_ini, get_dataset_path
 
 
-def make_paths(results_path, run_name=None):
+logger = logging.getLogger(__name__)
+
+
+def make_expt_parser():
+    """
+    Parses arguments from the command line for running experiments
+
+    returns
+        args (argparse NameSpace)
+    """
+    parser = argparse.ArgumentParser(description='energy_py experiment argparser')
+
+    #  required
+    parser.add_argument('expt_name', default=None, type=str)
+    parser.add_argument('dataset_name', default=None, type=str)
+    #  optional
+    parser.add_argument('--run_name', default=None, type=str)
+    parser.add_argument('--seed', default=None, type=int)
+
+    args = parser.parse_args()
+
+    return args
+
+
+def make_paths(expt_path, run_name=None):
     """
     Creates a dictionary of paths for use with experiments
 
     args
-        data_path (str) location of state.csv, observation.csv
-        results_path (str)
-        run_name (str) optional name for the tensorboard run
+        expt_path (str)
+        run_name (str) optional name for run.  Timestamp used if not given
+
+    returns
+        paths (dict) {name: path}
+
+    Folder structure
+        experiments/results/expt_name/run_name/tensoboard/run_name/rl
+                                                                  /act
+                                                                  /learn
+                                               env_histories/ep_1/hist.csv
+                                                             ep_2/hist.csv
+                                                             ...
+                                               common.ini
+                                               run_configs.ini
+                                               agent_args.txt
+                                               env_args.txt
+                                               info.log
+                                               debug.log
     """
     #  use a timestamp if no run_name is supplied
     if run_name is None:
@@ -41,15 +84,19 @@ def make_paths(results_path, run_name=None):
     join = os.path.join
 
     #  run_path is the folder where output from this run will be saved in
-    run_path = join(results_path, run_name)
+    run_path = join(expt_path, run_name)
 
     paths = {'run_path': run_path,
 
+             #  config files
+             'common_config': join(expt_path, 'common.ini'),
+             'run_configs': join(expt_path, 'run_configs.ini'),
+
              #  tensorboard runs are all in the tensoboard folder
              #  this is for easy comparision of run
-             'tb_rl': join(results_path, 'tensorboard', run_name, 'rl'),
-             'tb_act': join(results_path, 'tensorboard', run_name, 'act'),
-             'tb_learn': join(results_path, 'tensorboard', run_name,  'learn'),
+             'tb_rl': join(expt_path, 'tensorboard', run_name, 'rl'),
+             'tb_act': join(expt_path, 'tensorboard', run_name, 'act'),
+             'tb_learn': join(expt_path, 'tensorboard', run_name,  'learn'),
              'env_histories': join(run_path, 'env_histories'),
 
              #  run specific folders are in another folder
@@ -66,47 +113,65 @@ def make_paths(results_path, run_name=None):
     return paths
 
 
-def experiment(agent, agent_config, env,
-               total_steps, results_path, data_path=None,
-               run_name=None, env_config=None, seed=None):
+def run_config_expt(expt_name, run_name, expt_path):
+    """
+    Runs a single experiment, reading experiment setup from a .ini
+
+    args
+        expt_name (str)
+        run_name (str)
+        expt_path (str)
+
+    Each experiment is made of multiple runs.  This function will load one run
+    and run an experiment.
+    """
+
+    paths = make_paths(expt_path, run_name=run_name)
+    logger = make_logger(paths, 'master')
+
+    env_config = parse_ini(paths['common_config'], 'env')
+    env_config['data_path'] = get_dataset_path(env_config['dataset_name'])
+    env_config.pop('dataset_name')
+
+    agent_config = parse_ini(paths['run_configs'], run_name)
+
+    experiment(agent_config,
+               env_config,
+               agent_config['total_steps'],
+               paths,
+               seed=agent_config['seed'])
+
+
+def experiment(agent_config,
+               env_config,
+               total_steps,
+               paths,
+               seed=None):
     """
     Run an experiment.  Episodes are run until total_steps are reached.
 
     args
-        agent (object) learner & decision maker
         agent_config (dict)
-        env (object) reinforcment learning environment
         env_config (dict)
         total_steps (int)
-        data_path (str)
-        results_path (str)
+        paths (dict)
         seed (int)
 
-    returns
-        agent (object)
-        env (object)
-        sess (tf.Session)
+    Agent and environment are created from config dictionaries.
     """
     #  start a new tensorflow session
     with tf.Session() as sess:
 
         #  optionally set random seeds
+        logger.info('random seed is {}'.format(seed))
         if seed:
+            seed = int(seed)
+            random.seed(seed)
             tf.set_random_seed(seed)
             np.random.seed(seed)
-            agent_config['seed'] = seed
 
-        #  create a dictionary of paths
-        paths = make_paths(results_path, run_name)
-
-        #  some env's don't need to be configured
-        if env_config:
-            env_config['data_path'] = data_path
-            env = env(**env_config)
-            save_args(env_config, path=paths['env_args'])
-
-        #  setup the logging config
-        logger = make_logger(paths, name='experiment')
+        env = energy_py.make_env(**env_config)
+        save_args(env_config, path=paths['env_args'])
 
         #  add stuff into the agent config dict
         agent_config['env'] = env
@@ -116,7 +181,7 @@ def experiment(agent, agent_config, env,
         agent_config['learn_path'] = paths['tb_learn']
 
         #  init agent and save args
-        agent = agent(**agent_config)
+        agent = energy_py.make_agent(**agent_config)
         save_args(agent_config, path=paths['agent_args'])
 
         #  runner helps to manage our experiment
@@ -126,7 +191,7 @@ def experiment(agent, agent_config, env,
 
         #  outer while loop runs through multiple episodes
         step, episode = 0, 0
-        while step < total_steps:
+        while step < int(total_steps):
             episode += 1
             done = False
             observation = env.reset()
@@ -149,28 +214,26 @@ def experiment(agent, agent_config, env,
                 if step > int(agent.memory.size * 0.5):
                     train_info = agent.learn()
 
-            runner.report({'ep': episode,
-                           'step': step},
+            runner.report(summaries={'ep': episode,
+                                     'step': step},
                           env_info=info)
 
         #  save the episode rewards as a csv
         runner.save_rewards()
-
-    return agent, env, sess
 
 
 class Runner(object):
     """
     Class to help run experiments.
 
-    Currently performs three roles
-        keeping track of rewards
-        keeping track of run time
-        processing environment history
-
     args
         tb_path (str)  path where tb logs sit
         env_hist_path (str)  path to save env data too
+
+    Currently performs three roles
+        keeping track of rewards and writing to TensorBoard
+        keeping track of run time
+        processing environment history into hist.csv
     """
     def __init__(self,
                  rewards_path=None,
@@ -200,27 +263,17 @@ class Runner(object):
     def calc_time(self):
         return (time.time() - self.start_time) / 60
 
-    def report(self, summaries={}, env_info=None):
+    def report(self, summaries, env_info=None):
         """
         The main functionality of this class
 
         Should be run at the end of each episode
         """
-
-        if env_info:
-            output = pd.DataFrame().from_dict(env_info)
-
-            csv_path = os.path.join(self.env_hist_path,
-                                    'ep_{}'.format(summaries['ep']),
-                                    'hist.csv')
-            ensure_dir(csv_path)
-            output.to_csv(csv_path)
-
         #  now episode has finished, we save our rewards onto our global list
         self.global_rewards.append(sum(self.ep_rewards))
-
         self.avg_rew = sum(self.global_rewards[-100:]) / len(self.global_rewards[-100:])
 
+        #  save the reward statisistics into the summary dictionary
         summaries['ep_rew'] = sum(self.ep_rewards)
         summaries['avg_rew'] = self.avg_rew
 
@@ -229,6 +282,11 @@ class Runner(object):
         log = ['{} : {}'.format(k, v) for k, v in summaries.items()]
         self.logger_timer.info(log)
 
+        #  save the environment info dictionary to a csv
+        if env_info:
+            self.save_env_hist(env_info, summaries['ep'])
+
+        #  send the summaries to TensorBoard
         if hasattr(self, 'tb_helper'):
             no_tb = ['ep', 'run_time', 'step']
             _ = [summaries.pop(key) for key in no_tb]
@@ -236,6 +294,7 @@ class Runner(object):
 
         #  reset the counter for episode rewards
         self.ep_rewards = []
+
 
     def save_rewards(self):
         """
@@ -245,4 +304,18 @@ class Runner(object):
             wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
             wr.writerow(self.global_rewards)
 
+    def save_env_hist(self, env_info, episode):
+        """
+        Saves the environment info dictionary to a csv
 
+        args
+            env_info (dict) the info dict returned from env.step()
+            episode (int)
+        """
+        output = pd.DataFrame().from_dict(env_info)
+
+        csv_path = os.path.join(self.env_hist_path,
+                                'ep_{}'.format(episode),
+                                'hist.csv')
+        ensure_dir(csv_path)
+        output.to_csv(csv_path)
