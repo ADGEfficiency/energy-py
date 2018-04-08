@@ -226,14 +226,14 @@ class Runner(object):
     """
     Class to help run experiments.
 
-    Currently performs three roles
-        keeping track of rewards
-        keeping track of run time
-        processing environment history
-
     args
         tb_path (str)  path where tb logs sit
         env_hist_path (str)  path to save env data too
+
+    Currently performs three roles
+        keeping track of rewards and writing to TensorBoard
+        keeping track of run time
+        processing environment history into hist.csv
     """
     def __init__(self,
                  rewards_path=None,
@@ -269,21 +269,11 @@ class Runner(object):
 
         Should be run at the end of each episode
         """
-
-        if env_info:
-            output = pd.DataFrame().from_dict(env_info)
-
-            csv_path = os.path.join(self.env_hist_path,
-                                    'ep_{}'.format(summaries['ep']),
-                                    'hist.csv')
-            ensure_dir(csv_path)
-            output.to_csv(csv_path)
-
         #  now episode has finished, we save our rewards onto our global list
         self.global_rewards.append(sum(self.ep_rewards))
-
         self.avg_rew = sum(self.global_rewards[-100:]) / len(self.global_rewards[-100:])
 
+        #  save the reward statisistics into the summary dictionary
         summaries['ep_rew'] = sum(self.ep_rewards)
         summaries['avg_rew'] = self.avg_rew
 
@@ -292,6 +282,7 @@ class Runner(object):
         log = ['{} : {}'.format(k, v) for k, v in summaries.items()]
         self.logger_timer.info(log)
 
+        #  send the summaries to TensorBoard
         if hasattr(self, 'tb_helper'):
             no_tb = ['ep', 'run_time', 'step']
             _ = [summaries.pop(key) for key in no_tb]
@@ -300,6 +291,10 @@ class Runner(object):
         #  reset the counter for episode rewards
         self.ep_rewards = []
 
+        #  save the environment info dictionary to a csv
+        if env_info:
+            self.save_env_hist()
+
     def save_rewards(self):
         """
         Saves the global rewards list to a csv
@@ -307,3 +302,15 @@ class Runner(object):
         with open(self.rewards_path, 'w') as myfile:
             wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
             wr.writerow(self.global_rewards)
+
+    def save_env_hist(self):
+        """
+        Saves the environment info dictionary to a csv
+        """
+        output = pd.DataFrame().from_dict(env_info)
+
+        csv_path = os.path.join(self.env_hist_path,
+                                'ep_{}'.format(summaries['ep']),
+                                'hist.csv')
+        ensure_dir(csv_path)
+        output.to_csv(csv_path)
