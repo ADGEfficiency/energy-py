@@ -15,9 +15,16 @@ Once a flexibility action has started, the action continues until
 
 After the action has finished, a penalty (the flex up cycle) is paid.
 An optional length of relaxation time occurs after the flex up period
+
+Currently the relaxation time is a fixed length - in the future this could be a function of the flex_time
 """
 
+import numpy as np
+
 from energy_py.envs import BaseEnv
+
+
+logger = logging.getLogger(__name__)
 
 
 class FlexV1(BaseEnv):
@@ -57,6 +64,8 @@ class FlexV1(BaseEnv):
 
         #  a counter that remembers how long the flex down cycle was
         self.flex_time = None
+        #  flex counter should never be reset!
+        self.flex_counter = 0
 
     def __repr__(self):
         return '<energy_py flex-v1 environment>'
@@ -103,12 +112,11 @@ class FlexV1(BaseEnv):
         if self.relax > 0:
             self.relax += 1
 
-        total_counters = self.check_counters()
-
         #  starting the flex_down cycle
         if self.avail == 1 and self.action == 0:
             self.flex_down = 1
             self.avail = 0
+            self.flex_counter += 1
 
         #  if we decide to end the flex_down cycle
         if self.flex_down > 0 and self.action == 1:
@@ -116,7 +124,7 @@ class FlexV1(BaseEnv):
             self.flex_up = 1
 
         #  if we need to end the flex_up cycle
-        if self.flex_up == self.flex_time:
+        if self.flex_up == self.max_flex_time:
             self.flex_up = 0
             self.flex_time = 0
             self.relax = 1
@@ -138,4 +146,81 @@ class FlexV1(BaseEnv):
 
         #  /12 so we get reward in terms of £/5 minutes
         reward = flex_action * electricity_price / 12
+
+        #  work out the flex counter
+        if flex_action == 0:
+            flex_counter = 'not_flexing'
+        else:
+            flex_counter = 'flex_action_{}'.format(self.flex_counter)
+
+        total_counters = self.check_counters()
+
+        if total_counters > 0:
+            logger.debug('action is {}'.format(action))
+            logger.debug('flex_action is {}'.format(flex_action))
+            logger.debug('up {} down {} relax {} rew {}'.format(
+                self.flex_up, self.flex_down, self.relax, reward))
+
+        self.steps += 1
+        next_state = self.get_state(self.steps)
+
+        obs_append = self.make_observation_append_list()
+        next_observation = self.get_observation(self.steps,
+                                                obs_append)
+
+        #  check to see if we are done
+        if self.steps == (self.episode_length - 1):
+            done = True
+
+        self.info = self.update_info(steps=self.steps,
+                                     state=self.state,
+                                     observation=self.observation,
+                                     action=action,
+                                     reward=reward,
+                                     next_state=next_state,
+                                     next_observation=next_observation,
+                                     done=self.done,
+
+                                     electricity_price=electricity_price,
+                                     flex_down=self.flex_down,
+                                     flex_up=self.flex_up,
+                                     relax=self.relax,
+                                     flex_avail=self.avail,
+                                     flex_action=flex_action,
+                                     flex_counter=self.flex_counter)
+
+        self.state = next_state
+        self.observation = next_observation
+
+        return self.observation, reward, done, info
+
+
+    def make_observation_append_list(self):
+        """
+        Creates the list to be appended onto the observation
+
+        returns
+            append (list)
+
+        append = [self.avail,
+                  flex_down_dummies,
+                  flex_up_dummies,
+                  relax_dummies]
+
+        dummies = [off, period_1, period_2 ... period_max_flex_time]
+        """
+        flex_down_dummies = np.zeros(self.max_flex_time + 1)
+        flex_up_dummies = np.zeros(self.max_flex_time + 1)
+        relax_dummies = np.zeros(self.relax_time + 1)
+
+        flex_down_dummies[self.flex_down] = 1
+        flex_up_dummies[self.flex_up] = 1
+        relax_dummies[self.relax] = 1
+
+        append = [np.array([self.avail]),
+                  flex_down_dummies,
+                  flex_up_dummies,
+                  relax_dummies]
+
+        return np.concatenate(append, axis=0).tolist()
 

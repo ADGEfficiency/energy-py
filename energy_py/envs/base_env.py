@@ -233,10 +233,7 @@ class BaseEnv(object):
         if append:
             state = np.append(state, append)
 
-        state = state.reshape(1, -1)
-        assert state.shape[1] == len(self.state_info)
-
-        return state
+        return state.reshape(1, len(self.state_info))
 
     def get_observation(self, steps, append=None):
         """
@@ -262,7 +259,4 @@ class BaseEnv(object):
         if append:
             observation = np.append(observation, np.array(append))
 
-        observation = observation.reshape(1, -1)
-        assert observation.shape[1] == len(self.observation_info)
-
-        return observation
+        return observation.reshape(1, len(self.observation_info))
