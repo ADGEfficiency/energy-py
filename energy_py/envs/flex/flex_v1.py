@@ -16,11 +16,17 @@ Once a flexibility action has started, the action continues until
 After the action has finished, a penalty (the flex up cycle) is paid.
 An optional length of relaxation time occurs after the flex up period
 
+TODO
 Currently the relaxation time is a fixed length - in the future this could be a function of the flex_time
+
+Ability to randomly start in different parts of the flex cycle
 """
+
+import logging
 
 import numpy as np
 
+from energy_py import DiscreteSpace, GlobalSpace
 from energy_py.envs import BaseEnv
 
 
@@ -61,11 +67,52 @@ class FlexV1(BaseEnv):
         self.flex_down = None
         self.flex_up = None
         self.relax = None
-
         #  a counter that remembers how long the flex down cycle was
         self.flex_time = None
+
         #  flex counter should never be reset!
         self.flex_counter = 0
+
+        """
+        SETTING THE ACTION SPACE
+
+        Discrete action space with three choices
+            0 = start flex down cycle
+            1 = stop flex down cycle, start flex up cycle
+            2 = no op
+        """
+        self.action_space = GlobalSpace([DiscreteSpace(3)])
+
+        """
+        SETTING THE OBSERVATION SPACE
+
+        Set in the parent class BaseEnv
+        """
+        obs_spc, self.observation_ts, self.state_ts = self.get_state_obs()
+
+        #  add infomation onto our observation
+        obs_spaces_append = self.make_observation_append_list()
+
+        #  all our additional observations are dummies
+        obs_spaces_append = [DiscreteSpace(1) for _ in obs_spaces_append]
+        obs_spc.extend(obs_spaces_append)
+
+        self.observation_space = GlobalSpace(obs_spc)
+
+        #  making a list of names for the additional observation space dims
+        obs_spc_names = ['flex_availability']
+
+        obs_spc_names.extend(['flex_down_{}'.format(c)
+                              for c in range(self.max_flex_time)])
+        obs_spc_names.extend(['flex_up_{}'.format(c)
+                              for c in range(self.max_flex_time)])
+        obs_spc_names.extend(['relax_{}'.format(c)
+                              for c in range(self.max_flex_time)])
+
+        self.observation_info.extend(obs_spc_names)
+
+        #  set the initial observation by restting the env
+        self.observation = self.reset()
 
     def __repr__(self):
         return '<energy_py flex-v1 environment>'
@@ -77,6 +124,20 @@ class FlexV1(BaseEnv):
         returns
             observation (np.array) the initial observation
         """
+        #  initialize our counters
+        self.avail = 1
+        self.flex_down = 0
+        self.flex_up = 0
+        self.relax = 0
+        self.flex_time = 0
+
+        self.steps = 0
+        self.state = self.get_state(self.steps)
+
+        obs_append = self.make_observation_append_list()
+        self.observation = self.get_observation(self.steps,
+                                                obs_append)
+        return self.observation
 
     def _step(self, action):
         """
@@ -171,29 +232,30 @@ class FlexV1(BaseEnv):
         #  check to see if we are done
         if self.steps == (self.episode_length - 1):
             done = True
+        else:
+            done = False
 
-        self.info = self.update_info(steps=self.steps,
-                                     state=self.state,
-                                     observation=self.observation,
-                                     action=action,
-                                     reward=reward,
-                                     next_state=next_state,
-                                     next_observation=next_observation,
-                                     done=self.done,
+        info = self.update_info(steps=self.steps,
+                                state=self.state,
+                                observation=self.observation,
+                                action=action,
+                                reward=reward,
+                                next_state=next_state,
+                                next_observation=next_observation,
+                                done=self.done,
 
-                                     electricity_price=electricity_price,
-                                     flex_down=self.flex_down,
-                                     flex_up=self.flex_up,
-                                     relax=self.relax,
-                                     flex_avail=self.avail,
-                                     flex_action=flex_action,
-                                     flex_counter=self.flex_counter)
+                                electricity_price=electricity_price,
+                                flex_down=self.flex_down,
+                                flex_up=self.flex_up,
+                                relax=self.relax,
+                                flex_avail=self.avail,
+                                flex_action=flex_action,
+                                flex_counter=self.flex_counter)
 
         self.state = next_state
         self.observation = next_observation
 
         return self.observation, reward, done, info
-
 
     def make_observation_append_list(self):
         """
@@ -224,3 +286,22 @@ class FlexV1(BaseEnv):
 
         return np.concatenate(append, axis=0).tolist()
 
+    def check_counters(self):
+        """
+        Checks that all of the counters are set in valid positions
+        """
+        if self.avail != 0:
+            counters = sum(self.flex_down, self.flex_up, self.relax)
+            assert counters == 0
+
+        if self.flex_down != 0:
+            counters = sum(self.avail, self.flex_up, self.relax)
+            assert counters == 0
+
+        if self.flex_up != 0:
+            counters = sum(self.avail, self.flex_down, self.relax)
+            assert counters == 0
+
+        if self.relax != 0:
+            counters = sum(self.avail, self.flex_down, self.flex_up)
+            assert counters == 0

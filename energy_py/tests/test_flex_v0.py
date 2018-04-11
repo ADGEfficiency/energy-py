@@ -16,7 +16,7 @@ env_config = {'data_path': DATA_PATH,
               'relax_time': 12,
               'flex_effy': 1.2}
 
-env = energy_py.make_env('FlexEnv', **env_config)
+env = energy_py.make_env('Flex-v0', **env_config)
 
 state_path = os.path.join(DATA_PATH, 'state.csv')
 state = pd.read_csv(state_path, index_col=0, parse_dates=True)

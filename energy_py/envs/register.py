@@ -5,11 +5,14 @@ import gym
 import numpy as np
 
 from energy_py import GlobalSpace
-from energy_py.envs.flex.env_flex import Flex
+
+from energy_py.envs.flex.flex_v0 import FlexV0
+from energy_py.envs.flex.flex_v1 import FlexV1
+
 from energy_py.envs.battery.battery_env import Battery
 
-logger = logging.getLogger(__name__)
 
+logger = logging.getLogger(__name__)
 
 
 class EnvWrapper(object):
@@ -35,11 +38,11 @@ class EnvWrapper(object):
         return self.env.action_space.sample_discrete()
 
 
-class FlexEnv(EnvWrapper):
+class FlexEnvV0(EnvWrapper):
 
     def __init__(self, **kwargs):
-        env = Flex(**kwargs)
-        super(FlexEnv, self).__init__(env)
+        env = FlexV0(**kwargs)
+        super(FlexEnvV0, self).__init__(env)
 
         self.observation_space = self.env.observation_space
         self.obs_space_shape = self.observation_space.shape
@@ -49,6 +52,19 @@ class FlexEnv(EnvWrapper):
 
         self.observation_info = env.observation_info
 
+class FlexEnvV1(EnvWrapper):
+
+    def __init__(self, **kwargs):
+        env = FlexV1(**kwargs)
+        super(FlexEnvV1, self).__init__(env)
+
+        self.observation_space = self.env.observation_space
+        self.obs_space_shape = self.observation_space.shape
+        self.observation_info = self.env.observation_info
+        self.action_space = self.env.action_space
+        self.action_space_shape = self.action_space.shape
+
+        self.observation_info = env.observation_info
 
 class BatteryEnv(EnvWrapper):
 
@@ -130,11 +146,12 @@ class MountainCarEnv(EnvWrapper):
         return self.actions
 
 
-env_register = {'FlexEnv': FlexEnv,
-                'BatteryEnv': BatteryEnv,
-                'CartPoleEnv': CartPoleEnv,
-                'PendulumEnv': PendulumEnv,
-                'MountainCarEnv': MountainCarEnv}
+env_register = {'Flex-v0': FlexEnvV0,
+                'Flex-v1': FlexEnvV1,
+                'Battery': BatteryEnv,
+                'CartPole': CartPoleEnv,
+                'Pendulum': PendulumEnv,
+                'MountainCar': MountainCarEnv}
 
 
 def make_env(env_id, **kwargs):

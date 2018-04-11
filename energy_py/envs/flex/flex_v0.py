@@ -72,17 +72,15 @@ class FlexV0(BaseEnv):
         """
         SETTING THE OBSERVATION SPACE
 
-        Set in the parent class TimeSeriesEnv
-        Append the flex asset availability to send to the agent
-        TODO probably worth appending some more stuff as well!
+        Set in the parent class BaseEnv
         """
         obs_spc, self.observation_ts, self.state_ts = self.get_state_obs()
 
         #  add infomation onto our observation
         obs_spc.extend([DiscreteSpace(1),
-                       DiscreteSpace(self.flex_down_time),
-                       DiscreteSpace(self.flex_up_time),
-                       DiscreteSpace(self.relax_time)])
+                        DiscreteSpace(self.flex_down_time),
+                        DiscreteSpace(self.flex_up_time),
+                        DiscreteSpace(self.relax_time)])
 
         self.observation_info.extend(['flex_availability',
                                       'flex_down_cycle',
@@ -280,6 +278,13 @@ class FlexV0(BaseEnv):
         """
         Helper function to check that the counters are OK
         """
+        total_counters = sum([self.flex_up, self.flex_down, self.relax])
+
+        if self.flex_avail == 0:
+            assert total_counters != 0
+
+        if self.flex_avail == 1:
+            assert total_counters == 0
 
         if self.flex_up != 0:
             assert self.flex_down == 0
@@ -295,12 +300,5 @@ class FlexV0(BaseEnv):
             assert self.flex_down == 0
             assert self.flex_up == 0
             assert self.flex_avail == 0
-
-        total_counters = sum([self.flex_up, self.flex_down, self.relax])
-        if self.flex_avail == 0:
-            assert total_counters != 0
-
-        if self.flex_avail == 1:
-            assert total_counters == 0
 
         return total_counters
