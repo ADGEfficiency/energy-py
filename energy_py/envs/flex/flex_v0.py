@@ -6,7 +6,7 @@ from energy_py.envs import BaseEnv
 logger = logging.getLogger(__name__)
 
 
-class Flex(BaseEnv):
+class FlexV0(BaseEnv):
     """
     An environment to simulate electricity flexibility responding to the price
     of electricity.
@@ -95,11 +95,11 @@ class Flex(BaseEnv):
         self.observation = self.reset()
 
     def __repr__(self):
-        return '<energy_py FLEX environment>'
+        return '<energy_py flex-v0 environment>'
 
     def _reset(self):
         """
-        Resets the environment.
+        Resets the environment
 
         returns
             observation (np.array) the initial observation
@@ -129,10 +129,7 @@ class Flex(BaseEnv):
 
     def _step(self, action):
         """
-        One step through the environment.
-
-        Flex asset is dispatched if action=1 and not already in a flex cycle
-        or relaxing.
+        One step through the environment
 
         args
             action (np.array) shape=(1, 1)
@@ -142,6 +139,9 @@ class Flex(BaseEnv):
             reward (float)
             done (bool)
             info (dict)
+
+        Flex asset is dispatched if action=1 and not already in a flex cycle
+        or relaxing.
         """
         #  pull the electricity price out of the state
         price_index = self.state_info.index('C_electricity_price_[$/MWh]')
