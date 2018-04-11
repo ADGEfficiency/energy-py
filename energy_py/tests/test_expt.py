@@ -34,7 +34,7 @@ AGENT_CONFIG = {'agent_id': 'DQN',
 
 def test_battery_expt():
 
-    env_config = {'env_id': 'BatteryEnv',
+    env_config = {'env_id': 'Battery',
                   'data_path': DATA_PATH,
                   'episode_length': 10,
                   'episode_random': True,
@@ -48,7 +48,7 @@ def test_battery_expt():
 
 def test_flex_expt():
 
-    env_config = {'env_id': 'FlexEnv',
+    env_config = {'env_id': 'Flex-v0',
                   'data_path': DATA_PATH,
                   'episode_length': 10,
                   'episode_random': True}
@@ -61,7 +61,7 @@ def test_flex_expt():
 
 def test_cartpole_expt():
 
-    env_config = {'env_id': 'CartPoleEnv'}
+    env_config = {'env_id': 'CartPole'}
 
     experiment(agent_config=AGENT_CONFIG,
                env_config=env_config,

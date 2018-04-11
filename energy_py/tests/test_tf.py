@@ -66,7 +66,7 @@ def test_target_net():
 
 
     with tf.Session() as sess:
-        env = energy_py.make_env('CartPoleEnv') 
+        env = energy_py.make_env('CartPole%)
 
         agent_config['env'] = env
         agent_config['sess'] = sess
