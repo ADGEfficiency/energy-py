@@ -5,7 +5,8 @@ import os
 import numpy as np
 import pandas as pd
 
-from energy_py.scripts.spaces import ContinuousSpace, DiscreteSpace
+import energy_py
+from energy_py import ContinuousSpace, DiscreteSpace
 
 logger = logging.getLogger(__name__)
 
@@ -19,25 +20,29 @@ class BaseEnv(object):
     BaseEnv class
 
     args
-        data_path (str) location of state.csv, observation.csv
+        dataset_name (str) located in energy_py/experiments/datasets 
         episode_length (int)
         episode_start (int) integer index of episode start
         episode_random (bool) whether to randomize the episode start position
     """
 
     def __init__(self,
-                 data_path,
-                 episode_length,
-                 episode_start,
-                 episode_random):
+                 dataset_name='test',
+                 episode_length=48,
+                 episode_start=0,
+                 episode_random=False):
 
+        logger.info('Initializing the BaseEnv class')
+        logger.info('Using {} data set'.format(dataset_name))
+
+        dataset_path = energy_py.get_dataset_path(dataset_name)
         self.episode_length = int(episode_length)
         self.episode_start = int(episode_start)
         self.episode_random = bool(episode_random)
 
         #  loads time series infomation from disk
         #  creates the state_info and observation_info lists
-        self.raw_state_ts, self.raw_observation_ts = self.load_ts(data_path)
+        self.raw_state_ts, self.raw_observation_ts = self.load_ts(dataset_path)
 
         #  hack to allow max length
         if self.episode_length == 0:
@@ -104,20 +109,20 @@ class BaseEnv(object):
 
         return self.info
 
-    def load_ts(self, data_path):
+    def load_ts(self, dataset_path):
         """
         Loads the state and observation from disk.
 
         args
-            data_path (str) location of state.csv, observation.csv
+            dataset_path (str) location of state.csv, observation.csv
 
         returns
             state (pd.DataFrame)
             observation (pd.DataFrame)
         """
         #  paths to load state & observation
-        state_path = os.path.join(data_path, 'state.csv')
-        obs_path = os.path.join(data_path, 'observation.csv')
+        state_path = os.path.join(dataset_path, 'state.csv')
+        obs_path = os.path.join(dataset_path, 'observation.csv')
 
         try:
             #  load from disk
@@ -126,7 +131,7 @@ class BaseEnv(object):
 
         except FileNotFoundError:
             raise FileNotFoundError(('state.csv & observation.csv'
-                                     'are missing from {}'.format(data_path)))
+                                     'are missing from {}'.format(dataset_path)))
 
         #  grab the column name so we can index state & obs arrays
         self.state_info = state.columns.tolist()

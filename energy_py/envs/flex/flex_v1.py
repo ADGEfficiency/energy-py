@@ -41,13 +41,19 @@ class FlexV1(BaseEnv):
         flex_size (int) the size of the action in MW
         max_flex_time (int) limit of flex_down cycle (num 5 mins)
 
+        kwargs that can be passed to the parent class BaseEnv
+            dataset_name
+            episode_length
+            episode_start
+            episode_random
+
     attributes
         avail (int) boolean (0 = unavailable, 1 = available)
         flex_down (int) counter for the flex down period
         flex_up (int) counter for the flex up period
         relax (int) counter for the relax period
-
-        self.state_info (list)
+        flex_time (int)
+        flex_counter (int)
 
     methods
 
@@ -59,19 +65,23 @@ class FlexV1(BaseEnv):
                  max_flex_time,
                  **kwargs):
 
-        self.flex_size = flex_size
-        self.max_flex_time = max_flex_time
+        self.flex_size = float(flex_size)
+        self.max_flex_time = int(max_flex_time)
 
         #  counters for the different modes of operation
         self.avail = None
         self.flex_down = None
         self.flex_up = None
         self.relax = None
+
         #  a counter that remembers how long the flex down cycle was
         self.flex_time = None
 
         #  flex counter should never be reset!
         self.flex_counter = 0
+
+        #  initializing the BaseEnv class
+        super().__init__(**kwargs)
 
         """
         SETTING THE ACTION SPACE
@@ -113,6 +123,7 @@ class FlexV1(BaseEnv):
 
         #  set the initial observation by restting the env
         self.observation = self.reset()
+
 
     def __repr__(self):
         return '<energy_py flex-v1 environment>'

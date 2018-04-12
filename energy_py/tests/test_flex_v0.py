@@ -7,21 +7,14 @@ import numpy as np
 import energy_py
 
 
-DATASET_NAME = 'test'
-DATA_PATH = energy_py.get_dataset_path(DATASET_NAME)
-
-env_config = {'data_path': DATA_PATH,
+env_config = {'dataset_name': 'test',
               'flex_size': 1,
               'flex_time': 6,
               'relax_time': 12,
               'flex_effy': 1.2}
-
 env = energy_py.make_env('Flex-v0', **env_config)
 
-state_path = os.path.join(DATA_PATH, 'state.csv')
-state = pd.read_csv(state_path, index_col=0, parse_dates=True)
-
-prices = state.values
+PRICES = env.env.state_ts.values
 
 def test_down_up():
     o = env.reset()
@@ -36,7 +29,7 @@ def test_down_up():
 
         rews.append(r)
 
-    expected_rew = (np.sum(prices[5:5+6]) - np.sum(prices[5+6:5+6+6])*1.2) / 12
+    expected_rew = (np.sum(PRICES[5:5+6]) - np.sum(PRICES[5+6:5+6+6])*1.2) / 12
     assert np.isclose(sum(rews), expected_rew)
 
 
@@ -53,7 +46,7 @@ def test_up_down():
 
         rews.append(r)
 
-    expected_rew = (-1.2*np.sum(prices[6:6+6]) + np.sum(prices[6+6:6+12])) / 12
+    expected_rew = (-1.2*np.sum(PRICES[6:6+6]) + np.sum(PRICES[6+6:6+12])) / 12
     assert np.isclose(sum(rews), expected_rew)
 
 

@@ -20,16 +20,19 @@ class FlexV0(BaseEnv):
         0 = do nothing
         1 = start flex down then flex up cycle
         2 = start flex up then flex down cycle
+
+    kwargs that can be passed to the parent class BaseEnv
+        dataset_name
+        episode_length
+        episode_start
+        episode_random
     """
     def __init__(self,
-                 data_path,
-                 episode_length=48,
-                 episode_start=0,
-                 episode_random=False,
                  flex_size=2,  # MW
                  flex_time=6,  # 5 minute periods
                  relax_time=12,  # 5 minute periods
-                 flex_effy=1.2):  # additional consumption in flex up
+                 flex_effy=1.2,
+                 **kwargs):  # additional consumption in flex up
 
         #  technical energy inputs
         self.flex_down_size = float(flex_size)
@@ -52,10 +55,8 @@ class FlexV0(BaseEnv):
         self.flex_counter = 0
         self.action_counter = 0
 
-        super().__init__(data_path,
-                         episode_length,
-                         episode_start,
-                         episode_random)
+        super().__init__(**kwargs)
+
         """
         SETTING THE ACTION SPACE
 
