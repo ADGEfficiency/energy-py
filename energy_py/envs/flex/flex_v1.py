@@ -204,6 +204,12 @@ class FlexV1(BaseEnv):
             self.local_flex_time += 1
 
         #  if we need to end the flex_up cycle
+        if self.flex_up > self.local_flex_time:
+            self.flex_up = 0
+            self.local_flex_time = 0
+            self.relax = 1
+
+        #  if we need to end the flex_up cycle
         if self.flex_up > self.max_flex_time:
             self.flex_up = 0
             self.local_flex_time = 0
@@ -233,7 +239,6 @@ class FlexV1(BaseEnv):
         else:
             flex_counter = 'flex_action_{}'.format(self.flex_counter)
 
-        print(self.avail, self.flex_down, self.flex_up, self.relax)
         total_counters = self.check_counters()
 
         if total_counters > 0:
@@ -325,5 +330,11 @@ class FlexV1(BaseEnv):
         if self.relax != 0:
             counters = sum([self.avail, self.flex_down, self.flex_up])
             assert counters == 0
+
+        logger.debug('avail {} flex_down {} flex_up {} relax {}' \
+                     .format(self.avail,
+                             self.flex_down,
+                             self.flex_up,
+                             self.relax))
 
         return sum([self.relax, self.flex_down, self.flex_up])
