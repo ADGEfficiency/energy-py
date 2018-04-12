@@ -79,8 +79,7 @@ class FlexV1(BaseEnv):
         #  a counter that remembers how long the flex down cycle was
         self.local_flex_time = None
 
-        #  flex counter should never be reset!
-        self.flex_counter = 0
+        self.flex_counter = None
 
         #  initializing the BaseEnv class
         super().__init__(**kwargs)
@@ -143,7 +142,9 @@ class FlexV1(BaseEnv):
         self.flex_down = 0
         self.flex_up = 0
         self.relax = 0
-        self.local_flex_time = 0
+
+        self.local_flex_time = 0  # num 5 min periods
+        self.flex_counter = 0  # number of actions
 
         self.steps = 0
         self.state = self.get_state(self.steps)
@@ -202,6 +203,7 @@ class FlexV1(BaseEnv):
             self.flex_down = 1
             self.avail = 0
             self.local_flex_time += 1
+            self.flex_counter += 1
 
         #  if we need to end the flex_up cycle
         if self.flex_up > self.local_flex_time:

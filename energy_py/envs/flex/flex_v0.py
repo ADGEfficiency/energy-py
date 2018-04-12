@@ -122,7 +122,6 @@ class FlexV0(BaseEnv):
                                                 self.flex_down,
                                                 self.flex_up,
                                                 self.relax])
-        self.done = False
 
         return self.observation
 
@@ -251,7 +250,9 @@ class FlexV0(BaseEnv):
 
         #  check to see if we are done
         if self.steps == (self.episode_length - 1):
-            self.done = True
+            done = True
+        else:
+            done = False
 
         self.info = self.update_info(steps=self.steps,
                                      state=self.state,
@@ -260,7 +261,7 @@ class FlexV0(BaseEnv):
                                      reward=reward,
                                      next_state=next_state,
                                      next_observation=next_observation,
-                                     done=self.done,
+                                     done=done,
 
                                      electricity_price=self.electricity_price,
                                      flex_down=self.flex_down,
@@ -273,7 +274,7 @@ class FlexV0(BaseEnv):
         self.state = next_state
         self.observation = next_observation
 
-        return self.observation, reward, self.done, self.info
+        return self.observation, reward, done, self.info
 
     def check_counters(self):
         """
