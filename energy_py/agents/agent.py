@@ -31,9 +31,9 @@ class BaseAgent(object):
 
     def __init__(self,
                  env,
-                 discount,
-                 memory_length,
                  total_steps,
+                 discount=0.9,
+                 memory_length=1000,
                  initial_random=0,
                  memory_type='priority',
                  observation_processor=None,
@@ -89,10 +89,10 @@ class BaseAgent(object):
             self.target_processor = processors[target_processor]()
 
         #  optional tensorflow FileWriters for acting and learning
-        if act_path:
+        if act_path and hasattr(self, 'sess'):
             self.acting_writer = tf.summary.FileWriter(act_path)
 
-        if learn_path:
+        if learn_path and hasattr(self, 'sess'):
             self.learning_writer = tf.summary.FileWriter(learn_path,
                                                          graph=self.sess.graph)
 
@@ -100,7 +100,7 @@ class BaseAgent(object):
 
     def _act(self, observation): raise NotImplementedError
 
-    def _learn(self, **kwargs): raise NotImplementedError
+    def _learn(self, **kwargs): pass
 
     def reset(self):
         """

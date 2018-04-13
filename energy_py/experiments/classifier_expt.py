@@ -14,19 +14,20 @@ if __name__ == '__main__':
 
     obs_info = pd.read_csv(os.path.join(os.getcwd(),
                                         'datasets',
-                                        'perfect_forecast',
+                                        args.dataset_name,
                                         'observation.csv'),
-                           index_col=0).columns
+                           index_col=0).columns.tolist()
 
     agent_config = {'agent_id': 'ClassifierAgent',
+                    'total_steps': total_steps,
                     'conditions': [Cond(0, 'Very High', '=='),
                                    Cond(6, 'Very High', '!=')],
-                    'action': np.array(2),
-                    'observation_info': obs_info}
+                    'action': np.array(1),
+                    'obs_info': obs_info}
 
     env_config = {'env_id': 'Flex-v1',
                   'dataset_name': args.dataset_name,
-                  'episode_length': 2016,
+                  'episode_length': 0,
                   'flex_size': 0.02,
                   'max_flex_time': 6,
                   'relax_time': 0}

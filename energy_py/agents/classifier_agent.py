@@ -90,19 +90,20 @@ class ClassifierAgent(BaseAgent):
     """
 
     def __init__(self,
-                 stragety,
                  conditions,
                  action,
-                 obs_info, **kwargs):
+                 obs_info,
+                 **kwargs):
+
         super().__init__(**kwargs)
 
         #  hack to get around env adding
-        new_obs_info = self.env.obs_spaces[len(obs_info):]
-        strat_obs_info = obs_info.extend(new_obs_info)
+        new_obs_info = self.env.env.observation_info[len(obs_info):]
+        obs_info.extend(new_obs_info)
 
         self.stragety = ClassifierStragety(conditions,
                                            action,
-                                           strat_obs_info)
+                                           obs_info)
 
     def _act(self, observation):
         return self.stragety.check_observation(observation)
