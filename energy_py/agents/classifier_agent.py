@@ -10,13 +10,14 @@ ClassifierCondition = namedtuple('Condition', ['horizion', 'bin', 'operation'])
 
 class ClassifierStragety(object):
     """
-    Implements a set of rules for taking deterministic actions based on
-    an observation
+    A set of rules for taking deterministic actions based on an observation
 
     args
-        conditions (list) a list of conditions, action taken if all are true
-        action (np.array) the action taken if all conditions are true
+        stragety (ClassifierStragety) contains the conditions
+        action (np.array) taken if all the stragety is true
         observation_info (list) list of strings for each dim of the observation
+
+    The conditions list
     """
 
     def __init__(self, conditions, action, observation_info):
@@ -24,6 +25,8 @@ class ClassifierStragety(object):
         self.action = action
         self.observation_info = observation_info
 
+        #  a dictionary for operators to allow different in/equalities
+        #  to be used
         self.operators = {'==': operator.eq,
                           '!=': operator.ne}
 
@@ -37,16 +40,26 @@ class ClassifierStragety(object):
 
         returns
             (bool)
+
+        Creates the string of the observation
+        Predicition indexed using this string
+        Returns operation of the prediction versus the condition
+
+        Either
+            prediction == 1
+            prediction != 1
         """
         string = 'D_h_{}_Predicted_Price_Bin_{}'.format(condition.horizion,
                                                         condition.bin)
 
+        #  get the index and the prediction
         idx = self.observation_info.index(string)
-
         prediciton = observation[0, idx]
 
+        #  get the operation function from self.operators dict
         operation = self.operators[condition.operation]
 
+        #  compare the prediciton verus 1
         return operation(prediciton, 1)
 
     def check_observation(self, observation):
@@ -58,12 +71,15 @@ class ClassifierStragety(object):
 
         returns
             action (np.array)
+
+        Iterates over all the conditions in this ClassifierStragety
         """
         bools = [self.compare_condition(observation, c)
                  for c in self.conditions]
 
         if all(bools):
             return self.action
+
         else:
             return np.zeros_like(self.action)
 
@@ -73,11 +89,20 @@ class ClassifierAgent(BaseAgent):
     Flexes based on a prediction from a classifier.
     """
 
-    def __init__(self, env, discount, strageties, **kwargs):
+    def __init__(self,
+                 stragety,
+                 conditions,
+                 action,
+                 obs_info, **kwargs):
+        super().__init__(**kwargs)
 
-        super().__init__(env, discount, memory_length=10)
+        #  hack to get around env adding
+        new_obs_info = self.env.obs_spaces[len(obs_info):]
+        strat_obs_info = obs_info.extend(new_obs_info)
 
-        self.strageties = strageties
+        self.stragety = ClassifierStragety(conditions,
+                                           action,
+                                           strat_obs_info)
 
     def _act(self, observation):
-        pass
+        return self.stragety.check_observation(observation)

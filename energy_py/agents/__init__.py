@@ -9,3 +9,6 @@ memories = {'array': ArrayMemory,
 
 from energy_py.agents.agent import BaseAgent
 from energy_py.agents.register import make_agent
+
+from energy_py.agents.classifier_agent import ClassifierCondition, ClassifierStragety
+from energy_py.agents.classifier_agent import ClassifierStragety

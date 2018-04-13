@@ -119,7 +119,7 @@ class FlexV1(BaseEnv):
         obs_spc_names.extend(['flex_up_{}'.format(c)
                               for c in range(self.max_flex_time + 1)])
         obs_spc_names.extend(['relax_{}'.format(c)
-                              for c in range(self.max_flex_time + 1)])
+                              for c in range(self.relax_time + 1)])
 
         self.observation_info.extend(obs_spc_names)
 

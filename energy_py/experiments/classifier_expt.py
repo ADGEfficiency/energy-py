@@ -1,27 +1,45 @@
-import logging
 import os
 
-from energy_py import experiment
-from energy_py.agents import ClassifierAgent
-from energy_py.envs import FlexEnv
+import numpy as np
+import pandas as pd
+
+import energy_py
+from energy_py.agents import ClassifierCondition as Cond
+from energy_py.agents import ClassifierStragety as Strat
+
 
 if __name__ == '__main__':
-    total_steps = 1e6
+    args = energy_py.make_expt_parser()
+    total_steps = 1e2
 
+    obs_info = pd.read_csv(os.path.join(os.getcwd(),
+                                        'datasets',
+                                        'perfect_forecast',
+                                        'observation.csv'),
+                           index_col=0).columns
 
-    data_path = os.getcwd()+'/classifier_deterministic/'
-    results_path = os.getcwd()+'/results/classifier/'
+    agent_config = {'agent_id': 'ClassifierAgent',
+                    'conditions': [Cond(0, 'Very High', '=='),
+                                   Cond(6, 'Very High', '!=')],
+                    'action': np.array(2),
+                    'observation_info': obs_info}
 
-    env_config = {'episode_length': 0,
-                  'episode_random': False,
-                  'data_path': data_path,
-                  'flex_effy': 1.0,
-                  'flex_size': 0.05}
+    env_config = {'env_id': 'Flex-v1',
+                  'dataset_name': args.dataset_name,
+                  'episode_length': 2016,
+                  'flex_size': 0.02,
+                  'max_flex_time': 6,
+                  'relax_time': 0}
 
-    agent_config = {'discount': 0.9}
-    total_steps = 10
-    env = FlexEnv
-    agent = ClassifierAgent
+    expt_path = os.path.join(os.getcwd(),
+                             'results',
+                             args.expt_name)
 
-    agent, env, sess = experiment(agent, agent_config, env, total_steps,
-                                  data_path, results_path, env_config)
+    paths = energy_py.make_paths(expt_path, run_name=args.run_name)
+    logger = energy_py.make_logger(paths, 'master')
+
+    energy_py.experiment(agent_config=agent_config,
+                         env_config=env_config,
+                         total_steps=total_steps,
+                         paths=paths,
+                         seed=args.seed)
