@@ -4,21 +4,20 @@ import numpy as np
 
 import energy_py
 
-DATASET_NAME = 'test'
-DATA_PATH = energy_py.get_dataset_path(DATASET_NAME)
-
-config = {'env_id': 'BatteryEnv',
-          'data_path': DATA_PATH,
+config = {'env_id': 'Battery',
+          'dataset_name': 'test',
           'initial_charge': 0,
           'round_trip_eff': 0.9}
 
+#  this code is just to get the charge index
+#  so I don't need to do it in each test function
 env = energy_py.make_env(**config)
 charge_index = env.observation_info.index('C_charge_level_[MWh]')
 
 
 def test_charge():
-    config = {'env_id': 'BatteryEnv',
-              'data_path': DATA_PATH,
+    config = {'env_id': 'Battery',
+              'dataset_name': 'test',
               'initial_charge': 0.0,
               'round_trip_eff': 0.9}
 
@@ -34,8 +33,8 @@ def test_charge():
 
 
 def test_discharge():
-    config = {'env_id': 'BatteryEnv',
-              'data_path': DATA_PATH,
+    config = {'env_id': 'Battery',
+              'dataset_name': 'test',
               'capacity': 4.0,
               'initial_charge': 1.0,
               'round_trip_eff': 0.9}
@@ -51,8 +50,8 @@ def test_discharge():
 
 def test_no_op():
 
-    config = {'env_id': 'BatteryEnv',
-              'data_path': DATA_PATH,
+    config = {'env_id': 'Battery',
+              'dataset_name': 'test',
               'capacity': 4.0,
               'initial_charge': 0.5,
               'round_trip_eff': 0.9}

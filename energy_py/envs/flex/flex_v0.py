@@ -6,7 +6,7 @@ from energy_py.envs import BaseEnv
 logger = logging.getLogger(__name__)
 
 
-class Flex(BaseEnv):
+class FlexV0(BaseEnv):
     """
     An environment to simulate electricity flexibility responding to the price
     of electricity.
@@ -20,16 +20,19 @@ class Flex(BaseEnv):
         0 = do nothing
         1 = start flex down then flex up cycle
         2 = start flex up then flex down cycle
+
+    kwargs that can be passed to the parent class BaseEnv
+        dataset_name
+        episode_length
+        episode_start
+        episode_random
     """
     def __init__(self,
-                 data_path,
-                 episode_length=48,
-                 episode_start=0,
-                 episode_random=False,
                  flex_size=2,  # MW
                  flex_time=6,  # 5 minute periods
                  relax_time=12,  # 5 minute periods
-                 flex_effy=1.2):  # additional consumption in flex up
+                 flex_effy=1.2,
+                 **kwargs):  # additional consumption in flex up
 
         #  technical energy inputs
         self.flex_down_size = float(flex_size)
@@ -52,10 +55,8 @@ class Flex(BaseEnv):
         self.flex_counter = 0
         self.action_counter = 0
 
-        super().__init__(data_path,
-                         episode_length,
-                         episode_start,
-                         episode_random)
+        super().__init__(**kwargs)
+
         """
         SETTING THE ACTION SPACE
 
@@ -72,17 +73,15 @@ class Flex(BaseEnv):
         """
         SETTING THE OBSERVATION SPACE
 
-        Set in the parent class TimeSeriesEnv
-        Append the flex asset availability to send to the agent
-        TODO probably worth appending some more stuff as well!
+        Set in the parent class BaseEnv
         """
         obs_spc, self.observation_ts, self.state_ts = self.get_state_obs()
 
         #  add infomation onto our observation
         obs_spc.extend([DiscreteSpace(1),
-                       DiscreteSpace(self.flex_down_time),
-                       DiscreteSpace(self.flex_up_time),
-                       DiscreteSpace(self.relax_time)])
+                        DiscreteSpace(self.flex_down_time),
+                        DiscreteSpace(self.flex_up_time),
+                        DiscreteSpace(self.relax_time)])
 
         self.observation_info.extend(['flex_availability',
                                       'flex_down_cycle',
@@ -95,11 +94,11 @@ class Flex(BaseEnv):
         self.observation = self.reset()
 
     def __repr__(self):
-        return '<energy_py FLEX environment>'
+        return '<energy_py flex-v0 environment>'
 
     def _reset(self):
         """
-        Resets the environment.
+        Resets the environment
 
         returns
             observation (np.array) the initial observation
@@ -123,16 +122,12 @@ class Flex(BaseEnv):
                                                 self.flex_down,
                                                 self.flex_up,
                                                 self.relax])
-        self.done = False
 
         return self.observation
 
     def _step(self, action):
         """
-        One step through the environment.
-
-        Flex asset is dispatched if action=1 and not already in a flex cycle
-        or relaxing.
+        One step through the environment
 
         args
             action (np.array) shape=(1, 1)
@@ -142,6 +137,9 @@ class Flex(BaseEnv):
             reward (float)
             done (bool)
             info (dict)
+
+        Flex asset is dispatched if action=1 and not already in a flex cycle
+        or relaxing.
         """
         #  pull the electricity price out of the state
         price_index = self.state_info.index('C_electricity_price_[$/MWh]')
@@ -252,7 +250,9 @@ class Flex(BaseEnv):
 
         #  check to see if we are done
         if self.steps == (self.episode_length - 1):
-            self.done = True
+            done = True
+        else:
+            done = False
 
         self.info = self.update_info(steps=self.steps,
                                      state=self.state,
@@ -261,7 +261,7 @@ class Flex(BaseEnv):
                                      reward=reward,
                                      next_state=next_state,
                                      next_observation=next_observation,
-                                     done=self.done,
+                                     done=done,
 
                                      electricity_price=self.electricity_price,
                                      flex_down=self.flex_down,
@@ -274,12 +274,19 @@ class Flex(BaseEnv):
         self.state = next_state
         self.observation = next_observation
 
-        return self.observation, reward, self.done, self.info
+        return self.observation, reward, done, self.info
 
     def check_counters(self):
         """
         Helper function to check that the counters are OK
         """
+        total_counters = sum([self.flex_up, self.flex_down, self.relax])
+
+        if self.flex_avail == 0:
+            assert total_counters != 0
+
+        if self.flex_avail == 1:
+            assert total_counters == 0
 
         if self.flex_up != 0:
             assert self.flex_down == 0
@@ -295,12 +302,5 @@ class Flex(BaseEnv):
             assert self.flex_down == 0
             assert self.flex_up == 0
             assert self.flex_avail == 0
-
-        total_counters = sum([self.flex_up, self.flex_down, self.relax])
-        if self.flex_avail == 0:
-            assert total_counters != 0
-
-        if self.flex_avail == 1:
-            assert total_counters == 0
 
         return total_counters

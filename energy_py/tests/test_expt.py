@@ -13,10 +13,8 @@ import energy_py
 from energy_py.agents.dqn import DQN
 from energy_py import experiment, make_paths, get_dataset_path
 
-PATHS = make_paths(os.getcwd()+'/results')
-DATA_PATH = get_dataset_path('test')
-TOTAL_STEPS = 200 
-
+TOTAL_STEPS = 200
+PATHS = make_paths('results')
 AGENT_CONFIG = {'agent_id': 'DQN',
                 'discount': 0.97,
                 'tau': 0.001,
@@ -34,8 +32,8 @@ AGENT_CONFIG = {'agent_id': 'DQN',
 
 def test_battery_expt():
 
-    env_config = {'env_id': 'BatteryEnv',
-                  'data_path': DATA_PATH,
+    env_config = {'env_id': 'Battery',
+                  'dataset_name': 'test',
                   'episode_length': 10,
                   'episode_random': True,
                   'initial_charge': 'random'}
@@ -48,8 +46,8 @@ def test_battery_expt():
 
 def test_flex_expt():
 
-    env_config = {'env_id': 'FlexEnv',
-                  'data_path': DATA_PATH,
+    env_config = {'env_id': 'Flex-v0',
+                  'dataset_name': 'test',
                   'episode_length': 10,
                   'episode_random': True}
 
@@ -61,7 +59,7 @@ def test_flex_expt():
 
 def test_cartpole_expt():
 
-    env_config = {'env_id': 'CartPoleEnv'}
+    env_config = {'env_id': 'CartPole'}
 
     experiment(agent_config=AGENT_CONFIG,
                env_config=env_config,
