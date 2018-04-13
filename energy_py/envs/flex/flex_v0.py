@@ -16,10 +16,34 @@ class FlexV0(BaseEnv):
     - flex down = decreased consumption
     - relaxation = agent has to wait until starting the next cycle
 
-    Action space is discrete:
-        0 = do nothing
+    Action space is discrete
+        0 = no_op
         1 = start flex down then flex up cycle
         2 = start flex up then flex down cycle
+
+    attributes
+        action_space (GlobalSpace)
+        observation_ts (pd.DataFrame)
+        state_ts (pd.DataFrame)
+        observation_space (GlobalSpace)
+        observation_info (list)
+
+        flex_down_size (float) in MW
+        flex_up_size (float) in MW
+        flex_down_time (int) number of 5 min periods
+        flex_up_time (int) number of 5 min periods
+        relax_time (int) number of 5 min periods
+        flex_down (int) counter
+        flex_up (int) counter
+        relax (int) counter
+        avail (int) binary 0 or 1
+        local_action (int) remembers which action was taken during a cycle
+        flex_counter (int) the number of flexes per episode
+
+    methods
+        _reset()
+        _step(action)
+        check_counters()
 
     kwargs that can be passed to the parent class BaseEnv
         dataset_name
@@ -45,16 +69,20 @@ class FlexV0(BaseEnv):
         self.flex_up_time = int(flex_time)
         self.relax_time = int(relax_time)
 
-        self.electricity_price = None
         self.flex_down = None
         self.flex_up = None
         self.relax = None
-        self.flex_avail = None
-        self.flex_action = None
-        self.action = None
-        self.flex_counter = 0
-        self.action_counter = 0
+        self.avail = None
 
+        #  local action remembers which action was taken during a cycle
+        #  set when a cycle starts, reset inbetween cycles
+        self.local_action = None
+
+        #  counts the number of flexes during an episode
+        self.flex_counter = 0
+
+        #  initialize the BaseEnv - should be done before setting the
+        #  action and observation spaces
         super().__init__(**kwargs)
 
         """
@@ -68,27 +96,30 @@ class FlexV0(BaseEnv):
         Once flex cycle is started it runs for the flex_time
         After flex_time is over, relax_time starts
         """
-        self.action_space = GlobalSpace([DiscreteSpace(2)])
+        #  create the action space object
+        self.action_space = GlobalSpace([DiscreteSpace(3)])
 
         """
         SETTING THE OBSERVATION SPACE
-
-        Set in the parent class BaseEnv
         """
-        obs_spc, self.observation_ts, self.state_ts = self.get_state_obs()
+        #  call the functionality of the BaseEnv class to load the dataset
+        #  as pd.DataFrames and create the observation spaces
+        obs_spaces, self.observation_ts, self.state_ts = self.get_state_obs()
 
         #  add infomation onto our observation
-        obs_spc.extend([DiscreteSpace(1),
-                        DiscreteSpace(self.flex_down_time),
-                        DiscreteSpace(self.flex_up_time),
-                        DiscreteSpace(self.relax_time)])
+        obs_spaces.extend([DiscreteSpace(1),
+                           DiscreteSpace(self.flex_down_time),
+                           DiscreteSpace(self.flex_up_time),
+                           DiscreteSpace(self.relax_time)])
 
+        #  names of these additional observation variables
         self.observation_info.extend(['flex_availability',
                                       'flex_down_cycle',
                                       'flex_up_cycle',
                                       'relax_cycle'])
 
-        self.observation_space = GlobalSpace(obs_spc)
+        #  create the observation space
+        self.observation_space = GlobalSpace(obs_spaces)
 
         #  set the initial observation by resetting the environment
         self.observation = self.reset()
@@ -101,28 +132,26 @@ class FlexV0(BaseEnv):
         Resets the environment
 
         returns
-            observation (np.array) the initial observation
+           observation (np.array) the initial observation
         """
         #  initialize all of the flex counters
-        self.flex_avail = 1  # 0=not available, 1=available
+        self.avail = 1  # 0=not available, 1=available
         self.flex_down = 0
         self.flex_up = 0
         self.relax = 0
+        self.flex_counter = 0
 
-        #  initialize our action checker
-        self.action = 0
-        #  our env also keeps a list of the times when we started flexing
-        self.flex_start_steps = []
+        #  initialize our local action being the no_op action
+        self.local_action = 0
 
-        #  Resetting steps, state, observation, done status
+        #  Resetting steps, state, observation
         self.steps = 0
         self.state = self.get_state(steps=self.steps)
         self.observation = self.get_observation(self.steps,
-                                                append=[self.flex_avail,
-                                                self.flex_down,
-                                                self.flex_up,
-                                                self.relax])
-
+                                                append=[self.avail,
+                                                        self.flex_down,
+                                                        self.flex_up,
+                                                        self.relax])
         return self.observation
 
     def _step(self, action):
@@ -133,7 +162,7 @@ class FlexV0(BaseEnv):
             action (np.array) shape=(1, 1)
 
         returns
-            observation (np.array) shape=(1, self.observation_space.shape[0])
+            observation (np.array) shape=(1, self.observation_space.shape*)
             reward (float)
             done (bool)
             info (dict)
@@ -143,16 +172,17 @@ class FlexV0(BaseEnv):
         """
         #  pull the electricity price out of the state
         price_index = self.state_info.index('C_electricity_price_[$/MWh]')
-        self.electricity_price = self.state[0][price_index]
+        electricity_price = self.state[0][price_index]
 
-        #  grab the action
         assert action.shape == (1, 1)
 
+        #  grab the action
         action = action[0][0]
         assert action >= self.action_space.spaces[0].low
         assert action <= self.action_space.spaces[0].high
 
-        #  probably a bit excessive to check twice (I check again below)
+        #  probably a bit excessive to check counters twice
+        #  (I check again below)
         total_counters = self.check_counters()
 
         #  if we are in the initial flex cycle, continue that
@@ -171,9 +201,9 @@ class FlexV0(BaseEnv):
         if self.flex_down > self.flex_down_time:
             self.flex_down = 0
             #  check if we need to start the flex up cycle now
-            if self.action == 1:
+            if self.local_action == 1:
                 self.flex_up = 1
-                self.action = 0
+                self.local_action = 0
             #  otherwise we start the relaxation period
             else:
                 self.relax = 1
@@ -182,9 +212,9 @@ class FlexV0(BaseEnv):
         if self.flex_up > self.flex_up_time:
             self.flex_up = 0
             #  check if we need to start flex down cycle now
-            if self.action == 2:
+            if self.local_action == 2:
                 self.flex_down = 1
-                self.action = 0
+                self.local_action = 0
             #  otherwise we start the relaxation period
             else:
                 self.relax = 1
@@ -192,25 +222,25 @@ class FlexV0(BaseEnv):
         #  ending the relaxation period
         if self.relax > self.relax_time:
             self.relax = 0
-            self.flex_avail = 1
+            self.avail = 1
 
         #  if we are not doing anything but want to start the flex down cycle
         total_counters = sum([self.flex_up, self.flex_down, self.relax])
         if total_counters == 0 and action == 1:
             self.flex_down = 1
-            self.flex_avail = 0
-            self.action = action
+            self.avail = 0
+            self.local_action = action
             self.flex_counter += 1
 
         #  if we are not doing anything but want to start the flex up cycle
         total_counters = sum([self.flex_up, self.flex_down, self.relax])
         if total_counters == 0 and action == 2:
             self.flex_up = 1
-            self.flex_avail = 0
-            self.action = action
+            self.avail = 0
+            self.local_action = action
             self.flex_counter += 1
 
-        #  we set the default action to do nothing
+        #  we set the default action to do nothing (in MW)
         flex_action = 0
 
         #  we set the flex action to do something if we are flexing
@@ -220,19 +250,19 @@ class FlexV0(BaseEnv):
         if self.flex_up > 0:
             flex_action = self.flex_up_size
 
-        #  now we set reward based on whether we are in a cycle or not
-        #  /12 so we get reward in terms of £/5 minutes
-        reward = flex_action * self.electricity_price / 12
+        #  now we set reward based on the flex_action
+        #  /12 so we get reward in terms of $/5 minutes
+        reward = flex_action * electricity_price / 12
 
-        if flex_action == 0:
-            flex_counter = 'not_flexing'
-        else:
-            flex_counter = 'flex_action_{}'.format(self.flex_counter)
-
+        #  another paranoid check of the counters
         total_counters = self.check_counters()
 
-        logger.debug('step {} elect. price {}'.format(
-            self.observation_ts.index[self.steps], self.electricity_price))
+        #  log the asset flex status
+        logger.debug('flex_action_num_{}_{}_MW'.format(self.flex_counter,
+                                                       flex_action))
+        #  log the step and electricity price
+        logger.debug('step {} elect. price {} $/MWh'.format(
+            self.observation_ts.index[self.steps], electricity_price))
 
         if total_counters > 0:
             logger.debug('action is {}'.format(action))
@@ -243,16 +273,15 @@ class FlexV0(BaseEnv):
         self.steps += 1
         next_state = self.get_state(self.steps)
         next_observation = self.get_observation(self.steps,
-                                                append=[self.flex_avail,
+                                                append=[self.avail,
                                                         self.flex_down,
                                                         self.flex_up,
                                                         self.relax])
 
         #  check to see if we are done
+        done = False
         if self.steps == (self.episode_length - 1):
             done = True
-        else:
-            done = False
 
         self.info = self.update_info(steps=self.steps,
                                      state=self.state,
@@ -263,14 +292,15 @@ class FlexV0(BaseEnv):
                                      next_observation=next_observation,
                                      done=done,
 
-                                     electricity_price=self.electricity_price,
+                                     electricity_price=electricity_price,
                                      flex_down=self.flex_down,
                                      flex_up=self.flex_up,
                                      relax=self.relax,
-                                     flex_avail=self.flex_avail,
+                                     flex_avail=self.avail,
                                      flex_action=flex_action,
-                                     flex_counter=flex_counter)
+                                     flex_counter=self.flex_counter)
 
+        #  transition to the next step in the environment
         self.state = next_state
         self.observation = next_observation
 
@@ -278,29 +308,32 @@ class FlexV0(BaseEnv):
 
     def check_counters(self):
         """
-        Helper function to check that the counters are OK
+        Helper function to check that the counters are in viable positions
+
+        returns
+            total_counters (int) sum of all the counters
         """
         total_counters = sum([self.flex_up, self.flex_down, self.relax])
 
-        if self.flex_avail == 0:
+        if self.avail == 0:
             assert total_counters != 0
 
-        if self.flex_avail == 1:
+        if self.avail == 1:
             assert total_counters == 0
 
         if self.flex_up != 0:
             assert self.flex_down == 0
             assert self.relax == 0
-            assert self.flex_avail == 0
+            assert self.avail == 0
 
         if self.flex_down != 0:
             assert self.flex_up == 0
             assert self.relax == 0
-            assert self.flex_avail == 0
+            assert self.avail == 0
 
         if self.relax != 0:
             assert self.flex_down == 0
             assert self.flex_up == 0
-            assert self.flex_avail == 0
+            assert self.avail == 0
 
         return total_counters
