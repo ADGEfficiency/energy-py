@@ -2,7 +2,7 @@
 Objects to schedule parameters used in experiments - for example to decay
 epsilon in an e-greedy policy
 """
-
+EPSILON = 1e-5
 
 def test_linear_decay():
 
@@ -57,7 +57,7 @@ class LinearScheduler(object):
         self._val = initial
         self.step = 0
 
-        self.coeff = (self.initial - self.final) / self.sched_step
+        self.coeff = (self.initial - self.final) / (self.sched_step + EPSILON)
 
     @property
     def value(self):
