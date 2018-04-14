@@ -1,110 +1,135 @@
+
 ## energy_py
 
 **energy_py is reinforcement learning for energy systems**
 
 Using reinforcement learning agents to control virtual energy environments is a necessary step in using reinforcement learning to optimize real world energy systems.
 
-energy_py supports this goal by providing a **collection of reinforcement learning agents, energy environments and tools to run experiments.**
+energy_py supports this goal by providing a **collection of agents, energy environments and tools to run experiments.**
 
-energy_py is built and maintained by Adam Green.  This project is in rapid development - if you would like to get involved send me an email at [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  I write about energy & machine learning at [adgefficiency.com](http://adgefficiency.com/).  The introductory blog post for this project [is here.](http://adgefficiency.com/energy_py-reinforcement-learning-for-energy-systems/)
-
-I teach the [reinforcement learning course](https://github.com/ADGEfficiency/DSR_RL) at [Data Science Retreat](https://www.datascienceretreat.com/).
+energy_py is built and maintained by Adam Green - [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  Read more on the [introductory blog post](http://adgefficiency.com/energy_py-reinforcement-learning-for-energy-systems/).
 
 ### Basic usage
 
-[A simple and detailed example](https://github.com/ADGEfficiency/energy_py/blob/master/notebooks/examples/Q_learning_battery.ipynb) of using the DQN agent to control the battery environment is a great place to start.
+A Jupyter Notebook walking through using the [DQN agent with the Battery environment](https://github.com/ADGEfficiency/energy_py/blob/master/notebooks/examples/Q_learning_battery.ipynb).
 
-Another way to use energy_py is to run experiments.
- The script [gym_expt.py](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/experiments/gym_expt.py) will run Gym experiments.  
+Environments and agents can be created using a low-level API similar to OpenAI gym.
 
-The script [ep_expt.py](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/experiments/ep_expt.py) will run energy_py experiments.  The function used to run an experiment is found in [scripts/experiment.py.](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/scripts/experiment.py)
+```python
+import energy_py
 
-For an environment to be used it must be wrapped in the environment registry in [register.py](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/envs/register.py).  The registry allows consistency in the attributes and methods used by agents.  
+TOTAL_STEPS = 1000
+
+env = energy_py.make_env(env_id='BatteryEnv',
+                         dataset_name=example,
+                         episode_length=288,
+                         power_rating=2}
+
+agent = energy_py.make_agent(agent_id='DQN',
+                             env=env
+                             total_steps=TOTAL_STEPS)
+
+observation = env.reset()
+
+action = agent.act(observation)
+
+next_observation, reward, done, info = env.step(action)
+
+training_info = agent.learn()
+
+```
+Higher level tools to run experiments allow running of experiments from [config
+dictionaries](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/experiments/dict_expt.py) or from [config.ini
+files](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/experiments/config_expt.py).
+
+Single call using the experiment function
+
+```python
+energy_py.experiment(agent_config,
+                     env_config,
+                     total_steps,
+                     paths=energy_py.make_paths('path/to/results')
+```
+Running a config dictionary experiment from a Terminal.  The experiment will be called 'example_expt' and will use the
+'example' dataset.
+
+```bash
+$ cd energy_py/energy_py/experiments
+
+$ python config_expt.py example_expt example  
+```
 
 ### Installation
-Below I use Anaconda to create a Python 3.5 virtual environment.  You can of course use your own environment manager.
 
-If you just want to install to your system Python you can skip to cloning the repo.  
-```
-conda create --name energy_py python=3.5.2
-```
-Activate the virtual environment
-```
-activate energy_py (windows)
+To install energy_py using Anaconda
 
-source activate energy_py (unix)
-```
-Clone the repo somewhere
-```
-git clone https://github.com/ADGEfficiency/energy_py.git
-```
-Move into the energy_py folder and install using setup.py.  This will install energy_py into your activated Python environment
-```
-cd energy_py
-python setup.py install
-```
-If you are developing the package you might want to use
-```
-python setup.py develop
-```
-Finally install the required packages
-```
-pip install requirements.txt
-```
-The main dependencies of energy_py are numpy, pandas & TensorFlow.  
+```bash
+$ conda create --name energy_py python=3.5.2
 
+$ activate energy_py (windows)
+or
+$ source activate energy_py (unix)
+
+$ git clone https://github.com/ADGEfficiency/energy_py.git
+
+$ cd energy_py
+
+$ python setup.py install (using package)
+or
+$ python setup.py develop (developing package)
+
+$ pip install requirements.txt
+
+```
 ### Project structure
 
-Environments are created by inheriting from the [BaseEnv](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/envs/env_core.py) class.
+The aim of energy_py is to provide 
+- one high quality implementation of DQN and it's extensions
+- mutiple energy environments
+- tools to run experiments
 
-Agents are created by inheriting from the [BaseAgent](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/agent.py) class.  
+#### Agents
+The reason for choosing to implement only DQN (and not mutiple different agents such as DPG, A3C etc) is that so far all
+the energy_py environments have low dimensional action spaces.  The large number of extensions to DQN (DDQN, prioritized
+experience replay, dueling architecture etc) mean that implementing DQN with these extensions should enable a high
+quality agent. 
 
-Agents use [Memory](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/memory.py) objects to remember and sample experience.  
+A good summary of DQN variants is given in [Hessel et. al (2017) Rainbow: Combining Improvements in Deep Reinforcement
+Learning](https://arxiv.org/pdf/1710.02298.pdf).
+- DQN - target network & experience replay
+- prioritized experience replay
+- DDQN
+- dueling architecture
 
-The logging module is used to log INFO to console and DEBUG to file.  TensorBoard is used to track data during acting, learning and for RL specific stuff like rewards.
+Also implemented are simpler agents such as RandomAgent or agents based on determinsitic rules (usually handcrafted for
+a specific environment.
 
-**Environments**
+#### Environments
+The unique contrbition of energy_py are energy focused environments.
 
-Agent and environment interaction is shown below - it follows the standard
-Open AI gym API for environments i.e. .reset, .step(action).
+Currently implemented are three environments
 
-```
-from energy_py.agents import DQN, tfValueFunction
-from energy_py.envs import BatteryEnv
+**Battery storage**
 
-env = BatteryEnv()
+env_id = 'BatteryEnv'
 
-agent = DQN(env,
-            discount=0.9,
-            Q=tfValueFunction,
-            batch_size=64,
-            total_steps=1000)
+Model of a electric battery.  Optimal dispatch of a battery arbitraging wholesale prices.
 
-obs = env.reset()
-action = agent.act(observation=obs)
-next_obs, reward, done, info = env.step(action)
-agent.memory.add_experience(obs, action, reward, next_obs, step, episode)
+**Flex-v0'**
 
-```
-The following environments are implemented:
+env_id = 'Flex-v0'
 
-- [Electricity storage in a battery](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/envs/battery)
+Model of a flexibility (i.e. demand side response) asset.  Agent can operate two cycles.  Cycle is a fixed length.
+1. flex_up/flex_down/relax
+2. flex_down/flex_up/relax
 
-- [Generic flexibility action environment](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/envs/flex)
+**Flex-v1'**
 
-In energy_py v1.0 I implemented a combined heat and power plant - not planning
-on introducing this into energy_py v2.0.
+env_id = 'Flex-v1'
 
-I plan to make energy_py environments fully agent agnostic by following the Open AI Gym schema.
+Agent can operate a flex_down/flex_up/relax cycle.  Agent can choose to stop the flex_down period.
 
-**Agents**
+#### Tools to run experiments
+In addition to the agents and environments energy_py also provides tools to run experiments.
 
-The following agents are currently implemented:
-
-- [Random agent](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/random_agent.py)
-
-- [Naive battery agent](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/naive/naive_battery.py)
-
-- [DQN aka Q-Learning with experience replay and target network](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/Q_learning/dqn.py)
-
-- [Deterministic Policy Gradient](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/agents/Q_learning/dpg.py)
+Visualization of experiment results is done using TensorBoard.
