@@ -5,13 +5,14 @@ import pandas as pd
 
 import energy_py
 from energy_py.agents import ClassifierCondition as Cond
-from energy_py.agents import ClassifierStragety as Strat
 
 
 if __name__ == '__main__':
     args = energy_py.make_expt_parser()
     total_steps = 1e2
 
+    #  this is slightly hacky - need the list of column names from the
+    #  original observation to know what the agent added from the env
     obs_info = pd.read_csv(os.path.join(os.getcwd(),
                                         'datasets',
                                         args.dataset_name,
@@ -23,6 +24,7 @@ if __name__ == '__main__':
                     'conditions': [Cond(0, 'Very High', '=='),
                                    Cond(6, 'Very High', '!=')],
                     'action': np.array(1),
+                    'no_op': np.array(0),
                     'obs_info': obs_info}
 
     env_config = {'env_id': 'Flex-v1',
