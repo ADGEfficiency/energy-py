@@ -32,42 +32,43 @@ class DQN(BaseAgent):
 
     args
         env (object) either gym or energy_py environment
+        sess (tf.Session)
+        total_steps (int)
         discount (float) aka gamma
         tau (float) controls target network update
-        sess (tf.Session)
-        total_steps (int) over agent lifetime
         batch_size (int)
-        layers (tuple)
         learning_rate (float)
+        double_q (bool)
+        layers (tuple)
+
         epsilon_decay_fraction (float) % of total steps to decay epsilon over
         memory_fraction (float) as a % of total steps
-        process_observation (str)
-        process_target (str)
 
     references
         Minh et. al (2015)
 
     """
     def __init__(self,
-                 sess,
                  env,
+                 sess,
+                 total_steps,
                  discount,
                  tau,
-                 total_steps,
                  batch_size,
-                 layers,
                  learning_rate,
                  double_q=False,
-                 initial_random=0.1,
+                 layers=(50, 50, 50),
+                 initial_random=0.0,
                  epsilon_decay_fraction=0.5,
                  memory_fraction=0.25,
                  **kwargs):
 
         self.sess = sess
-        discount = float(discount)
+        self.discount = float(discount)
         self.tau = float(tau)
-        total_steps = int(total_steps)
         self.batch_size = int(batch_size)
+        self.learning_rate = float(learning_rate)
+        self.double_q = bool(double_q)
 
         #  ConfigParser will read the layers as strings
         #  this conditional will turn the strings into a list
@@ -77,19 +78,16 @@ class DQN(BaseAgent):
         else:
             layers = tuple(layers)
 
-        learning_rate = float(learning_rate)
-        self.double_q = bool(double_q)
+        total_steps = int(total_steps)
         initial_random = float(initial_random)
         epsilon_decay_fraction = float(epsilon_decay_fraction)
-        memory_fraction = float(memory_fraction)
 
-        memory_length = int(total_steps * memory_fraction)
+        memory_length = int(total_steps * float(memory_fraction))
 
-        super().__init__(env,
-                         discount,
-                         memory_length,
-                         total_steps,
-                         initial_random,
+        super().__init__(env=env,
+                         memory_length=memory_length,
+                         initial_random=initial_random,
+                         total_steps=total_steps,
                          **kwargs)
 
         eps_schd_args = {'pre_step': initial_random*total_steps,
@@ -99,6 +97,16 @@ class DQN(BaseAgent):
 
         logger.debug('epsilon sched args {}'.format(eps_schd_args))
         self.epsilon = LinearScheduler(**eps_schd_args)
+
+        #  0.4 to 1 reccomended by Schaul et. al 2015
+        if self.memory_type == 'priority':
+            beta_args = {'pre_step': 0,
+                         'sched_step': total_steps,
+                         'initial': 0.4,
+                         'final': 1.0}
+
+            logger.debug('beta sched args {}'.format(beta_args))
+            self.beta = LinearScheduler(**beta_args)
 
         self.actions = self.env.discretize(num_discrete=20)
         logger.debug('actions list is {}'.format(self.actions))

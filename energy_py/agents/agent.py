@@ -31,10 +31,7 @@ class BaseAgent(object):
 
     def __init__(self,
                  env,
-                 total_steps,
-                 discount=0.9,
-                 memory_length=1000,
-                 initial_random=0,
+                 memory_length=10000,
                  memory_type='priority',
                  observation_processor=None,
                  action_processor=None,
@@ -45,7 +42,6 @@ class BaseAgent(object):
                  **kwargs):
 
         self.env = env
-        self.discount = discount
 
         self.observation_space = env.observation_space
         self.obs_shape = env.observation_space.shape
@@ -54,6 +50,7 @@ class BaseAgent(object):
         self.action_space = env.action_space
         self.action_shape = env.action_space_shape
 
+        #  sending total_steps and initial_random into the memory init
         self.memory_type = memory_type
         self.memory = memories[memory_type](memory_length,
                                             self.obs_shape,
@@ -64,16 +61,6 @@ class BaseAgent(object):
             self.reward_clip = float(reward_clip)
         else:
             self.reward_clip = None
-
-        #  0.4 to 1 reccomended by Schaul et. al 2015
-        #  and Hessel et. al (2017) Rainbow
-        if self.memory_type == 'priority':
-            beta_args = {'pre_step': initial_random*total_steps,
-                         'sched_step': total_steps,
-                         'initial': 0.4,
-                         'final': 1.0}
-
-            self.beta = LinearScheduler(**beta_args)
 
         #  a counter our agent can use as it sees fit
         self.counter = 0

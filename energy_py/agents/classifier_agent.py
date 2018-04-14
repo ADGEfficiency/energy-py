@@ -22,7 +22,6 @@ class ClassifierStragety(object):
         obs_info (list) strings of the observation variable names
         name (str)
     """
-
     def __init__(self,
                  conditions,
                  action,

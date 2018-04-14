@@ -57,7 +57,7 @@ class LinearScheduler(object):
         self._val = initial
         self.step = 0
 
-        self.coeff = (self.initial - self.final) / (self.sched_step + EPSILON)
+        self.coeff = (self.initial - self.final) / self.sched_step
 
     @property
     def value(self):

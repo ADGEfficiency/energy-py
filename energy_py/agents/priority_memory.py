@@ -25,7 +25,7 @@ import logging
 import numpy as np
 
 from energy_py.agents import Experience, Memory
-from energy_py import SumTree, MinTree
+from energy_py import SumTree, MinTree, LinearScheduler
 
 logger = logging.getLogger(__name__)
 

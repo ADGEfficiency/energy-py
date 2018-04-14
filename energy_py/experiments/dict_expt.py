@@ -14,17 +14,16 @@ To run the example experiment
 import os
 
 from energy_py import experiment, make_expt_parser, make_paths, make_logger
-from energy_py import get_dataset_path
 
 
 if __name__ == '__main__':
     args = make_expt_parser()
-    total_steps = 1e2
+    TOTAL_STEPS = 100000
 
     agent_config = {'agent_id': 'DQN',
                     'discount': 0.99,
                     'tau': 0.001,
-                    'total_steps': total_steps,
+                    'total_steps': TOTAL_STEPS,
                     'batch_size': 32,
                     'layers': (25, 25, 25),
                     'learning_rate': 0.0001,
@@ -35,12 +34,13 @@ if __name__ == '__main__':
                     'process_observation': 'standardizer',
                     'process_target': 'normalizer'}
 
-    env_config = {'env_id': 'BatteryEnv',
-                  'episode_length': 168,
-                  'initial_charge': 'random',
+    env_config = {'env_id': 'Flex-v1',
+                  'dataset_name': args.dataset_name,
+                  'episode_length': 2016,
+                  'flex_size': 0.02,
+                  'max_flex_time': 6,
+                  'relax_time': 0,
                   'episode_random': True}
-
-    env_config['data_path'] = get_dataset_path(args.dataset_name)
 
     expt_path = os.path.join(os.getcwd(),
                              'results',
@@ -51,6 +51,6 @@ if __name__ == '__main__':
 
     experiment(agent_config=agent_config,
                env_config=env_config,
-               total_steps=total_steps,
+               total_steps=TOTAL_STEPS,
                paths=paths,
                seed=args.seed)
