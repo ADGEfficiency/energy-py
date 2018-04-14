@@ -14,9 +14,10 @@ obs_info = [string.format(h, b) for h, b in zip(horizions, bins)]
 def test_stragety():
 
     strat = ClassifierStragety(conditions=[ClassifierCondition(0, 'Very High', '=='),
-                                 ClassifierCondition(6, 'Very High', '!=')],
-                     action=np.array(2),
-                     observation_info=obs_info)
+                                           ClassifierCondition(6, 'Very High', '!=')],
+                               action=np.array(1),
+                               no_op=np.array(0),
+                               observation_info=obs_info)
 
     obs = np.array([0, 1, 1, 0]).reshape(1, 4)
 
@@ -25,14 +26,15 @@ def test_stragety():
 
     action = strat.check_observation(obs)
 
-    assert action == np.array(2)
+    assert action == np.array(1)
 
 def test_no_op():
 
     strat = ClassifierStragety(conditions=[ClassifierCondition(0, 'Very High', '=='),
-                                 ClassifierCondition(6, 'Very High', '!=')],
-                     action=np.array(1),
-                     observation_info=obs_info)
+                                           ClassifierCondition(6, 'Very High', '!=')],
+                               action=np.array(1),
+                               no_op=np.array(0),
+                               observation_info=obs_info)
 
     obs = np.array([1, 0, 1, 0]).reshape(1, 4)
 
