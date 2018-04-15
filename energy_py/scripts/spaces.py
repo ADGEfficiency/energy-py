@@ -10,19 +10,8 @@ As GlobalSpaces are created by the environment, discrete representations of
 the spaces that form the GlobalSpace are available on demand via
 
 GlobalSpace.discretize(n_discr=10)
-which sets .discrete_spaces
-
-This leads to two issues
-1 - appending on a new space without rediscretizing
-2 - redisctretizig with different n_discr
-
-Another option would be to never hold a discrete representation of the GlobalSpace.
-Sampling would then be done by passing in the discretized space.
-
-I'm trying to keep the API between all the spaces similar to chose to keep it
-in the GlobalSpace object.
+sample = GlobalSpace.sample_discrete()
 """
-
 import itertools
 
 import numpy as np

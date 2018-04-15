@@ -296,7 +296,6 @@ class Runner(object):
         #  reset the counter for episode rewards
         self.ep_rewards = []
 
-
     def save_rewards(self):
         """
         Saves the global rewards list to a csv

@@ -20,7 +20,7 @@ class BaseEnv(object):
     BaseEnv class
 
     args
-        dataset_name (str) located in energy_py/experiments/datasets 
+        dataset_name (str) located in energy_py/experiments/datasets
         episode_length (int)
         episode_start (int) integer index of episode start
         episode_random (bool) whether to randomize the episode start position
