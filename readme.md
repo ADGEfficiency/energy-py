@@ -1,4 +1,3 @@
-
 # energy_py
 
 **energy_py is reinforcement learning for energy systems**
@@ -10,7 +9,6 @@ energy_py supports this goal by providing a **collection of agents, energy envir
 energy_py is built and maintained by Adam Green - [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  Read more about the motivations and design choics of the project on the [introductory blog post](http://adgefficiency.com/energy_py-reinforcement-learning-for-energy-systems/).
 
 ## Basic usage
-
 
 Environments and agents can be created using a low-level API similar to OpenAI gym.
 
@@ -83,15 +81,17 @@ $ pip install requirements.txt
 ## Project structure
 
 The aim of energy_py is to provide 
-- one high quality implementation of DQN and it's extensions
+- high quality implementations of agents 
 - mutiple energy environments
 - tools to run experiments
 
 ### Agents
-The reason for choosing to implement only DQN (and not mutiple different agents such as DPG, A3C etc) is that so far all
-the energy_py environments have low dimensional action spaces.  The large number of extensions to DQN (DDQN, prioritized
-experience replay, dueling architecture etc) mean that implementing DQN with these extensions should enable a high
-quality agent. 
+Agents are the learners and decision makers.  energy_py supports simpler heuristic (i.e. fully random) agents, which are
+often environment specific.  Focus in the library is on building a high quality implementation of DQN and it's
+extensions.
+
+The reason for choosing to focus on DQN the that the current energy_py environments have low dimensional action spaces.
+Agents which use an argmax across the action space require a discrete action space.
 
 A good summary of DQN variants is given in [Hessel et. al (2017) Rainbow: Combining Improvements in Deep Reinforcement
 Learning](https://arxiv.org/pdf/1710.02298.pdf).
