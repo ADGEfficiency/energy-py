@@ -80,9 +80,7 @@ def load_pickle(name):
         obj (object)
     """
     with open(name, 'rb') as handle:
-        obj = pickle.load(handle)
-
-    return obj
+        return pickle.load(handle)
 
 
 def make_logger(paths, name=None):
