@@ -104,7 +104,7 @@ Also implemented are simpler agents such as RandomAgent or agents based on deter
 a specific environment).
 
 ### Environments
-The unique contrbition of energy_py are energy focused environments.  Currently implemented environments:
+The unique contrbition of energy_py are energy focused environments.  Reinforcement learning has the potential to optimize the operation energy systems.  These environments allow experimentation with energy problems by simulation.
 
 **Battery storage**
 

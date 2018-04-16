@@ -30,6 +30,7 @@ class BaseAgent(object):
     """
 
     def __init__(self,
+                 sess,
                  env,
                  memory_type='priority',
                  memory_length=10000,
@@ -43,6 +44,7 @@ class BaseAgent(object):
                  learn_path=None,
                  **kwargs):
 
+        self.sess = sess
         self.env = env
 
         self.observation_space = env.observation_space

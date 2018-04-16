@@ -182,7 +182,7 @@ def experiment(agent_config,
 
         #  init agent and save args
         agent = energy_py.make_agent(**agent_config)
-        agent.learning_writer.add_graph(sess.graph)
+        agent.acting_writer.add_graph(sess.graph)
         save_args(agent_config, path=paths['agent_args'])
 
         #  runner helps to manage our experiment

@@ -1,5 +1,6 @@
-from collections import namedtuple
+from collections import defaultdict, namedtuple
 import logging
+import numpy as np
 import operator
 
 from energy_py.agents import BaseAgent
@@ -118,10 +119,12 @@ class ClassifierAgent(BaseAgent):
 
     def __init__(self,
                  obs_info,
+                 no_op,
                  **kwargs):
 
         #  init the BaseAgent parent class
         super().__init__(**kwargs)
+        self.no_op = no_op
 
         #  hack to get around env adding variables to the observation
         new_obs_info = self.env.env.observation_info[len(obs_info):]
@@ -147,10 +150,24 @@ class ClassifierAgent(BaseAgent):
         returns
             action (np.array)
         """
+        actions = defaultdict(int)
+
         actions = [strat.check_observation(observation)
                    for strat in self.strageties]
 
-        #  TODO way of determining action (i.e. voting)
-        action = actions[0]
+        action = self.no_op
+
+        for act in actions:
+            if act == self.no_op:
+                pass
+            else:
+                action = act
+
+        logger.debug('actions {}'.format(actions))
+        logger.debug('action selected {}'.format(action))
 
         return action
+
+
+
+
