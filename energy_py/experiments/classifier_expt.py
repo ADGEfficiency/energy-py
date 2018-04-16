@@ -28,11 +28,11 @@ if __name__ == '__main__':
                                                Cond(6, 'Very High', '!=')],
                                 'action': np.array(1),
                                 'no_op': np.array(0)},
-                    # 'strat_2': {'conditions': [Cond(0, 'High', '=='),
-                    #                            Cond(6, 'Very High', '!='),
-                    #                            Cond(6, 'High', '!=')],
-                    #             'action': np.array(1),
-                    #             'no_op': np.array(0)}
+                    'strat_2': {'conditions': [Cond(0, 'High', '=='),
+                                               Cond(6, 'Very High', '!='),
+                                               Cond(6, 'High', '!=')],
+                                'action': np.array(1),
+                                'no_op': np.array(0)}
                     }
 
     env_config = {'env_id': 'Flex-v1',
