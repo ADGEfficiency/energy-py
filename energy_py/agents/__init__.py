@@ -1,4 +1,5 @@
-from energy_py.agents.memory import Experience, calculate_returns
+from energy_py.agents.memory import calculate_returns
+from energy_py.agents.memory import Experience, Memory
 from energy_py.agents.memory import ArrayMemory, DequeMemory
 from energy_py.agents.priority_memory import PrioritizedReplay
 

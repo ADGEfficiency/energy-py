@@ -158,7 +158,7 @@ class BaseAgent(object):
 
         #  reward clipping
         if self.min_reward and self.max_reward:
-            reward = max(self.min_reward, min(reward, self.max_reward)
+            reward = max(self.min_reward, min(reward, self.max_reward))
 
         return self.memory.remember(observation, action, reward,
                                     next_observation, done)
