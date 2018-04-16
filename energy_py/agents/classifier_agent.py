@@ -111,7 +111,7 @@ class ClassifierAgent(BaseAgent):
                                    'no_op': np.array}
 
     Can use mulitple strat dicts (i.e. strat_2, strat_some_name'
-    The dict key needs to start with 'strat'
+    Tno_ophe dict key needs to start with 'strat'
 
     The action is then determined based on the result of all the different
     strageties
@@ -120,11 +120,15 @@ class ClassifierAgent(BaseAgent):
     def __init__(self,
                  obs_info,
                  no_op,
+                 stop_action=None,
                  **kwargs):
 
         #  init the BaseAgent parent class
         super().__init__(**kwargs)
         self.no_op = no_op
+
+        #  stop action could be a condition TODO
+        self.stop_action = stop_action
 
         #  hack to get around env adding variables to the observation
         new_obs_info = self.env.env.observation_info[len(obs_info):]
@@ -163,11 +167,18 @@ class ClassifierAgent(BaseAgent):
             else:
                 action = act
 
+        if self.stop_action:
+            #  if we are ending a settlement period, we stop the action
+            #  TODO needs to be changed when min becomes dummies
+            min_idx = self.env.env.observation_info.index('C_minute')
+            minute = observation[0][min_idx]
+            if minute == 0 or minute == 30 and action != self.no_op:
+                print('stopped action minute {}'.format(minute))
+                print('action was {} is now {}'.format(action, self.stop_action))
+                action = self.stop_action
+                logger.debug('action stopped at end of half hour')
+
         logger.debug('actions {}'.format(actions))
         logger.debug('action selected {}'.format(action))
-
         return action
-
-
-
 

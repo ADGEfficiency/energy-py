@@ -23,6 +23,7 @@ if __name__ == '__main__':
                     'total_steps': total_steps,
                     'obs_info': obs_info,
                     'no_op': np.array(0),
+                    'stop_action': np.array(2),
                     'strat_1': {'conditions': [Cond(0, 'Very High', '=='),
                                                Cond(6, 'Very High', '!=')],
                                 'action': np.array(1),
@@ -31,7 +32,7 @@ if __name__ == '__main__':
                     #                            Cond(6, 'Very High', '!='),
                     #                            Cond(6, 'High', '!=')],
                     #             'action': np.array(1),
-                    #             'no_op': np.array(0)}}
+                    #             'no_op': np.array(0)}
                     }
 
     env_config = {'env_id': 'Flex-v1',
