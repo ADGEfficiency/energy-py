@@ -39,7 +39,6 @@ class BaseAgent(object):
                  observation_processor=None,
                  action_processor=None,
                  target_processor=None,
-                 reward_clip=None,
                  act_path=None,
                  learn_path=None,
                  **kwargs):
