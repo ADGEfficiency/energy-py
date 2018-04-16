@@ -32,7 +32,7 @@ class BaseEnv(object):
                  episode_start=0,
                  episode_random=False):
 
-        logger.info('Initializing the BaseEnv class')
+        logger.debug('Initializing the BaseEnv class')
         logger.info('Using {} data set'.format(dataset_name))
 
         dataset_path = energy_py.get_dataset_path(dataset_name)

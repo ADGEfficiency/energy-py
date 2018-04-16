@@ -4,7 +4,7 @@ Runs a single experiment from config files
 Command line args
     expt_name - the directory where run results will sit
     dataset_name - name of the dataset folder in experiments/dataset
-    --run_name
+    --run_name (optional)
     --seed (optional)
 
 Note that here the run_name must be specified, because we need to find the

@@ -148,7 +148,7 @@ def save_args(config, path):
         writer = csv.writer(outfile)
 
         for k, v in config.items():
-            print('{} : {}'.format(k, v))
+            logger.debug('{} : {}'.format(k, v))
             writer.writerow([k]+[v])
 
     return writer

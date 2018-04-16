@@ -16,7 +16,7 @@ def make_agent(agent_id, **kwargs):
 
     logger.info('Making agent {}'.format(agent_id))
 
-    [logger.info('{}: {}'.format(k, v)) for k, v in kwargs.items()]
+    [logger.debug('{}: {}'.format(k, v)) for k, v in kwargs.items()]
 
     agent = agent_register[agent_id]
 

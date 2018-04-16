@@ -133,7 +133,7 @@ class ClassifierAgent(BaseAgent):
         #  hack to get around env adding variables to the observation
         new_obs_info = self.env.env.observation_info[len(obs_info):]
         obs_info.extend(new_obs_info)
-        logger.info('obs_info {}'.format(obs_info))
+        logger.debug('obs_info {}'.format(obs_info))
 
         self.strageties = []
         for key, value in kwargs.items():
@@ -141,7 +141,7 @@ class ClassifierAgent(BaseAgent):
                 stragety = ClassifierStragety(**value,
                                               observation_info=obs_info,
                                               name=key)
-                logger.info('{}, {}'.format(key, repr(stragety)))
+                logger.debug('{}, {}'.format(key, repr(stragety)))
                 self.strageties.append(stragety)
 
     def _act(self, observation):
@@ -173,8 +173,8 @@ class ClassifierAgent(BaseAgent):
             min_idx = self.env.env.observation_info.index('C_minute')
             minute = observation[0][min_idx]
             if minute == 0 or minute == 30 and action != self.no_op:
-                print('stopped action minute {}'.format(minute))
-                print('action was {} is now {}'.format(action, self.stop_action))
+                logger.debug('stopped action minute {}'.format(minute))
+                logger.debug('action was {} is now {}'.format(action, self.stop_action))
                 action = self.stop_action
                 logger.debug('action stopped at end of half hour')
 

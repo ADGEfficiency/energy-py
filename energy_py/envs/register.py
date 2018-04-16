@@ -157,7 +157,7 @@ env_register = {'Flex-v0': FlexEnvV0,
 def make_env(env_id, **kwargs):
     logger.info('Making env {}'.format(env_id))
 
-    [logger.info('{}: {}'.format(k, v)) for k, v in kwargs.items()]
+    [logger.debug('{}: {}'.format(k, v)) for k, v in kwargs.items()]
 
     env = env_register[env_id]
 

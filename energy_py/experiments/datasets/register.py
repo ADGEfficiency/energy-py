@@ -42,6 +42,6 @@ registry = make_registry()
 
 def get_dataset_path(dataset_name):
 
-    logger.info('Getting dataset {} path'.format(dataset_name))
+    logger.debug('Getting dataset {} path'.format(dataset_name))
 
     return registry[dataset_name]

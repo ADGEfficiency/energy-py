@@ -6,6 +6,19 @@ import pandas as pd
 import energy_py
 from energy_py.agents import ClassifierCondition as Cond
 
+strats = {'strat_1': {'conditions': [Cond(0, 'Very High', '=='),
+                                     Cond(6, 'Very High', '!=')],
+                      'action': np.array(1),
+                      'no_op': np.array(0)},
+          'strat_2': {'conditions': [Cond(0, 'High', '=='),
+                                     Cond(6, 'Very High', '!='),
+                                     Cond(6, 'High', '!=')],
+                      'action': np.array(1),
+                      'no_op': np.array(0)},
+          'strat_3': {'conditions': [Cond(6, 'Negative', '==')],
+                      'action': np.array(1),
+                      'no_op': np.array(0)}}
+
 
 if __name__ == '__main__':
     args = energy_py.make_expt_parser()
@@ -23,17 +36,12 @@ if __name__ == '__main__':
                     'total_steps': total_steps,
                     'obs_info': obs_info,
                     'no_op': np.array(0),
-                    'stop_action': np.array(2),
-                    'strat_1': {'conditions': [Cond(0, 'Very High', '=='),
-                                               Cond(6, 'Very High', '!=')],
-                                'action': np.array(1),
-                                'no_op': np.array(0)},
-                    'strat_2': {'conditions': [Cond(0, 'High', '=='),
-                                               Cond(6, 'Very High', '!='),
-                                               Cond(6, 'High', '!=')],
-                                'action': np.array(1),
-                                'no_op': np.array(0)}
+                    'stop_action': np.array(2)
                     }
+
+    strageties = ['strat_1']
+    for strat in strageties:
+        agent_config[strat] = strats[strat]
 
     env_config = {'env_id': 'Flex-v1',
                   'dataset_name': args.dataset_name,
