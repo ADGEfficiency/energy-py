@@ -38,8 +38,17 @@ if __name__ == '__main__':
                     'no_op': np.array(0),
                     'stop_action': np.array(2)
                     }
+    import itertools
 
-    strageties = ['strat_1']
+    def all_combinations(*args):
+        combinations = []
+        for L in range(1, len(args)+1):
+            for subset in itertools.combinations(args, L):
+                combinations.append(subset)
+        return combinations
+
+    strageties = all_combinations('strat_1', 'strat_2')
+    import pdb; pdb.set_trace()
     for strat in strageties:
         agent_config[strat] = strats[strat]
 

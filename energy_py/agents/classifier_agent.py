@@ -1,10 +1,10 @@
 from collections import defaultdict, namedtuple
 import logging
-import numpy as np
 import operator
 
-from energy_py.agents import BaseAgent
+import numpy as np
 
+from energy_py.agents import BaseAgent
 
 logger = logging.getLogger(__name__)
 
@@ -110,8 +110,8 @@ class ClassifierAgent(BaseAgent):
                                    'action': np.array,
                                    'no_op': np.array}
 
-    Can use mulitple strat dicts (i.e. strat_2, strat_some_name'
-    Tno_ophe dict key needs to start with 'strat'
+    Can use mulitple strat dicts (i.e. strat_2, strat_some_name)
+    The dict key needs to start with 'strat'
 
     The action is then determined based on the result of all the different
     strageties
@@ -154,14 +154,17 @@ class ClassifierAgent(BaseAgent):
         returns
             action (np.array)
         """
-        actions = defaultdict(int)
-
+        #  get the actions reccomended by each of our strageties
         actions = [strat.check_observation(observation)
                    for strat in self.strageties]
 
+        #  default action to do nothing
         action = self.no_op
 
-        for act in actions:
+        #  we reverse the list to make sure that the first action gets
+        #  the highest priority
+        #  alternative would be to have a voting system here
+        for act in reversed(actions):
             if act == self.no_op:
                 pass
             else:
@@ -180,5 +183,5 @@ class ClassifierAgent(BaseAgent):
 
         logger.debug('actions {}'.format(actions))
         logger.debug('action selected {}'.format(action))
-        return action
 
+        return action
