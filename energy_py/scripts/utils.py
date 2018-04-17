@@ -4,6 +4,7 @@ A collection of helper functions.
 
 import configparser
 import csv
+from itertools import combinations
 import logging
 import pickle
 import os
@@ -12,6 +13,28 @@ import tensorflow as tf
 
 
 logger = logging.getLogger(__name__)
+
+
+def all_combinations(*args):
+    """
+    Creates all combinations of an iterable of arguments
+
+    args
+        any iterable sequence
+
+    returns
+        combinations (list)
+    """
+    combos = []
+    #  to get all combinations of any size we iterate over the range of
+    #  lengths for each combination
+    for length in range(1, len(args)+1):
+
+        #  create all combinations of a given length
+        for combo in combinations(args, length):
+            combos.append(combo)
+
+    return combos
 
 
 def ensure_dir(file_path):
