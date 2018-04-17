@@ -63,7 +63,6 @@ class DQN(BaseAgent):
                  memory_fraction=0.25,
                  **kwargs):
 
-        self.sess = sess
         self.discount = float(discount)
         self.tau = float(tau)
         self.batch_size = int(batch_size)
@@ -84,7 +83,8 @@ class DQN(BaseAgent):
 
         memory_length = int(total_steps * float(memory_fraction))
 
-        super().__init__(env=env,
+        super().__init__(sess=sess,
+                         env=env,
                          memory_length=memory_length,
                          initial_random=initial_random,
                          total_steps=total_steps,
