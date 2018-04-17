@@ -68,7 +68,7 @@ def make_paths(expt_path, run_name=None):
                                                                   /learn
                                                env_histories/ep_1/hist.csv
                                                              ep_2/hist.csv
-                                                             ...
+                                                             e..
                                                common.ini
                                                run_configs.ini
                                                agent_args.txt
@@ -182,7 +182,8 @@ def experiment(agent_config,
 
         #  init agent and save args
         agent = energy_py.make_agent(**agent_config)
-        agent.acting_writer.add_graph(sess.graph)
+        if hasattr(agent, 'acting_writer'):
+            agent.acting_writer.add_graph(sess.graph)
         save_args(agent_config, path=paths['agent_args'])
 
         #  runner helps to manage our experiment

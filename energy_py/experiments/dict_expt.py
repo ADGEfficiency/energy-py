@@ -18,7 +18,7 @@ from energy_py import experiment, make_expt_parser, make_paths, make_logger
 
 if __name__ == '__main__':
     args = make_expt_parser()
-    TOTAL_STEPS = 100000
+    TOTAL_STEPS = 400000
 
     agent_config = {'agent_id': 'DQN',
                     'discount': 0.99,
@@ -31,7 +31,6 @@ if __name__ == '__main__':
                     'memory_fraction': 0.15,
                     'memory_type': 'priority',
                     'double_q': False,
-                    'process_observation': 'standardizer',
                     'process_target': 'normalizer'}
 
     env_config = {'env_id': 'Flex-v1',
