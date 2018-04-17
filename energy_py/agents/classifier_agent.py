@@ -172,11 +172,14 @@ class ClassifierAgent(BaseAgent):
 
         if self.stop_action:
             #  if we are ending a settlement period, we stop the action
-            #  TODO needs to be changed when min becomes dummies
-            min_idx = self.env.env.observation_info.index('C_minute')
-            minute = observation[0][min_idx]
-            if minute == 0 or minute == 30 and action != self.no_op:
-                logger.debug('stopped action minute {}'.format(minute))
+            min_0 = self.env.env.observation_info.index('D_min_0')
+            min_0 = observation[0][min_0]
+
+            min_55 = self.env.env.observation_info.index('D_min_55')
+            min_55 = observation[0][min_55]
+
+            if min_0 == 1 or min_55 == 1 and action != self.no_op:
+                logger.debug('action stopped min0={} min55={}'.format(min_0, min_55))
                 logger.debug('action was {} is now {}'.format(action, self.stop_action))
                 action = self.stop_action
                 logger.debug('action stopped at end of half hour')
