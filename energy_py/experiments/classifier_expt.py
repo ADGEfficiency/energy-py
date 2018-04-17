@@ -69,7 +69,8 @@ if __name__ == '__main__':
                     'stop_action': np.array(2)
                     }
 
-    all_strategies = all_combinations('strat_1', 'strat_2', 'strat_3')
+    #  TODO should look at the keys of STRATS
+    all_strategies = all_combinations('strat_1', 'strat_2')
 
     for i, strats in enumerate(all_strategies):
         run_single_classifier_experiment(strats,
