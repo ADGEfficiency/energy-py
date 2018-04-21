@@ -31,9 +31,10 @@ Args = namedtuple('args', ['start',
                            'node_end'])
 logger = logging.getLogger(__name__)
 
+
 class SegmentTree(object):
     """
-    The parent class.  Implements a generic operation.
+    A generic segment of a binary heap
 
     args
         capacity (int) the length of the memory
@@ -58,7 +59,6 @@ class SegmentTree(object):
             idx (int) index in memory (not the tree index)
             val (float) priority
         """
-
         #  the index for the priority
         idx += self.capacity
 

@@ -451,7 +451,8 @@ class Qfunc(object):
                    output_shape,
                    layers,
                    learning_rate,
-                   w_init=tf.truncated_normal,
+                   # w_init=tf.truncated_normal,
+                   w_init=tf.contrib.layers.xavier_initializer()
                    b_init=tf.zeros,
                    **kwargs):
         """
