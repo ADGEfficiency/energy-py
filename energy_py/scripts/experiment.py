@@ -189,7 +189,9 @@ def experiment(agent_config,
         #  runner helps to manage our experiment
         runner = Runner(rewards_path=paths['ep_rewards'],
                         tb_path=paths['tb_rl'],
-                        env_hist_path=paths['env_histories'])
+                        env_hist_path=paths['env_histories'],
+                        state_info=env.env.state_info,
+                        observation_info=env.env.observation_info)
 
         #  outer while loop runs through multiple episodes
         step, episode = 0, 0
@@ -240,7 +242,12 @@ class Runner(object):
     def __init__(self,
                  rewards_path=None,
                  tb_path=None,
-                 env_hist_path=None):
+                 env_hist_path=None,
+                 state_info=None,
+                 observation_info=None):
+
+        self.state_info = state_info
+        self.observation_info = observation_info
 
         self.start_time = time.time()
         self.logger_timer = logging.getLogger('runner')
@@ -313,21 +320,38 @@ class Runner(object):
             env_info (dict) the info dict returned from env.step()
             episode (int)
         """
-
         output = []
-        for key, info in env_info.items():
-            if isinstance(info[0], np.ndarray):
 
+        for key, info in env_info.items():
+
+            if isinstance(info[0], np.ndarray):
                 df = pd.DataFrame(np.array(info).reshape(len(info), -1))
 
-                df.columns = ['{}_{}'.format(key, n) for n in range(df.shape[1])]
+                if key == 'observation' and self.observation_info:
+                    df.columns = ['{}_{}'.format(key, o)
+                                  for o in self.observation_info]
+
+                elif key == 'next_observation' and self.observation_info:
+                    df.columns = ['{}_{}'.format(key, o)
+                                  for o in self.observation_info]
+
+                elif key == 'state' and self.state_info:
+                    df.columns = ['{}_{}'.format(key, s)
+                                  for s in self.state_info]
+
+                elif key == 'next_state' and self.state_info:
+                    df.columns = ['{}_{}'.format(key, s)
+                                  for s in self.state_info]
+
+                else:
+                    df.columns = ['{}_{}'.format(key, n)
+                                  for n in range(df.shape[1])]
 
             else:
                 df = pd.DataFrame(info, columns=[key])
 
             output.append(df)
 
-        # output = pd.DataFrame().from_dict(env_info)
         output = pd.concat(output, axis=1)
 
         csv_path = os.path.join(self.env_hist_path,
