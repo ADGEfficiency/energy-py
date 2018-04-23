@@ -9,6 +9,7 @@ import logging
 import pickle
 import os
 
+import pandas as pd
 import tensorflow as tf
 
 
@@ -48,6 +49,20 @@ def ensure_dir(file_path):
 
     if not os.path.exists(directory):
         os.makedirs(directory)
+
+
+def load_csv(paths):
+    """
+    Loads a csv into a dataframe
+
+    args
+        paths (iterable) strings to be formed into a path
+    """
+    path = os.path.join(*paths)
+    df = pd.read_csv(path,
+                     index_col=0,
+                     parse_dates=True)
+    return df
 
 
 def parse_ini(filepath, section):

@@ -61,15 +61,13 @@ class Battery(BaseEnv):
         the observation space is set in the parent class TimeSeriesEnv
         we also append on an additional observation of the battery charge
         """
-        #  make a list of the observation spaces
-        observation_space, self.observation_ts, self.state_ts = self.get_state_obs()
-
         #  append on any additional variables we want our agent to see
-        observation_space.extend([ContinuousSpace(0, self.capacity)])
-        self.observation_info.extend(['C_charge_level_[MWh]'])
+        spaces = [ContinuousSpace(0, self.capacity)]
+        space_labels = ['C_charge_level_[MWh]']
 
         #  create a energy_py GlobalSpace object for the observation space
-        self.observation_space = GlobalSpace(observation_space)
+        self.observation_space = self.make_observation_space(spaces,
+                                                             space_labels)
 
         #  set the initial observation by resetting the environment
         self.observation = self.reset()

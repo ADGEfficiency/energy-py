@@ -1,12 +1,16 @@
+"""
+The base class for energy_py environments
+"""
 import collections
 import logging
 import os
+from random import randint
 
 import numpy as np
 import pandas as pd
 
 import energy_py
-from energy_py import ContinuousSpace, DiscreteSpace
+from energy_py import ContinuousSpace, DiscreteSpace, load_csv
 
 logger = logging.getLogger(__name__)
 
@@ -15,62 +19,67 @@ class BaseEnv(object):
     """
     The base environment class for time series environments
 
-    Most energy problems are time series problems - hence the need for a
-    class to give functionality.  Likely that this could be merged with the
-    BaseEnv class
-
     args
         dataset_name (str) located in energy_py/experiments/datasets
         episode_length (int)
         episode_start (int) integer index of episode start
         episode_random (bool) whether to randomize the episode start position
-    """
 
+    Most energy problems are time series problems
+    The BaseEnv has functionality for working with time series data
+    """
     def __init__(self,
                  dataset_name='test',
-                 episode_length=48,
                  episode_start=0,
-                 episode_random=False):
-
-        logger.debug('Initializing the BaseEnv class')
-        logger.info('Using {} data set'.format(dataset_name))
-
-        dataset_path = energy_py.get_dataset_path(dataset_name)
-        self.episode_length = int(episode_length)
-        self.episode_start = int(episode_start)
-        self.episode_random = bool(episode_random)
-
-        #  loads time series infomation from disk
-        #  creates the state_info and observation_info lists
-        self.raw_state_ts, self.raw_observation_ts = self.load_ts(dataset_path)
-
-        #  hack to allow max length
-        if self.episode_length == 0:
-            self.episode_length = int(self.raw_observation_ts.shape[0])
+                 episode_random=False,
+                 episode_length=48):
 
         logger.info('Initializing environment {}'.format(repr(self)))
 
-    # Override in subclasses
+        self.episode_start = int(episode_start)
+        self.episode_random = bool(episode_random)
+        self.episode_length = int(episode_length)
+
+        #  load the time series info from csv
+        self.state, self.observation = self.load_dataset(dataset_name)
+
     def _step(self, action): raise NotImplementedError
 
     def _reset(self): raise NotImplementedError
 
     def reset(self):
         """
-        Resets the state of the environment and returns an initial observation.
+        Resets the state of the environment and returns an initial observation
 
-        Returns: observation (np array): the initial observation
+        returns 
+            observation (np array) initial observation
         """
-        logger.debug('Reset environment')
+        logger.debug('Resetting environment')
 
         self.info = collections.defaultdict(list)
         self.outputs = collections.defaultdict(list)
 
+        self.state_ep, observation_ep = self.get_episode()
+
+        logger.debug('Episode start {} / 
+                      Episode end {}'.format(self.state_ep.index[0]
+                                             self.state_ep.index[-1]))
         return self._reset()
 
     def step(self, action):
         """
         Run one timestep of the environment's dynamics.
+
+        args
+            action (object) an action provided by the environment
+            episode (int) the current episode number
+
+        returns
+            observation (np array) agent's observation of the environment
+            reward (np.float)
+            done (boolean)
+            info (dict) auxiliary information
+
         User is responsible for resetting after episode end.
 
         The step function should progress in the following order:
@@ -82,22 +91,11 @@ class BaseEnv(object):
         - self.state = next_state[1]
 
         step() returns the observation - not the state!
-
-        args
-            action (object) an action provided by the environment
-            episode (int) the current episode number
-
-        returns:
-            observation (np array) agent's observation of the environment
-            reward (np.float)
-            done (boolean)
-            info (dict) auxiliary information
         """
-        action = np.array(action)
-        action = action.reshape(1, self.action_space.shape[0])
+        action = np.array(action).reshape(1, self.action_space.shape*)
 
-        logger.debug('step {} action {}'.format(self.steps,
-                                                action))
+        logger.debug('step {} action {}'.format(self.steps, action))
+
         return self._step(action)
 
     def update_info(self, **kwargs):
@@ -109,87 +107,90 @@ class BaseEnv(object):
 
         return self.info
 
-    def load_ts(self, dataset_path):
+    def load_dataset(self, dataset_name):
         """
-        Loads the state and observation from disk.
+        Loads time series data from csv
 
         args
-            dataset_path (str) location of state.csv, observation.csv
+            dataset_name (str)
 
-        returns
-            state (pd.DataFrame)
-            observation (pd.DataFrame)
+        Datasets are located in energy_py/experiments/datasets
+        A dataset consists of state.csv and observation.csv
         """
-        #  paths to load state & observation
-        state_path = os.path.join(dataset_path, 'state.csv')
-        obs_path = os.path.join(dataset_path, 'observation.csv')
+        logger.info('Using {} dataset'.format(dataset_name))
+        logger.debug('Dataset path {}'.format(dataset_path))
+
+        dataset_path = energy_py.get_dataset_path(dataset_name)
 
         try:
-            #  load from disk
-            state = pd.read_csv(state_path, index_col=0)
-            observation = pd.read_csv(obs_path, index_col=0)
+            state = load_csv(dataset_path, 'state.csv'))
+            observation = load_csv(dataset_path, 'observation.csv'))
+
+            assert state.shape[0] == observation.shape[0]
 
         except FileNotFoundError:
-            raise FileNotFoundError(('state.csv & observation.csv'
-                                     'are missing from {}'.format(dataset_path)))
+            raise FileNotFoundError('state.csv & observation.csv are missing /
+                                    from {}'.format(dataset_path)))
 
-        #  grab the column name so we can index state & obs arrays
-        self.state_info = state.columns.tolist()
-        self.observation_info = observation.columns.tolist()
-        logger.debug('state info is {}'.format(self.state_info))
-        logger.debug('observation info is {}'.format(self.observation_info))
+        logger.debug('State start {} / 
+                      State end {}'.format(self.state.index[0]
+                                             self.state.index[-1]))
 
-        assert state.shape[0] == observation.shape[0]
+        logger.debug('State info {}'.format(self.state_info))
+        logger.debug('Observation info {}'.format(self.observation_info))
 
         return state, observation
 
-    def get_state_obs(self):
+    def make_observation_space(self, spaces, space_labels):
+
+        #  pull out the column names so we know what each variable is
+        self.state_info = state.columns.tolist()
+        self.observation_info = observation.columns.tolist()
+
+        observation_space = make_obs_spaces(self.observation)
+
+        observation_space.extend(spaces)
+        observation_info.extend(space_labels)
+        
+        return GlobalSpace(observation_space)
+
+    def get_episode(self):
         """
-        Indexes the raw state & observation dataframes into smaller
-        state and observation dataframes.
+        Samples a single episode from the state and observation dataframes
 
         returns
-            observation_space (object) energy_py GlobalSpace
-            observation_ts (pd.DataFrame)
-            state_ts (pd.DataFrame)
+            observation_ep (pd.DataFrame)
+            state_ep (pd.DataFrame)
         """
-        start, end = self.get_ts_row_idx()
+        max_len = int(self.state.shape[0])
+        start = self.episode_start
 
-        state_ts = self.raw_state_ts.iloc[start:end, :]
-        observation_ts = self.raw_observation_ts.iloc[start:end, :]
-
-        #  creating the observation space list
-        observation_space = self.make_env_obs_space(observation_ts)
-
-        assert observation_ts.shape[0] == state_ts.shape[0]
-
-        return observation_space, observation_ts, state_ts
-
-    def get_ts_row_idx(self):
-        """
-        Sets the start and end integer indicies for episodes.
-
-        returns
-            self.episode_start (int)
-            self.episode_end (int)
-        """
-        ts_length = self.raw_observation_ts.shape[0]
+        if self.episode_length == 0:
+            self.episode_length = max_len 
 
         if self.episode_random:
-            end_int_idx = ts_length - self.episode_length
-            self.episode_start = np.random.randint(0, end_int_idx)
+            end_idx = max_len - self.episode_length
+            start = randint(0, end_idx)
+        
+        end = start + self.episode_length
 
-        #  now we can set the end of the episode
-        self.episode_end = self.episode_start + self.episode_length
+        state_ep = self.state.iloc[start:end, :]
+        observation_ep = self.observation.iloc[start:end, :]
+        assert observation_ts.shape[0] == state_ts.shape[0]
 
-        return self.episode_start, self.episode_end
+        logging.debug('max_len {} start {} end {} random {}'.format(max_len,
+                                                                    start,
+                                                                    end,
+                                                                    random))
+        return state_ep, observation_ep
 
     def make_env_obs_space(self, obs_ts):
         """
-        Creates the observation space list.
+        Creates the observation space list
 
         args
             obs_ts (pd.DataFrame)
+
         returns
             observation_space (list) contains energy_py Space objects
         """
@@ -233,7 +234,7 @@ class BaseEnv(object):
         returns
             state (np.array)
         """
-        state = np.array(self.state_ts.iloc[steps, :])
+        state = np.array(self.state_ep.iloc[steps, :])
 
         if append:
             state = np.append(state, append)
@@ -259,9 +260,9 @@ class BaseEnv(object):
         returns
             observation (np.array)
         """
-        observation = np.array(self.observation_ts.iloc[steps, :])
+        observation = np.array(self.observation_ep.iloc[steps, :])
 
         if append:
             observation = np.append(observation, np.array(append))
 
-        return observation.reshape(1, len(self.observation_info))
+        return observation.reshape(1, self.observation_space.shape*)
