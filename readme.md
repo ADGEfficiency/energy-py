@@ -17,15 +17,18 @@ import energy_py
 
 TOTAL_STEPS = 1000
 
+#  creating and environment
 env = energy_py.make_env(env_id='BatteryEnv',
                          dataset_name=example,
                          episode_length=288,
                          power_rating=2}
 
+#  creating an agent
 agent = energy_py.make_agent(agent_id='DQN',
                              env=env
                              total_steps=TOTAL_STEPS)
 
+#  we can then step through an MDP using the popular reset, step API
 observation = env.reset()
 
 action = agent.act(observation)
