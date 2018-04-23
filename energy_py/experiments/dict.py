@@ -38,7 +38,7 @@ if __name__ == '__main__':
                   'flex_size': 0.02,
                   'max_flex_time': 6,
                   'relax_time': 0,
-                  'episode_length': 96,
+                  'episode_length': 2016,
                   'episode_sample': 'random'}
 
     # env_config = {'env_id': 'Battery',
