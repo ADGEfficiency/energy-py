@@ -48,11 +48,9 @@ class Battery(BaseEnv):
         """
         self.action_space = GlobalSpace([ContinuousSpace(0, self.power_rating),
                                          ContinuousSpace(0, self.power_rating)])
+
         """
         SETTING THE OBSERVATION SPACE
-
-        the observation space is set in the parent class TimeSeriesEnv
-        we also append on an additional observation of the battery charge
         """
         #  append on any additional variables we want our agent to see
         spaces = [ContinuousSpace(0, self.capacity)]

@@ -96,8 +96,6 @@ class FlexV1(BaseEnv):
 
         """
         SETTING THE OBSERVATION SPACE
-
-        Set in the parent class BaseEnv
         """
         #  add infomation onto our observation
         #  all our additional observations are dummies

@@ -102,24 +102,20 @@ class FlexV0(BaseEnv):
         """
         SETTING THE OBSERVATION SPACE
         """
-        #  call the functionality of the BaseEnv class to load the dataset
-        #  as pd.DataFrames and create the observation spaces
-        obs_spaces, self.observation_ts, self.state_ts = self.get_state_obs()
-
         #  add infomation onto our observation
-        obs_spaces.extend([DiscreteSpace(1),
-                           DiscreteSpace(self.flex_down_time),
-                           DiscreteSpace(self.flex_up_time),
-                           DiscreteSpace(self.relax_time)])
+        spaces = [DiscreteSpace(1),
+                  DiscreteSpace(self.flex_down_time),
+                  DiscreteSpace(self.flex_up_time),
+                  DiscreteSpace(self.relax_time)]
 
         #  names of these additional observation variables
-        self.observation_info.extend(['flex_availability',
-                                      'flex_down_cycle',
-                                      'flex_up_cycle',
-                                      'relax_cycle'])
+        space_labels = ['flex_availability',
+                        'flex_down_cycle',
+                        'flex_up_cycle',
+                        'relax_cycle']
 
-        #  create the observation space
-        self.observation_space = GlobalSpace(obs_spaces)
+        self.observation_space = self.make_observation_space(spaces,
+                                                             space_labels)
 
         #  set the initial observation by resetting the environment
         self.observation = self.reset()

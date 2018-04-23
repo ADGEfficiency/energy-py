@@ -35,7 +35,7 @@ def test_battery_expt():
     env_config = {'env_id': 'Battery',
                   'dataset_name': 'test',
                   'episode_length': 10,
-                  'episode_random': True,
+                  'episode_sample': 'random',
                   'initial_charge': 'random'}
 
     experiment(agent_config=AGENT_CONFIG,
@@ -49,7 +49,7 @@ def test_flex_expt():
     env_config = {'env_id': 'Flex-v0',
                   'dataset_name': 'test',
                   'episode_length': 10,
-                  'episode_random': True}
+                  'episode_sample': 'random'}
 
     experiment(agent_config=AGENT_CONFIG,
                env_config=env_config,
