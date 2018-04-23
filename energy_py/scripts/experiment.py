@@ -189,9 +189,9 @@ def experiment(agent_config,
         #  runner helps to manage our experiment
         runner = Runner(rewards_path=paths['ep_rewards'],
                         tb_path=paths['tb_rl'],
-                        env_hist_path=paths['env_histories'],
-                        state_info=env.env.state_info,
-                        observation_info=env.env.observation_info)
+                        env_hist_path=paths['env_histories'])
+                        # state_info=env.state_info,
+                        # observation_info=env.observation_info)
 
         #  outer while loop runs through multiple episodes
         step, episode = 0, 0
