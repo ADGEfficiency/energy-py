@@ -18,12 +18,6 @@ class Battery(BaseEnv):
         round_trip_eff (float) round trip efficiency of storage [%]
         initial_charge (float or str) inital charge as pct of capacity [%]
                                also possible to pass 'random'
-
-    kwargs that can be passed to the parent class BaseEnv
-        dataset_name
-        episode_length
-        episode_start
-        episode_random
     """
     def __init__(self,
                  power_rating=2,
@@ -54,7 +48,6 @@ class Battery(BaseEnv):
         """
         self.action_space = GlobalSpace([ContinuousSpace(0, self.power_rating),
                                          ContinuousSpace(0, self.power_rating)])
-
         """
         SETTING THE OBSERVATION SPACE
 
@@ -105,7 +98,6 @@ class Battery(BaseEnv):
         assert self.charge <= self.capacity
         assert self.charge >= 0
 
-        logger.info('resetting environment')
         logger.debug('initial state is {}'.format(self.state))
         logger.debug('initial obs is {}'.format(self.observation))
         logger.debug('initial charge is {}'.format(self.charge))

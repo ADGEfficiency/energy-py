@@ -40,6 +40,10 @@ if __name__ == '__main__':
                   'relax_time': 0,
                   'episode_sample': 'random'}
 
+    env_config = {'env_id': 'Battery',
+                  'dataset_name': args.dataset_name,
+                  'episode_sample': 'random'}
+
     expt_path = os.path.join(os.getcwd(),
                              'results',
                              args.expt_name)
