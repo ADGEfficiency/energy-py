@@ -58,9 +58,9 @@ class BaseEnv(object):
 
         self.state_ep, self.observation_ep = self.get_episode()
 
-        # logger.debug('Episode start {} \
-        #               Episode end {}'.format(self.state_ep.index[0].
-        #                                      self.state_ep.index[-1]))
+        logger.info('Episode start {} \
+                      Episode end {}'.format(self.state_ep.index[0],
+                                             self.state_ep.index[-1]))
         return self._reset()
 
     def step(self, action):
@@ -182,8 +182,8 @@ class BaseEnv(object):
         
         end = start + episode_length
         logging.debug('max_len {} start {} end {}'.format(max_len,
-                                                                    start,
-                                                                    end))
+                                                          start,
+                                                          end))
         state_ep = self.state_ts.iloc[start:end, :]
         observation_ep = self.observation_ts.iloc[start:end, :]
         assert observation_ep.shape[0] == state_ep.shape[0]

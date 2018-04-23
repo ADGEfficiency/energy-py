@@ -313,7 +313,22 @@ class Runner(object):
             env_info (dict) the info dict returned from env.step()
             episode (int)
         """
-        output = pd.DataFrame().from_dict(env_info)
+
+        output = []
+        for key, info in env_info.items():
+            if isinstance(info[0], np.ndarray):
+
+                df = pd.DataFrame(np.array(info).reshape(len(info), -1))
+
+                df.columns = ['{}_{}'.format(key, n) for n in range(df.shape[1])]
+
+            else:
+                df = pd.DataFrame(info, columns=[key])
+
+            output.append(df)
+
+        # output = pd.DataFrame().from_dict(env_info)
+        output = pd.concat(output, axis=1)
 
         csv_path = os.path.join(self.env_hist_path,
                                 'ep_{}'.format(episode),
