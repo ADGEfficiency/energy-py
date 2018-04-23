@@ -220,8 +220,8 @@ def experiment(agent_config,
                                      'step': step},
                           env_info=info)
 
-        #  save the episode rewards as a csv
-        runner.save_rewards()
+            #  save the episode rewards as a csv
+            runner.save_rewards()
 
 
 class Runner(object):
