@@ -5,7 +5,7 @@ import numpy as np
 import energy_py
 
 config = {'env_id': 'Battery',
-          'dataset_name': 'test',
+          'dataset_name': 'example',
           'initial_charge': 0,
           'round_trip_eff': 0.9}
 
@@ -17,7 +17,7 @@ charge_index = env.observation_info.index('C_charge_level_[MWh]')
 
 def test_charge():
     config = {'env_id': 'Battery',
-              'dataset_name': 'test',
+              'dataset_name': 'example',
               'initial_charge': 0.0,
               'round_trip_eff': 0.9}
 
@@ -34,7 +34,7 @@ def test_charge():
 
 def test_discharge():
     config = {'env_id': 'Battery',
-              'dataset_name': 'test',
+              'dataset_name': 'example',
               'capacity': 4.0,
               'initial_charge': 1.0,
               'round_trip_eff': 0.9}
@@ -51,7 +51,7 @@ def test_discharge():
 def test_no_op():
 
     config = {'env_id': 'Battery',
-              'dataset_name': 'test',
+              'dataset_name': 'example',
               'capacity': 4.0,
               'initial_charge': 0.5,
               'round_trip_eff': 0.9}

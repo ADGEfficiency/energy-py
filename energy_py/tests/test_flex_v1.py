@@ -6,7 +6,7 @@ import numpy as np
 import energy_py
 
 
-env_config = {'dataset_name': 'test',
+env_config = {'dataset_name': 'example',
               'env_id': 'Flex-v1',
               'flex_size': 2,
               'max_flex_time': 4,

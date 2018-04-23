@@ -33,7 +33,7 @@ AGENT_CONFIG = {'agent_id': 'DQN',
 def test_battery_expt():
 
     env_config = {'env_id': 'Battery',
-                  'dataset_name': 'test',
+                  'dataset_name': 'example',
                   'episode_length': 10,
                   'episode_sample': 'random',
                   'initial_charge': 'random'}
@@ -47,7 +47,7 @@ def test_battery_expt():
 def test_flex_expt():
 
     env_config = {'env_id': 'Flex-v0',
-                  'dataset_name': 'test',
+                  'dataset_name': 'example',
                   'episode_length': 10,
                   'episode_sample': 'random'}
 
