@@ -99,33 +99,25 @@ class FlexV1(BaseEnv):
 
         Set in the parent class BaseEnv
         """
-        obs_spc, self.observation_ts, self.state_ts = self.get_state_obs()
-
         #  add infomation onto our observation
-        obs_spaces_append = self.make_observation_append_list()
-
         #  all our additional observations are dummies
-        obs_spaces_append = [DiscreteSpace(1) for _ in obs_spaces_append]
-        obs_spc.extend(obs_spaces_append)
-
-        self.observation_space = GlobalSpace(obs_spc)
+        obs_spaces_append = self.make_observation_append_list()
+        spaces = [DiscreteSpace(1) for _ in obs_spaces_append]
 
         #  making a list of names for the additional observation space dims
-        obs_spc_names = ['flex_availability']
-
+        space_labels = ['flex_availability']
         #  +1 because the 0th element is not being in that part of the cycle
-        obs_spc_names.extend(['flex_down_{}'.format(c)
+        space_labels.extend(['flex_down_{}'.format(c)
                               for c in range(self.max_flex_time + 1)])
-        obs_spc_names.extend(['flex_up_{}'.format(c)
+        space_labels.extend(['flex_up_{}'.format(c)
                               for c in range(self.max_flex_time + 1)])
-        obs_spc_names.extend(['relax_{}'.format(c)
+        space_labels.extend(['relax_{}'.format(c)
                               for c in range(self.relax_time + 1)])
 
-        self.observation_info.extend(obs_spc_names)
+        self.observation_space = self.make_observation_space(spaces,
+                                                             space_labels)
 
-        #  set the initial observation by restting the env
         self.observation = self.reset()
-
 
     def __repr__(self):
         return '<energy_py flex-v1 environment>'

@@ -35,11 +35,10 @@ if __name__ == '__main__':
 
     env_config = {'env_id': 'Flex-v1',
                   'dataset_name': args.dataset_name,
-                  'episode_length': 2016,
                   'flex_size': 0.02,
                   'max_flex_time': 6,
                   'relax_time': 0,
-                  'episode_random': True}
+                  'episode_sample': 'random'}
 
     expt_path = os.path.join(os.getcwd(),
                              'results',

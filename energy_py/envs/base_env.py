@@ -4,13 +4,12 @@ The base class for energy_py environments
 import collections
 import logging
 import os
-from random import randint
 
 import numpy as np
 import pandas as pd
 
 import energy_py
-from energy_py import ContinuousSpace, DiscreteSpace, load_csv
+from energy_py import ContinuousSpace, DiscreteSpace, GlobalSpace, load_csv
 
 logger = logging.getLogger(__name__)
 
@@ -30,18 +29,16 @@ class BaseEnv(object):
     """
     def __init__(self,
                  dataset_name='test',
-                 episode_start=0,
-                 episode_random=False,
-                 episode_length=48):
+                 episode_sample='random',
+                 episode_length=2016):
 
         logger.info('Initializing environment {}'.format(repr(self)))
 
-        self.episode_start = int(episode_start)
-        self.episode_random = bool(episode_random)
+        self.episode_sample = episode_sample
         self.episode_length = int(episode_length)
 
         #  load the time series info from csv
-        self.state, self.observation = self.load_dataset(dataset_name)
+        self.state_ts, self.observation_ts = self.load_dataset(dataset_name)
 
     def _step(self, action): raise NotImplementedError
 
@@ -59,11 +56,11 @@ class BaseEnv(object):
         self.info = collections.defaultdict(list)
         self.outputs = collections.defaultdict(list)
 
-        self.state_ep, observation_ep = self.get_episode()
+        self.state_ep, self.observation_ep = self.get_episode()
 
-        logger.debug('Episode start {} / 
-                      Episode end {}'.format(self.state_ep.index[0]
-                                             self.state_ep.index[-1]))
+        # logger.debug('Episode start {} \
+        #               Episode end {}'.format(self.state_ep.index[0].
+        #                                      self.state_ep.index[-1]))
         return self._reset()
 
     def step(self, action):
@@ -92,7 +89,7 @@ class BaseEnv(object):
 
         step() returns the observation - not the state!
         """
-        action = np.array(action).reshape(1, self.action_space.shape*)
+        action = np.array(action).reshape(1, *self.action_space.shape)
 
         logger.debug('step {} action {}'.format(self.steps, action))
 
@@ -117,40 +114,39 @@ class BaseEnv(object):
         Datasets are located in energy_py/experiments/datasets
         A dataset consists of state.csv and observation.csv
         """
+        dataset_path = energy_py.get_dataset_path(dataset_name)
         logger.info('Using {} dataset'.format(dataset_name))
         logger.debug('Dataset path {}'.format(dataset_path))
 
-        dataset_path = energy_py.get_dataset_path(dataset_name)
-
         try:
-            state = load_csv(dataset_path, 'state.csv'))
-            observation = load_csv(dataset_path, 'observation.csv'))
+            state = load_csv(dataset_path, 'state.csv')
+            observation = load_csv(dataset_path, 'observation.csv')
 
             assert state.shape[0] == observation.shape[0]
 
         except FileNotFoundError:
-            raise FileNotFoundError('state.csv & observation.csv are missing /
-                                    from {}'.format(dataset_path)))
+            raise FileNotFoundError('state.csv & observation.csv are missing \
+                                    from {}'.format(dataset_path))
 
-        logger.debug('State start {} / 
-                      State end {}'.format(self.state.index[0]
-                                             self.state.index[-1]))
-
-        logger.debug('State info {}'.format(self.state_info))
-        logger.debug('Observation info {}'.format(self.observation_info))
-
+        logger.debug('State start {} \
+                      State end {}'.format(state.index[0],
+                                           state.index[-1]))
         return state, observation
 
     def make_observation_space(self, spaces, space_labels):
 
         #  pull out the column names so we know what each variable is
-        self.state_info = state.columns.tolist()
-        self.observation_info = observation.columns.tolist()
+        self.state_info = self.state_ts.columns.tolist()
+        self.observation_info = self.observation_ts.columns.tolist()
 
-        observation_space = make_obs_spaces(self.observation)
+        observation_space = self.timeseries_to_spaces(self.observation_ts)
 
         observation_space.extend(spaces)
-        observation_info.extend(space_labels)
+        self.observation_info.extend(space_labels)
+
+        logger.debug('State info {}'.format(self.state_info))
+        logger.debug('Observation info {}'.format(self.observation_info))
+
         
         return GlobalSpace(observation_space)
 
@@ -162,29 +158,39 @@ class BaseEnv(object):
             observation_ep (pd.DataFrame)
             state_ep (pd.DataFrame)
         """
-        max_len = int(self.state.shape[0])
-        start = self.episode_start
+        max_len = self.state_ts.shape[0]
 
-        if self.episode_length == 0:
-            self.episode_length = max_len 
+        if self.episode_sample == 'random':
+            if self.episode_length > max_len:
+                start = 0
+                episode_length = max_len
+            else:
+                delta = max_len - self.episode_length
+                episode_length = self.episode_length
+                
+                if delta == 0:
+                    start = 0
+                else:
+                    start = np.random.randint(0, max_len - self.episode_length)
 
-        if self.episode_random:
-            end_idx = max_len - self.episode_length
-            start = randint(0, end_idx)
+        elif self.episode_sample == 'max_length':
+            start = 0
+            end = max_len
+
+        else:
+            raise ValueError('Episode sampling method not supported')
         
-        end = start + self.episode_length
-
-        state_ep = self.state.iloc[start:end, :]
-        observation_ep = self.observation.iloc[start:end, :]
-        assert observation_ts.shape[0] == state_ts.shape[0]
-
-        logging.debug('max_len {} start {} end {} random {}'.format(max_len,
+        end = start + episode_length
+        logging.debug('max_len {} start {} end {}'.format(max_len,
                                                                     start,
-                                                                    end,
-                                                                    random))
+                                                                    end))
+        state_ep = self.state_ts.iloc[start:end, :]
+        observation_ep = self.observation_ts.iloc[start:end, :]
+        assert observation_ep.shape[0] == state_ep.shape[0]
+
         return state_ep, observation_ep
 
-    def make_env_obs_space(self, obs_ts):
+    def timeseries_to_spaces(self, obs_ts):
         """
         Creates the observation space list
 
@@ -265,4 +271,4 @@ class BaseEnv(object):
         if append:
             observation = np.append(observation, np.array(append))
 
-        return observation.reshape(1, self.observation_space.shape*)
+        return observation.reshape(1, *self.observation_space.shape)

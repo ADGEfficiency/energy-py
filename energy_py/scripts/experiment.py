@@ -281,7 +281,7 @@ class Runner(object):
 
         #  add the run time so we can log the summaries
         summaries['run_time'] = self.calc_time()
-        log = ['{} : {}'.format(k, v) for k, v in summaries.items()]
+        log = ['{} : {:02.1f}'.format(k, v) for k, v in summaries.items()]
         self.logger_timer.info(log)
 
         #  save the environment info dictionary to a csv

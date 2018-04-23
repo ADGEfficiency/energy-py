@@ -51,7 +51,7 @@ def ensure_dir(file_path):
         os.makedirs(directory)
 
 
-def load_csv(paths):
+def load_csv(*paths):
     """
     Loads a csv into a dataframe
 
@@ -59,10 +59,9 @@ def load_csv(paths):
         paths (iterable) strings to be formed into a path
     """
     path = os.path.join(*paths)
-    df = pd.read_csv(path,
+    return pd.read_csv(path,
                      index_col=0,
                      parse_dates=True)
-    return df
 
 
 def parse_ini(filepath, section):
