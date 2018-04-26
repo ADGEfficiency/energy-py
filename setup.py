@@ -6,7 +6,7 @@ The setup.py script for energy_py
 
 setup(name='energy_py',
 
-      version='2.0',
+      version='0.2',
 
       description='Reinforcement learning for energy systems',
 
