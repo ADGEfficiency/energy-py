@@ -311,17 +311,17 @@ class DQN(BaseAgent):
         else:
             batch = self.memory.get_batch(self.batch_size)
 
-        observations = batch['observations']
-        actions = batch['actions']
-        rewards = batch['rewards']
-        terminals = batch['terminal']
-        next_observations = batch['next_observations']
+        observations = batch['observation']
+        actions = batch['action']
+        rewards = batch['reward']
+        terminals = batch['done']
+        next_observations = batch['next_observation']
 
         #  if we are doing prioritiezed experience replay then our
         #  batch dict will have the importance weights
         #  if not we create an array of ones
         if self.memory_type == 'priority':
-            importance_weights = batch['importance_weights']
+            importance_weights = batch['importance_weight']
         else:
             importance_weights = np.ones_like(rewards)
 

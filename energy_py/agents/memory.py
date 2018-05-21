@@ -1,3 +1,17 @@
+"""
+Classes to serve as an agents memory
+
+DequeMemory
+- is the fastest impelmentation
+- uses a deque to store experience as namedtuples (one per step)
+- sampling by indexing experience and unpacking into arrays
+
+ArrayMemory
+- stores each dimension of experience (state, action etc)
+  in separate numpy arrays
+- sampling experience is done by indexing each array
+"""
+
 from collections import defaultdict, deque, namedtuple
 from random import sample
 
@@ -8,7 +22,7 @@ Experience = namedtuple('Experience', ['observation',
                                        'action',
                                        'reward',
                                        'next_observation',
-                                       'terminal'])
+                                       'done'])
 
 
 def calculate_returns(rewards, discount):
@@ -53,12 +67,12 @@ class Memory(object):
 
         #  use a dict to hold the shapes
         #  we can use this to eaisly reshape batches of experience
-        self.shapes = {'observations': obs_shape,
-                       'actions': action_shape,
-                       'rewards': (1,),
-                       'next_observations': obs_shape,
-                       'terminal': (1,),
-                       'importance_weights': (1,),
+        self.shapes = {'observation': obs_shape,
+                       'action': action_shape,
+                       'reward': (1,),
+                       'next_observation': obs_shape,
+                       'done': (1,),
+                       'importance_weight': (1,),
                        'indexes': (1,)}
 
 
@@ -69,6 +83,9 @@ class DequeMemory(Memory):
     A single sample of experience is held in a namedtuple.
     Sequences of experience are kept in a deque.
     Batches are randomly sampled from this deque.
+
+    This requires unpacking the deques for every batch - small batch sizes
+    mean this isn't horrifically expensive
     """
 
     def __init__(self,
@@ -76,9 +93,9 @@ class DequeMemory(Memory):
                  obs_shape,
                  action_shape):
 
-        super(DequeMemory, self).__init__(size,
-                                          obs_shape,
-                                          action_shape)
+        super().__init__(size,
+                         obs_shape,
+                         action_shape)
 
         self.experiences = deque(maxlen=self.size)
 
@@ -88,8 +105,7 @@ class DequeMemory(Memory):
     def __len__(self):
         return len(self.experiences)
 
-    def remember(self, observation, action, reward,
-                 next_observation, terminal):
+    def remember(self, observation, action, reward, next_observation, done):
         """
         Adds experience to the memory
 
@@ -98,7 +114,7 @@ class DequeMemory(Memory):
             action
             reward
             next_observation
-            terminal
+            done
         """
         #  create an experience named tuple
         #  add the experience to our deque
@@ -107,7 +123,7 @@ class DequeMemory(Memory):
                                            action,
                                            reward,
                                            next_observation,
-                                           terminal))
+                                           done))
 
     def get_batch(self, batch_size):
         """
@@ -124,11 +140,11 @@ class DequeMemory(Memory):
         batch_dict = defaultdict(list)
 
         for exp in batch:
-            batch_dict['observations'].append(exp.observation)
-            batch_dict['actions'].append(exp.action)
-            batch_dict['rewards'].append(exp.reward)
-            batch_dict['next_observations'].append(exp.next_observation)
-            batch_dict['terminal'].append(exp.terminal)
+            batch_dict['observation'].append(exp.observation)
+            batch_dict['action'].append(exp.action)
+            batch_dict['reward'].append(exp.reward)
+            batch_dict['next_observation'].append(exp.next_observation)
+            batch_dict['done'].append(exp.done)
 
         #  use the shapes dictionary to reshape our arrays
         for key, data in batch_dict.items():
@@ -150,17 +166,17 @@ class ArrayMemory(Memory):
                  obs_shape,
                  action_shape):
 
-        super(ArrayMemory, self).__init__(size,
-                                          obs_shape,
-                                          action_shape)
+        super().__init__(size,
+                         obs_shape,
+                         action_shape)
 
         #  create one np array for each dimension of experience
         #  the first dimension of these arrays is the memory dimension
-        self.obs = np.empty((self.size, *self.shapes['observations']))
-        self.acts = np.empty((self.size, *self.shapes['actions']))
-        self.rews = np.empty((self.size, *self.shapes['rewards']))
-        self.n_obs = np.empty((self.size, *self.shapes['next_observations']))
-        self.term = np.empty((self.size, *self.shapes['terminal']), dtype=bool)
+        self.obs = np.empty((self.size, *self.shapes['observation']))
+        self.acts = np.empty((self.size, *self.shapes['action']))
+        self.rews = np.empty((self.size, *self.shapes['reward']))
+        self.n_obs = np.empty((self.size, *self.shapes['next_observation']))
+        self.term = np.empty((self.size, *self.shapes['done']), dtype=bool)
 
         #  keep a counter to index the numpy arrays
         self.count = 0
@@ -171,8 +187,7 @@ class ArrayMemory(Memory):
     def __len__(self):
         return self.count
 
-    def remember(self, observation, action, reward,
-                 next_observation, terminal):
+    def remember(self, observation, action, reward, next_observation, done):
         """
         Adds experience to the memory
 
@@ -181,13 +196,13 @@ class ArrayMemory(Memory):
             action
             reward
             next_observation
-            terminal
+            done
         """
         self.obs[self.count] = observation
         self.acts[self.count] = action
         self.rews[self.count] = reward
         self.n_obs[self.count] = next_observation
-        self.term[self.count] = terminal
+        self.term[self.count] = done
 
         #  conditional to reset the counter once we end of the array
         if self.count == self.size:
@@ -212,6 +227,6 @@ class ArrayMemory(Memory):
                       'actions': self.acts[indicies],
                       'rewards': self.rews[indicies],
                       'next_observations': self.n_obs[indicies],
-                      'terminal': self.term[indicies]}
+                      'done': self.term[indicies]}
 
         return batch_dict

@@ -81,12 +81,17 @@ $ python setup.py develop (developing package)
 $ pip install requirements.txt
 
 ```
-## Project structure
+## Project 
 
 The aim of energy_py is to provide 
-- high quality implementations of agents 
+- high quality implementations of agents suited to solving energy problems
 - mutiple energy environments
 - tools to run experiments
+
+The design philosophies of energy_py
+- simple class heirarchy structure (maximum of two levels (i.e. parent child)
+- utilize Python standard library (deques, namedtuples etc) where possible
+- utilize TensorFlow & TensorBoard
 
 ### Agents
 Agents are the learners and decision makers.  energy_py supports simpler heuristic (i.e. fully random) agents, which are

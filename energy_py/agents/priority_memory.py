@@ -79,7 +79,7 @@ class PrioritizedReplay(Memory):
         return self.experiences[idx]
 
     def remember(self, observation, action, reward,
-                 next_observation, terminal, priority=None):
+                 next_observation, done, priority=None):
         """
         Adds experience to the memory
 
@@ -96,7 +96,7 @@ class PrioritizedReplay(Memory):
             action
             reward
             next_observation
-            terminal
+            done
             priority
         """
         #  create an experience named tuple
@@ -106,7 +106,7 @@ class PrioritizedReplay(Memory):
                                 action,
                                 reward,
                                 next_observation,
-                                terminal)
+                                done)
 
         #  save the experience into experiences
         #  if we are still filling up the experiences, append onto the list
@@ -173,15 +173,15 @@ class PrioritizedReplay(Memory):
 
         batch_dict = defaultdict(list)
         for exp in batch:
-            batch_dict['observations'].append(exp.observation)
-            batch_dict['actions'].append(exp.action)
-            batch_dict['rewards'].append(exp.reward)
-            batch_dict['next_observations'].append(exp.next_observation)
-            batch_dict['terminal'].append(exp.terminal)
+            batch_dict['observation'].append(exp.observation)
+            batch_dict['action'].append(exp.action)
+            batch_dict['reward'].append(exp.reward)
+            batch_dict['next_observation'].append(exp.next_observation)
+            batch_dict['done'].append(exp.done)
 
         #  add on the indicies for these samples and the importance weights
         batch_dict['indexes'] = indexes
-        batch_dict['importance_weights'] = weights
+        batch_dict['importance_weight'] = weights
 
         for key, data in batch_dict.items():
             batch_dict[key] = np.array(data).reshape(-1, *self.shapes[key])
