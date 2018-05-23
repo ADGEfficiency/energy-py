@@ -1,21 +1,34 @@
 """
-Classes to serve as an agents memory
+Basic memory structures to hold an agent's experiences
 
-DequeMemory
+The memory remember() method is called from the agent - this means
+that the agent can preprocess dimensions of experience (i.e. reward clip)
+before the experience is remembered
+
+Experience namedtuple is used to hold a single sample of experience
+
+calculate_returns()
+- function to calculate the Monte Carlo discounted return
+
+class Memory
+- the base class for memories
+
+class DequeMemory
 - is the fastest impelmentation
 - uses a deque to store experience as namedtuples (one per step)
 - sampling by indexing experience and unpacking into arrays
 
-ArrayMemory
+class ArrayMemory
 - stores each dimension of experience (state, action etc)
   in separate numpy arrays
 - sampling experience is done by indexing each array
 """
 
 from collections import defaultdict, deque, namedtuple
-from random import sample
+import random
 
 import numpy as np
+
 
 #  use a namedtuple to store a single sample of experience
 Experience = namedtuple('Experience', ['observation',
@@ -50,13 +63,12 @@ class Memory(object):
     """
     Base class for agent memories
 
-    Sets the agent size and creates a shapes dictionary.  The shapes
-    dictionary can be used to reshape arrays stored in the memory
-
     args
         size (int)
         obs_shape (tuple)
         action_shape (tuple)
+
+    Shapes dictionary used to reshape experience dimensions
     """
     def __init__(self,
                  size,
@@ -65,8 +77,6 @@ class Memory(object):
 
         self.size = int(size)
 
-        #  use a dict to hold the shapes
-        #  we can use this to eaisly reshape batches of experience
         self.shapes = {'observation': obs_shape,
                        'action': action_shape,
                        'reward': (1,),
@@ -75,17 +85,45 @@ class Memory(object):
                        'importance_weight': (1,),
                        'indexes': (1,)}
 
+    def make_batch_dict(self, batch):
+        """
+        Takes a list of experiences and converts into a dictionary
+
+        args
+            batch (list)
+
+        returns
+            batch_dict (dict)
+
+        Batch converted into batch_dict:
+            {'observation': np.array(batch_size, *obs_shape,
+             'action': np.array(batch_size, *act_shape),
+             'reward': np.array(batch_size, 1),
+             'next_observation': np.array(batch_size, *obs_shape),
+             'done': np.array(batch_size, 1)}
+        """
+        batch_dict = {} 
+
+        for field in Experience._fields:
+            arr = np.array([getattr(e, field) for e in batch])
+            batch_dict[field] = arr.reshape(len(batch), *self.shapes[field])
+        return batch_dict
 
 class DequeMemory(Memory):
     """
-    Implementation of an experience replay memory based on a deque.
+    Experience replay memory based on a deque
 
-    A single sample of experience is held in a namedtuple.
-    Sequences of experience are kept in a deque.
-    Batches are randomly sampled from this deque.
+    args
+        size (int)
+        obs_shape (tuple)
+        action_shape (tuple)
 
-    This requires unpacking the deques for every batch - small batch sizes
-    mean this isn't horrifically expensive
+    A single sample of experience is held in a namedtuple
+    Sequences of experience are kept in a deque
+    Batches are randomly sampled from this deque
+
+    This requires unpacking the deques for every batch
+    - small batch sizes mean this isn't horrifically expensive
     """
 
     def __init__(self,
@@ -100,7 +138,7 @@ class DequeMemory(Memory):
         self.experiences = deque(maxlen=self.size)
 
     def __repr__(self):
-        return '<class DequeMemory len={}>'.format(len(self))
+        return '<class DequeMemory size={}>'.format(self.size)
 
     def __len__(self):
         return len(self.experiences)
@@ -115,10 +153,9 @@ class DequeMemory(Memory):
             reward
             next_observation
             done
+
+        Deque automatically keeps memory at correct size
         """
-        #  create an experience named tuple
-        #  add the experience to our deque
-        #  the deque automatically keeps our memory at the correct size
         self.experiences.append(Experience(observation,
                                            action,
                                            reward,
@@ -127,7 +164,7 @@ class DequeMemory(Memory):
 
     def get_batch(self, batch_size):
         """
-        Samples a batch randomly from the memory.
+        Samples a batch randomly from the memory
 
         args
             batch_size (int)
@@ -136,29 +173,23 @@ class DequeMemory(Memory):
             batch_dict (dict)
         """
         sample_size = min(batch_size, len(self))
-        batch = sample(self.experiences, sample_size)
-        batch_dict = defaultdict(list)
+        batch = random.sample(self.experiences, sample_size)
 
-        for exp in batch:
-            batch_dict['observation'].append(exp.observation)
-            batch_dict['action'].append(exp.action)
-            batch_dict['reward'].append(exp.reward)
-            batch_dict['next_observation'].append(exp.next_observation)
-            batch_dict['done'].append(exp.done)
-
-        #  use the shapes dictionary to reshape our arrays
-        for key, data in batch_dict.items():
-            batch_dict[key] = np.array(data).reshape(-1, *self.shapes[key])
-
-        return batch_dict
+        return self.make_batch_dict(batch)
 
 
 class ArrayMemory(Memory):
     """
-    Implementation of an experience memory replay based on numpy arrays.
+    Experience memory replay based on numpy arrays
 
-    A memory based on individual numpy arrays for each dimension of the
-    (s, a, r, s') experience tuple.
+    args
+        size (int)
+        obs_shape (tuple)
+        action_shape (tuple)
+
+    Individual numpy arrays for each dimension of experience
+
+    First dimension of each array is the memory dimension
     """
 
     def __init__(self,
@@ -170,19 +201,16 @@ class ArrayMemory(Memory):
                          obs_shape,
                          action_shape)
 
-        #  create one np array for each dimension of experience
-        #  the first dimension of these arrays is the memory dimension
         self.obs = np.empty((self.size, *self.shapes['observation']))
         self.acts = np.empty((self.size, *self.shapes['action']))
         self.rews = np.empty((self.size, *self.shapes['reward']))
         self.n_obs = np.empty((self.size, *self.shapes['next_observation']))
         self.term = np.empty((self.size, *self.shapes['done']), dtype=bool)
 
-        #  keep a counter to index the numpy arrays
         self.count = 0
 
     def __repr__(self):
-        return '<class ArrayMemory len={}>'.format(len(self))
+        return '<class ArrayMemory size={}>'.format(self.size)
 
     def __len__(self):
         return self.count

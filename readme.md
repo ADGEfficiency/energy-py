@@ -21,7 +21,7 @@ TOTAL_STEPS = 1000
 env = energy_py.make_env(env_id='BatteryEnv',
                          dataset_name=example,
                          episode_length=288,
-                         power_rating=2}
+                         power_rating=2)
 
 #  creating an agent
 agent = energy_py.make_agent(agent_id='DQN',

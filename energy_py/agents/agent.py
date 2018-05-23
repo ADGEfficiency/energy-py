@@ -23,10 +23,6 @@ class BaseAgent(object):
     Optionally override
         _learn
 
-    args
-        env (object) energy_py environment
-        discount (float) discount rate aka gamma
-        memory_length (int) number of experiences to store
     """
 
     def __init__(self,
@@ -90,7 +86,7 @@ class BaseAgent(object):
 
     def reset(self):
         """
-        Resets the agent internals.
+        Resets the agent internals
         """
         logger.debug('Resetting the agent internals')
 
@@ -100,7 +96,7 @@ class BaseAgent(object):
 
     def act(self, observation):
         """
-        Action selection by agent.
+        Action selection by agent
 
         args
             observation (np array) shape=(1, observation_dim)
@@ -121,7 +117,7 @@ class BaseAgent(object):
 
     def learn(self, **kwargs):
         """
-        Agent learns from experience.
+        Agent learns from experience
 
         args
             batch (dict) batch of experience
@@ -136,7 +132,7 @@ class BaseAgent(object):
 
     def remember(self, observation, action, reward, next_observation, done):
         """
-        Store experience in the agent's memory.
+        Store experience in the agent's memory
 
         args
             observation (np.array)
