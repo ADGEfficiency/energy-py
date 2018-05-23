@@ -28,7 +28,7 @@ class BaseEnv(object):
     The BaseEnv has functionality for working with time series data
     """
     def __init__(self,
-                 dataset_name='test',
+                 dataset_name='example',
                  episode_sample='random',
                  episode_length=2016):
 
@@ -125,8 +125,8 @@ class BaseEnv(object):
             assert state.shape[0] == observation.shape[0]
 
         except FileNotFoundError:
-            raise FileNotFoundError('state.csv & observation.csv are missing \
-                                    from {}'.format(dataset_path))
+            error_message = 'state.csv & observation.csv are missing from {}'
+            raise FileNotFoundError(error_message.format(dataset_path))
 
         logger.debug('State start {} \
                       State end {}'.format(state.index[0],
