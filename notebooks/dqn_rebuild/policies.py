@@ -8,16 +8,25 @@ import numpy as np
 import tensorflow as tf
 
 
-def e_greedy(q_values, epsilon, discrete_actions):
+def e_greedy(q_values,
+             discrete_actions,
+             step_tensor,
+             decay_steps,
+             initial_epsilon,
+             final_epsilon):
     """
     epsilon greedy action selection
 
     args
         q_values (tensor) (batch_size, num_actions)
-        epsilon (tensor) (1,)
-        discrete_actions_list (list) usually a list of numpy arrays
+        discrete_actions (np.array) (num_actions, *action_shape)
+        step_tensor (tensor)
+        initial_epsilon (float)
+        final_epsilon (float)
+        epsilon_decay_fraction (float)
 
     returns
+        epsilon (tensor)
         actions (tensor) (batch_size, action_dimensions)
 
     With some probability epsilon, either:
@@ -46,6 +55,14 @@ def e_greedy(q_values, epsilon, discrete_actions):
         maxval=1,
         dtype=tf.float32)
 
+    epsilon = tf.train.polynomial_decay(
+                learning_rate=initial_epsilon,
+                global_step=step_tensor,
+                decay_steps=decay_steps,
+                end_learning_rate=final_epsilon,
+                power=1.0,
+                name='epsilon')
+
     select_greedy = tf.squeeze(tf.greater(probabilities, epsilon))
 
     indicies = tf.where(
@@ -53,24 +70,24 @@ def e_greedy(q_values, epsilon, discrete_actions):
         greedy_action_indicies,
         random_action_indicies)
 
-    return tf.gather(discrete_actions, indicies)
+    return epsilon, tf.gather(discrete_actions, indicies)
 
 
 def test_e_greedy_policy():
 
     #  check that epsilon at zero gives us the best actions
-    optimals = sess.run(e_g,
+    optimals = sess.run(policy,
                  {q_values: test_q_values,
-                  epsilon: 0.0})
+                  step: decay_steps + 1})
 
     assert optimals[0].all() == discrete_actions[1].all()
     assert optimals[1].all() == discrete_actions[2].all()
     assert optimals[2].all() == discrete_actions[0].all()
 
     #  check that epislon at one gives random actions
-    randoms = sess.run(e_g,
+    randoms = sess.run(policy,
                  {q_values: test_q_values,
-                  epsilon: 1.0})
+                  step: 0})
 
     one_different = False
 
@@ -135,24 +152,23 @@ if __name__ == '__main__':
     epsilon = tf.placeholder(shape=(), dtype=tf.float32)
 
     #  construct the tf graph for testing
-    e_g = e_greedy(q_values, epsilon, discrete_actions)
+    
+    #  TODO should this be a placeholder or a variable???
+    #  incrementing step harder in tensorflow than within the agent
+    #  also dont want to have to run step in fetches
+    #  -> placehoder
+    step = tf.placeholder(shape=(), name='learning_step', dtype=tf.int64)
 
-    temperature = tf.placeholder(shape=(),
-                                 dtype=tf.float32,
-                                 name='softmax_temperature')
-
+    decay_steps = 10
+    epsilon, policy = e_greedy(
+        q_values,
+        discrete_actions,
+        step,
+        decay_steps=decay_steps,
+        initial_epsilon=1.0,
+        final_epsilon=0.0)
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         test_e_greedy_policy()
 
-        temp, probs, entropy, samples = softmax_policy(q_values, temperature)
-
-        t, p, e, s = sess.run([temp, probs, entropy, samples],
-                              {q_values: test_q_values,
-                               temperature: 0.000005})
-    optimals = s
-    assert optimals[0].all() == discrete_actions[1].all()
-    assert optimals[1].all() == discrete_actions[2].all()
-    assert optimals[2].all() == discrete_actions[0].all()
-    print(t, p, e, s)

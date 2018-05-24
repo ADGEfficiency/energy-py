@@ -104,15 +104,21 @@ class GlobalSpace(object):
         assert x.ndim == 2
         return all(spc.contains(part) for (spc, part) in zip(self.spaces, x[0]))
 
-    def discretize(self, n_discr):
+    def discretize(self, num_discrete):
         """
         Using the same n_discr across each dimension of the GlobalSpace
 
         args
             n_discr (int) number of discrete spaces in the action space
         """
-        disc = [spc.discretize(n_discr) for spc in self.spaces]
-        self.discrete_spaces = [list(a) for a in itertools.product(*disc)]
+        discrete_spaces = [spc.discretize(num_discrete) for spc in self.spaces]
+        discrete_spaces = [a for a in itertools.product(*discrete_spaces)]
+
+        #  we for the array to be two dimensions
+        #  (num_actions, length_of_space)
+        self.discrete_spaces = np.array(
+            discrete_spaces).reshape(len(discrete_spaces), -1)
+
         return self.discrete_spaces
 
     def extend(self, space):

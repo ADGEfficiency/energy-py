@@ -1,3 +1,9 @@
+"""
+A registery for environments supported by energy_py
+
+Combination of native energy_py environments and wrapped gym environments
+"""
+
 import logging
 import random
 
@@ -30,11 +36,11 @@ class EnvWrapper(object):
     def reset(self):
         return self.env.reset()
 
-    def discretize(self, num_discrete):
-        self.actions = list(self.action_space.discretize(num_discrete))
+    def discretize_action_space(self, num_discrete):
+        self.actions = self.action_space.discretize(num_discrete)
         return self.actions
 
-    def sample_discrete(self):
+    def sample_discrete_action(self):
         return self.env.action_space.sample_discrete()
 
 
@@ -94,15 +100,24 @@ class CartPoleEnv(EnvWrapper):
         self.action_space = self.env.action_space
         self.action_space_shape = (1,)
 
+        self.action_space.discretize = self.discretize_action_space
+
     def step(self, action):
         #  cartpole doesn't accept an array!
         return self.env.step(action[0][0])
 
-    def discretize(self, num_discrete):
-        self.actions = [np.array(act) for act in range(self.action_space.n)]
+    def discretize_action_space(self, num_discrete):
+        actions = [act for act in range(self.action_space.n)]
+
+        #  cheat a bit here to ignore the num_discrete arg
+        #  because cartpole is already discrete!
+        num_discrete = len(actions)
+        self.actions =  np.array(actions).reshape(
+            num_discrete,
+            *self.action_space_shape)
         return self.actions
 
-    def sample_discrete(self):
+    def sample_discrete_action(self):
         return random.choice(self.actions)
 
 
@@ -118,15 +133,18 @@ class PendulumEnv(EnvWrapper):
         self.action_space = GlobalSpace([self.env.action_space])
         self.action_space_shape = self.action_space.shape
 
-    def discretize(self, num_discrete):
+    def discretize_action_space(self, num_discrete):
         """
         Not every agent will need to do this
         """
         self.actions = np.linspace(self.action_space.low,
                                    self.action_space.high,
                                    num=num_discrete,
-                                   endpoint=True).tolist()
+                                   endpoint=True)
         return self.actions
+
+    def sample_discrete_action(self):
+        return random.choice(self.actions)
 
 
 class MountainCarEnv(EnvWrapper):
@@ -141,9 +159,19 @@ class MountainCarEnv(EnvWrapper):
         self.action_space = self.env.action_space
         self.action_space_shape = (1,)
 
-    def discretize(self, num_discrete):
-        self.actions = [act for act in range(self.action_space.n)]
+    def discretize_action_space(self, num_discrete):
+        actions = [act for act in range(self.action_space.n)]
+
+        #  cheat a bit here to ignore the num_discrete arg
+        #  because mountain_car is already discrete!
+        num_discrete = len(actions)
+        self.actions =  np.array(actions).reshape(
+            num_discrete,
+            *self.action_space_shape)
         return self.actions
+
+    def sample_discrete_action(self):
+        return random.choice(self.actions)
 
 
 env_register = {'Flex-v0': FlexEnvV0,

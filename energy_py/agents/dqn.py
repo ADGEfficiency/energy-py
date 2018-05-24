@@ -108,7 +108,7 @@ class DQN(BaseAgent):
             logger.debug('beta sched args {}'.format(beta_args))
             self.beta = LinearScheduler(**beta_args)
 
-        self.actions = self.env.discretize(num_discrete=20)
+        self.actions = self.env.discretize_action_space(num_discrete=20)
         logger.debug('actions list is {}'.format(self.actions))
 
         model_config = {'input_shape': self.obs_shape,
@@ -269,7 +269,7 @@ class DQN(BaseAgent):
         logger.debug('epsilon is {}'.format(eps))
 
         if eps > random():
-            action = self.env.sample_discrete()
+            action = self.env.sample_discrete_action()
             logger.debug('acting randomly - action is {}'.format(action))
         else:
             _, _, action = self.predict_online(observation)

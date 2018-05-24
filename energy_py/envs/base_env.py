@@ -3,10 +3,8 @@ The base class for energy_py environments
 """
 import collections
 import logging
-import os
 
 import numpy as np
-import pandas as pd
 
 import energy_py
 from energy_py import ContinuousSpace, DiscreteSpace, GlobalSpace, load_csv
@@ -48,7 +46,7 @@ class BaseEnv(object):
         """
         Resets the state of the environment and returns an initial observation
 
-        returns 
+        returns
             observation (np array) initial observation
         """
         logger.debug('Resetting environment')
@@ -134,8 +132,16 @@ class BaseEnv(object):
         return state, observation
 
     def make_observation_space(self, spaces, space_labels):
+        """
+        Pull out the column names so we know what each variable is
 
-        #  pull out the column names so we know what each variable is
+        args
+            spaces (list) of energy_py Space objects for additional variables
+            space_labels (list) labels for the additional observation vars
+
+        returns
+            observation_space (GlobalSpace) energy_py object for the obs space
+        """
         self.state_info = self.state_ts.columns.tolist()
         self.observation_info = self.observation_ts.columns.tolist()
 
@@ -147,7 +153,6 @@ class BaseEnv(object):
         logger.debug('State info {}'.format(self.state_info))
         logger.debug('Observation info {}'.format(self.observation_info))
 
-        
         return GlobalSpace(observation_space)
 
     def get_episode(self):
@@ -167,7 +172,7 @@ class BaseEnv(object):
             else:
                 delta = max_len - self.episode_length
                 episode_length = self.episode_length
-                
+
                 if delta == 0:
                     start = 0
                 else:
@@ -179,7 +184,7 @@ class BaseEnv(object):
 
         else:
             raise ValueError('Episode sampling method not supported')
-        
+
         end = start + episode_length
         logging.debug('max_len {} start {} end {}'.format(max_len,
                                                           start,
@@ -256,7 +261,7 @@ class BaseEnv(object):
         This is so that environment specific info can be added onto the
         observation array.
 
-        Repeated code with get_observation but I think having two functions
+        Repeated code with get_state but I think having two functions
         is cleaner when using in the child class.
 
         args
