@@ -6,6 +6,7 @@ def rolling_window(a, size):
     strides = a.strides + (a. strides[-1],)
     return np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides)
 
+
 def find_sub_array_in_2D_array(sub_array, array):
     """
     Find the first occurence of a sub_array within a larger array
@@ -23,8 +24,9 @@ def find_sub_array_in_2D_array(sub_array, array):
 
     Used for finding the index of an action within a list of all possible actions
     """
-    assert sub_array.ndim == 1
-    assert array.ndim == 2
+    #  array making and shaping so that user could feed in a list and it
+    #  would work
+    sub_array = np.array(sub_array).reshape(array.shape[1])
 
     bools = rolling_window(sub_array, array.shape[1]) == array
 

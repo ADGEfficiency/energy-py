@@ -39,7 +39,7 @@ def test_dqn():
         q_selected = sess.run(
             a.q_selected_actions,
             {a.observation: obs,
-             a.selected_actions: selected},
+             a.selected_action_indicies: selected},
         )
 
         q_check = q_vals.reshape(-1)[selected]

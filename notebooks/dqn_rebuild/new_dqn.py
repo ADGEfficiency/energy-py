@@ -248,7 +248,7 @@ class DQN(BaseAgent):
             indicies.append(
                 find_action(np.array(action).reshape(-1), self.discrete_actions)
             )
-        import pdb; pdb.set_trace()
+
         _ = self.sess.run(
             self.train_op,
             {self.observation: batch['observation'],
