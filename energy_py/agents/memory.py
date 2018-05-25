@@ -83,7 +83,7 @@ class Memory(object):
                        'next_observation': obs_shape,
                        'done': (1,),
                        'importance_weight': (1,),
-                       'indexes': (1,)}
+                       'indexes': (1,)}  #  does this do anything ? TODO
 
     def make_batch_dict(self, batch):
         """
@@ -98,9 +98,9 @@ class Memory(object):
         Batch converted into batch_dict:
             {'observation': np.array(batch_size, *obs_shape,
              'action': np.array(batch_size, *act_shape),
-             'reward': np.array(batch_size, 1),
+             'reward': np.array(batch_size),
              'next_observation': np.array(batch_size, *obs_shape),
-             'done': np.array(batch_size, 1)}
+             'done': np.array(batch_size)}
         """
         batch_dict = {} 
 

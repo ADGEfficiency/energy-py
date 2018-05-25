@@ -4,6 +4,7 @@ import tensorflow as tf
 import energy_py
 
 from new_dqn import DQN
+from networks import make_copy_ops, make_vars
 
 env = energy_py.make_env('Battery')
 obs = env.observation_space.sample()
@@ -17,7 +18,7 @@ terms = np.random.randint(0, 2, 10).astype(np.bool)
 
 next_obs = np.array(
     [env.observation_space.sample() for _ in range(samples)]
-).reshape(samples, *env.obs_space_shape) 
+).reshape(samples, *env.obs_space_shape)
 
 def test_dqn():
     tf.reset_default_graph()
@@ -119,8 +120,8 @@ def test_ddqn():
         selected_target_net_q = target_net_q_values[np.arange(samples),
                                                     online_acts]
 
-        masked = np.where(terms, 
-                          selected_target_net_q, 
+        masked = np.where(terms,
+                          selected_target_net_q,
                           np.zeros(samples))
 
         bellman_check = rewards + discount * masked
@@ -133,3 +134,124 @@ def test_ddqn():
         )
 
         assert bellman_check.all() == bell.all()
+
+
+def test_copy_ops():
+    tf.reset_default_graph()
+
+    with tf.Session() as sess:
+
+        with tf.variable_scope('online'):
+            online_params = make_vars(4)
+
+        with tf.variable_scope('target'):
+            target_params = make_vars(4)
+
+        copy_ops, tau = make_copy_ops(online_params, target_params)
+        sess.run(tf.global_variables_initializer())
+
+        online_vals, target_vals = sess.run(
+            [online_params, target_params]
+        )
+
+        assert np.sum(online_vals) != np.sum(target_vals)
+
+        _  = sess.run(copy_ops, {tau: 1.0})
+
+        online_vals, target_vals = sess.run(
+            [online_params, target_params]
+        )
+        assert np.sum(online_vals) == np.sum(target_vals)
+
+def test_target_net_weight_init():
+    tf.reset_default_graph()
+    with tf.Session() as sess:
+        a = DQN(sess=sess, env=env, total_steps=10,
+                discount=discount)
+
+        online_vals, target_vals = sess.run(
+            [a.online_q_values, a.target_q_values],
+            {a.observation: obs,
+             a.next_observation: obs}
+        )
+
+        #  equal because we intialize target net weights in the init of DQN
+        assert np.sum(online_vals) == np.sum(target_vals)
+
+
+def test_train_op():
+    tf.reset_default_graph()
+    with tf.Session() as sess:
+        agent = DQN(
+            sess=sess,
+            env=env,
+            total_steps=10,
+            discount=discount,
+            memory_type='deque',
+            learning_rate=1.0
+        )
+
+        obs = env.reset()
+        for step in range(20):
+            act = agent.act(obs)
+            next_obs, reward, done, info = env.step(act)
+            agent.remember(obs, act, reward, next_obs, done)
+            obs = next_obs
+
+        obs = obs.reshape(1, -1)
+        #  we haven't learnt yet so our online & target networks should
+        #  be the same.  check by comparing the sums of the outputs of each
+        online_vals, target_vals = sess.run(
+            [agent.online_q_values, agent.target_q_values],
+            {agent.observation: obs,
+             agent.next_observation: obs}
+        )
+        assert np.sum(online_vals) == np.sum(target_vals)
+
+        #  learn - changing the online network weights
+        agent.learn()
+
+        online_vals, target_vals = sess.run(
+            [agent.online_q_values, agent.target_q_values],
+            {agent.observation: obs,
+             agent.next_observation: obs}
+        )
+        assert np.sum(online_vals) != np.sum(target_vals)
+
+        #  using copy ops to make online & target the same again
+        _ = sess.run(
+            agent.copy_ops,
+            {agent.tau: 1}
+        )
+
+        online_vals, target_vals = sess.run(
+            [agent.online_q_values, agent.target_q_values],
+            {agent.observation: obs,
+             agent.next_observation: obs}
+        )
+        assert np.sum(online_vals) == np.sum(target_vals)
+
+
+discrete_actions = np.array([0.0 , 0.0,
+                             0.0 , 0.5,
+                             0.0, 1.0,
+                             0.0, 1.5,
+                             0.0, 2.0]).reshape(5, 2)
+test_sub_arrays = [
+    ([0.0, 2.0], 4),
+    ([0.0, 1.0], 2),
+    ([0.0, 0.0], 0),
+]
+
+from utils import find_sub_array_in_2D_array
+
+
+def np_test_find_action_in_discrete_actions():
+    for sub_array, true_index in test_sub_arrays:
+
+        sub_array = np.array(sub_array).reshape(2)
+
+        assert find_sub_array_in_2D_array(
+            sub_array, discrete_actions) == true_index
+
+

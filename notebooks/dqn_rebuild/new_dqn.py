@@ -1,3 +1,10 @@
+"""
+todo
+- processors
+- logging
+- tensorboard
+
+"""
 import numpy as np
 import tensorflow as tf
 
@@ -6,6 +13,8 @@ from energy_py.agents import BaseAgent
 
 from networks import feed_forward, make_copy_ops
 from policies import e_greedy
+from utils import find_sub_array_in_2D_array as find_action
+
 
 
 class DQN(BaseAgent):
@@ -13,12 +22,8 @@ class DQN(BaseAgent):
     The new energy_py implementation of Deep Q-Network
 
     BaseAgent args (passed as **kwargs)
-        sess (tf.Session)
-        env (energy_py environment)
 
     DQN args
-        num_discrete_actions (int)
-        hiddens (tuple) nodes for each hidden layer of the Q(s,a) approximation
 
     """
 
@@ -32,16 +37,18 @@ class DQN(BaseAgent):
             final_epsilon=0.05,
             epsilon_decay_fraction=0.3,
             double_q=False,
+            batch_size=64,
             **kwargs):
 
         super().__init__(**kwargs)
 
         self.discount = tf.Variable(
-            discount,
+            initial_value=discount,
             trainable=False,
             name='gamma')
 
         self.double_q = double_q
+        self.batch_size = batch_size
 
         self.discrete_actions = self.env.discretize_action_space(
             num_discrete_actions)
@@ -49,14 +56,20 @@ class DQN(BaseAgent):
 
         #  idea is to have a single step that only starts when learning starts
         #  TODO when does this get increased?
-        self.step = tf.Variable(0, dtype=tf.float32)
+        self.step = tf.Variable(initial_value=0,
+                                trainable=False,
+                                dtype=tf.int64)
 
         self.observation = tf.placeholder(
             shape=(None, *self.env.obs_space_shape),
             dtype=tf.float32
         )
 
-        self.selected_actions = tf.placeholder(shape=(None), dtype=tf.int64)
+        # self.selected_actions = tf.placeholder(
+        #     shape=(None, *self.env.action_space_shape), dtype=tf.int64)
+
+        self.selected_action_indicies = tf.placeholder(
+            shape=(None), dtype=tf.int64)
 
         self.reward = tf.placeholder(shape=(None), dtype=tf.float32)
 
@@ -90,7 +103,7 @@ class DQN(BaseAgent):
                 output_activation='linear',
             )
 
-        from networks import get_tf_params 
+        from networks import get_tf_params
 
         self.online_params = get_tf_params('online')
         self.target_params = get_tf_params('target')
@@ -100,10 +113,16 @@ class DQN(BaseAgent):
             self.target_params,
         )
 
+        self.discrete_actions_tensor = tf.Variable(
+            initial_value=self.discrete_actions,
+            trainable=False,
+            name='discrete_actions',
+        )
+
         #  would also be possible to send the policy object in from the outside
         self.epsilon, self.policy = e_greedy(
             self.online_q_values,
-            self.discrete_actions,
+            self.discrete_actions_tensor,
             self.step,
             total_steps * epsilon_decay_fraction,
             initial_epsilon,
@@ -113,7 +132,7 @@ class DQN(BaseAgent):
         #  now the learning part of the graph
 
         self.q_selected_actions = tf.reduce_sum(
-            self.online_q_values * tf.one_hot(self.selected_actions, 
+            self.online_q_values * tf.one_hot(self.selected_action_indicies,
                                               self.num_actions),
             1
         )
@@ -127,7 +146,7 @@ class DQN(BaseAgent):
             online_actions = tf.argmax(self.online_next_obs_q, axis=1)
 
             next_state_max_q = tf.reduce_sum(
-                self.target_q_values * tf.one_hot(online_actions, 
+                self.target_q_values * tf.one_hot(online_actions,
                                                  self.num_actions),
                 1
             )
@@ -149,7 +168,7 @@ class DQN(BaseAgent):
         self.bellman = self.reward + self.discount * self.next_state_max_q
 
         error = tf.losses.huber_loss(
-            self.bellman, 
+            self.bellman,
             self.q_selected_actions,
             weights=1.0,
             scope='huber_loss'
@@ -159,7 +178,7 @@ class DQN(BaseAgent):
         loss = tf.reduce_mean(error)
 
         learning_rate = 0.001
-        decay_learning_rate = True 
+        decay_learning_rate = True
         gradient_norm_clip = True
 
         if decay_learning_rate:
@@ -185,7 +204,7 @@ class DQN(BaseAgent):
         else:
             self.train_op = optimizer.minimize(loss, var_list=self.online_params)
 
-        #  do stuff with intiailizing vars, and doing the first target net copy op 
+        #  do stuff with intiailizing vars, and doing the first target net copy op
         self.sess.run(
             tf.global_variables_initializer()
         )
@@ -207,19 +226,59 @@ class DQN(BaseAgent):
             {self.observation: observation}
         )
 
-        return action.reshape(1, *self.env.action_space.shape)
+        return action.reshape(1, *self.env.action_space_shape)
 
+    def _learn(self):
+        """
+        Our agent attempts to make sense of the world
+        """
+        if self.memory_type == 'priority':
+            raise NotImplementedError()
+
+        batch = self.memory.get_batch(self.batch_size)
+
+        #  awkward bit - finding the indicies using np :(
+        #  working on a solution
+        # indicies = [
+        #     find_action(np.array(action).reshape(-1), self.discrete_actions)
+        #     for action in batch['action']
+        # ]
+        indicies = []
+        for action in batch['action']:
+            indicies.append(
+                find_action(np.array(action).reshape(-1), self.discrete_actions)
+            )
+        import pdb; pdb.set_trace()
+        _ = self.sess.run(
+            self.train_op,
+            {self.observation: batch['observation'],
+             self.selected_action_indicies: indicies,
+             self.reward: batch['reward'],
+             self.next_observation: batch['next_observation'],
+             self.terminal: batch['done']  #  should be ether done or terminal TODO
+             }
+        )
 
 if __name__ == '__main__':
-    env = energy_py.make_env('Battery')
+    env = energy_py.make_env('CartPole')
     obs = env.observation_space.sample()
     discount = 0.95
 
+    with tf.Session() as sess:
+        agent = DQN(
+            sess=sess,
+            env=env,
+            total_steps=10,
+            discount=discount,
+            memory_type='deque',
+            learning_rate=1.0
+        )
+        obs = env.reset()
 
-    #  test - set all nets the same (ie copy fully at startof expt)
-    #  run a few train operations
-    #  check that target is different than the two online nets
-    #  then do a copy, check they are the same etc
+        for step in range(20):
+            act = agent.act(obs)
+            next_obs, reward, done, info = env.step(act)
+            agent.remember(obs, act, reward, next_obs, done)
+            obs = next_obs
 
-
-
+        agent.learn()

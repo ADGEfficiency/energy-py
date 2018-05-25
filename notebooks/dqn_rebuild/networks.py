@@ -2,6 +2,7 @@
 Functions to generate tensorflow neural network components
 """
 
+import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.layers as layers
 
@@ -107,30 +108,17 @@ def make_copy_ops(parent, child, scope='copy_ops'):
 
     return copy_ops, tau
 
+def make_vars(num):
+    variables = []
+    for n in range(num):
+        variables.append(tf.get_variable(
+            'var_{}'.format(n),
+            shape=(6,),
+            initializer=tf.initializers.random_normal
+        )
+                         )
+    return variables
+
 
 if __name__ == '__main__':
-    env = energy_py.make_env('Battery')
-    obs = env.observation_space.sample()
-    discount = 0.95
-
-    #  import here because of dependencies between this and new_dqn.py
-    #  will be sorted eventually
-    from new_dqn import DQN
-    tf.reset_default_graph()
-    with tf.Session() as sess:
-        a = DQN(sess=sess, env=env, total_steps=10,
-                discount=discount)
-
-        copy_ops, tau = make_copy_ops(a.online_params, a.target_params)
-
-        import numpy as np
-        online_vals, target_vals = sess.run(
-            [a.online_q_values, a.target_q_values],
-            {a.observation: obs,
-             a.next_observation: obs}
-        )
-
-        #  equal because we intialize target net weights in the init of DQN
-        assert np.sum(online_vals) == np.sum(target_vals)
-
-
+    pass

@@ -19,7 +19,7 @@ def e_greedy(q_values,
 
     args
         q_values (tensor) (batch_size, num_actions)
-        discrete_actions (np.array) (num_actions, *action_shape)
+        discrete_actions (tensor) (num_actions, *action_shape)
         step_tensor (tensor)
         initial_epsilon (float)
         final_epsilon (float)
@@ -35,9 +35,6 @@ def e_greedy(q_values,
     """
     batch_size = tf.shape(q_values)[0]
     num_actions = tf.cast(tf.shape(q_values)[1], tf.int64)
-
-    assert discrete_actions.ndim == 2
-    discrete_actions = tf.Variable(discrete_actions, 'discrete_actions')
 
     greedy_action_indicies = tf.argmax(q_values, axis=1)
 
