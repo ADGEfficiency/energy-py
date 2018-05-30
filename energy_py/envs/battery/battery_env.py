@@ -39,15 +39,14 @@ class Battery(BaseEnv):
         """
         SETTING THE ACTION SPACE
 
-        two actions
-         1 -  how much to charge [MWh]
-         2 -  how much to discharge [MWh]
+        the action space has a single dimension, ranging from max charge
+        to max discharge
 
-        use two actions to keep the action space positive
-        is useful for policy gradient where we take log(probability of action)
+        i.e. for a 2 MW battery
+        -2 <-> 2
         """
-        self.action_space = GlobalSpace([ContinuousSpace(0, self.power_rating),
-                                         ContinuousSpace(0, self.power_rating)])
+        self.action_space = GlobalSpace([ContinuousSpace(-self.power_rating, 
+                                                         self.power_rating)])
 
         """
         SETTING THE OBSERVATION SPACE
@@ -57,6 +56,8 @@ class Battery(BaseEnv):
         space_labels = ['C_charge_level_[MWh]']
 
         #  create a energy_py GlobalSpace object for the observation space
+        #  the Space and labels for the observation loaded from
+        #  csv are automatically added on in make_observation_space
         self.observation_space = self.make_observation_space(spaces,
                                                              space_labels)
 
@@ -64,8 +65,8 @@ class Battery(BaseEnv):
         self.observation = self.reset()
 
     def __repr__(self):
-        repr = '<energy_py BATTERY environment - {} MW {} MWh>'
-        return repr.format(self.power_rating, self.capacity)
+        return '<energy_py BATTERY environment - {} MW {} MWh>'.format(
+            self.power_rating, self.capacity)
 
     def _reset(self):
         """
@@ -110,9 +111,11 @@ class Battery(BaseEnv):
         the action.
 
         args
-            action (np.array) shape=(1, 2)
-                          [0][0] = charging
-                          [0][1] = discharging
+            action (np.array) shape=(1, 1)
+                first dimension is the batch dimension - 1 for a single action
+                second dimension is the charge 
+                (-self.rating <-> self.power_rating)
+
         returns
             observation (np.array) shape=(1, len(self.observation_space)
             reward (float)
@@ -126,21 +129,19 @@ class Battery(BaseEnv):
         old_charge = self.charge
 
         #  our action is sent to the environment as (1, num_actions)
-        assert action.shape == (1, 2)
+        assert action.shape == (1, 1)
 
-        #  we pull out the action here to make the code below cleaner
-        action = action[0]
+        #  we pull out the action to make the code below cleaner
+        action = action[0][0]
 
-        #  checking the actions are valid
-        for i, act in enumerate(action):
-            assert act >= self.action_space.spaces[i].low
-            assert act <= self.action_space.spaces[i].high
+        #  checking the action is valid
+        assert action >= self.action_space.low
+        assert action <= self.action_space.high
 
-        #  calculate the net effect of the two actions
-        #  also convert from MW to MWh/5 min by /12
-        net_charge = (action[0] - action[1]) / 12
+        #  convert from MW to MWh/5 min by /12
+        net_charge = action / 12
 
-        #  we first check to make sure this charge is within our capacity limits
+        #  we first check to make sure this charge is within our capacity limit
         unbounded_new_charge = old_charge + net_charge
         bounded_new_charge = max(min(unbounded_new_charge, self.capacity), 0)
 
@@ -217,3 +218,12 @@ class Battery(BaseEnv):
         self.observation = next_observation
 
         return self.observation, reward, self.done, self.info
+
+
+if __name__ == '__main__':
+    import energy_py
+    batt = energy_py.make_env('Battery')
+
+    a = batt.action_space.sample()
+
+    o, r, d, i = batt.step(a)
