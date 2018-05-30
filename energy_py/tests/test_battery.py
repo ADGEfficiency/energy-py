@@ -23,7 +23,7 @@ def test_charge():
 
     env = energy_py.make_env(**config)
 
-    output = env.step(action=np.array([1.0, 0.0]).reshape(1,2))
+    output = env.step(action=np.array([1.0]).reshape(1, 1))
     observation = output[0]
     charge = observation[0][charge_index]
 
@@ -40,7 +40,7 @@ def test_discharge():
               'round_trip_eff': 0.9}
     env = energy_py.make_env(**config)
 
-    output = env.step(action=np.array([0.0, 1.0]).reshape(1, 2))
+    output = env.step(action=np.array([-1.0]).reshape(1, 1))
     observation = output[0]
     charge = observation[0][charge_index]
     expected_charge = 4.0 - 1.0 / 12
@@ -57,13 +57,9 @@ def test_no_op():
               'round_trip_eff': 0.9}
     env = energy_py.make_env(**config)
 
-    output = env.step(action=np.array([0.0, 0.0]).reshape(1, 2))
+    output = env.step(action=np.array([0.0]).reshape(1, 1))
     observation = output[0]
     charge = observation[0][charge_index]
     expected_charge = 2.0
     assert charge == expected_charge
 
-    output = env.step(action=np.array([2.0, 2.0]).reshape(1, 2))
-    observation = output[0]
-    charge = observation[0][charge_index]
-    assert charge == expected_charge
