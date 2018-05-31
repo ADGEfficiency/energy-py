@@ -26,7 +26,6 @@ def test_dqn():
         a = DQN(sess=sess, env=env, total_steps=10,
                 discount=discount)
 
-        sess.run(tf.global_variables_initializer())
         #  test of the q_selected action part of the graph
         q_vals = sess.run(
             a.online_q_values,
@@ -87,7 +86,6 @@ def test_ddqn():
         a = DQN(sess=sess, env=env, total_steps=10,
                 discount=discount, double_q=True)
 
-        sess.run(tf.global_variables_initializer())
         #  test that our weights are being shared correctly
         online_vals = sess.run(
             a.online_q_values,
@@ -98,6 +96,8 @@ def test_ddqn():
             a.online_next_obs_q,
             {a.next_observation: next_obs}
         )
+        print(online_vals[:5])
+        print(online_copy_vals[:5])
         assert online_copy_vals.all() == online_vals.all()
 
         #  lets check the double q target creation
