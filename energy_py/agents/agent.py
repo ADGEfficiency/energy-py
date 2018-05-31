@@ -58,8 +58,11 @@ class BaseAgent(object):
         self.min_reward = min_reward
         self.max_reward = max_reward
 
-        #  a counter our agent can use as it sees fit
-        self.counter = 0
+        #  keep two step counters internally in the agent
+        #  start at -1 becuase we iterate them before the agent
+        #  has a chance to run it's own _act or _learn
+        self.act_step = -1
+        self.learn_step = -1
 
         #  optional objects to process arrays before they hit neural networks
         if observation_processor:
@@ -113,6 +116,8 @@ class BaseAgent(object):
         if hasattr(self, 'observation_processor'):
             observation = self.observation_processor.transform(observation)
 
+        self.act_step += 1
+
         return self._act(observation)
 
     def learn(self, **kwargs):
@@ -127,6 +132,7 @@ class BaseAgent(object):
             training_history (object) info about learning (i.e. loss)
         """
         logger.debug('Agent is learning')
+        self.learn_step += 1
 
         return self._learn(**kwargs)
 

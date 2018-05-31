@@ -11,10 +11,9 @@ import tensorflow as tf
 import energy_py
 from energy_py.agents import BaseAgent
 
-from networks import feed_forward, make_copy_ops
+from networks import feed_forward, make_copy_ops, get_tf_params
 from policies import e_greedy
 from utils import find_sub_array_in_2D_array as find_action
-
 
 
 class DQN(BaseAgent):
@@ -42,31 +41,24 @@ class DQN(BaseAgent):
 
         super().__init__(**kwargs)
 
-        self.discount = tf.Variable(
-            initial_value=discount,
-            trainable=False,
-            name='gamma')
-
         self.double_q = double_q
         self.batch_size = batch_size
 
         self.discrete_actions = self.env.discretize_action_space(
             num_discrete_actions)
+
         self.num_actions = self.discrete_actions.shape[0]
 
-        #  idea is to have a single step that only starts when learning starts
-        #  TODO when does this get increased?
-        self.step = tf.Variable(initial_value=0,
-                                trainable=False,
-                                dtype=tf.int64)
+        #  placeholders
+        self.discount = tf.Variable(
+            initial_value=discount,
+            trainable=False,
+            name='gamma')
 
         self.observation = tf.placeholder(
             shape=(None, *self.env.obs_space_shape),
             dtype=tf.float32
         )
-
-        # self.selected_actions = tf.placeholder(
-        #     shape=(None, *self.env.action_space_shape), dtype=tf.int64)
 
         self.selected_action_indicies = tf.placeholder(
             shape=(None), dtype=tf.int64)
@@ -93,6 +85,7 @@ class DQN(BaseAgent):
                     hiddens,
                     self.num_actions,
                     output_activation='linear',
+                    reuse=True,
                  )
 
         with tf.variable_scope('target', reuse=False):
@@ -102,8 +95,6 @@ class DQN(BaseAgent):
                 self.num_actions,
                 output_activation='linear',
             )
-
-        from networks import get_tf_params
 
         self.online_params = get_tf_params('online')
         self.target_params = get_tf_params('target')
@@ -119,17 +110,22 @@ class DQN(BaseAgent):
             name='discrete_actions',
         )
 
-        #  would also be possible to send the policy object in from the outside
+        self.learn_step_tensor = tf.placeholder(
+            shape=(),
+            dtype=tf.int64,
+            name='learn_step_tensor'
+        )
+
         self.epsilon, self.policy = e_greedy(
             self.online_q_values,
             self.discrete_actions_tensor,
-            self.step,
+            self.learn_step_tensor,
             total_steps * epsilon_decay_fraction,
             initial_epsilon,
             final_epsilon
         )
 
-        #  now the learning part of the graph
+        """ Learning """
 
         self.q_selected_actions = tf.reduce_sum(
             self.online_q_values * tf.one_hot(self.selected_action_indicies,
@@ -179,12 +175,12 @@ class DQN(BaseAgent):
 
         learning_rate = 0.001
         decay_learning_rate = True
-        gradient_norm_clip = True
+        gradient_norm_clip = 10
 
         if decay_learning_rate:
             learning_rate = tf.train.exponential_decay(
                 0.01,
-                global_step=self.step,
+                global_step=self.learn_step_tensor,
                 decay_steps=total_steps,
                 decay_rate=0.96,
                 staircase=False,
@@ -204,12 +200,12 @@ class DQN(BaseAgent):
         else:
             self.train_op = optimizer.minimize(loss, var_list=self.online_params)
 
-        #  do stuff with intiailizing vars, and doing the first target net copy op
+        #  initialize the tensorflow variables
         self.sess.run(
             tf.global_variables_initializer()
         )
 
-        #  initializing target network weights the same as online network weights
+        #  copy the target net weights
         self.sess.run(
             self.copy_ops,
             {self.tau: 1.0}
@@ -220,11 +216,19 @@ class DQN(BaseAgent):
         return '<energy_py DQN agent>'
 
     def _act(self, observation):
+        """
+
+        Use the learn_step to decay epsilon, as we want to stop exploring
+        only after we start learning
+        """
 
         action = self.sess.run(
             self.policy,
-            {self.observation: observation}
+            {self.learn_step_tensor: self.learn_step,
+             self.observation: observation}
         )
+
+        self.act_step += 1
 
         return action.reshape(1, *self.env.action_space_shape)
 
@@ -238,11 +242,7 @@ class DQN(BaseAgent):
         batch = self.memory.get_batch(self.batch_size)
 
         #  awkward bit - finding the indicies using np :(
-        #  working on a solution
-        # indicies = [
-        #     find_action(np.array(action).reshape(-1), self.discrete_actions)
-        #     for action in batch['action']
-        # ]
+        #  working on a tensorflow solution
         indicies = []
         for action in batch['action']:
             indicies.append(
@@ -251,7 +251,8 @@ class DQN(BaseAgent):
 
         _ = self.sess.run(
             self.train_op,
-            {self.observation: batch['observation'],
+            {self.learn_step_tensor: self.learn_step,
+             self.observation: batch['observation'],
              self.selected_action_indicies: indicies,
              self.reward: batch['reward'],
              self.next_observation: batch['next_observation'],
