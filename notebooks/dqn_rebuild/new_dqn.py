@@ -1,4 +1,8 @@
 """
+checks
+- that the online and double q vars are always the same
+    check using both copy ops type comparisons and sess.runs
+
 todo
 - processors
 - logging
@@ -14,7 +18,7 @@ from energy_py.agents import BaseAgent
 from networks import feed_forward, make_copy_ops, get_tf_params
 from policies import e_greedy
 from utils import find_sub_array_in_2D_array as find_action
-
+from expt_utils import EpisodeStats
 
 class DQN(BaseAgent):
     """
@@ -41,6 +45,13 @@ class DQN(BaseAgent):
 
         super().__init__(**kwargs)
 
+        self.total_steps = total_steps
+        self.hiddens = hiddens
+
+        self.epsilon_decay_fraction = epsilon_decay_fraction
+        self.initial_epsilon = initial_epsilon
+        self.final_epsilon = final_epsilon
+
         self.double_q = double_q
         self.batch_size = batch_size
 
@@ -49,156 +60,175 @@ class DQN(BaseAgent):
 
         self.num_actions = self.discrete_actions.shape[0]
 
-        #  placeholders
-        self.discount = tf.Variable(
-            initial_value=discount,
-            trainable=False,
-            name='gamma')
+        with tf.variable_scope('discrete_actions_tensor'):
+            self.discrete_actions_tensor = tf.Variable(
+                initial_value=self.discrete_actions,
+                trainable=False,
+                name='discrete_actions',
+            )
 
-        self.observation = tf.placeholder(
-            shape=(None, *self.env.obs_space_shape),
-            dtype=tf.float32
-        )
+        with tf.variable_scope('placeholders'):
+            self.discount = tf.Variable(
+                initial_value=discount,
+                trainable=False,
+                name='gamma')
 
-        self.selected_action_indicies = tf.placeholder(
-            shape=(None), dtype=tf.int64)
+            self.observation = tf.placeholder(
+                shape=(None, *self.env.obs_space_shape),
+                dtype=tf.float32
+            )
 
-        self.reward = tf.placeholder(shape=(None), dtype=tf.float32)
+            self.selected_action_indicies = tf.placeholder(
+                shape=(None), dtype=tf.int64)
 
-        self.next_observation = tf.placeholder(
-            shape=(None, *self.env.obs_space_shape),
-            dtype=tf.float32)
+            self.reward = tf.placeholder(shape=(None), dtype=tf.float32)
 
-        self.terminal = tf.placeholder(shape=(None), dtype=tf.bool)
+            self.next_observation = tf.placeholder(
+                shape=(None, *self.env.obs_space_shape),
+                dtype=tf.float32)
+
+            self.terminal = tf.placeholder(shape=(None), dtype=tf.bool)
+
+            self.learn_step_tensor = tf.placeholder(
+                shape=(),
+                dtype=tf.int64,
+                name='learn_step_tensor'
+            )
+
+        self.build_acting_graph()
+
+        self.build_learning_graph()
+
+    def build_acting_graph(self):
 
         with tf.variable_scope('online', reuse=tf.AUTO_REUSE):
             self.online_q_values = feed_forward(
                 self.observation,
-                hiddens,
+                self.hiddens,
                 self.num_actions,
                 output_activation='linear',
             )
 
-            if self.double_q:
-                self.online_next_obs_q = feed_forward(
-                    self.next_observation,
-                    hiddens,
-                    self.num_actions,
-                    output_activation='linear',
-                    reuse=True,
-                 )
-
-        with tf.variable_scope('target', reuse=False):
-            self.target_q_values = feed_forward(
-                self.next_observation,
-                hiddens,
-                self.num_actions,
-                output_activation='linear',
+        with tf.variable_scope('e_greedy_policy'):
+            self.epsilon, self.policy = e_greedy(
+                self.online_q_values,
+                self.discrete_actions_tensor,
+                self.learn_step_tensor,
+                self.total_steps * self.epsilon_decay_fraction,
+                self.initial_epsilon,
+                self.final_epsilon
             )
 
+    def build_copy_ops(self):
         self.online_params = get_tf_params('online')
         self.target_params = get_tf_params('target')
 
-        self.copy_ops, self.tau = make_copy_ops(
+        return make_copy_ops(
             self.online_params,
             self.target_params,
         )
 
-        self.discrete_actions_tensor = tf.Variable(
-            initial_value=self.discrete_actions,
-            trainable=False,
-            name='discrete_actions',
-        )
-
-        self.learn_step_tensor = tf.placeholder(
-            shape=(),
-            dtype=tf.int64,
-            name='learn_step_tensor'
-        )
-
-        self.epsilon, self.policy = e_greedy(
-            self.online_q_values,
-            self.discrete_actions_tensor,
-            self.learn_step_tensor,
-            total_steps * epsilon_decay_fraction,
-            initial_epsilon,
-            final_epsilon
-        )
+    def build_learning_graph(self):
 
         """ Learning """
-
-        self.q_selected_actions = tf.reduce_sum(
-            self.online_q_values * tf.one_hot(self.selected_action_indicies,
-                                              self.num_actions),
-            1
-        )
-
+        with tf.variable_scope('target', reuse=False):
+            self.target_q_values = feed_forward(
+                self.next_observation,
+                self.hiddens,
+                self.num_actions,
+                output_activation='linear',
+            )
 
         if self.double_q:
-            #  online net approximation of the next observation
-            #  creating this means we can avoid session calls
+            with tf.variable_scope('double_q_online', reuse=tf.AUTO_REUSE):
+                self.online_next_obs_q = feed_forward(
+                    self.next_observation,
+                    self.hiddens,
+                    self.num_actions,
+                    output_activation='linear',
+                 )
 
-            #  the action our online net would take in the next observation
-            online_actions = tf.argmax(self.online_next_obs_q, axis=1)
+        self.copy_ops, self.tau = self.build_copy_ops()
 
-            next_state_max_q = tf.reduce_sum(
-                self.target_q_values * tf.one_hot(online_actions,
-                                                 self.num_actions),
+        with tf.variable_scope('bellman_target'):
+            self.q_selected_actions = tf.reduce_sum(
+                self.online_q_values * tf.one_hot(self.selected_action_indicies,
+                                                  self.num_actions),
                 1
             )
 
-        else:
-            next_state_max_q = tf.reduce_max(
-                self.target_q_values,
-                reduction_indices=1,
-                keepdims=True
+
+            if self.double_q:
+                #  online net approximation of the next observation
+                #  creating this means we can avoid session calls
+
+                #  the action our online net would take in the next observation
+                online_actions = tf.argmax(self.online_next_obs_q, axis=1)
+
+                next_state_max_q = tf.reduce_sum(
+                    self.target_q_values * tf.one_hot(online_actions,
+                                                     self.num_actions),
+                    1
+                )
+
+            else:
+                next_state_max_q = tf.reduce_max(
+                    self.target_q_values,
+                    reduction_indices=1,
+                    keepdims=True
+                )
+
+            #  masking out the value of the next state for terminal states
+            self.next_state_max_q = tf.where(
+                self.terminal,
+                next_state_max_q,
+                tf.zeros_like(next_state_max_q)
             )
 
-        #  masking out the value of the next state for terminal states
-        self.next_state_max_q = tf.where(
-            self.terminal,
-            next_state_max_q,
-            tf.zeros_like(next_state_max_q)
-        )
+            self.bellman = self.reward + self.discount * self.next_state_max_q
 
-        self.bellman = self.reward + self.discount * self.next_state_max_q
-
-        error = tf.losses.huber_loss(
-            self.bellman,
-            self.q_selected_actions,
-            weights=1.0,
-            scope='huber_loss'
-        )
-
-        #  TODO support for prioritized experience repaly weights
-        loss = tf.reduce_mean(error)
-
-        learning_rate = 0.001
-        decay_learning_rate = True
-        gradient_norm_clip = 10
-
-        if decay_learning_rate:
-            learning_rate = tf.train.exponential_decay(
-                0.01,
-                global_step=self.learn_step_tensor,
-                decay_steps=total_steps,
-                decay_rate=0.96,
-                staircase=False,
-                name='learning_rate'
+        with tf.variable_scope('optimization'):
+            error = tf.losses.huber_loss(
+                self.bellman,
+                self.q_selected_actions,
+                weights=1.0,
+                scope='huber_loss'
             )
 
-        optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+            #  TODO support for prioritized experience repaly weights
+            loss = tf.reduce_mean(error)
 
-        if gradient_norm_clip:
-            grads_and_vars = optimizer.compute_gradients(loss, var_list=self.online_params)
+            learning_rate = 0.001
+            decay_learning_rate = True
+            gradient_norm_clip = 10
 
-            for idx, (grad, var) in enumerate(grads_and_vars):
-                if grad is not None:
-                    grads_and_vars[idx] = (tf.clip_by_norm(grad, gradient_norm_clip), var)
-            self.train_op = optimizer.apply_gradients(grads_and_vars)
+            if decay_learning_rate:
+                learning_rate = tf.train.exponential_decay(
+                    0.01,
+                    global_step=self.learn_step_tensor,
+                    decay_steps=self.total_steps,
+                    decay_rate=0.96,
+                    staircase=False,
+                    name='learning_rate'
+                )
 
-        else:
-            self.train_op = optimizer.minimize(loss, var_list=self.online_params)
+            optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+
+            if gradient_norm_clip:
+                with tf.variable_scope('gradient_clipping'):
+
+                    grads_and_vars = optimizer.compute_gradients(
+                        loss, 
+                        var_list=self.online_params
+                    )
+
+                    for idx, (grad, var) in enumerate(grads_and_vars):
+                        if grad is not None:
+                            grads_and_vars[idx] = (tf.clip_by_norm(grad, gradient_norm_clip), var)
+                    self.train_op = optimizer.apply_gradients(grads_and_vars)
+
+            else:
+                self.train_op = optimizer.minimize(loss, var_list=self.online_params)
 
         #  initialize the tensorflow variables
         self.sess.run(
@@ -274,6 +304,9 @@ if __name__ == '__main__':
             memory_type='deque',
             learning_rate=1.0
         )
+
+        ep_stats = EpisodeStats(sess, './ep_stats') 
+
         obs = env.reset()
 
         for step in range(20):
@@ -281,5 +314,8 @@ if __name__ == '__main__':
             next_obs, reward, done, info = env.step(act)
             agent.remember(obs, act, reward, next_obs, done)
             obs = next_obs
+            ep_stats.record_step(reward)
 
         agent.learn()
+
+        ep_stats.record_episode()
