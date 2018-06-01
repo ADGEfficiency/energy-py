@@ -20,6 +20,7 @@ from policies import e_greedy
 from utils import find_sub_array_in_2D_array as find_action
 from expt_utils import EpisodeStats
 
+
 class DQN(BaseAgent):
     """
     The new energy_py implementation of Deep Q-Network
@@ -35,7 +36,7 @@ class DQN(BaseAgent):
             discount=0.9,
             total_steps=10000,
             num_discrete_actions=20,
-            hiddens=(5, 5, 5),
+            nodes=(5, 5, 5),
             initial_epsilon=1.0,
             final_epsilon=0.05,
             epsilon_decay_fraction=0.3,
@@ -46,7 +47,7 @@ class DQN(BaseAgent):
         super().__init__(**kwargs)
 
         self.total_steps = total_steps
-        self.hiddens = hiddens
+        self.nodes = nodes
 
         self.epsilon_decay_fraction = epsilon_decay_fraction
         self.initial_epsilon = initial_epsilon
@@ -101,13 +102,26 @@ class DQN(BaseAgent):
 
     def build_acting_graph(self):
 
-        with tf.variable_scope('online', reuse=tf.AUTO_REUSE):
+        with tf.variable_scope('online') as scope:
+
             self.online_q_values = feed_forward(
+                'online_obs',
                 self.observation,
-                self.hiddens,
+                self.env.obs_space_shape,
+                self.nodes,
                 self.num_actions,
-                output_activation='linear',
             )
+
+            if self.double_q:
+                scope.reuse_variables()
+
+                self.online_next_obs_q = feed_forward(
+                    'online_next_obs',
+                    self.next_observation,
+                    self.env.obs_space_shape,
+                    self.nodes,
+                    self.num_actions,
+                )
 
         with tf.variable_scope('e_greedy_policy'):
             self.epsilon, self.policy = e_greedy(
@@ -133,20 +147,12 @@ class DQN(BaseAgent):
         """ Learning """
         with tf.variable_scope('target', reuse=False):
             self.target_q_values = feed_forward(
+                'target',
                 self.next_observation,
-                self.hiddens,
+                self.env.obs_space_shape,
+                self.nodes,
                 self.num_actions,
-                output_activation='linear',
             )
-
-        if self.double_q:
-            with tf.variable_scope('double_q_online', reuse=tf.AUTO_REUSE):
-                self.online_next_obs_q = feed_forward(
-                    self.next_observation,
-                    self.hiddens,
-                    self.num_actions,
-                    output_activation='linear',
-                 )
 
         self.copy_ops, self.tau = self.build_copy_ops()
 

@@ -8,78 +8,100 @@ import tensorflow.contrib.layers as layers
 
 import energy_py
 
-def fully_connected_layer(input_tensor, 
-                          nodes, 
-                          scope, 
-                          activation,
-                          layer_norm=False):
+
+def fully_connected_layer(scope,
+                          input_tensor,
+                          input_shape,
+                          output_nodes,
+                          activation='relu'):
     """
-    A single layer
+    Creates a single fully connected layer
 
-    Weights are initialized using Xavier-Glorot, biases at zero (these are the defaults )
+    args
+        scope (str) usually 'input_layer' or 'hidden_layer_2' etc
+        input_tensor (tensor)
+        input_shape (tuple or int)
+        output_nodes (int)
+        activation (str) currently support relu or linear
 
-    Activation function is done using a conditional to allow the layer norm before
-    the activation
+    To correctly name the variables and still allow variable sharing:
+    with tf.name_scope('online_network):
+        layer = fully_connected_layer('input_layer', ...)
 
     """
-    layer = layers.fully_connected(
-        input_tensor,
-        num_outputs=nodes,
-        activation_fn=None,
-        scope='{}'.format(scope),
-    )
+    #  feed input shape as a tuple for support for high dimensional inputs
+    if isinstance(input_shape, int):
+        input_shape = (input_shape,)
 
-    if layer_norm:
-        layer = layers.layer_norm(
-            layer,
-            center=True,
-            scale=True,
-            scope='{}_layer_norm'.format(scope),
+    with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
+        weights = tf.get_variable(
+            'weights',
+            shape=(*input_shape, output_nodes),
+            initializer=tf.contrib.layers.xavier_initializer()
+        )
+
+        bias = tf.get_variable(
+            'bias',
+            shape=(output_nodes),
+            initializer=tf.zeros_initializer()
+        )
+
+        layer = tf.add(
+            tf.matmul(input_tensor, weights),
+            bias,
+            name='layer'
         )
 
     if activation == 'relu':
-        layer = tf.nn.relu(
-            layer,
-            name='{}_activation'.format(scope))
+        return tf.nn.relu(layer)
 
     elif activation == 'linear':
-        pass
+        return layer
 
     else:
-        raise ValueError('Activation of {} not supported'.format(activation))
+        raise ValueError(
+            'Activation of {} not supported'.format(activation))
 
-    return layer
 
-
-def feed_forward(input_tensor,
+def feed_forward(scope,
+		 input_tensor,
+                 input_shape,
                  hiddens,
-                 num_outputs,
-                 hidden_activation='relu',
-                 output_activation='linear',
-                 layer_norm=False):
+                 output_nodes):
     """
-    Multiple layers - aka multilayer perceptron
+    Creates a feed forward neural network (aka multilayer perceptron)
 
+    args
+	scope (str)
+        input_tensor (tensor)
+        input_shape (tuple or int)
+        hiddens (list) has nodes per layer (includes input layer)
+        output_nodes (int)
     """
-    layer = input_tensor
-
-    for num, hidden in enumerate(hiddens):
-
+    with tf.name_scope(scope):
         layer = fully_connected_layer(
+            'input_layer',
+            input_tensor,
+            input_shape,
+            hiddens[0])
+
+        for layer_num, nodes in enumerate(hiddens[1:]):
+            layer = fully_connected_layer(
+                'hidden_layer_{}'.format(layer_num),
+                layer,
+                (hiddens[layer_num-1],),
+                nodes
+            )
+
+        output_layer = fully_connected_layer(
+            'output_layer',
             layer,
-            hidden,
-            'hidden_{}'.format(num),
-            activation=hidden_activation,
+            (hiddens[-1],),
+            output_nodes,
+            activation='linear'
         )
 
-    output = fully_connected_layer(
-        layer,
-        num_outputs,
-        'output_layer',
-        activation=output_activation,
-    )
-
-    return output
+    return output_layer
 
 
 def get_tf_params(scope):
@@ -93,6 +115,7 @@ def get_tf_params(scope):
 
 
 def make_copy_ops(parent, child, scope='copy_ops'):
+    print('making copy ops')
     copy_ops = []
 
     with tf.variable_scope(scope):
@@ -100,6 +123,7 @@ def make_copy_ops(parent, child, scope='copy_ops'):
 
         for p, c in zip(parent, child):
             assert p.name.split('/')[1:] == c.name.split('/')[1:]
+            print(p.name, c.name)
 
             new_value = tf.add(tf.multiply(p, tau),
                                tf.multiply(c, 1 - tau))
@@ -107,6 +131,7 @@ def make_copy_ops(parent, child, scope='copy_ops'):
             copy_ops.append(op)
 
     return copy_ops, tau
+
 
 def make_vars(num):
     variables = []
