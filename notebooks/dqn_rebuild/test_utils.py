@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-from utils import make_copy_ops
+from utils import make_copy_ops, find_sub_array_in_2D_array
 
 
 def make_vars(num):
@@ -48,3 +48,27 @@ def test_copy_ops():
             [online_params, target_params]
         )
         assert np.sum(online_vals) == np.sum(target_vals)
+
+discrete_actions = np.array([0.0 , 0.0,
+                             0.0 , 0.5,
+                             0.0, 1.0,
+                             0.0, 1.5,
+                             0.0, 2.0]).reshape(5, 2)
+test_sub_arrays = [
+    ([0.0, 2.0], 4),
+    ([0.0, 1.0], 2),
+    ([0.0, 0.0], 0),
+]
+
+from utils import find_sub_array_in_2D_array
+
+
+def test_np_find_sub_array():
+    for sub_array, true_index in test_sub_arrays:
+
+        sub_array = np.array(sub_array).reshape(2)
+
+        assert find_sub_array_in_2D_array(
+            sub_array, discrete_actions) == true_index
+
+
