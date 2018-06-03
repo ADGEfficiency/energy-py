@@ -124,7 +124,7 @@ def softmax_policy(q_values, temperature):
 
     samples = tf.multinomial(log_probs, num_samples=1)
 
-    return temperature, log_probs, entropy, samples
+    return softmax, log_probs, entropy, samples
 
 
 if __name__ == '__main__':

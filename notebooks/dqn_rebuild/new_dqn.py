@@ -7,6 +7,8 @@ todo
 - processors
 - logging
 - tensorboard
+- copy ops as an option
+- prioritized experience replay support
 
 """
 import numpy as np
@@ -166,10 +168,6 @@ class DQN(BaseAgent):
 
 
             if self.double_q:
-                #  online net approximation of the next observation
-                #  creating this means we can avoid session calls
-
-                #  the action our online net would take in the next observation
                 online_actions = tf.argmax(self.online_next_obs_q, axis=1)
 
                 next_state_max_q = tf.reduce_sum(
@@ -185,8 +183,6 @@ class DQN(BaseAgent):
                     reduction_indices=1,
                     keepdims=True
                 )
-
-            #  masking out the value of the next state for terminal states
 
             self.next_state_max_q = tf.where(
                 self.terminal,
@@ -205,7 +201,6 @@ class DQN(BaseAgent):
                 scope='huber_loss'
             )
 
-            #  TODO support for prioritized experience repaly weights
             loss = tf.reduce_mean(error)
 
             learning_rate = 0.001
@@ -299,6 +294,13 @@ class DQN(BaseAgent):
              self.terminal: batch['done']  #  should be ether done or terminal TODO
              }
         )
+
+        #  hardcoded for now
+        _ = self.sess.run(
+            self.copy_ops,
+            {self.tau: 0.001}
+        )
+
 
 if __name__ == '__main__':
     env = energy_py.make_env('CartPole')
