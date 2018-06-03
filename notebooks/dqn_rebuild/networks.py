@@ -2,11 +2,7 @@
 Functions to generate tensorflow neural network components
 """
 
-import numpy as np
 import tensorflow as tf
-import tensorflow.contrib.layers as layers
-
-import energy_py
 
 
 def fully_connected_layer(scope,
@@ -102,48 +98,3 @@ def feed_forward(scope,
         )
 
     return output_layer
-
-
-def get_tf_params(scope):
-    params = [p for p in tf.trainable_variables()
-              if p.name.startswith(scope)]
-
-    #  sort parameters list by the variable name
-    params = sorted(params, key=lambda var: var.name)
-
-    return params
-
-
-def make_copy_ops(parent, child, scope='copy_ops'):
-    print('making copy ops')
-    copy_ops = []
-
-    with tf.variable_scope(scope):
-        tau = tf.Variable(1.0, name='tau')
-
-        for p, c in zip(parent, child):
-            assert p.name.split('/')[1:] == c.name.split('/')[1:]
-            print(p.name, c.name)
-
-            new_value = tf.add(tf.multiply(p, tau),
-                               tf.multiply(c, 1 - tau))
-            op = c.assign(new_value)
-            copy_ops.append(op)
-
-    return copy_ops, tau
-
-
-def make_vars(num):
-    variables = []
-    for n in range(num):
-        variables.append(tf.get_variable(
-            'var_{}'.format(n),
-            shape=(6,),
-            initializer=tf.initializers.random_normal
-        )
-                         )
-    return variables
-
-
-if __name__ == '__main__':
-    pass

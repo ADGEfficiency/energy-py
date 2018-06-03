@@ -15,9 +15,10 @@ import tensorflow as tf
 import energy_py
 from energy_py.agents import BaseAgent
 
-from networks import feed_forward, make_copy_ops, get_tf_params
+from networks import feed_forward
 from policies import e_greedy
 from utils import find_sub_array_in_2D_array as find_action
+from utils import make_copy_ops, get_tf_params
 from expt_utils import EpisodeStats
 
 
@@ -174,7 +175,8 @@ class DQN(BaseAgent):
                 next_state_max_q = tf.reduce_sum(
                     self.target_q_values * tf.one_hot(online_actions,
                                                      self.num_actions),
-                    1
+                    axis=1,
+		    keepdims=True
                 )
 
             else:
@@ -185,10 +187,12 @@ class DQN(BaseAgent):
                 )
 
             #  masking out the value of the next state for terminal states
+
             self.next_state_max_q = tf.where(
                 self.terminal,
                 next_state_max_q,
-                tf.zeros_like(next_state_max_q)
+                tf.zeros_like(next_state_max_q),
+		name='terminal_mask'
             )
 
             self.bellman = self.reward + self.discount * self.next_state_max_q
