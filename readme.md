@@ -78,7 +78,7 @@ $ python setup.py install (using package)
 or
 $ python setup.py develop (developing package)
 
-$ pip install requirements.txt
+$ pip install --ignore-installed -r requirements.txt
 
 ```
 ## Project structure
