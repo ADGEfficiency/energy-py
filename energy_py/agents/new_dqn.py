@@ -12,7 +12,7 @@ import tensorflow as tf
 
 import energy_py
 
-from energy_py.agents import BaseAgent
+from energy_py.agents.agent import BaseAgent
 from energy_py.common.networks import feed_forward
 from energy_py.common.policies import e_greedy
 
@@ -67,6 +67,7 @@ class DQN(BaseAgent):
         self.num_actions = self.discrete_actions.shape[0]
 
         with tf.variable_scope('constants'):
+
             self.discount = tf.Variable(
                 initial_value=discount,
                 trainable=False,
@@ -80,7 +81,7 @@ class DQN(BaseAgent):
             )
 
         with tf.variable_scope('placeholders'):
-            self.discount = tf.Variable(
+
             self.observation = tf.placeholder(
                 shape=(None, *self.env.obs_space_shape),
                 dtype=tf.float32

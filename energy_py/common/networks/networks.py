@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from layers import fully_connected_layer
+from energy_py.common.networks.layers import fully_connected_layer
 
 
 def feed_forward(

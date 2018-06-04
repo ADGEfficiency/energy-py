@@ -6,11 +6,10 @@ learning agents.
 As the rules are predefined each agent is specific to an environment.
 """
 import logging
-import pdb
 
 import numpy as np
 
-from energy_py.agents import BaseAgent
+from energy_py.agents.agent import BaseAgent
 
 
 logger = logging.getLogger(__name__)

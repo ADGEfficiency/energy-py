@@ -15,10 +15,11 @@ tensorflow graph but all sess.run's are within the DQN agent class.
 
 import logging
 from random import random
+
 import numpy as np
 import tensorflow as tf
 
-from energy_py.agents import BaseAgent
+from energy_py.agents.agent import BaseAgent
 from energy_py import LinearScheduler
 
 

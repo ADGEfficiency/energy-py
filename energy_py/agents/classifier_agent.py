@@ -4,7 +4,7 @@ import operator
 
 import numpy as np
 
-from energy_py.agents import BaseAgent
+from energy_py.agents.agent import BaseAgent
 
 logger = logging.getLogger(__name__)
 
