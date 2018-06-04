@@ -1,8 +1,4 @@
 """
-checks
-- that the online and double q vars are always the same
-    check using both copy ops type comparisons and sess.runs
-
 todo
 - processors
 - logging
@@ -15,13 +11,13 @@ import numpy as np
 import tensorflow as tf
 
 import energy_py
-from energy_py.agents import BaseAgent
 
-from networks import feed_forward
-from policies import e_greedy
-from utils import find_sub_array_in_2D_array as find_action
-from utils import make_copy_ops, get_tf_params
-from expt_utils import EpisodeStats
+from energy_py.agents import BaseAgent
+from energy_py.common.networks import feed_forward
+from energy_py.common.policies import e_greedy
+
+from energy_py.utils import find_sub_array_in_2D_array as find_action
+from energy_py.tf_utils import make_copy_ops, get_tf_params
 
 
 class DQN(BaseAgent):

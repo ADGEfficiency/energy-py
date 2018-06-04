@@ -2,8 +2,7 @@ import logging
 
 import tensorflow as tf
 
-from energy_py.agents import memories
-from energy_py import processors, LinearScheduler
+from energy_py.common import memories 
 
 logger = logging.getLogger(__name__)
 

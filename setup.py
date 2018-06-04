@@ -8,7 +8,7 @@ setup(name='energy_py',
 
       version='0.2',
 
-      description='Reinforcement learning for energy systems',
+      description='reinforcement learning for energy systems',
 
       author='Adam Green',
 

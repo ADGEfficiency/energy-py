@@ -23,7 +23,7 @@ import pandas as pd
 import tensorflow as tf
 
 import energy_py
-from energy_py import save_args, ensure_dir, make_logger, TensorboardHepler
+from energy_py import save_args, ensure_dir, make_logger
 from energy_py import parse_ini, get_dataset_path
 
 

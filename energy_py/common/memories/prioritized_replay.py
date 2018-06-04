@@ -1,38 +1,19 @@
-"""
-Prioritized experience replay
-[Schaul et. al (2015) Prioritized Experience Replay](https://arxiv.org/abs/1511.05952).
-
-Some implementations used a binary heap search tree.  The Python standard library has a [collection of functions for heap queues](https://docs.python.org/3/library/heapq.html).
-
-[General intro to binary heaps with some Python implementation from scratch](http://interactivepython.org/runestone/static/pythonds/Trees/BinaryHeapImplementation.html).
-
-[Takoika/PrioritizedExperienceReplay implementation](https://github.com/takoika/PrioritizedExperienceReplay/blob/master/sum_tree.py).
-
-[TensorForce implementation](https://github.com/reinforceio/tensorforce/blob/master/tensorforce/core/memories/prioritized_replay.py)
-
-[Slide 20 of 'Deep Reinforcment Learning in TensorFlow'](http://web.stanford.edu/class/cs20si/lectures/slides_14.pdf) - samples using log-probabilities (not a search tree).
-
-Open AI Baselines implementation:
-[sum tree](https://github.com/openai/baselines/blob/master/baselines/common/segment_tree.py),
-[the memory object](https://github.com/openai/baselines/blob/master/baselines/deepq/replay_buffer.py) and
-[using the memory in DQN](https://github.com/openai/baselines/blob/master/baselines/deepq/simple.py).
-"""
-
 from collections import defaultdict
 import random
 import logging
 
 import numpy as np
 
-from energy_py.agents import Experience, Memory
+from memory import BaseMemory, Experience
 from energy_py import SumTree, MinTree, LinearScheduler
 
 logger = logging.getLogger(__name__)
 
 
-class PrioritizedReplay(Memory):
-
+class PrioritizedReplay(BaseMemory):
     """
+    Implementation of prioritized experience replay
+
     args
         size (int)
         obs_shape (tuple) used to reshape the observation np.array
@@ -42,6 +23,7 @@ class PrioritizedReplay(Memory):
             default of 0.6 or 0.7 suggested in Schaul et. al (2016)
             Hessel et. al (2017) Rainbow reccomends 0.5
 
+    Ref = Schaul et. al (2015) Prioritized Experience Replay
     """
     def __init__(self, size, obs_shape, action_shape, alpha=0.5):
 
