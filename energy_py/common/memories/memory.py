@@ -49,14 +49,15 @@ class BaseMemory(object):
                  action_shape):
 
         self.size = int(size)
-
-       self.shapes = {'observation': obs_shape,
-                       'action': action_shape,
-                       'reward': (1,),
-                       'next_observation': obs_shape,
-                       'done': (1,),
-                       'importance_weight': (1,),
-                       'indexes': (1,)}  #  does this do anything ? TODO
+        self.shapes = {
+            'observation': obs_shape,
+            'action': action_shape,
+            'reward': (1,),
+            'next_observation': obs_shape,
+            'done': (1,),
+            'importance_weight': (1,),
+            'indexes': (1,) #  does this do anything ? TODO
+        }
 
     def make_batch_dict(self, batch):
         """

@@ -1,7 +1,7 @@
 from collections import deque
 import random
 
-from memory import BaseMemory, Experience
+from energy_py.common.memories.memory import BaseMemory, Experience
 
 
 class DequeMemory(BaseMemory):

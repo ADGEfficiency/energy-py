@@ -1,6 +1,6 @@
 import numpy as np
 
-from memory import BaseMemory
+from energy_py.common.memories.memory import BaseMemory
 
 
 class ArrayMemory(BaseMemory):
