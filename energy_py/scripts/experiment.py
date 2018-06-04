@@ -226,136 +226,181 @@ def experiment(agent_config,
             runner.save_rewards()
 
 
-class Runner(object):
-    """
-    Class to help run experiments.
+class EpisodeStats(object):
 
-    args
-        tb_path (str)  path where tb logs sit
-        env_hist_path (str)  path to save env data too
-
-    Currently performs three roles
-        keeping track of rewards and writing to TensorBoard
-        keeping track of run time
-        processing environment history into hist.csv
-    """
     def __init__(self,
-                 rewards_path=None,
-                 tb_path=None,
-                 env_hist_path=None,
-                 state_info=None,
-                 observation_info=None):
+                 sess,
+                 tb_dir):
 
-        self.state_info = state_info
-        self.observation_info = observation_info
+        self.sess = sess
 
-        self.start_time = time.time()
-        self.logger_timer = logging.getLogger('runner')
+        ensure_dir(tb_dir)
+        self.writer = tf.summary.FileWriter(tb_dir, self.sess.graph)
 
-        if rewards_path:
-            self.rewards_path = rewards_path
+        self.reset()
 
-        if tb_path:
-            self.tb_helper = TensorboardHepler(tb_path)
+    def reset(self):
+        self.episode_rewards = []
+        self.current_episode_rewards = []
 
-        if env_hist_path:
-            self.env_hist_path = env_hist_path
+    def record_step(self, reward):
 
-        #  a list to hold the rewards for a single episode
-        self.ep_rewards = []
-        #  a list to hold rewards for all episodes
-        self.global_rewards = []
+        self.current_episode_rewards.append(reward)
 
-    def append(self, reward):
-        self.ep_rewards.append(reward)
+    def record_episode(self):
 
-    def calc_time(self):
-        return (time.time() - self.start_time) / 60
+        total_episode_reward = sum(self.current_episode_rewards)
+        self.episode_rewards.append(total_episode_reward)
 
-    def report(self, summaries, env_info=None):
-        """
-        The main functionality of this class
+        summaries = {
+            'total_episode_reward': total_episode_reward,
+            'avg_rew': np.mean(self.episode_rewards[-50:]),
+            'min_rew': np.min(self.episode_rewards[-50:]),
+            'max_rew': np.max(self.episode_rewards[-50:])
+        }
 
-        Should be run at the end of each episode
-        """
-        #  now episode has finished, we save our rewards onto our global list
-        self.global_rewards.append(sum(self.ep_rewards))
-        self.avg_rew = sum(self.global_rewards[-100:]) / len(self.global_rewards[-100:])
+        print('Recording episode {}'.format(len(self.episode_rewards)))
+        [print('{} - {}'.format(k, v)) for k, v in summaries.items()]
 
-        #  save the reward statisistics into the summary dictionary
-        summaries['ep_rew'] = sum(self.ep_rewards)
-        summaries['avg_rew'] = self.avg_rew
+        for tag, value in summaries.items():
+            summary = tf.Summary(
+                value=[tf.Summary.Value(tag=tag, simple_value=float(value))]
+            )
+            self.writer.add_summary(summary, len(self.episode_rewards))
 
-        #  add the run time so we can log the summaries
-        summaries['run_time'] = self.calc_time()
-        log = ['{} : {:02.1f}'.format(k, v) for k, v in summaries.items()]
-        self.logger_timer.info(log)
+        self.current_episode_rewards = []
 
-        #  save the environment info dictionary to a csv
-        if env_info:
-            self.save_env_hist(env_info, summaries['ep'])
 
-        #  send the summaries to TensorBoard
-        if hasattr(self, 'tb_helper'):
-            no_tb = ['ep', 'run_time', 'step']
-            _ = [summaries.pop(key) for key in no_tb]
-            self.tb_helper.add_summaries(summaries)
+#class Runner(object):
+#    """
+#    Class to help run experiments.
 
-        #  reset the counter for episode rewards
-        self.ep_rewards = []
+#    args
+#        tb_path (str)  path where tb logs sit
+#        env_hist_path (str)  path to save env data too
 
-    def save_rewards(self):
-        """
-        Saves the global rewards list to a csv
-        """
-        with open(self.rewards_path, 'w') as myfile:
-            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
-            wr.writerow(self.global_rewards)
+#    Currently performs three roles
+#        keeping track of rewards and writing to TensorBoard
+#        keeping track of run time
+#        processing environment history into hist.csv
+#    """
+#    def __init__(self,
+#                 rewards_path=None,
+#                 tb_path=None,
+#                 env_hist_path=None,
+#                 state_info=None,
+#                 observation_info=None):
 
-    def save_env_hist(self, env_info, episode):
-        """
-        Saves the environment info dictionary to a csv
+#        self.state_info = state_info
+#        self.observation_info = observation_info
 
-        args
-            env_info (dict) the info dict returned from env.step()
-            episode (int)
-        """
-        output = []
+#        self.start_time = time.time()
+#        self.logger_timer = logging.getLogger('runner')
 
-        for key, info in env_info.items():
+#        if rewards_path:
+#            self.rewards_path = rewards_path
 
-            if isinstance(info[0], np.ndarray):
-                df = pd.DataFrame(np.array(info).reshape(len(info), -1))
+#        if tb_path:
+#            self.tb_helper = TensorboardHepler(tb_path)
 
-                if key == 'observation' and self.observation_info:
-                    df.columns = ['{}_{}'.format(key, o)
-                                  for o in self.observation_info]
+#        if env_hist_path:
+#            self.env_hist_path = env_hist_path
 
-                elif key == 'next_observation' and self.observation_info:
-                    df.columns = ['{}_{}'.format(key, o)
-                                  for o in self.observation_info]
+#        #  a list to hold the rewards for a single episode
+#        self.ep_rewards = []
+#        #  a list to hold rewards for all episodes
+#        self.global_rewards = []
 
-                elif key == 'state' and self.state_info:
-                    df.columns = ['{}_{}'.format(key, s)
-                                  for s in self.state_info]
+#    def append(self, reward):
+#        self.ep_rewards.append(reward)
 
-                elif key == 'next_state' and self.state_info:
-                    df.columns = ['{}_{}'.format(key, s)
-                                  for s in self.state_info]
+#    def calc_time(self):
+#        return (time.time() - self.start_time) / 60
 
-                else:
-                    df.columns = ['{}_{}'.format(key, n)
-                                  for n in range(df.shape[1])]
+#    def report(self, summaries, env_info=None):
+#        """
+#        The main functionality of this class
 
-            else:
-                df = pd.DataFrame(info, columns=[key])
+#        Should be run at the end of each episode
+#        """
+#        #  now episode has finished, we save our rewards onto our global list
+#        self.global_rewards.append(sum(self.ep_rewards))
+#        self.avg_rew = sum(self.global_rewards[-100:]) / len(self.global_rewards[-100:])
 
-            output.append(df)
+#        #  save the reward statisistics into the summary dictionary
+#        summaries['ep_rew'] = sum(self.ep_rewards)
+#        summaries['avg_rew'] = self.avg_rew
 
-        output = pd.concat(output, axis=1)
+#        #  add the run time so we can log the summaries
+#        summaries['run_time'] = self.calc_time()
+#        log = ['{} : {:02.1f}'.format(k, v) for k, v in summaries.items()]
+#        self.logger_timer.info(log)
 
-        csv_path = os.path.join(self.env_hist_path,
-                                'ep_{}'.format(episode),
-                                'hist.csv')
-        ensure_dir(csv_path)
-        output.to_csv(csv_path)
+#        #  save the environment info dictionary to a csv
+#        if env_info:
+#            self.save_env_hist(env_info, summaries['ep'])
+
+#        #  send the summaries to TensorBoard
+#        if hasattr(self, 'tb_helper'):
+#            no_tb = ['ep', 'run_time', 'step']
+#            _ = [summaries.pop(key) for key in no_tb]
+#            self.tb_helper.add_summaries(summaries)
+
+#        #  reset the counter for episode rewards
+#        self.ep_rewards = []
+
+#    def save_rewards(self):
+#        """
+#        Saves the global rewards list to a csv
+#        """
+#        with open(self.rewards_path, 'w') as myfile:
+#            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+#            wr.writerow(self.global_rewards)
+
+#    def save_env_hist(self, env_info, episode):
+#        """
+#        Saves the environment info dictionary to a csv
+
+#        args
+#            env_info (dict) the info dict returned from env.step()
+#            episode (int)
+#        """
+#        output = []
+
+#        for key, info in env_info.items():
+
+#            if isinstance(info[0], np.ndarray):
+#                df = pd.DataFrame(np.array(info).reshape(len(info), -1))
+
+#                if key == 'observation' and self.observation_info:
+#                    df.columns = ['{}_{}'.format(key, o)
+#                                  for o in self.observation_info]
+
+#                elif key == 'next_observation' and self.observation_info:
+#                    df.columns = ['{}_{}'.format(key, o)
+#                                  for o in self.observation_info]
+
+#                elif key == 'state' and self.state_info:
+#                    df.columns = ['{}_{}'.format(key, s)
+#                                  for s in self.state_info]
+
+#                elif key == 'next_state' and self.state_info:
+#                    df.columns = ['{}_{}'.format(key, s)
+#                                  for s in self.state_info]
+
+#                else:
+#                    df.columns = ['{}_{}'.format(key, n)
+#                                  for n in range(df.shape[1])]
+
+#            else:
+#                df = pd.DataFrame(info, columns=[key])
+
+#            output.append(df)
+
+#        output = pd.concat(output, axis=1)
+
+#        csv_path = os.path.join(self.env_hist_path,
+#                                'ep_{}'.format(episode),
+#                                'hist.csv')
+#        ensure_dir(csv_path)
+#        output.to_csv(csv_path)

@@ -45,6 +45,9 @@ class DQN(BaseAgent):
             epsilon_decay_fraction=0.3,
             double_q=False,
             batch_size=64,
+            learning_rate=0.0001,
+            decay_learning_rate=True,
+            gradient_norm_clip=10,
             **kwargs):
 
         super().__init__(**kwargs)
@@ -58,13 +61,22 @@ class DQN(BaseAgent):
 
         self.double_q = double_q
         self.batch_size = batch_size
+        self.learning_rate = learning_rate
+        self.decay_learning_rate = decay_learning_rate
+        self.gradient_norm_clip = gradient_norm_clip
 
         self.discrete_actions = self.env.discretize_action_space(
             num_discrete_actions)
 
         self.num_actions = self.discrete_actions.shape[0]
 
-        with tf.variable_scope('discrete_actions_tensor'):
+        with tf.variable_scope('constants'):
+            self.discount = tf.Variable(
+                initial_value=discount,
+                trainable=False,
+                name='gamma'
+            )
+
             self.discrete_actions_tensor = tf.Variable(
                 initial_value=self.discrete_actions,
                 trainable=False,
@@ -73,10 +85,6 @@ class DQN(BaseAgent):
 
         with tf.variable_scope('placeholders'):
             self.discount = tf.Variable(
-                initial_value=discount,
-                trainable=False,
-                name='gamma')
-
             self.observation = tf.placeholder(
                 shape=(None, *self.env.obs_space_shape),
                 dtype=tf.float32
@@ -96,6 +104,7 @@ class DQN(BaseAgent):
             self.learn_step_tensor = tf.placeholder(
                 shape=(),
                 dtype=tf.int64,
+                trainable=False,
                 name='learn_step_tensor'
             )
 
@@ -146,8 +155,6 @@ class DQN(BaseAgent):
         )
 
     def build_learning_graph(self):
-
-        """ Learning """
         with tf.variable_scope('target', reuse=False):
             self.target_q_values = feed_forward(
                 'target',
@@ -203,13 +210,9 @@ class DQN(BaseAgent):
 
             loss = tf.reduce_mean(error)
 
-            learning_rate = 0.001
-            decay_learning_rate = True
-            gradient_norm_clip = 10
-
             if decay_learning_rate:
-                learning_rate = tf.train.exponential_decay(
-                    0.01,
+                self.learning_rate = tf.train.exponential_decay(
+                    self.learning_rate,
                     global_step=self.learn_step_tensor,
                     decay_steps=self.total_steps,
                     decay_rate=0.96,
@@ -219,17 +222,17 @@ class DQN(BaseAgent):
 
             optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
 
-            if gradient_norm_clip:
+            if self.gradient_norm_clip:
                 with tf.variable_scope('gradient_clipping'):
 
                     grads_and_vars = optimizer.compute_gradients(
-                        loss, 
+                        loss,
                         var_list=self.online_params
                     )
 
                     for idx, (grad, var) in enumerate(grads_and_vars):
                         if grad is not None:
-                            grads_and_vars[idx] = (tf.clip_by_norm(grad, gradient_norm_clip), var)
+                            grads_and_vars[idx] = (tf.clip_by_norm(grad, self.gradient_norm_clip), var)
                     self.train_op = optimizer.apply_gradients(grads_and_vars)
 
             else:

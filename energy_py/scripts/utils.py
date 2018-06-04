@@ -189,29 +189,39 @@ def save_args(config, path):
     return writer
 
 
-class TensorboardHepler(object):
+def rolling_window(a, size):
+    shape = a.shape[:-1] + (a.shape[-1] - size + 1, size)
+    strides = a.strides + (a. strides[-1],)
+    return np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides)
+
+
+def find_sub_array_in_2D_array(sub_array, array):
     """
-    Holds a FileWriter and method for adding summaries
+    Find the first occurence of a sub_array within a larger array
 
     args
-        logdir (path)
+        sub_array (np.array) ndim=1
+        array (np.array) ndim=2, shape=(num_samples, sub_array.shape[0])
+
+    i.e. 
+        sub_array = np.array([0.0, 2.0]).reshape(2)
+        array = np.array([0.0, 0.0,
+                          0.0, 1.0,
+                          0.0, 2.0).reshape(3, 2)
+        --> 2
+
+    Used for finding the index of an action within a list of all possible actions
     """
-    def __init__(self, logdir):
-        self.writer = tf.summary.FileWriter(logdir)
-        self.steps = 0
+    #  array making and shaping so that user could feed in a list and it
+    #  would work
+    sub_array = np.array(sub_array).reshape(array.shape[1])
 
-    def add_summaries(self, summaries):
-        """
-        Adds non-tensorflow data to tensorboard.
+    bools = rolling_window(sub_array, array.shape[1]) == array
 
-        args
-            summaries (dict)
-        """
-        self.steps += 1
-        for tag, var in summaries.items():
-            var = float(var)
-            summary = tf.Summary(value=[tf.Summary.Value(tag=tag,
-                                                         simple_value=var)])
-            self.writer.add_summary(summary, self.steps)
+    bools = np.all(
+        bools.reshape(array.shape[0], -1),
+        axis=1
+    )
 
-        self.writer.flush()
+    #  argmax finds the first true values
+    return np.argmax(bools)
