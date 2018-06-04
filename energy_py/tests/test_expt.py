@@ -10,11 +10,13 @@ test_cartpole_expt()
 import os
 
 import energy_py
-from energy_py.agents.dqn import DQN
-from energy_py import experiment, make_paths, get_dataset_path
+from energy_py import experiment, get_dataset_path
+from energy_py.scripts.experiment import make_paths
 
 TOTAL_STEPS = 200
+
 PATHS = make_paths('results')
+
 AGENT_CONFIG = {'agent_id': 'DQN',
                 'discount': 0.97,
                 'tau': 0.001,
@@ -24,7 +26,7 @@ AGENT_CONFIG = {'agent_id': 'DQN',
                 'learning_rate': 0.0001,
                 'epsilon_decay_fraction': 0.3,
                 'memory_fraction': 0.15,
-                'memory_type': 'priority',
+                'memory_type': 'deque',
                 'double_q': True,
                 'process_observation': 'normalizer',
                 'process_target': 'standardizer'}

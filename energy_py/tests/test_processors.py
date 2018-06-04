@@ -1,13 +1,14 @@
 import numpy as np
 
-from energy_py import Normalizer, Standardizer
+from energy_py.scripts.processors import Normalizer, Standardizer
+
 
 #  make a batch with one dimensional samples
 batch = np.random.rand(10, 6)
 
 def test_normalizer():
     norm = Normalizer(use_history=True)
-    
+
     _ = norm.transform(batch[1:5])
     _ = norm.transform(batch[5:])
 

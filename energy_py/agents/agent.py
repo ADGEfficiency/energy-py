@@ -27,7 +27,7 @@ class BaseAgent(object):
     def __init__(self,
                  sess,
                  env,
-                 memory_type='priority',
+                 memory_type='deque',
                  memory_length=10000,
                  min_reward=-10,
                  max_reward=10,

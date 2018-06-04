@@ -23,8 +23,9 @@ import pandas as pd
 import tensorflow as tf
 
 import energy_py
-from energy_py import save_args, ensure_dir, make_logger
-from energy_py import parse_ini, get_dataset_path
+from energy_py.scripts.utils import save_args, ensure_dir, make_logger
+from energy_py.scripts.utils import parse_ini
+from energy_py.experiments.datasets import get_dataset_path
 
 
 logger = logging.getLogger(__name__)
@@ -159,7 +160,7 @@ def experiment(agent_config,
 
     Agent and environment are created from config dictionaries.
     """
-    #  start a new tensorflow session
+    tf.reset_default_graph()
     with tf.Session() as sess:
 
         #  optionally set random seeds
@@ -190,8 +191,6 @@ def experiment(agent_config,
         runner = Runner(rewards_path=paths['ep_rewards'],
                         tb_path=paths['tb_rl'],
                         env_hist_path=paths['env_histories'])
-                        # state_info=env.state_info,
-                        # observation_info=env.observation_info)
 
         #  outer while loop runs through multiple episodes
         step, episode = 0, 0
