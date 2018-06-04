@@ -13,8 +13,8 @@ import tensorflow as tf
 
 import energy_py
 
-from utils import get_tf_params
-from new_dqn import DQN
+from energy_py.scripts.tf_utils import get_tf_params
+from energy_py.agents import NewDQN as DQN
 
 
 def setup_agent(sess, double_q=False):
@@ -40,6 +40,7 @@ def setup_agent(sess, double_q=False):
         memory_type='deque',
         learning_rate=1.0,
         double_q=double_q,
+        update_target_net_steps=100,
     )
 
     for step in range(48):

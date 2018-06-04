@@ -44,6 +44,8 @@ class DQN(BaseAgent):
             learning_rate=0.0001,
             decay_learning_rate=True,
             gradient_norm_clip=10,
+            update_target_net_steps=1,
+            tau=0.001,
             **kwargs):
 
         super().__init__(**kwargs)
@@ -57,9 +59,13 @@ class DQN(BaseAgent):
 
         self.double_q = double_q
         self.batch_size = batch_size
+
         self.learning_rate = learning_rate
         self.decay_learning_rate = decay_learning_rate
         self.gradient_norm_clip = gradient_norm_clip
+
+        self.update_target_net_steps = update_target_net_steps
+        self.tau_val = tau
 
         self.discrete_actions = self.env.discretize_action_space(
             num_discrete_actions)
@@ -101,7 +107,6 @@ class DQN(BaseAgent):
             self.learn_step_tensor = tf.placeholder(
                 shape=(),
                 dtype=tf.int64,
-                trainable=False,
                 name='learn_step_tensor'
             )
 
@@ -207,7 +212,7 @@ class DQN(BaseAgent):
 
             loss = tf.reduce_mean(error)
 
-            if decay_learning_rate:
+            if self.decay_learning_rate:
                 self.learning_rate = tf.train.exponential_decay(
                     self.learning_rate,
                     global_step=self.learn_step_tensor,
@@ -217,7 +222,7 @@ class DQN(BaseAgent):
                     name='learning_rate'
                 )
 
-            optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+            optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
 
             if self.gradient_norm_clip:
                 with tf.variable_scope('gradient_clipping'):
@@ -295,11 +300,11 @@ class DQN(BaseAgent):
              }
         )
 
-        #  hardcoded for now
-        _ = self.sess.run(
-            self.copy_ops,
-            {self.tau: 0.001}
-        )
+        if self.learn_step % self.update_target_net_steps == 0:
+            _ = self.sess.run(
+                self.copy_ops,
+                {self.tau: self.tau_val}
+            )
 
 
 if __name__ == '__main__':

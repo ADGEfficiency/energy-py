@@ -2,7 +2,7 @@ import logging
 
 import tensorflow as tf
 
-from energy_py.common import memories 
+from energy_py.common.memories import memory_register
 
 logger = logging.getLogger(__name__)
 
@@ -50,18 +50,20 @@ class BaseAgent(object):
 
         #  sending total_steps and initial_random into the memory init
         self.memory_type = memory_type
-        self.memory = memories[memory_type](memory_length,
-                                            self.obs_shape,
-                                            self.action_shape)
+
+        self.memory = memory_register[memory_type](
+            memory_length,
+            self.obs_shape,
+            self.action_shape
+        )
+
         #  reward clipping
         self.min_reward = min_reward
         self.max_reward = max_reward
 
         #  keep two step counters internally in the agent
-        #  start at -1 becuase we iterate them before the agent
-        #  has a chance to run it's own _act or _learn
-        self.act_step = -1
-        self.learn_step = -1
+        self.act_step = 0
+        self.learn_step = 0
 
         #  optional objects to process arrays before they hit neural networks
         if observation_processor:
