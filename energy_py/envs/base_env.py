@@ -7,7 +7,9 @@ import logging
 import numpy as np
 
 import energy_py
-from energy_py import ContinuousSpace, DiscreteSpace, GlobalSpace, load_csv
+from energy_py.scripts.spaces import ContinuousSpace, DiscreteSpace, GlobalSpace
+from energy_py.scripts.utils import load_csv
+
 
 logger = logging.getLogger(__name__)
 
