@@ -3,3 +3,4 @@ from energy_py.envs import make_env
 
 from energy_py.common.memories import memory_register
 from energy_py.common.policies import policy_register
+from energy_py.common.networks import feed_forward
