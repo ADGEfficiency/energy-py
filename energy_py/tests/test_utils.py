@@ -1,7 +1,9 @@
 import numpy as np
 import tensorflow as tf
 
-from utils import make_copy_ops, find_sub_array_in_2D_array
+from energy_py.scripts.utils import find_sub_array_in_2D_array
+
+from energy_py.scripts.tf_utils import make_copy_ops
 
 
 def make_vars(num):
@@ -60,7 +62,6 @@ test_sub_arrays = [
     ([0.0, 0.0], 0),
 ]
 
-from utils import find_sub_array_in_2D_array
 
 
 def test_np_find_sub_array():
