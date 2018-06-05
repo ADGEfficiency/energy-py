@@ -75,7 +75,11 @@ class BaseAgent(object):
         if target_processor:
             self.target_processor = processors[target_processor]()
 
-        self.writer = tf.summary.FileWriter(act_path)
+        self.act_summaries = []
+        self.act_writer = tf.summary.FileWriter(act_path)
+
+        self.learn_summaries = []
+        self.learn_writer = tf.summary.FileWriter(learn_path)
 
     def _reset(self): raise NotImplementedError
 

@@ -233,18 +233,26 @@ class DQN(BaseAgent):
                     for idx, (grad, var) in enumerate(grads_and_vars):
                         if grad is not None:
                             grads_and_vars[idx] = (tf.clip_by_norm(grad, self.gradient_norm_clip), var)
+
+                            self.learn_summaries.append(tf.summary.histogram(
+                                '{}_gradient'.format(var.name),
+                                grad
+                            )
+                                                  )
+
                     self.train_op = optimizer.apply_gradients(grads_and_vars)
 
             else:
                 self.train_op = optimizer.minimize(loss, var_list=self.online_params)
 
         #  summaries
-        self.summaries = [tf.summary.scalar('learning_rate',
+        self.act_summaries.extend([tf.summary.scalar('learning_rate',
                                             self.learning_rate),
                           tf.summary.scalar('epsilon',
                                             self.epsilon)
-                          ]
-        self.summaries = tf.summary.merge(self.summaries)
+                               ])
+        self.act_summaries = tf.summary.merge(self.act_summaries)
+        self.learn_summaries = tf.summary.merge(self.learn_summaries)
 
         #  initialize the tensorflow variables
         self.sess.run(
@@ -266,13 +274,13 @@ class DQN(BaseAgent):
         Selecting an action based on an observation
         """
         action, summary = self.sess.run(
-            [self.policy, self.summaries],
+            [self.policy, self.act_summaries],
             {self.learn_step_tensor: self.learn_step,
              self.observation: observation}
         )
 
-        self.writer.add_summary(summary, self.act_step)
-        self.writer.flush()
+        self.act_writer.add_summary(summary, self.act_step)
+        self.act_writer.flush()
 
         return action.reshape(1, *self.env.action_space_shape)
 
@@ -293,8 +301,8 @@ class DQN(BaseAgent):
                 find_action(np.array(action).reshape(-1), self.discrete_actions)
             )
 
-        _ = self.sess.run(
-            self.train_op,
+        _, summary = self.sess.run(
+            [self.train_op, self.learn_summaries],
             {self.learn_step_tensor: self.learn_step,
              self.observation: batch['observation'],
              self.selected_action_indicies: indicies,
@@ -303,6 +311,8 @@ class DQN(BaseAgent):
              self.terminal: batch['done']  #  should be ether done or terminal TODO
              }
         )
+        self.learn_writer.add_summary(summary, self.learn_step)
+        self.learn_writer.flush()
 
         if self.learn_step % self.update_target_net_steps == 0:
             _ = self.sess.run(
@@ -317,7 +327,7 @@ if __name__ == '__main__':
     env = energy_py.make_env('CartPole')
     obs = env.observation_space.sample()
     discount = 0.95
-    total_steps = 40000
+    total_steps = 400000
 
     with tf.Session() as sess:
         agent = DQN(
@@ -327,7 +337,8 @@ if __name__ == '__main__':
             discount=discount,
             memory_type='deque',
             learning_rate=0.01,
-            act_path='./act_tb'
+            act_path='./act_tb',
+            learn_path='./learn_tb'
         )
         step = 0
         from energy_py.scripts.experiment import Runner
