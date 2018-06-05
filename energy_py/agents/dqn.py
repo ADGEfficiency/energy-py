@@ -326,7 +326,7 @@ if __name__ == '__main__':
             total_steps=total_steps,
             discount=discount,
             memory_type='deque',
-            learning_rate=1.0,
+            learning_rate=0.01,
             act_path='./act_tb'
         )
         step = 0
