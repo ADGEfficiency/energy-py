@@ -238,6 +238,14 @@ class DQN(BaseAgent):
             else:
                 self.train_op = optimizer.minimize(loss, var_list=self.online_params)
 
+        #  summaries
+        self.summaries = [tf.summary.scalar('learning_rate',
+                                            self.learning_rate),
+                          tf.summary.scalar('epsilon',
+                                            self.epsilon)
+                          ]
+        self.summaries = tf.summary.merge(self.summaries)
+
         #  initialize the tensorflow variables
         self.sess.run(
             tf.global_variables_initializer()
@@ -257,11 +265,14 @@ class DQN(BaseAgent):
         """
         Selecting an action based on an observation
         """
-        action = self.sess.run(
-            self.policy,
+        action, summary = self.sess.run(
+            [self.policy, self.summaries],
             {self.learn_step_tensor: self.learn_step,
              self.observation: observation}
         )
+
+        self.writer.add_summary(summary, self.act_step)
+        self.writer.flush()
 
         return action.reshape(1, *self.env.action_space_shape)
 
@@ -315,7 +326,8 @@ if __name__ == '__main__':
             total_steps=total_steps,
             discount=discount,
             memory_type='deque',
-            learning_rate=1.0
+            learning_rate=1.0,
+            act_path='./act_tb'
         )
         step = 0
         from energy_py.scripts.experiment import Runner

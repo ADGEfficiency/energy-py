@@ -75,12 +75,7 @@ class BaseAgent(object):
         if target_processor:
             self.target_processor = processors[target_processor]()
 
-        #  optional tensorflow FileWriters for acting and learning
-        if act_path and hasattr(self, 'sess'):
-            self.acting_writer = tf.summary.FileWriter(act_path)
-
-        if learn_path and hasattr(self, 'sess'):
-            self.learning_writer = tf.summary.FileWriter(learn_path)
+        self.writer = tf.summary.FileWriter(act_path)
 
     def _reset(self): raise NotImplementedError
 

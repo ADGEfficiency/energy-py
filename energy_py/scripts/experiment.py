@@ -266,16 +266,17 @@ class Runner(object):
             'min_rew': np.min(self.episode_rewards[-50:]),
             'max_rew': np.max(self.episode_rewards[-50:])
         }
+        log_string = 'Episode {} step {} {}%'.format(
+            len(self.episode_rewards),
+            self.step,
+            self.total_steps / self.step
+        )
+        #  repeated code here! TODO
+        self.logger.debug(log_string)
+        [self.logger.debug('{} - {}'.format(k, v)) for k, v in summaries.items()]
 
         if self.step % self.log_freq == 0:
-            log_string = 'Episode {} step {} {}%'.format(
-                len(self.episode_rewards),
-                self.step,
-                self.total_steps / self.step
-            )
-
             self.logger.info(log_string)
-
             [self.logger.info('{} - {}'.format(k, v)) for k, v in summaries.items()]
 
         for tag, value in summaries.items():
