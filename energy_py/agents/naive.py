@@ -24,19 +24,17 @@ class NaiveBatteryAgent(BaseAgent):
         """
         args
             env (object)
-            discount (float)
         """
-        #  find the integer index of the hour in the observation
-        self.hour_index = self.observation_info.index('D_hour')
-
         #  calling init method of the parent Base_Agent class
-        super().__init__(env, discount)
+        super().__init__(env)
 
-    def _act(self, **kwargs):
+        #  find the integer index of the hour in the observation
+        self.hour_index = self.env.observation_info.index('C_hour')
+
+    def _act(self, observation):
         """
 
         """
-        observation = kwargs['observation']
         #  index the observation at 0 because observation is
         #  shape=(num_samples, observation_length)
         hour = observation[0][self.hour_index]
