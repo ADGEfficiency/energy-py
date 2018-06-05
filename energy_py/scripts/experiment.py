@@ -220,27 +220,40 @@ def experiment(agent_config,
 
 
 class Runner(object):
+    """
+    Giving the runner total steps allows a percent of expt stat - very useful
+    Also can control how often it logs
+    """
 
     def __init__(self,
                  sess,
-                 paths):
+                 paths,
+                 total_steps):
 
         self.sess = sess
-
         self.rewards_path = paths['ep_rewards']
         self.tb_path = paths['tb_rl']
+        self.total_steps = total_steps
+        self.log_freq = 500 
 
         self.writer = tf.summary.FileWriter(self.tb_path, self.sess.graph)
+
+        #  give its own logger so we can differentiate from logs in 
+        #  other code in this script.  maybe means this should 
+        #  be somewhere else TODO
+        self.logger = logging.getLogger('runner')
 
         self.reset()
 
     def reset(self):
         self.episode_rewards = []
         self.current_episode_rewards = []
+        self.step = 0
 
     def record_step(self, reward):
 
         self.current_episode_rewards.append(reward)
+        self.step += 1
 
     def record_episode(self, env_info=None):
 
@@ -254,8 +267,16 @@ class Runner(object):
             'max_rew': np.max(self.episode_rewards[-50:])
         }
 
-        print('Recording episode {}'.format(len(self.episode_rewards)))
-        [print('{} - {}'.format(k, v)) for k, v in summaries.items()]
+        if self.step % self.log_freq == 0:
+            log_string = 'Episode {} step {} {}%'.format(
+                len(self.episode_rewards),
+                self.step,
+                self.total_steps / self.step
+            )
+
+            self.logger.info(log_string)
+
+            [self.logger.info('{} - {}'.format(k, v)) for k, v in summaries.items()]
 
         for tag, value in summaries.items():
             summary = tf.Summary(

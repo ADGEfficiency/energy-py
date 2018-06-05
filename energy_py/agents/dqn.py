@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import tensorflow as tf
 
@@ -10,6 +12,7 @@ from energy_py.common.policies import epsilon_greedy_policy
 from energy_py.scripts.utils import find_sub_array_in_2D_array as find_action
 from energy_py.scripts.tf_utils import make_copy_ops, get_tf_params
 
+logger = logging.getLogger(__name__)
 
 class DQN(BaseAgent):
     """
@@ -298,26 +301,38 @@ class DQN(BaseAgent):
 
 
 if __name__ == '__main__':
+    from energy_py.scripts.utils import make_logger
+    make_logger({'info_log': 'info.log', 'debug_log': 'debug.log'})
     env = energy_py.make_env('CartPole')
     obs = env.observation_space.sample()
     discount = 0.95
+    total_steps = 40000
 
     with tf.Session() as sess:
         agent = DQN(
             sess=sess,
             env=env,
-            total_steps=10,
+            total_steps=total_steps,
             discount=discount,
             memory_type='deque',
             learning_rate=1.0
         )
-
-        obs = env.reset()
-
-        for step in range(20):
-            act = agent.act(obs)
-            next_obs, reward, done, info = env.step(act)
-            agent.remember(obs, act, reward, next_obs, done)
-            obs = next_obs
-
-        agent.learn()
+        step = 0
+        from energy_py.scripts.experiment import Runner
+        runner = Runner(sess, {'tb_rl': './tb_rl',
+                               'ep_rewards': './rewards.csv'},
+                        total_steps=total_steps
+                        )
+        while step < total_steps:
+            done = False
+            obs = env.reset()
+            while not done:
+                total_step = 0
+                act = agent.act(obs)
+                next_obs, reward, done, info = env.step(act)
+                runner.record_step(reward)
+                agent.remember(obs, act, reward, next_obs, done)
+                obs = next_obs
+                step += 1
+                agent.learn()
+            runner.record_episode()

@@ -18,7 +18,7 @@ from energy_py import experiment, make_expt_parser, make_paths, make_logger
 
 if __name__ == '__main__':
     args = make_expt_parser()
-    TOTAL_STEPS = 1200000
+    TOTAL_STEPS = 100000
 
     agent_config = {'agent_id': 'DQN',
                     'discount': 0.99,
@@ -26,20 +26,22 @@ if __name__ == '__main__':
                     'total_steps': TOTAL_STEPS,
                     'batch_size': 32,
                     'layers': (25, 25, 25),
-                    'learning_rate': 0.0001,
+                    'learning_rate': 0.01,
                     'epsilon_decay_fraction': 0.5,
                     'memory_fraction': 0.15,
-                    'memory_type': 'priority',
-                    'double_q': False,
+                    'memory_type': 'deque',
+                    'double_q': True,
                     'process_target': 'normalizer'}
 
-    env_config = {'env_id': 'Flex-v1',
-                  'dataset_name': args.dataset_name,
-                  'flex_size': 0.02,
-                  'max_flex_time': 6,
-                  'relax_time': 0,
-                  'episode_length': 96,
-                  'episode_sample': 'random'}
+    env_config = {'env_id': 'Cartpole'}
+
+    # env_config = {'env_id': 'Flex-v1',
+    #               'dataset_name': args.dataset_name,
+    #               'flex_size': 0.02,
+    #               'max_flex_time': 6,
+    #               'relax_time': 0,
+    #               'episode_length': 96,
+    #               'episode_sample': 'random'}
 
     # env_config = {'env_id': 'Battery',
     #               'dataset_name': args.dataset_name,
