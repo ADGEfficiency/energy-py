@@ -109,6 +109,7 @@ class BaseAgent(object):
             action (np array) shape=(1, num_actions)
         """
         logger.debug('Agent is acting')
+        self.act_step += 1
 
         #  some environments (i.e. gym) return observations as flat arrays
         #  energy_py agents use arrays of shape(batch_size, *shape)
@@ -116,8 +117,6 @@ class BaseAgent(object):
 
         if hasattr(self, 'observation_processor'):
             observation = self.observation_processor.transform(observation)
-
-        self.act_step += 1
 
         return self._act(observation)
 

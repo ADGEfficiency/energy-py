@@ -92,6 +92,7 @@ The design philosophies of energy_py
 - simple class heirarchy structure (maximum of two levels (i.e. parent child)
 - utilize Python standard library (deques, namedtuples etc) where possible
 - utilize TensorFlow & TensorBoard
+- provide sensible defaults for args
 
 ### Agents
 Agents are the learners and decision makers.  energy_py supports simpler heuristic (i.e. fully random) agents, which are

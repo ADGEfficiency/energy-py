@@ -13,17 +13,12 @@ from energy_py.scripts.tf_utils import make_copy_ops, get_tf_params
 
 class DQN(BaseAgent):
     """
-    The new energy_py implementation of Deep Q-Network
-
-    BaseAgent args (passed as **kwargs)
-
-    DQN args
-
+    The energy_py implementation of Deep Q-Network
+    aka Q-Learning with experience replay and a target network
     """
-
     def __init__(
             self,
-            discount=0.9,
+            discount=0.95,
             total_steps=10000,
             num_discrete_actions=20,
             nodes=(5, 5, 5),
@@ -85,15 +80,24 @@ class DQN(BaseAgent):
             )
 
             self.selected_action_indicies = tf.placeholder(
-                shape=(None), dtype=tf.int64)
+                shape=(None),
+                dtype=tf.int64
+            )
 
-            self.reward = tf.placeholder(shape=(None), dtype=tf.float32)
+            self.reward = tf.placeholder(
+                shape=(None),
+                dtype=tf.float32
+            )
 
             self.next_observation = tf.placeholder(
                 shape=(None, *self.env.obs_space_shape),
-                dtype=tf.float32)
+                dtype=tf.float32
+            )
 
-            self.terminal = tf.placeholder(shape=(None), dtype=tf.bool)
+            self.terminal = tf.placeholder(
+                shape=(None),
+                dtype=tf.bool
+            )
 
             self.learn_step_tensor = tf.placeholder(
                 shape=(),
@@ -248,18 +252,13 @@ class DQN(BaseAgent):
 
     def _act(self, observation):
         """
-
-        Use the learn_step to decay epsilon, as we want to stop exploring
-        only after we start learning
+        Selecting an action based on an observation
         """
-
         action = self.sess.run(
             self.policy,
             {self.learn_step_tensor: self.learn_step,
              self.observation: observation}
         )
-
-        self.act_step += 1
 
         return action.reshape(1, *self.env.action_space_shape)
 
@@ -313,8 +312,6 @@ if __name__ == '__main__':
             learning_rate=1.0
         )
 
-        ep_stats = EpisodeStats(sess, './ep_stats') 
-
         obs = env.reset()
 
         for step in range(20):
@@ -322,8 +319,5 @@ if __name__ == '__main__':
             next_obs, reward, done, info = env.step(act)
             agent.remember(obs, act, reward, next_obs, done)
             obs = next_obs
-            ep_stats.record_step(reward)
 
         agent.learn()
-
-        ep_stats.record_episode()

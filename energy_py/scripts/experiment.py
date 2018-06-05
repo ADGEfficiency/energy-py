@@ -188,9 +188,7 @@ def experiment(agent_config,
         save_args(agent_config, path=paths['agent_args'])
 
         #  runner helps to manage our experiment
-        runner = Runner(rewards_path=paths['ep_rewards'],
-                        tb_path=paths['tb_rl'],
-                        env_hist_path=paths['env_histories'])
+        runner = Runner(sess, paths)
 
         #  outer while loop runs through multiple episodes
         step, episode = 0, 0
@@ -209,32 +207,30 @@ def experiment(agent_config,
                 #  store the experience
                 agent.remember(observation, action, reward,
                                next_observation, done)
+                runner.record_step(reward)
                 #  moving to the next time step
                 observation = next_observation
-                runner.append(reward)
 
                 #  fill the memory up halfway before we learn
+                #  TODO the agent should decide what to do internally here
                 if step > int(agent.memory.size * 0.5):
                     train_info = agent.learn()
 
-            runner.report(summaries={'ep': episode,
-                                     'step': step},
-                          env_info=info)
-
-            #  save the episode rewards as a csv
-            runner.save_rewards()
+            runner.record_episode(env_info=info)
 
 
-class EpisodeStats(object):
+class Runner(object):
 
     def __init__(self,
                  sess,
-                 tb_dir):
+                 paths):
 
         self.sess = sess
 
-        ensure_dir(tb_dir)
-        self.writer = tf.summary.FileWriter(tb_dir, self.sess.graph)
+        self.rewards_path = paths['ep_rewards']
+        self.tb_path = paths['tb_rl']
+
+        self.writer = tf.summary.FileWriter(self.tb_path, self.sess.graph)
 
         self.reset()
 
@@ -246,7 +242,7 @@ class EpisodeStats(object):
 
         self.current_episode_rewards.append(reward)
 
-    def record_episode(self):
+    def record_episode(self, env_info=None):
 
         total_episode_reward = sum(self.current_episode_rewards)
         self.episode_rewards.append(total_episode_reward)
@@ -267,7 +263,64 @@ class EpisodeStats(object):
             )
             self.writer.add_summary(summary, len(self.episode_rewards))
 
+        with open(self.rewards_path, 'w') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            wr.writerow(self.episode_rewards)
+
         self.current_episode_rewards = []
+
+        # if env_info:
+        #     self.save_env_hist(env_info, len(self.episode_rewards))
+
+    def save_env_hist(self, env_info, episode):
+        """
+        TODO this should maybe be in the environment????
+        Saves the environment info dictionary to a csv
+
+        args
+            env_info (dict) the info dict returned from env.step()
+            episode (int)
+        """
+        output = []
+
+        for key, info in env_info.items():
+
+           if isinstance(info[0], np.ndarray):
+               df = pd.DataFrame(np.array(info).reshape(len(info), -1))
+
+               if key == 'observation' and self.observation_info:
+                   df.columns = ['{}_{}'.format(key, o)
+                                 for o in self.observation_info]
+
+               elif key == 'next_observation' and self.observation_info:
+                   df.columns = ['{}_{}'.format(key, o)
+                                 for o in self.observation_info]
+
+               elif key == 'state' and self.state_info:
+                   df.columns = ['{}_{}'.format(key, s)
+                                 for s in self.state_info]
+
+               elif key == 'next_state' and self.state_info:
+                   df.columns = ['{}_{}'.format(key, s)
+                                 for s in self.state_info]
+
+               else:
+                   df.columns = ['{}_{}'.format(key, n)
+                                 for n in range(df.shape[1])]
+
+           else:
+               df = pd.DataFrame(info, columns=[key])
+
+           output.append(df)
+
+        output = pd.concat(output, axis=1)
+
+        csv_path = os.path.join(self.env_hist_path,
+                               'ep_{}'.format(episode),
+                               'hist.csv')
+        ensure_dir(csv_path)
+        output.to_csv(csv_path)
+
 
 
 #class Runner(object):
@@ -356,50 +409,3 @@ class EpisodeStats(object):
 #            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
 #            wr.writerow(self.global_rewards)
 
-#    def save_env_hist(self, env_info, episode):
-#        """
-#        Saves the environment info dictionary to a csv
-
-#        args
-#            env_info (dict) the info dict returned from env.step()
-#            episode (int)
-#        """
-#        output = []
-
-#        for key, info in env_info.items():
-
-#            if isinstance(info[0], np.ndarray):
-#                df = pd.DataFrame(np.array(info).reshape(len(info), -1))
-
-#                if key == 'observation' and self.observation_info:
-#                    df.columns = ['{}_{}'.format(key, o)
-#                                  for o in self.observation_info]
-
-#                elif key == 'next_observation' and self.observation_info:
-#                    df.columns = ['{}_{}'.format(key, o)
-#                                  for o in self.observation_info]
-
-#                elif key == 'state' and self.state_info:
-#                    df.columns = ['{}_{}'.format(key, s)
-#                                  for s in self.state_info]
-
-#                elif key == 'next_state' and self.state_info:
-#                    df.columns = ['{}_{}'.format(key, s)
-#                                  for s in self.state_info]
-
-#                else:
-#                    df.columns = ['{}_{}'.format(key, n)
-#                                  for n in range(df.shape[1])]
-
-#            else:
-#                df = pd.DataFrame(info, columns=[key])
-
-#            output.append(df)
-
-#        output = pd.concat(output, axis=1)
-
-#        csv_path = os.path.join(self.env_hist_path,
-#                                'ep_{}'.format(episode),
-#                                'hist.csv')
-#        ensure_dir(csv_path)
-#        output.to_csv(csv_path)
