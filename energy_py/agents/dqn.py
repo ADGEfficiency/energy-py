@@ -79,27 +79,32 @@ class DQN(BaseAgent):
 
             self.observation = tf.placeholder(
                 shape=(None, *self.env.obs_space_shape),
-                dtype=tf.float32
+                dtype=tf.float32,
+                name='observation'
             )
 
             self.selected_action_indicies = tf.placeholder(
                 shape=(None),
-                dtype=tf.int64
+                dtype=tf.int64,
+                name='selected_action_indicies',
             )
 
             self.reward = tf.placeholder(
                 shape=(None),
-                dtype=tf.float32
+                dtype=tf.float32,
+                name='reward'
             )
 
             self.next_observation = tf.placeholder(
                 shape=(None, *self.env.obs_space_shape),
-                dtype=tf.float32
+                dtype=tf.float32,
+                name='next_observation'
             )
 
             self.terminal = tf.placeholder(
                 shape=(None),
-                dtype=tf.bool
+                dtype=tf.bool,
+                name='terminal'
             )
 
             self.learn_step_tensor = tf.placeholder(
@@ -245,10 +250,14 @@ class DQN(BaseAgent):
             else:
                 self.train_op = optimizer.minimize(loss, var_list=self.online_params)
 
-        #  summaries
         self.act_summaries.extend([
             tf.summary.scalar('learning_rate', self.learning_rate),
             tf.summary.scalar('epsilon', self.epsilon),
+                               ])
+
+        self.act_summaries.extend([
+            tf.summary.histogram(self.online_params[-1].name, self.online_params[-1]),
+            tf.summary.histogram(self.online_params[-2].name, self.online_params[-2])
                                ])
 
         self.learn_summaries.extend([
@@ -258,17 +267,15 @@ class DQN(BaseAgent):
         self.act_summaries = tf.summary.merge(self.act_summaries)
         self.learn_summaries = tf.summary.merge(self.learn_summaries)
 
-        #  initialize the tensorflow variables
         self.sess.run(
             tf.global_variables_initializer()
         )
 
-        #  copy the target net weights
+        #  initialize the target net weights with the online weights
         self.sess.run(
             self.copy_ops,
             {self.tau: 1.0}
         )
-
 
     def __repr__(self):
         return '<energy_py DQN agent>'
@@ -286,6 +293,9 @@ class DQN(BaseAgent):
         self.act_writer.add_summary(summary, self.act_step)
         self.act_writer.flush()
 
+        logger.debug('observation {}'.format(action))
+        logger.debug('action {}'.format(action))
+
         return action.reshape(1, *self.env.action_space_shape)
 
     def _learn(self):
@@ -293,11 +303,13 @@ class DQN(BaseAgent):
         Our agent attempts to make sense of the world
         """
         if self.memory_type == 'priority':
-            raise NotImplementedError()
+            raise NotImplementedError(
+                'Add importance sample weights to loss as per pervious version'
+            )
 
         batch = self.memory.get_batch(self.batch_size)
 
-        #  awkward bit - finding the indicies using np :(
+        #  awkward bit - finding the action indicies using np :(
         #  working on a tensorflow solution
         indicies = []
         for action in batch['action']:
@@ -333,8 +345,9 @@ if __name__ == '__main__':
     discount = 0.95
     total_steps = 400000
     import random
-    random.seed(42)
-    np.random.seed(42)
+    seed = 5
+    random.seed(seed)
+    np.random.seed(seed)
     tf.set_random_seed(42)
 
     with tf.Session() as sess:
@@ -345,7 +358,9 @@ if __name__ == '__main__':
             discount=discount,
             memory_type='deque',
             act_path='./act_tb',
-            learn_path='./learn_tb'
+            learn_path='./learn_tb',
+            learning_rate=0.0001,  #  must be set in context of decay_learning_rate!
+            decay_learning_rate=1.0,
         )
         step = 0
         from energy_py.scripts.experiment import Runner

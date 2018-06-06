@@ -26,7 +26,8 @@ def feed_forward(
             'input_layer',
             input_tensor,
             input_shape,
-            hiddens[0])
+            hiddens[0]
+        )
 
         for layer_num, nodes in enumerate(hiddens[1:]):
             layer = fully_connected_layer(
