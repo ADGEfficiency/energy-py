@@ -24,15 +24,15 @@ class DQN(BaseAgent):
             discount=0.95,
             total_steps=10000,
             num_discrete_actions=20,
-            nodes=(5, 5, 5),
+            nodes=(50, 50),
             initial_epsilon=1.0,
             final_epsilon=0.05,
             epsilon_decay_fraction=0.3,
             double_q=False,
             batch_size=64,
-            learning_rate=0.01,  #  must be set in context of decay_learning_rate!
-            decay_learning_rate=0.01,
-            gradient_norm_clip=10000,
+            learning_rate=0.001,  #  must be set in context of decay_learning_rate!
+            decay_learning_rate=1.0,
+            gradient_norm_clip=10,
             update_target_net_steps=1,
             tau=0.001,
             **kwargs):
@@ -161,7 +161,7 @@ class DQN(BaseAgent):
 
     def build_learning_graph(self):
         with tf.variable_scope('target', reuse=False):
-            self.target_q_values = feed_forward(
+            target_q_values = feed_forward(
                 'target',
                 self.next_observation,
                 self.env.obs_space_shape,
@@ -183,7 +183,7 @@ class DQN(BaseAgent):
                 online_actions = tf.argmax(self.online_next_obs_q, axis=1)
 
                 next_state_max_q = tf.reduce_sum(
-                    self.target_q_values * tf.one_hot(online_actions,
+                    target_q_values * tf.one_hot(online_actions,
                                                      self.num_actions),
                     axis=1,
 		    keepdims=True
@@ -191,25 +191,24 @@ class DQN(BaseAgent):
 
             else:
                 next_state_max_q = tf.reduce_max(
-                    self.target_q_values,
+                    target_q_values,
                     reduction_indices=1,
                     keepdims=True
                 )
 
-            self.next_state_max_q = tf.where(
+            next_state_max_q = tf.where(
                 self.terminal,
                 next_state_max_q,
                 tf.zeros_like(next_state_max_q),
 		name='terminal_mask'
             )
 
-            bellman = self.reward + self.discount * self.next_state_max_q
+            bellman = self.reward + self.discount * next_state_max_q
 
         with tf.variable_scope('optimization'):
             error = tf.losses.huber_loss(
                 bellman,
                 self.q_selected_actions,
-                weights=1.0,
                 scope='huber_loss'
             )
 
@@ -257,11 +256,16 @@ class DQN(BaseAgent):
 
         self.act_summaries.extend([
             tf.summary.histogram(self.online_params[-1].name, self.online_params[-1]),
-            tf.summary.histogram(self.online_params[-2].name, self.online_params[-2])
+            tf.summary.histogram(self.online_params[-2].name, self.online_params[-2]),
+            tf.summary.histogram(self.target_params[-1].name, self.target_params[-1]),
+            tf.summary.histogram(self.target_params[-2].name, self.target_params[-2]),
                                ])
 
         self.learn_summaries.extend([
-            tf.summary.histogram('bellman_target', bellman)
+            tf.summary.histogram('bellman_target', bellman),
+            tf.summary.scalar('loss', loss),
+            tf.summary.histogram('next_state_max_q', next_state_max_q),
+            tf.summary.histogram('target_q_values', target_q_values),
                                ])
 
         self.act_summaries = tf.summary.merge(self.act_summaries)
@@ -293,7 +297,7 @@ class DQN(BaseAgent):
         self.act_writer.add_summary(summary, self.act_step)
         self.act_writer.flush()
 
-        logger.debug('observation {}'.format(action))
+        logger.debug('observation {}'.format(observation))
         logger.debug('action {}'.format(action))
 
         return action.reshape(1, *self.env.action_space_shape)
@@ -341,14 +345,13 @@ if __name__ == '__main__':
     from energy_py.scripts.utils import make_logger
     make_logger({'info_log': 'info.log', 'debug_log': 'debug.log'})
     env = energy_py.make_env('CartPole')
-    obs = env.observation_space.sample()
-    discount = 0.95
+    discount = 0.99
     total_steps = 400000
     import random
-    seed = 5
+    seed = 15
     random.seed(seed)
     np.random.seed(seed)
-    tf.set_random_seed(42)
+    tf.set_random_seed(seed)
 
     with tf.Session() as sess:
         agent = DQN(
@@ -359,7 +362,7 @@ if __name__ == '__main__':
             memory_type='deque',
             act_path='./act_tb',
             learn_path='./learn_tb',
-            learning_rate=0.0001,  #  must be set in context of decay_learning_rate!
+            learning_rate=0.001,  #  must be set in context of decay_learning_rate!
             decay_learning_rate=1.0,
         )
         step = 0
@@ -372,12 +375,15 @@ if __name__ == '__main__':
             done = False
             obs = env.reset()
             while not done:
-                total_step = 0
                 act = agent.act(obs)
                 next_obs, reward, done, info = env.step(act)
+
                 runner.record_step(reward)
                 agent.remember(obs, act, reward, next_obs, done)
+
+                agent.learn()
+
                 obs = next_obs
                 step += 1
-                agent.learn()
+
             runner.record_episode()

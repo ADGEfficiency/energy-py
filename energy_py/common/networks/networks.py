@@ -33,14 +33,14 @@ def feed_forward(
             layer = fully_connected_layer(
                 'hidden_layer_{}'.format(layer_num),
                 layer,
-                (hiddens[layer_num-1],),
+                hiddens[layer_num-1],
                 nodes
             )
 
         output_layer = fully_connected_layer(
             'output_layer',
             layer,
-            (hiddens[-1],),
+            hiddens[-1],
             output_nodes,
             activation=output_activation
         )
