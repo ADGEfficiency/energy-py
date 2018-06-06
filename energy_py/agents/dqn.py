@@ -30,9 +30,9 @@ class DQN(BaseAgent):
             epsilon_decay_fraction=0.3,
             double_q=False,
             batch_size=64,
-            learning_rate=0.0001,
-            decay_learning_rate=True,
-            gradient_norm_clip=10,
+            learning_rate=0.01,  #  must be set in context of decay_learning_rate!
+            decay_learning_rate=0.01,
+            gradient_norm_clip=10000,
             update_target_net_steps=1,
             tau=0.001,
             **kwargs):
@@ -49,8 +49,8 @@ class DQN(BaseAgent):
         self.double_q = double_q
         self.batch_size = batch_size
 
-        self.learning_rate = learning_rate
-        self.decay_learning_rate = decay_learning_rate
+        self.learning_rate = float(learning_rate)
+        self.decay_learning_rate = float(decay_learning_rate)
         self.gradient_norm_clip = gradient_norm_clip
 
         self.update_target_net_steps = update_target_net_steps
@@ -198,11 +198,11 @@ class DQN(BaseAgent):
 		name='terminal_mask'
             )
 
-            self.bellman = self.reward + self.discount * self.next_state_max_q
+            bellman = self.reward + self.discount * self.next_state_max_q
 
         with tf.variable_scope('optimization'):
             error = tf.losses.huber_loss(
-                self.bellman,
+                bellman,
                 self.q_selected_actions,
                 weights=1.0,
                 scope='huber_loss'
@@ -215,7 +215,7 @@ class DQN(BaseAgent):
                     self.learning_rate,
                     global_step=self.learn_step_tensor,
                     decay_steps=self.total_steps,
-                    decay_rate=0.96,
+                    decay_rate=self.decay_learning_rate,
                     staircase=False,
                     name='learning_rate'
                 )
@@ -246,11 +246,15 @@ class DQN(BaseAgent):
                 self.train_op = optimizer.minimize(loss, var_list=self.online_params)
 
         #  summaries
-        self.act_summaries.extend([tf.summary.scalar('learning_rate',
-                                            self.learning_rate),
-                          tf.summary.scalar('epsilon',
-                                            self.epsilon)
+        self.act_summaries.extend([
+            tf.summary.scalar('learning_rate', self.learning_rate),
+            tf.summary.scalar('epsilon', self.epsilon),
                                ])
+
+        self.learn_summaries.extend([
+            tf.summary.histogram('bellman_target', bellman)
+                               ])
+
         self.act_summaries = tf.summary.merge(self.act_summaries)
         self.learn_summaries = tf.summary.merge(self.learn_summaries)
 
@@ -328,6 +332,10 @@ if __name__ == '__main__':
     obs = env.observation_space.sample()
     discount = 0.95
     total_steps = 400000
+    import random
+    random.seed(42)
+    np.random.seed(42)
+    tf.set_random_seed(42)
 
     with tf.Session() as sess:
         agent = DQN(
@@ -336,7 +344,6 @@ if __name__ == '__main__':
             total_steps=total_steps,
             discount=discount,
             memory_type='deque',
-            learning_rate=0.01,
             act_path='./act_tb',
             learn_path='./learn_tb'
         )
