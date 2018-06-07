@@ -366,7 +366,7 @@ if __name__ == '__main__':
     discount = 0.99
     total_steps = 400000
 
-    seed = 42
+    seed = 20 
     random.seed(seed)
     np.random.seed(seed)
     tf.set_random_seed(seed)

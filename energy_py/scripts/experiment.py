@@ -262,9 +262,12 @@ class Runner(object):
 
         summaries = {
             'total_episode_reward': total_episode_reward,
-            'avg_rew': np.mean(self.episode_rewards[-50:]),
-            'min_rew': np.min(self.episode_rewards[-50:]),
-            'max_rew': np.max(self.episode_rewards[-50:])
+            'avg_rew_100': np.mean(self.episode_rewards[-100:]),
+            'min_rew_100': np.min(self.episode_rewards[-100:]),
+            'max_rew_100': np.max(self.episode_rewards[-100:]),
+            'avg_rew': np.mean(self.episode_rewards),
+            'min_rew': np.min(self.episode_rewards),
+            'max_rew': np.max(self.episode_rewards)
         }
         log_string = 'Episode {} step {} {}%'.format(
             len(self.episode_rewards),
