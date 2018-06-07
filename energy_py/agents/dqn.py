@@ -14,6 +14,7 @@ from energy_py.scripts.tf_utils import make_copy_ops, get_tf_params
 
 logger = logging.getLogger(__name__)
 
+
 class DQN(BaseAgent):
     """
     The energy_py implementation of Deep Q-Network
@@ -30,7 +31,7 @@ class DQN(BaseAgent):
             epsilon_decay_fraction=0.3,
             double_q=False,
             batch_size=64,
-            learning_rate=0.001,  #  must be set in context of decay_learning_rate!
+            learning_rate=0.001,
             decay_learning_rate=1.0,
             gradient_norm_clip=10,
             update_target_net_steps=1,
@@ -173,11 +174,12 @@ class DQN(BaseAgent):
 
         with tf.variable_scope('bellman_target'):
             q_selected_actions = tf.reduce_sum(
-                self.online_q_values * tf.one_hot(self.selected_action_indicies,
-                                                  self.num_actions),
+                self.online_q_values * tf.one_hot(
+                    self.selected_action_indicies,
+                    self.num_actions
+                ),
                 1
             )
-
 
             if self.double_q:
                 online_actions = tf.argmax(self.online_next_obs_q, axis=1)
@@ -186,7 +188,7 @@ class DQN(BaseAgent):
                     target_q_values * tf.one_hot(online_actions,
                                                  self.num_actions),
                     axis=1,
-		    keepdims=True
+                    keepdims=True
                 )
 
             else:
@@ -210,6 +212,7 @@ class DQN(BaseAgent):
             #  training=True because we want to normalize each batch
             bellman_norm = tf.layers.batch_normalization(
                 tf.reshape(bellman, (-1, 1)),
+                center=False,
                 training=True,
                 trainable=False,
             )
@@ -366,7 +369,7 @@ if __name__ == '__main__':
     discount = 0.99
     total_steps = 400000
 
-    seed = 20 
+    seed = 20
     random.seed(seed)
     np.random.seed(seed)
     tf.set_random_seed(seed)
@@ -382,8 +385,8 @@ if __name__ == '__main__':
             memory_type='deque',
             act_path='./act_tb',
             learn_path='./learn_tb',
-            learning_rate=0.01,  #  must be set in context of decay_learning_rate!
-            decay_learning_rate=0.1,
+            learning_rate=0.001,  #  must be set in context of decay_learning_rate!
+            decay_learning_rate=0.05,
         )
 
         runner = Runner(sess,
