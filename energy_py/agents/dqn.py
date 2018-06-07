@@ -206,13 +206,12 @@ class DQN(BaseAgent):
             bellman = self.reward + self.discount * next_state_max_q
 
             #  batch norm requires some reshaping with a known rank
-            #  reshape the input into batch norm, then flatten in loss 
+            #  reshape the input into batch norm, then flatten in loss
             #  training=True because we want to normalize each batch
             bellman_norm = tf.layers.batch_normalization(
                 tf.reshape(bellman, (-1, 1)),
                 training=True,
                 trainable=False,
-
             )
 
         with tf.variable_scope('optimization'):
@@ -265,10 +264,15 @@ class DQN(BaseAgent):
                                ])
 
         self.act_summaries.extend([
-            tf.summary.histogram(self.online_params[-1].name, self.online_params[-1]),
-            tf.summary.histogram(self.online_params[-2].name, self.online_params[-2]),
-            tf.summary.histogram(self.target_params[-1].name, self.target_params[-1]),
-            tf.summary.histogram(self.target_params[-2].name, self.target_params[-2]),
+            tf.summary.histogram(
+                self.online_params[-1].name, self.online_params[-1]),
+            tf.summary.histogram(
+                self.online_params[-2].name, self.online_params[-2]),
+
+            tf.summary.histogram(
+                self.target_params[-1].name, self.target_params[-1]),
+            tf.summary.histogram(
+                self.target_params[-2].name, self.target_params[-2]),
                                ])
 
         self.learn_summaries.extend([
@@ -354,16 +358,20 @@ class DQN(BaseAgent):
 
 
 if __name__ == '__main__':
+    import random
+    from energy_py.scripts.experiment import Runner
     from energy_py.scripts.utils import make_logger
+
     make_logger({'info_log': 'info.log', 'debug_log': 'debug.log'})
-    env = energy_py.make_env('Battery')
     discount = 0.99
     total_steps = 400000
-    import random
-    seed = 15
+
+    seed = 42
     random.seed(seed)
     np.random.seed(seed)
     tf.set_random_seed(seed)
+
+    env = energy_py.make_env('CartPole')
 
     with tf.Session() as sess:
         agent = DQN(
@@ -377,13 +385,16 @@ if __name__ == '__main__':
             learning_rate=0.01,  #  must be set in context of decay_learning_rate!
             decay_learning_rate=0.1,
         )
-        step = 0
-        from energy_py.scripts.experiment import Runner
-        runner = Runner(sess, {'tb_rl': './tb_rl',
-                               'ep_rewards': './rewards.csv'},
+
+        runner = Runner(sess,
+                        {'tb_rl': './tb_rl',
+                         'ep_rewards': './rewards.csv'},
                         total_steps=total_steps
                         )
+
+        step = 0
         while step < total_steps:
+
             done = False
             obs = env.reset()
             while not done:
