@@ -20,7 +20,7 @@ def generate_experience(obs_shape, action_shape):
     return Experience(obs, act, rew, next_obs, terminal)
 
 
-def setup_memory(size, num_exps, alpha=0.7):
+def setup_memory(size, num_exps, alpha=1.0):
     obs_shape, action_shape = (4,), (2,)
     mem = PrioritizedReplay(10, obs_shape, action_shape, alpha)
     exps = [generate_experience(obs_shape, action_shape) for _ in range(5)]
