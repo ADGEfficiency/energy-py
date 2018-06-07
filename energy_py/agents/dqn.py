@@ -24,7 +24,7 @@ class DQN(BaseAgent):
             discount=0.95,
             total_steps=10000,
             num_discrete_actions=20,
-            nodes=(50, 50),
+            nodes=(5, 5, 5),
             initial_epsilon=1.0,
             final_epsilon=0.05,
             epsilon_decay_fraction=0.3,
@@ -172,7 +172,7 @@ class DQN(BaseAgent):
         self.copy_ops, self.tau = self.build_copy_ops()
 
         with tf.variable_scope('bellman_target'):
-            self.q_selected_actions = tf.reduce_sum(
+            q_selected_actions = tf.reduce_sum(
                 self.online_q_values * tf.one_hot(self.selected_action_indicies,
                                                   self.num_actions),
                 1
@@ -182,15 +182,15 @@ class DQN(BaseAgent):
             if self.double_q:
                 online_actions = tf.argmax(self.online_next_obs_q, axis=1)
 
-                next_state_max_q = tf.reduce_sum(
+                unmasked_next_state_max_q = tf.reduce_sum(
                     target_q_values * tf.one_hot(online_actions,
-                                                     self.num_actions),
+                                                 self.num_actions),
                     axis=1,
 		    keepdims=True
                 )
 
             else:
-                next_state_max_q = tf.reduce_max(
+                unmasked_next_state_max_q = tf.reduce_max(
                     target_q_values,
                     reduction_indices=1,
                     keepdims=True
@@ -198,17 +198,27 @@ class DQN(BaseAgent):
 
             next_state_max_q = tf.where(
                 self.terminal,
-                next_state_max_q,
-                tf.zeros_like(next_state_max_q),
+                tf.zeros_like(unmasked_next_state_max_q),
+                unmasked_next_state_max_q,
 		name='terminal_mask'
             )
 
             bellman = self.reward + self.discount * next_state_max_q
 
+            #  batch norm requires some reshaping with a known rank
+            #  reshape the input into batch norm, then flatten in loss 
+            #  training=True because we want to normalize each batch
+            bellman_norm = tf.layers.batch_normalization(
+                tf.reshape(bellman, (-1, 1)),
+                training=True,
+                trainable=False,
+
+            )
+
         with tf.variable_scope('optimization'):
             error = tf.losses.huber_loss(
-                bellman,
-                self.q_selected_actions,
+                tf.reshape(bellman_norm, (-1,)),
+                q_selected_actions,
                 scope='huber_loss'
             )
 
@@ -262,8 +272,10 @@ class DQN(BaseAgent):
                                ])
 
         self.learn_summaries.extend([
-            tf.summary.histogram('bellman_target', bellman),
+            tf.summary.histogram('bellman', bellman),
+            tf.summary.histogram('bellman_norm', bellman_norm),
             tf.summary.scalar('loss', loss),
+            tf.summary.histogram('unmasked_next_state_max_q', unmasked_next_state_max_q),
             tf.summary.histogram('next_state_max_q', next_state_max_q),
             tf.summary.histogram('target_q_values', target_q_values),
                                ])
@@ -362,8 +374,8 @@ if __name__ == '__main__':
             memory_type='deque',
             act_path='./act_tb',
             learn_path='./learn_tb',
-            learning_rate=0.001,  #  must be set in context of decay_learning_rate!
-            decay_learning_rate=1.0,
+            learning_rate=0.01,  #  must be set in context of decay_learning_rate!
+            decay_learning_rate=0.1,
         )
         step = 0
         from energy_py.scripts.experiment import Runner

@@ -283,7 +283,7 @@ class Runner(object):
             summary = tf.Summary(
                 value=[tf.Summary.Value(tag=tag, simple_value=float(value))]
             )
-            self.writer.add_summary(summary, len(self.episode_rewards))
+            self.writer.add_summary(summary, self.step)
         self.writer.flush()
         with open(self.rewards_path, 'w') as myfile:
             wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
