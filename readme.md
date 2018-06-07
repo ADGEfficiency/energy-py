@@ -18,24 +18,32 @@ import energy_py
 TOTAL_STEPS = 1000
 
 #  creating and environment
-env = energy_py.make_env(env_id='BatteryEnv',
-                         dataset_name=example,
-                         episode_length=288,
-                         power_rating=2)
+env = energy_py.make_env(
+    env_id='BatteryEnv',
+    dataset_name=example,
+    episode_length=288,
+    power_rating=2
+    )
 
 #  creating an agent
-agent = energy_py.make_agent(agent_id='DQN',
-                             env=env
-                             total_steps=TOTAL_STEPS)
+agent = energy_py.make_agent(
+    agent_id='DQN',
+    env=env
+    total_steps=TOTAL_STEPS
+    )
 
 #  we can then step through an MDP using the popular reset, step API
 observation = env.reset()
 
-action = agent.act(observation)
+while not done:
 
-next_observation, reward, done, info = env.step(action)
+    action = agent.act(observation)
 
-training_info = agent.learn()
+    next_observation, reward, done, info = env.step(action)
+
+    training_info = agent.learn()
+
+    observation = next_observation
 
 ```
 A detailed example of the low level energy_py framework is given in a Jupyter Notebook using the [DQN agent with the Battery environment](https://github.com/ADGEfficiency/energy_py/blob/master/notebooks/examples/Q_learning_battery.ipynb).
@@ -45,10 +53,18 @@ The higher level energy_py API allows running of experiments from [config dictio
 Single call using the experiment function
 
 ```python
-energy_py.experiment(agent_config,
-                     env_config,
-                     total_steps,
-                     paths=energy_py.make_paths('path/to/results')
+agent_config = {
+    'agent_id': 'DQN',
+    'double_q': True
+                }
+
+energy_py.experiment(
+    agent_config,
+    env_config,
+    total_steps,
+    paths=energy_py.make_paths('path/to/results'
+    )
+
 ```
 Running a config dictionary experiment from a Terminal.  The experiment will be called 'example_expt' and will use the
 'example' dataset.
