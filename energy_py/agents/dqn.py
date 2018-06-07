@@ -356,7 +356,7 @@ class DQN(BaseAgent):
 if __name__ == '__main__':
     from energy_py.scripts.utils import make_logger
     make_logger({'info_log': 'info.log', 'debug_log': 'debug.log'})
-    env = energy_py.make_env('CartPole')
+    env = energy_py.make_env('Battery')
     discount = 0.99
     total_steps = 400000
     import random
