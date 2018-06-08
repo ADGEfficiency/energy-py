@@ -188,7 +188,7 @@ def experiment(agent_config,
         save_args(agent_config, path=paths['agent_args'])
 
         #  runner helps to manage our experiment
-        runner = Runner(sess, paths)
+        runner = Runner(sess, paths, total_steps)
 
         #  outer while loop runs through multiple episodes
         step, episode = 0, 0
