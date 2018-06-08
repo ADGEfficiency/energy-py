@@ -130,9 +130,7 @@ def run_config_expt(expt_name, run_name, expt_path):
     paths = make_paths(expt_path, run_name=run_name)
     logger = make_logger(paths, 'master')
 
-    env_config = parse_ini(paths['common_config'], 'env')
-    env_config['data_path'] = get_dataset_path(env_config['dataset_name'])
-    env_config.pop('dataset_name')
+    env_config = parse_ini(paths['common_config'], 'ENV')
 
     agent_config = parse_ini(paths['run_configs'], run_name)
 
@@ -233,7 +231,7 @@ class Runner(object):
         self.sess = sess
         self.rewards_path = paths['ep_rewards']
         self.tb_path = paths['tb_rl']
-        self.total_steps = total_steps
+        self.total_steps = int(total_steps)
         self.log_freq = 500 
 
         self.writer = tf.summary.FileWriter(self.tb_path, self.sess.graph)

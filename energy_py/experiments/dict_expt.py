@@ -13,8 +13,9 @@ To run the example experiment
 
 import os
 
-from energy_py import experiment, make_expt_parser, make_paths, make_logger
-
+from energy_py import experiment
+from energy_py.scripts.experiment import make_expt_parser, make_paths
+from energy_py.scripts.utils import make_logger
 
 if __name__ == '__main__':
     args = make_expt_parser()
@@ -33,7 +34,7 @@ if __name__ == '__main__':
                     'double_q': True,
                     'process_target': 'normalizer'}
 
-    env_config = {'env_id': 'Cartpole'}
+    env_config = {'env_id': 'CartPole'}
 
     # env_config = {'env_id': 'Flex-v1',
     #               'dataset_name': args.dataset_name,

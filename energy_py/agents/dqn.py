@@ -40,15 +40,15 @@ class DQN(BaseAgent):
 
         super().__init__(**kwargs)
 
-        self.total_steps = total_steps
+        self.total_steps = int(total_steps)
         self.nodes = nodes
 
-        self.epsilon_decay_fraction = epsilon_decay_fraction
-        self.initial_epsilon = initial_epsilon
-        self.final_epsilon = final_epsilon
+        self.epsilon_decay_fraction = float(epsilon_decay_fraction)
+        self.initial_epsilon = float(initial_epsilon)
+        self.final_epsilon = float(final_epsilon)
 
-        self.double_q = double_q
-        self.batch_size = batch_size
+        self.double_q = bool(double_q)
+        self.batch_size = int(batch_size)
 
         self.learning_rate = float(learning_rate)
         self.decay_learning_rate = float(decay_learning_rate)
@@ -65,7 +65,7 @@ class DQN(BaseAgent):
         with tf.variable_scope('constants'):
 
             self.discount = tf.Variable(
-                initial_value=discount,
+                initial_value=float(discount),
                 trainable=False,
                 name='gamma'
             )

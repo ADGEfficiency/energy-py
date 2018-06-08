@@ -11,17 +11,25 @@ Note that here the run_name must be specified, because we need to find the
 correct section in run_configs.ini
 
 To run the example experiment
-    python config_expt.py example_config example --run_name DQN_1
+    python config_expt.py example_config example --run_name DEFAULT
 
 Config files are
    experiments/results/expt_name/common.ini
    experiments/results/expt_name/run_configs.ini
+
+When using config files you need to make sure your config args are
+being converted into the correct type (int, float etc) after they
+are passed into the agent/env
+
+This is because the config files loads the args as strings!
 """
 
 import os
 
-from energy_py import make_expt_parser, run_config_expt
+from energy_py import experiment
+from energy_py.scripts.experiment import make_expt_parser, run_config_expt
 
+# no logging?
 
 if __name__ == '__main__':
     args = make_expt_parser()
