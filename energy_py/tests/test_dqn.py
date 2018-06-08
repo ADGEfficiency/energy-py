@@ -175,8 +175,8 @@ def test_ddqn_bellman():
 
         masked = np.where(
             terms.reshape(-1),
-            selected_target_next_q,
-            np.zeros_like(selected_target_next_q)
+            np.zeros_like(selected_target_next_q),
+            selected_target_next_q
         )
 
         discount = sess.run(agent.discount)

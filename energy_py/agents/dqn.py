@@ -177,7 +177,7 @@ class DQN(BaseAgent):
         self.copy_ops, self.tau = self.build_copy_ops()
 
         with tf.variable_scope('bellman_target'):
-            q_selected_actions = tf.reduce_sum(
+            self.q_selected_actions = tf.reduce_sum(
                 self.online_q_values * tf.one_hot(
                     self.selected_action_indicies,
                     self.num_actions
@@ -202,14 +202,14 @@ class DQN(BaseAgent):
                     keepdims=True
                 )
 
-            next_state_max_q = tf.where(
+            self.next_state_max_q = tf.where(
                 self.terminal,
                 tf.zeros_like(unmasked_next_state_max_q),
                 unmasked_next_state_max_q,
 		name='terminal_mask'
             )
 
-            self.bellman = self.reward + self.discount * next_state_max_q
+            self.bellman = self.reward + self.discount * self.next_state_max_q
 
             #  batch norm requires some reshaping with a known rank
             #  reshape the input into batch norm, then flatten in loss
@@ -224,7 +224,7 @@ class DQN(BaseAgent):
         with tf.variable_scope('optimization'):
             error = tf.losses.huber_loss(
                 tf.reshape(bellman_norm, (-1,)),
-                q_selected_actions,
+                self.q_selected_actions,
                 scope='huber_loss'
             )
 
@@ -287,7 +287,7 @@ class DQN(BaseAgent):
             tf.summary.histogram('bellman_norm', bellman_norm),
             tf.summary.scalar('loss', loss),
             tf.summary.histogram('unmasked_next_state_max_q', unmasked_next_state_max_q),
-            tf.summary.histogram('next_state_max_q', next_state_max_q),
+            tf.summary.histogram('next_state_max_q', self.next_state_max_q),
             tf.summary.histogram('target_q_values', self.target_q_values),
                                ])
 
