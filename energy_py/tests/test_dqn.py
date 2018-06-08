@@ -112,8 +112,8 @@ def test_bellman_target():
 
         #  this check is mirroring the tensorflow code exactly :D
         check_masked_next_q = np.where(terms.reshape(-1),
-                                       max_next_q.reshape(-1),
-                                       np.zeros_like(max_next_q))
+                                       np.zeros_like(max_next_q),
+                                       max_next_q.reshape(-1))
 
         masked_next_q = sess.run(
             agent.next_state_max_q,

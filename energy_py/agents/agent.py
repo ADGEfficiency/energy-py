@@ -34,8 +34,8 @@ class BaseAgent(object):
                  observation_processor=None,
                  action_processor=None,
                  target_processor=None,
-                 act_path=None,
-                 learn_path=None,
+                 act_path='./act_path',
+                 learn_path='./learn_path',
                  **kwargs):
 
         self.sess = sess

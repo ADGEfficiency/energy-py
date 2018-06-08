@@ -130,6 +130,10 @@ class DQN(BaseAgent):
                 self.num_actions,
             )
 
+            self.act_summaries.extend([
+                tf.summary.histogram('acting_q_values', self.online_q_values)
+            ])
+
             if self.double_q:
                 scope.reuse_variables()
 
@@ -162,7 +166,7 @@ class DQN(BaseAgent):
 
     def build_learning_graph(self):
         with tf.variable_scope('target', reuse=False):
-            target_q_values = feed_forward(
+            self.target_q_values = feed_forward(
                 'target',
                 self.next_observation,
                 self.env.obs_space_shape,
@@ -185,7 +189,7 @@ class DQN(BaseAgent):
                 online_actions = tf.argmax(self.online_next_obs_q, axis=1)
 
                 unmasked_next_state_max_q = tf.reduce_sum(
-                    target_q_values * tf.one_hot(online_actions,
+                    self.target_q_values * tf.one_hot(online_actions,
                                                  self.num_actions),
                     axis=1,
                     keepdims=True
@@ -193,7 +197,7 @@ class DQN(BaseAgent):
 
             else:
                 unmasked_next_state_max_q = tf.reduce_max(
-                    target_q_values,
+                    self.target_q_values,
                     reduction_indices=1,
                     keepdims=True
                 )
@@ -205,13 +209,13 @@ class DQN(BaseAgent):
 		name='terminal_mask'
             )
 
-            bellman = self.reward + self.discount * next_state_max_q
+            self.bellman = self.reward + self.discount * next_state_max_q
 
             #  batch norm requires some reshaping with a known rank
             #  reshape the input into batch norm, then flatten in loss
             #  training=True because we want to normalize each batch
             bellman_norm = tf.layers.batch_normalization(
-                tf.reshape(bellman, (-1, 1)),
+                tf.reshape(self.bellman, (-1, 1)),
                 center=False,
                 training=True,
                 trainable=False,
@@ -279,12 +283,12 @@ class DQN(BaseAgent):
                                ])
 
         self.learn_summaries.extend([
-            tf.summary.histogram('bellman', bellman),
+            tf.summary.histogram('bellman', self.bellman),
             tf.summary.histogram('bellman_norm', bellman_norm),
             tf.summary.scalar('loss', loss),
             tf.summary.histogram('unmasked_next_state_max_q', unmasked_next_state_max_q),
             tf.summary.histogram('next_state_max_q', next_state_max_q),
-            tf.summary.histogram('target_q_values', target_q_values),
+            tf.summary.histogram('target_q_values', self.target_q_values),
                                ])
 
         self.act_summaries = tf.summary.merge(self.act_summaries)
@@ -369,7 +373,7 @@ if __name__ == '__main__':
     discount = 0.99
     total_steps = 400000
 
-    seed = 20
+    seed = 3 
     random.seed(seed)
     np.random.seed(seed)
     tf.set_random_seed(seed)
@@ -385,8 +389,9 @@ if __name__ == '__main__':
             memory_type='deque',
             act_path='./act_tb',
             learn_path='./learn_tb',
-            learning_rate=0.001,  #  must be set in context of decay_learning_rate!
+            learning_rate=0.0001,  #  must be set in context of decay_learning_rate!
             decay_learning_rate=0.05,
+            epsilon_decay_fraction=0.5,
         )
 
         runner = Runner(sess,
