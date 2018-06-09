@@ -8,6 +8,8 @@ energy_py supports this goal by providing a **collection of agents, energy envir
 
 energy_py is built and maintained by Adam Green - [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  Read more about the motivations and design choics of the project on the [introductory blog post](http://adgefficiency.com/energy_py-reinforcement-learning-for-energy-systems/).
 
+Read about the recent [DQN rebuild here](http://adgefficiency.com/dqn-debugging/).
+
 ## Basic usage
 
 Environments and agents can be created using a low-level API similar to OpenAI gym.
@@ -15,11 +17,11 @@ Environments and agents can be created using a low-level API similar to OpenAI g
 ```python
 import energy_py
 
-TOTAL_STEPS = 1000
+TOTAL_STEPS = 100000
 
-#  creating and environment
+#  creating an environment
 env = energy_py.make_env(
-    env_id='BatteryEnv',
+    env_id='Battery',
     dataset_name=example,
     episode_length=288,
     power_rating=2
