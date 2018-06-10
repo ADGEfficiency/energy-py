@@ -38,6 +38,8 @@ class BaseAgent(object):
                  learn_path='./learn_path',
                  **kwargs):
 
+        tf.reset_default_graph()
+
         self.sess = sess
         self.env = env
 
