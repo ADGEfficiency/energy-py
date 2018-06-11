@@ -20,23 +20,21 @@ class NaiveBatteryAgent(BaseAgent):
     Charges at max/min based on the hour of the day.
     """
 
-    def __init__(self, env, discount):
+    def __init__(self, **kwargs):
         """
         args
             env (object)
-            discount (float)
         """
+        #  calling init method of the parent Base_Agent class
+        super().__init__(**kwargs)
+
         #  find the integer index of the hour in the observation
         self.hour_index = self.observation_info.index('D_hour')
 
-        #  calling init method of the parent Base_Agent class
-        super().__init__(env, discount)
-
-    def _act(self, **kwargs):
+    def _act(self, observation):
         """
 
         """
-        observation = kwargs['observation']
         #  index the observation at 0 because observation is
         #  shape=(num_samples, observation_length)
         hour = observation[0][self.hour_index]
@@ -70,9 +68,9 @@ class DispatchAgent(BaseAgent):
         discount (float) discount rate
         trigget (float) triggers flex action based on cumulative mean price
     """
-    def __init__(self, env, discount, trigger=200):
-        #  calling init method of the parent Base_Agent class
-        super().__init__(env, discount)
+    def __init__(self, trigger=200, **kwargs):
+        super().__init__(**kwargs)
+
         self.trigger = float(trigger)
 
     def _act(self, **kwargs):
@@ -97,36 +95,42 @@ class NaiveFlex(BaseAgent):
     Flexes based on time of day
     """
 
-    def __init__(self, env, discount, hours, run_weekend=False):
+    def __init__(self, hours, run_weekend=False, **kwargs):
         """
         args
             env (object)
-            discount (float)
             hours (list) hours to flex in
+            run_weekend (bool)
         """
-        self.hours = hours
-
         #  calling init method of the parent Base_Agent class
-        super().__init__(env, discount)
+        super().__init__(**kwargs)
+
+        #  can be used for a two block period
+        #  hours is input in the form
+        #  [start, end, start, end]
+        assert len(hours) == 4
+
+        self.hours = np.concatenate([
+            np.arange(hours[0], hours[1]),
+            np.arange(hours[2], hours[3]),
+        ])
 
         #  find the integer index of the hour in the observation
         self.hour_index = self.env.observation_info.index('C_hour')
 
-    def _act(self, **kwargs):
+    def _act(self, observation):
         """
 
         """
-        observation = kwargs['observation']
         #  index the observation at 0 because observation is
         #  shape=(num_samples, observation_length)
         hour = observation[0][self.hour_index]
 
         if hour in self.hours:
-            action = self.action_space.high 
+            action = self.action_space.high
 
         else:
-            #  do nothing 
-            action = self.action_space.low 
+            action = self.action_space.low
 
         return np.array(action).reshape(1, self.action_space.shape[0])
 
@@ -137,14 +141,11 @@ class RandomAgent(BaseAgent):
 
     args
         env (object) energy_py environment
-        discount (float) discount rate
     """
     def __init__(self,
-                 sess,
-                 env,
                  **kwargs):
 
-        super().__init__(sess, env)
+        super().__init__(**kwargs)
 
     def _act(self, observation):
         """
@@ -153,6 +154,26 @@ class RandomAgent(BaseAgent):
         returns
              action (np.array)
         """
-        action = self.action_space.sample()
+        return self.action_space.sample()
 
-        return action.reshape(1, self.action_space.shape[0])
+
+if __name__ == '__main__':
+    import energy_py
+
+    env = energy_py.make_env(
+        'Flex-v1',
+        flex_size=1,
+        max_flex_time=4,
+        relax_time=0,
+        dataset='tempus')
+
+    a = energy_py.make_agent('naive_flex', env=env, hours=(6, 10, 15, 19))
+
+    o = env.reset()
+    done = False
+    while not done:
+        action = a.act(o)
+
+        o, r, done, i = env.step(action)
+
+        print(action)

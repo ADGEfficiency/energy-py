@@ -5,8 +5,8 @@ import logging
 import numpy as np
 
 from energy_py.common.memories.memory import BaseMemory, Experience
-from energy_py.scripts.trees import SumTree, MinTree
-from energy_py.scripts.schedulers import LinearScheduler
+from energy_py.common.trees import SumTree, MinTree
+from energy_py.common.schedulers import LinearScheduler
 
 logger = logging.getLogger(__name__)
 

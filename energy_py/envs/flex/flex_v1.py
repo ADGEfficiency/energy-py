@@ -26,7 +26,7 @@ import logging
 
 import numpy as np
 
-from energy_py import DiscreteSpace, GlobalSpace
+from energy_py.common import DiscreteSpace, GlobalSpace
 from energy_py.envs import BaseEnv
 
 
@@ -37,15 +37,16 @@ class FlexV1(BaseEnv):
     """
     Model of a flexibility system operating in a start/stop configuration
 
+    optional args that can be passed into BaseEnv via kwargs
+        dataset
+        episode_length
+        episode_start
+        episode_random
+
     args
         flex_size (int) the size of the action in MW
         max_flex_time (int) limit of flex_down cycle (num 5 mins)
 
-        kwargs that can be passed to the parent class BaseEnv
-            dataset_name
-            episode_length
-            episode_start
-            episode_random
 
     attributes
         avail (int) boolean (0 = unavailable, 1 = available)
@@ -54,10 +55,6 @@ class FlexV1(BaseEnv):
         relax (int) counter for the relax period
         flex_time (int)
         flex_counter (int)
-
-    methods
-
-
     """
 
     def __init__(self,

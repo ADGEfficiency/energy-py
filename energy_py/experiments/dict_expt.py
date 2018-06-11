@@ -7,15 +7,15 @@ Command line args
     --run_name (optional)
     --seed (optional)
 
-To run the example experiment
-    python dict_expt.py example_dict example
+To run the example experiment, saving results into example/run0
+    python dict_expt.py example_dict example run0
 """
 
 import os
 
 from energy_py import experiment
-from energy_py.scripts.experiment import make_expt_parser, make_paths
-from energy_py.scripts.utils import make_logger
+from energy_py.common.experiments.utils import make_expt_parser, make_paths
+from energy_py.common.utils import make_logger
 
 if __name__ == '__main__':
     args = make_expt_parser()

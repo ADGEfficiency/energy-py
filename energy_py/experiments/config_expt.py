@@ -25,7 +25,8 @@ This is because the config files loads the args as strings!
 import os
 
 from energy_py import experiment
-from energy_py.scripts.experiment import make_config_parser, run_config_expt
+from energy_py.common.experiments import run_config_expt
+from energy_py.common.experiments.utils import make_config_parser
 
 # no logging?
 

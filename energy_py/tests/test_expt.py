@@ -11,7 +11,7 @@ import os
 
 import energy_py
 from energy_py import experiment, get_dataset_path
-from energy_py.scripts.experiment import make_paths
+from energy_py.common.experiments.utils import make_paths
 
 TOTAL_STEPS = 200
 
@@ -35,7 +35,7 @@ AGENT_CONFIG = {'agent_id': 'DQN',
 def test_battery_expt():
 
     env_config = {'env_id': 'Battery',
-                  'dataset_name': 'example',
+                  'dataset': 'example',
                   'episode_length': 10,
                   'episode_sample': 'random',
                   'initial_charge': 'random'}
@@ -49,7 +49,7 @@ def test_battery_expt():
 def test_flex_expt():
 
     env_config = {'env_id': 'Flex-v0',
-                  'dataset_name': 'example',
+                  'dataset': 'example',
                   'episode_length': 10,
                   'episode_sample': 'random'}
 

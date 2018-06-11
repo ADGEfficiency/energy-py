@@ -64,7 +64,7 @@ energy_py.experiment(
     agent_config,
     env_config,
     total_steps,
-    paths=energy_py.make_paths('path/to/results'
+    paths=energy_py.make_paths('path/to/results')
     )
 
 ```

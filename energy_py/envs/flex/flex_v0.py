@@ -1,6 +1,6 @@
 import logging
 
-from energy_py import DiscreteSpace, GlobalSpace
+from energy_py.common import DiscreteSpace, GlobalSpace
 from energy_py.envs import BaseEnv
 
 logger = logging.getLogger(__name__)

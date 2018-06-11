@@ -4,7 +4,7 @@ import numpy as np
 
 from energy_py.common.memories.memory import Experience, calculate_returns
 from energy_py.common.memories import PrioritizedReplay
-from energy_py.scripts.trees import SumTree, MinTree
+from energy_py.common.trees import SumTree, MinTree
 
 
 def generate_experience(obs_shape, action_shape):
