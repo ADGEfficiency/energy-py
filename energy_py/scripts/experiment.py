@@ -52,6 +52,23 @@ def make_expt_parser():
     return args
 
 
+def make_config_parser():
+    """
+    Parses arguments from the command line for running config experiments
+
+    returns
+        args (argparse NameSpace)
+    """
+    parser = argparse.ArgumentParser(description='energy_py experiment argparser')
+
+    #  required
+    parser.add_argument('expt_name', default=None, type=str)
+    parser.add_argument('run_name', default=None, type=str)
+
+    args = parser.parse_args()
+
+    return args
+
 def make_paths(expt_path, run_name=None):
     """
     Creates a dictionary of paths for use with experiments
