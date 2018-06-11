@@ -1,9 +1,9 @@
 import numpy as np
 import tensorflow as tf
 
-from energy_py.scripts.utils import find_sub_array_in_2D_array
+from energy_py.common.utils import find_sub_array_in_2D_array
 
-from energy_py.scripts.tf_utils import make_copy_ops
+from energy_py.common.tf_utils import make_copy_ops
 
 
 def make_vars(num):

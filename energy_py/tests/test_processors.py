@@ -1,6 +1,6 @@
 import numpy as np
 
-from energy_py.scripts.processors import Normalizer, Standardizer
+from energy_py.common.processors import Normalizer, Standardizer
 
 
 #  make a batch with one dimensional samples

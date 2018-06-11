@@ -10,7 +10,7 @@ import random
 import gym
 import numpy as np
 
-from energy_py import GlobalSpace
+from energy_py.common import GlobalSpace
 
 from energy_py.envs.flex.flex_v0 import FlexV0
 from energy_py.envs.flex.flex_v1 import FlexV1

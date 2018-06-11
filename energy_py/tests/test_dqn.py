@@ -13,7 +13,7 @@ import tensorflow as tf
 
 import energy_py
 
-from energy_py.scripts.tf_utils import get_tf_params
+from energy_py.common.tf_utils import get_tf_params
 from energy_py.agents import DQN
 
 

@@ -26,7 +26,7 @@ import logging
 
 import numpy as np
 
-from energy_py import DiscreteSpace, GlobalSpace
+from energy_py.common import DiscreteSpace, GlobalSpace
 from energy_py.envs import BaseEnv
 
 

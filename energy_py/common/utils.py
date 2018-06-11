@@ -6,6 +6,7 @@ import configparser
 import csv
 from itertools import combinations
 import logging
+import logging.config
 import pickle
 import os
 

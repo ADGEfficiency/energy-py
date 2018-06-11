@@ -2,8 +2,7 @@ import argparse
 import datetime
 import os
 
-#from energy_py.common.utils import ensure_dir, make_logger
-from energy_py.common.experiments import experiment
+from energy_py.common import ensure_dir
 
 
 def make_expt_parser():
