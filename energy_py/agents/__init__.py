@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 agent_register = {
-    'DQN': DQN,
+    'dqn': DQN,
     'classifier': ClassifierAgent,
     'random': RandomAgent,
     'naive_flex': NaiveFlex

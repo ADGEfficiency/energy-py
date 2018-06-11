@@ -1,5 +1,6 @@
 import csv
 import logging
+import os
 
 import numpy as np
 import pandas as pd
@@ -17,12 +18,19 @@ class Runner(object):
     def __init__(self,
                  sess,
                  paths,
-                 total_steps):
+                 total_steps,
+                 env):
 
         self.sess = sess
         self.rewards_path = paths['ep_rewards']
         self.tb_path = paths['tb_rl']
+        self.env_hist_path = paths['env_histories']
+
         self.total_steps = int(total_steps)
+
+        self.state_info = env.env.state_info
+        self.observation_info = env.observation_info
+
         self.log_freq = 500
 
         self.writer = tf.summary.FileWriter(self.tb_path, self.sess.graph)
@@ -83,8 +91,8 @@ class Runner(object):
 
         self.current_episode_rewards = []
 
-        # if env_info:
-        #     self.save_env_hist(env_info, len(self.episode_rewards))
+        if env_info:
+            self.save_env_hist(env_info, len(self.episode_rewards))
 
     def save_env_hist(self, env_info, episode):
         """
@@ -95,6 +103,7 @@ class Runner(object):
             env_info (dict) the info dict returned from env.step()
             episode (int)
         """
+        print('saving hist')
         output = []
 
         for key, info in env_info.items():

@@ -17,41 +17,47 @@ from energy_py import experiment
 from energy_py.common.experiments.utils import make_expt_parser, make_paths
 from energy_py.common.utils import make_logger
 
+
 if __name__ == '__main__':
     args = make_expt_parser()
     TOTAL_STEPS = 400000
 
     agent_config = {
-        'agent_id': 'DQN',
-        'discount': 0.99,
-        'tau': 0.001,
-        'total_steps': TOTAL_STEPS,
-        'batch_size': 32,
-        'layers': (25, 25, 25),
-        'epsilon_decay_fraction': 0.5,
-        'memory_fraction': 0.15,
-        'memory_type': 'deque',
-        'double_q': False,
-        'learning_rate': 0.0001,
-        'decay_learning_rate': 0.1
-                    }
+        'agent_id': 'naive_flex',
+        'hours': (6, 11, 15, 19)
+    }
 
-    env_config = {'env_id': 'CartPole'}
+    # agent_config = {
+    #     'agent_id': 'dqn',
+    #     'discount': 0.99,
+    #     'tau': 0.001,
+    #     'total_steps': TOTAL_STEPS,
+    #     'batch_size': 32,
+    #     'layers': (25, 25, 25),
+    #     'epsilon_decay_fraction': 0.5,
+    #     'memory_fraction': 0.15,
+    #     'memory_type': 'deque',
+    #     'double_q': False,
+    #     'learning_rate': 0.0001,
+    #     'decay_learning_rate': 0.1
+    #                 }
 
-    # env_config = {'env_id': 'Flex-v1',
-    #               'dataset_name': args.dataset_name,
-    #               'flex_size': 0.02,
-    #               'max_flex_time': 6,
-    #               'relax_time': 0,
-    #               'episode_length': 96,
-    #               'episode_sample': 'random'}
+    env_config = {'env_id': 'Flex-v1',
+                  'dataset': args.dataset,
+                  'flex_size': 0.2,
+                  'max_flex_time': 4,
+                  'relax_time': 0,
+                  'episode_length': 2016,
+                  'episode_sample': 'random'}
+
+    # env_config = {'env_id': 'CartPole'}
 
     # env_config = {'env_id': 'Battery',
-    #               'dataset_name': args.dataset_name,
+    #               'dataset_name': args.dataset,
     #               'episode_sample': 'random'}
 
     # env_config = {'env_id': 'Flex-v0',
-    #               'dataset_name': args.dataset_name,
+    #               'dataset_name': args.dataset,
     #               'episode_sample': 'random'}
 
     expt_path = os.path.join(os.getcwd(),
