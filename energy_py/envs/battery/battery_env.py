@@ -3,7 +3,7 @@ from random import random
 import numpy as np
 
 from energy_py.envs import BaseEnv
-from energy_py.scripts.spaces import ContinuousSpace, GlobalSpace
+from energy_py.spaces import ContinuousSpace, GlobalSpace
 
 logger = logging.getLogger(__name__)
 

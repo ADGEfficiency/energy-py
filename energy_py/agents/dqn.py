@@ -9,8 +9,8 @@ from energy_py.agents.agent import BaseAgent
 from energy_py.common.networks import feed_forward
 from energy_py.common.policies import epsilon_greedy_policy
 
-from energy_py.scripts.utils import find_sub_array_in_2D_array as find_action
-from energy_py.scripts.tf_utils import make_copy_ops, get_tf_params
+from energy_py.common.utils import find_sub_array_in_2D_array as find_action
+from energy_py.common.tf_utils import make_copy_ops, get_tf_params
 
 logger = logging.getLogger(__name__)
 
