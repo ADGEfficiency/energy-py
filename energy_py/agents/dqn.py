@@ -32,7 +32,7 @@ class DQN(BaseAgent):
             double_q=False,
             batch_size=64,
             learning_rate=0.001,
-            decay_learning_rate=1.0,
+            learning_rate_decay=1.0,
             gradient_norm_clip=10,
             update_target_net_steps=1,
             tau=0.001,
@@ -51,7 +51,7 @@ class DQN(BaseAgent):
         self.batch_size = int(batch_size)
 
         self.learning_rate = float(learning_rate)
-        self.decay_learning_rate = float(decay_learning_rate)
+        self.learning_rate_decay = float(learning_rate_decay)
         self.gradient_norm_clip = gradient_norm_clip
 
         self.update_target_net_steps = update_target_net_steps
@@ -230,12 +230,12 @@ class DQN(BaseAgent):
 
             loss = tf.reduce_mean(error)
 
-            if self.decay_learning_rate:
+            if self.learning_rate_decay:
                 self.learning_rate = tf.train.exponential_decay(
                     self.learning_rate,
                     global_step=self.learn_step_tensor,
                     decay_steps=self.total_steps,
-                    decay_rate=self.decay_learning_rate,
+                    decay_rate=self.learning_rate_decay,
                     staircase=False,
                     name='learning_rate'
                 )
@@ -389,9 +389,10 @@ if __name__ == '__main__':
             memory_type='deque',
             act_path='./act_tb',
             learn_path='./learn_tb',
-            learning_rate=0.0001,  #  must be set in context of decay_learning_rate!
-            decay_learning_rate=0.05,
+            learning_rate=0.0001,  #  must be set in context of learning_rate_decay!
+            learning_rate_decay=0.05,
             epsilon_decay_fraction=0.5,
+            double_q=True
         )
 
         runner = Runner(sess,

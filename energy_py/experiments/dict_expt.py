@@ -19,20 +19,22 @@ from energy_py.scripts.utils import make_logger
 
 if __name__ == '__main__':
     args = make_expt_parser()
-    TOTAL_STEPS = 100000
+    TOTAL_STEPS = 400000
 
-    agent_config = {'agent_id': 'DQN',
-                    'discount': 0.99,
-                    'tau': 0.001,
-                    'total_steps': TOTAL_STEPS,
-                    'batch_size': 32,
-                    'layers': (25, 25, 25),
-                    'learning_rate': 0.01,
-                    'epsilon_decay_fraction': 0.5,
-                    'memory_fraction': 0.15,
-                    'memory_type': 'deque',
-                    'double_q': True,
-                    'process_target': 'normalizer'}
+    agent_config = {
+        'agent_id': 'DQN',
+        'discount': 0.99,
+        'tau': 0.001,
+        'total_steps': TOTAL_STEPS,
+        'batch_size': 32,
+        'layers': (25, 25, 25),
+        'epsilon_decay_fraction': 0.5,
+        'memory_fraction': 0.15,
+        'memory_type': 'deque',
+        'double_q': False,
+        'learning_rate': 0.0001,
+        'decay_learning_rate': 0.1
+                    }
 
     env_config = {'env_id': 'CartPole'}
 
