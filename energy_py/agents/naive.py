@@ -119,11 +119,10 @@ class NaiveFlex(BaseAgent):
         #  find the integer index of the hour in the observation
         self.hour_index = self.env.observation_info.index('C_hour')
 
-    def _act(self, **kwargs):
+    def _act(self, observation):
         """
 
         """
-        observation = kwargs['observation']
         #  index the observation at 0 because observation is
         #  shape=(num_samples, observation_length)
         hour = observation[0][self.hour_index]
