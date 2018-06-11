@@ -1,5 +1,6 @@
 import logging
 from random import random
+import numpy as np
 
 from energy_py.envs import BaseEnv
 from energy_py.scripts.spaces import ContinuousSpace, GlobalSpace
@@ -142,8 +143,7 @@ class Battery(BaseEnv):
         net_charge = action / 12
 
         #  we first check to make sure this charge is within our capacity limit
-        unbounded_new_charge = old_charge + net_charge
-        bounded_new_charge = max(min(unbounded_new_charge, self.capacity), 0)
+        bounded_new_charge = np.clip(old_charge + net_charge, 0, self.capacity)
 
         #  we can now calculate the gross rate of charge or discharge
         gross_rate = (bounded_new_charge - old_charge) * 12
