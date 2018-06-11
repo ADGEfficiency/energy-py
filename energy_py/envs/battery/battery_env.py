@@ -13,6 +13,12 @@ class Battery(BaseEnv):
     An environment that simulates storage of electricity in a battery.
     Agent chooses to either charge or discharge.
 
+    optionally passed into BaseEnv via kwargs
+        dataset (str) located in energy_py/experiments/datasets
+        episode_length (int)
+        episode_start (int) integer index of episode start
+        episode_random (bool) whether to randomize the episode start position
+
     args
         power_rating (float) maximum rate of battery charge or discharge [MW]
         capacity (float) amount of electricity that can be stored [MWh]

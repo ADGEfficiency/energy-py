@@ -97,17 +97,24 @@ class NaiveFlex(BaseAgent):
     Flexes based on time of day
     """
 
-    def __init__(self, env, discount, hours, run_weekend=False):
+    def __init__(self, env, hours, run_weekend=False):
         """
         args
             env (object)
-            discount (float)
             hours (list) hours to flex in
         """
-        self.hours = hours
-
         #  calling init method of the parent Base_Agent class
-        super().__init__(env, discount)
+        super().__init__(env=env)
+
+        #  can be used for a two block period
+        #  hours is input in the form
+        #  [start, end, start, end]
+        assert len(hours) == 4
+
+        self.hours = np.concatenate([
+            np.arange(hours[0], hours[1]),
+            np.arange(hours[2], hours[3]),
+        ])
 
         #  find the integer index of the hour in the observation
         self.hour_index = self.env.observation_info.index('C_hour')
@@ -122,11 +129,11 @@ class NaiveFlex(BaseAgent):
         hour = observation[0][self.hour_index]
 
         if hour in self.hours:
-            action = self.action_space.high 
+            action = self.action_space.high
 
         else:
-            #  do nothing 
-            action = self.action_space.low 
+            #  do nothing
+            action = self.action_space.low
 
         return np.array(action).reshape(1, self.action_space.shape[0])
 
@@ -156,3 +163,16 @@ class RandomAgent(BaseAgent):
         action = self.action_space.sample()
 
         return action.reshape(1, self.action_space.shape[0])
+
+
+if __name__ == '__main__':
+    import energy_py
+
+    e = energy_py.make_env(
+        'Flex-v1',
+        flex_size=1,
+        max_flex_time=4,
+        relax_time=0,
+        dataset='tempus')
+
+    a = energy_py.make_agent('naive_flex', env=e, hours=(6, 10, 15, 19))
