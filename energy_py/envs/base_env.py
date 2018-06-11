@@ -19,7 +19,7 @@ class BaseEnv(object):
     The base environment class for time series environments
 
     args
-        dataset_name (str) located in energy_py/experiments/datasets
+        dataset (str) located in energy_py/experiments/datasets
         episode_length (int)
         episode_start (int) integer index of episode start
         episode_random (bool) whether to randomize the episode start position
@@ -28,7 +28,7 @@ class BaseEnv(object):
     The BaseEnv has functionality for working with time series data
     """
     def __init__(self,
-                 dataset_name='example',
+                 dataset='example',
                  episode_sample='random',
                  episode_length=2016):
 
@@ -38,7 +38,7 @@ class BaseEnv(object):
         self.episode_length = int(episode_length)
 
         #  load the time series info from csv
-        self.state_ts, self.observation_ts = self.load_dataset(dataset_name)
+        self.state_ts, self.observation_ts = self.load_dataset(dataset)
 
     def _step(self, action): raise NotImplementedError
 
@@ -104,18 +104,18 @@ class BaseEnv(object):
 
         return self.info
 
-    def load_dataset(self, dataset_name):
+    def load_dataset(self, dataset):
         """
         Loads time series data from csv
 
         args
-            dataset_name (str)
+            dataset (str)
 
         Datasets are located in energy_py/experiments/datasets
         A dataset consists of state.csv and observation.csv
         """
-        dataset_path = energy_py.get_dataset_path(dataset_name)
-        logger.info('Using {} dataset'.format(dataset_name))
+        dataset_path = energy_py.get_dataset_path(dataset)
+        logger.info('Using {} dataset'.format(dataset))
         logger.debug('Dataset path {}'.format(dataset_path))
 
         try:

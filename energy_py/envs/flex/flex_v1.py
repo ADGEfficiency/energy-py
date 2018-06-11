@@ -42,7 +42,7 @@ class FlexV1(BaseEnv):
         max_flex_time (int) limit of flex_down cycle (num 5 mins)
 
         kwargs that can be passed to the parent class BaseEnv
-            dataset_name
+            dataset
             episode_length
             episode_start
             episode_random
