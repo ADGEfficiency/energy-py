@@ -1,6 +1,4 @@
-"""
-A collection of helper functions.
-"""
+"""A collection of generic helper functions"""
 
 import configparser
 import csv
@@ -10,7 +8,6 @@ import pickle
 import os
 
 import pandas as pd
-import tensorflow as tf
 
 
 logger = logging.getLogger(__name__)
@@ -58,10 +55,11 @@ def load_csv(*paths):
     args
         paths (iterable) strings to be formed into a path
     """
-    path = os.path.join(*paths)
-    return pd.read_csv(path,
-                     index_col=0,
-                     parse_dates=True)
+    return pd.read_csv(
+        os.path.join(*paths),
+        index_col=0,
+        parse_dates=True
+    )
 
 
 def parse_ini(filepath, section):
