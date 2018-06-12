@@ -22,7 +22,7 @@ def test_down_up():
     rews = []
     for step in range(30):
 
-        if step == 5:
+        if step == 6:
             o, r, d, i = env.step(np.array(1).reshape(1, 1))
 
         else:
@@ -39,7 +39,7 @@ def test_up_down():
     rews = []
     for step in range(30):
 
-        if step == 6:
+        if step == 7:
             o, r, d, i = env.step(np.array(2).reshape(1, 1))
 
         else:

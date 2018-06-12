@@ -7,11 +7,11 @@ import energy_py
 
 env_config = {
     'dataset': 'example',
-     'env_id': 'flex-v1',
-     'flex_size': 2,
-     'flex_time': 4,
-     'relax_time': 4,
-     'flex_effy': 1.1
+    'env_id': 'flex-v1',
+    'flex_size': 2,
+    'flex_time': 4,
+    'relax_time': 4,
+    'flex_effy': 1.1
               }
 
 
@@ -28,18 +28,18 @@ def test_flex_once():
     o = env.reset()
     for step in range(20):
 
-        if step == 0:
+        if step == 1:
             o, r, d, i = env.step(np.array(1))
         else:
             o, r, d, i = env.step(np.array(0))
 
     #  accounting for flex effy
-    flex_profile = np.concatenate([np.full(shape=4, fill_value=2),
-                                   np.full(shape=4, fill_value=-2*1.1)]) 
+    flex_profile = np.concatenate([np.full(shape=4, fill_value=-2),
+                                   np.full(shape=4, fill_value=2*1.1)]) 
 
     p = PRICES[:flex_profile.shape[0]]
 
-    rews = np.sum(p.flatten() * flex_profile.flatten()) / 12
+    rews = -np.sum(p.flatten() * flex_profile.flatten()) / 12
 
     info_rews = sum(i['reward'])
 
@@ -54,20 +54,20 @@ def test_flex_start_stop():
     for step in range(20):
         #  default action of doing nothing
         action = np.array(0)
-        if step == 1:
+        if step == 2:
             action = np.array(1)
-        if step == 3:
+        if step == 4:
             action = np.array(2)
 
         o, r, d, i = env.step(action)
 
     #  accounting for flex effy
     flex_profile = np.concatenate([np.array([0]),
-                                   np.full(shape=2, fill_value=2),
-                                   np.full(shape=2, fill_value=-2*1.1)])
+                                   np.full(shape=2, fill_value=-2),
+                                   np.full(shape=2, fill_value=2*1.1)])
 
     p = PRICES[:flex_profile.shape[0]]
-    rews = np.sum(p.flatten() * flex_profile.flatten())/12
+    rews = -np.sum(p.flatten() * flex_profile.flatten())/12
 
     info_rews = sum(i['reward'])
     assert np.isclose(rews, info_rews)

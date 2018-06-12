@@ -211,13 +211,13 @@ class FlexV1(BaseEnv):
         flex_action = 0
 
         if self.flex_down > 0:
-            flex_action = self.flex_size
+            flex_action = -self.flex_size
 
         if self.flex_up > 0:
-            flex_action = -self.flex_size * self.flex_effy
+            flex_action = self.flex_size * self.flex_effy
 
         #  /12 so we get reward in terms of £/5 minutes
-        reward = flex_action * electricity_price / 12
+        reward = -flex_action * electricity_price / 12
 
         #  work out the flex counter
         if flex_action == 0:
@@ -234,7 +234,6 @@ class FlexV1(BaseEnv):
                 self.flex_up, self.flex_down, self.relax, reward))
 
         next_state = self.get_state(self.steps)
-
         obs_append = self.make_observation_append_list()
         next_observation = self.get_observation(self.steps,
                                                 obs_append)
