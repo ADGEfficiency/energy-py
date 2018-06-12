@@ -5,6 +5,7 @@ import collections
 import logging
 
 import numpy as np
+import pandas as pd
 
 import energy_py
 from energy_py.common.spaces import ContinuousSpace, DiscreteSpace, GlobalSpace
@@ -39,7 +40,7 @@ class BaseEnv(object):
 
         if self.episode_sample == 'full':
             self.episode_length = self.state_ts.shape[0]
-        else: 
+        else:
             self.episode_length = int(episode_length)
 
         assert self.episode_length <= self.state_ts.shape[0]
@@ -130,9 +131,19 @@ class BaseEnv(object):
 
             assert state.shape[0] == observation.shape[0]
 
+            #  check that the index is equally spaced on 5 min basis
+            test_idx = pd.DatetimeIndex(
+                start=state.index[0],
+                end=state.index[-1],
+                freq='5min'
+            )
+            assert test_idx.shape[0] == state.shape[0]
+
         except FileNotFoundError:
-            error_message = 'state.csv & observation.csv are missing from {}'
-            raise FileNotFoundError(error_message.format(dataset_path))
+            raise FileNotFoundError(
+                'state.csv & observation.csv are missing from {}'.format(
+                    dataset_path)
+            )
 
         logger.debug('State start {} \
                       State end {}'.format(state.index[0],
@@ -173,13 +184,20 @@ class BaseEnv(object):
         """
         max_len = self.state_ts.shape[0]
         ep_len = self.episode_length
+        assert ep_len <= max_len
 
         if self.episode_sample == 'random':
             start = np.random.randint(low=0, high=max_len - ep_len)
 
-        elif self.episode_sample == 'full':
-            start = 0
-            ep_len = max_len
+        elif self.episode_sample == 'fixed':
+            #  max length using episode_length = 0
+            if self.episode_length == 0:
+                ep_len = max_len
+            else:
+                ep_len = self.episode_length
+            #  always get the most recent fixed length episode
+            start = max_len - ep_len
+
         else:
             raise ValueError('episode sample of {} not supported'.format(
                 self.episode_sample))

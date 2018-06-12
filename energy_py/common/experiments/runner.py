@@ -48,7 +48,6 @@ class Runner(object):
         self.episode_rewards.append(total_episode_reward)
 
         summaries = {
-            'epsiodes': len(self.episode_rewards),
             'total_episode_reward': total_episode_reward,
             'avg_rew_100': np.mean(self.episode_rewards[-100:]),
             'min_rew_100': np.min(self.episode_rewards[-100:]),
@@ -57,10 +56,10 @@ class Runner(object):
             'min_rew': np.min(self.episode_rewards),
             'max_rew': np.max(self.episode_rewards)
         }
-        log_string = 'Episode {} step {} {}%'.format(
+        log_string = 'Episode {:0.0f} step {:0.0f} {:2.1f}%'.format(
             len(self.episode_rewards),
             self.step,
-            self.total_steps / self.step
+            self.step / self.total_steps
         )
         #  repeated code here! TODO
         logger.debug(log_string)
@@ -68,7 +67,7 @@ class Runner(object):
 
         if self.step % self.log_freq == 0:
             logger.info(log_string)
-            [logger.info('{} - {}'.format(k, v)) for k, v in summaries.items()]
+            [logger.info('{} - {:2.1f}'.format(k, v)) for k, v in summaries.items()]
 
         for tag, value in summaries.items():
             summary = tf.Summary(

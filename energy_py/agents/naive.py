@@ -92,7 +92,7 @@ class DispatchAgent(BaseAgent):
         return np.array(action).reshape(1, self.action_space.shape[0])
 
 
-class NaiveFlex(BaseAgent):
+class TimeFlex(BaseAgent):
     """
     Flexes based on time of day
 
@@ -123,14 +123,16 @@ class NaiveFlex(BaseAgent):
             np.arange(hours[2], hours[3]),
         ])
 
+        logging.info('time flex hours are {}'.format(hours))
+
         self.hour_index = self.env.observation_info.index('C_hour')
 
     def _act(self, observation):
         hour = observation[0][self.hour_index]
 
         if hour in self.hours:
-            #  2 because we want up then down
-            action = np.array(2)
+            #  1 because we want up then down
+            action = np.array(1)
         else:
             action = np.array(0)
 
