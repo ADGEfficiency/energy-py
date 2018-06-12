@@ -3,12 +3,11 @@ Runs a single experiment using config dictionaries
 
 Command line args
     expt_name - the directory where run results will sit
-    dataset_name - name of the dataset folder in experiments/dataset
     --run_name (optional)
     --seed (optional)
 
-To run the example experiment, saving results into example/run0
-    python dict_expt.py example_dict example run0
+To run the example experiment, saving results into example_dict/run0
+    python dict_expt.py example_dict run0
 """
 
 import os

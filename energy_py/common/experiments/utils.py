@@ -12,11 +12,12 @@ def make_expt_parser():
     returns
         args (argparse NameSpace)
     """
-    parser = argparse.ArgumentParser(description='energy_py experiment argparser')
+    parser = argparse.ArgumentParser(
+        description='energy_py dict expt parser' 
+    )
 
     #  required
     parser.add_argument('expt_name', default=None, type=str)
-    parser.add_argument('dataset', default=None, type=str)
     #  optional
     parser.add_argument('--run_name', default=None, type=str)
     parser.add_argument('--seed', default=None, type=int)
@@ -33,7 +34,9 @@ def make_config_parser():
     returns
         args (argparse NameSpace)
     """
-    parser = argparse.ArgumentParser(description='energy_py experiment argparser')
+    parser = argparse.ArgumentParser(
+        description='energy_py config expt argparser'
+    )
 
     #  required
     parser.add_argument('expt_name', default=None, type=str)
