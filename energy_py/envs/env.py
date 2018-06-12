@@ -28,7 +28,7 @@ class BaseEnv(object):
     """
     def __init__(self,
                  dataset='example',
-                 episode_sample='random',
+                 episode_sample='fixed',
                  episode_length=2016):
 
         logger.info('Initializing environment {}'.format(repr(self)))
@@ -38,10 +38,7 @@ class BaseEnv(object):
 
         self.episode_sample = episode_sample
 
-        if self.episode_sample == 'full':
-            self.episode_length = self.state_ts.shape[0]
-        else:
-            self.episode_length = int(episode_length)
+        self.episode_length = min(int(episode_length), self.state_ts.shape[0])
 
         assert self.episode_length <= self.state_ts.shape[0]
 

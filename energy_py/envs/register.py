@@ -15,7 +15,7 @@ from energy_py.common import GlobalSpace
 from energy_py.envs.flex.flex_v0 import FlexV0
 from energy_py.envs.flex.flex_v1 import FlexV1
 
-from energy_py.envs.battery.battery_env import Battery
+from energy_py.envs.battery.battery import Battery
 
 
 logger = logging.getLogger(__name__)
