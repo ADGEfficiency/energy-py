@@ -5,7 +5,8 @@ import numpy as np
 import tensorflow as tf
 
 import energy_py
-from energy_py.common.utils import save_args, parse_ini, make_logger
+from energy_py.common.utils import save_args, parse_ini
+from energy_py.common.logging import make_logger
 
 from energy_py.common.experiments import Runner, save_env_info, make_paths
 

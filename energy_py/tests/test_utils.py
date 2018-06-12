@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-from energy_py.common.utils import find_sub_array_in_2D_array
+from energy_py.common.np_utils import find_sub_array_in_2D_array
 
 from energy_py.common.tf_utils import make_copy_ops
 

@@ -6,11 +6,9 @@ import configparser
 import csv
 from itertools import combinations
 import logging
-import logging.config
 import pickle
 import os
 
-import numpy as np
 import pandas as pd
 import tensorflow as tf
 
@@ -122,54 +120,6 @@ def load_pickle(name):
         return pickle.load(handle)
 
 
-def make_logger(paths, name=None):
-    """
-    Sets up the energy_py logging stragety.  INFO to console, DEBUG to file.
-
-    args
-        paths (dict)
-        name (str) optional logger name
-
-    returns
-        logger (object)
-    """
-    if name:
-        logger = logging.getLogger(name)
-    else:
-        logger = logging.getLogger(__name__)
-
-    fmt = '%(asctime)s [%(levelname)s]%(name)s: %(message)s'
-
-    logging.config.dictConfig({
-        'version': 1,
-        'disable_existing_loggers': False,
-
-        'formatters': {'standard': {'format': fmt,
-                                    'datefmt': '%Y-%m-%d %H:%M:%S'}},
-
-        'handlers': {'console': {'level': 'INFO',
-                                 'class': 'logging.StreamHandler',
-                                 'formatter': 'standard'},
-
-                     'debug_file': {'class': 'logging.FileHandler',
-                                    'level': 'DEBUG',
-                                    'filename': paths['debug_log'],
-                                    'mode': 'w',
-                                    'formatter': 'standard'},
-
-                     'info_file': {'class': 'logging.FileHandler',
-                                   'level': 'INFO',
-                                   'filename': paths['info_log'],
-                                   'mode': 'w',
-                                   'formatter': 'standard'}},
-
-        'loggers': {'': {'handlers': ['console', 'debug_file', 'info_file', ],
-                         'level': 'DEBUG',
-                         'propagate': True}}})
-
-    return logger
-
-
 def save_args(config, path):
     """
     Saves a config dictionary to a text file
@@ -189,41 +139,3 @@ def save_args(config, path):
             writer.writerow([k]+[v])
 
     return writer
-
-
-def rolling_window(a, size):
-    shape = a.shape[:-1] + (a.shape[-1] - size + 1, size)
-    strides = a.strides + (a. strides[-1],)
-    return np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides)
-
-
-def find_sub_array_in_2D_array(sub_array, array):
-    """
-    Find the first occurence of a sub_array within a larger array
-
-    args
-        sub_array (np.array) ndim=1
-        array (np.array) ndim=2, shape=(num_samples, sub_array.shape[0])
-
-    i.e. 
-        sub_array = np.array([0.0, 2.0]).reshape(2)
-        array = np.array([0.0, 0.0,
-                          0.0, 1.0,
-                          0.0, 2.0).reshape(3, 2)
-        --> 2
-
-    Used for finding the index of an action within a list of all possible actions
-    """
-    #  array making and shaping so that user could feed in a list and it
-    #  would work
-    sub_array = np.array(sub_array).reshape(array.shape[1])
-
-    bools = rolling_window(sub_array, array.shape[1]) == array
-
-    bools = np.all(
-        bools.reshape(array.shape[0], -1),
-        axis=1
-    )
-
-    #  argmax finds the first true values
-    return np.argmax(bools)
