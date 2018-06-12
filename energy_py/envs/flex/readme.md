@@ -1,14 +1,14 @@
-##  Flexibility environment
+#  Flexibility environment
 Environment to simulate a flexbile electricity asset - ie a chiller.  Also known as demand side response.
 
 Currently two environments are implemented, which differ based on the action space.
 
-#  flex-v0
+##  flex-v0
 0 = no_op
 1 = start flex down -> flex up cycle
 2 = start flex up -> flex down cycle
 
-#  flex-v1
+##  flex-v1
 0 = no op
 1 = start (if available), continue if in flex_down
 2 = stop (if in flex_down cycle)
