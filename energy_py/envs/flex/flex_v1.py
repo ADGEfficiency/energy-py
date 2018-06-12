@@ -1,7 +1,4 @@
-"""
-v1 of the flexibility environment
-
-"""
+"""v1 of the electricity flexibility environment"""
 
 import logging
 
@@ -39,9 +36,9 @@ class FlexV1(BaseEnv):
         relax (no change in consumption, zero reward)
 
     The agent can choose between three discrete actions
-        0 = start the cycle (ie flex down)
-        1 = stop the down cycle (to start the flex up)
-        2 = no op
+            0 = no op
+            1 = start (if available), continue if in flex_down
+            2 = stop (if in flex_down cycle)
 
     Once a flexibility action has started, the action continues until
     1 - the agent stops it
@@ -66,6 +63,7 @@ class FlexV1(BaseEnv):
         self.flex_size = float(flex_size)
         self.max_flex_time = int(flex_time)
         self.relax_time = int(relax_time)
+        self.flex_effy = flex_effy
 
         #  counters for the different modes of operation
         self.avail = None
@@ -85,9 +83,9 @@ class FlexV1(BaseEnv):
         SETTING THE ACTION SPACE
 
         Discrete action space with three choices
-            0 = start flex down cycle
-            1 = stop flex down cycle, start flex up cycle
-            2 = no op
+            0 = no op
+            1 = start (if available), continue if in flex_down
+            2 = stop (if in flex_down cycle)
         """
         self.action_space = GlobalSpace([DiscreteSpace(3)])
 
@@ -149,9 +147,9 @@ class FlexV1(BaseEnv):
             action (np.array) shape = (1, 1)
 
         Action space is discrete with three choices
-            [0] -> no op
-            [1] -> start (if available), continue if in flex_down
-            [2] -> stop (if in flex_down cycle)
+            0 = no op
+            1 = start (if available), continue if in flex_down
+            2 = stop (if in flex_down cycle)
         """
         #  pull the electricity price out of the state
         price_index = self.state_info.index('C_electricity_price_[$/MWh]')
@@ -216,7 +214,7 @@ class FlexV1(BaseEnv):
             flex_action = self.flex_size
 
         if self.flex_up > 0:
-            flex_action = -self.flex_size
+            flex_action = -self.flex_size * self.flex_effy
 
         #  /12 so we get reward in terms of £/5 minutes
         reward = flex_action * electricity_price / 12

@@ -1,14 +1,19 @@
 ##  Flexibility environment
 Environment to simulate a flexbile electricity asset - ie a chiller.  Also known as demand side response.
 
-Action space is a discrete action space
-```
-action = np.array([flex_action])
-    action = 0 -> no op
-    action = 1 -> flex up then down
-    action = 2 -> flex down then up
-```
-Reward is the net effect of the flexibility action 
+Currently two environments are implemented, which differ based on the action space.
+
+#  flex-v0
+0 = no_op
+1 = start flex down -> flex up cycle
+2 = start flex up -> flex down cycle
+
+#  flex-v1
+0 = no op
+1 = start (if available), continue if in flex_down
+2 = stop (if in flex_down cycle)
+
+Reward is the net effect of the flexibility action, and is the same for both environments
 ```
 reward = flex_action * electricity price
 $ / 5min = MW * $/MW / 12
