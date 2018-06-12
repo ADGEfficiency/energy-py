@@ -44,8 +44,8 @@ if __name__ == '__main__':
 
     env_config = {'env_id': 'flex-v0',
                   'dataset': 'tempus', 
-                  'flex_size': 0.2,
-                  'max_flex_time': 4,
+                  'flex_size': 0.5,
+                  'flex_time': 1,
                   'relax_time': 0,
                   'episode_length': 2016,
                   'episode_sample': 'random'}
