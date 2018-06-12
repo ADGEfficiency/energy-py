@@ -21,7 +21,7 @@ TOTAL_STEPS = 100000
 
 #  creating an environment
 env = energy_py.make_env(
-    env_id='Battery',
+    env_id='battery',
     dataset_name=example,
     episode_length=288,
     power_rating=2
@@ -29,7 +29,7 @@ env = energy_py.make_env(
 
 #  creating an agent
 agent = energy_py.make_agent(
-    agent_id='DQN',
+    agent_id='dqn',
     env=env
     total_steps=TOTAL_STEPS
     )
@@ -56,7 +56,7 @@ Single call using the experiment function
 
 ```python
 agent_config = {
-    'agent_id': 'DQN',
+    'agent_id': 'dqn',
     'double_q': True
                 }
 
@@ -74,7 +74,7 @@ Running a config dictionary experiment from a Terminal.  The experiment will be 
 ```bash
 $ cd energy_py/energy_py/experiments
 
-$ python config_expt.py example_expt example  
+$ python config_expt.py example_expt 
 ```
 
 ## Installation
