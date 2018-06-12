@@ -192,14 +192,14 @@ class Battery(BaseEnv):
         logger.debug('net rate is {:.3f} MW'.format(net_rate))
         logger.debug('reward is {:.3f} $/5min'.format(reward))
 
-        self.steps += 1
         next_state = self.get_state(self.steps)
         next_observation = self.get_observation(self.steps,
                                                 append=[float(self.charge)])
+        self.steps += 1
 
         #  check to see if episode is done
         #  -1 in here because of the zero index
-        if self.steps == (self.episode_length-1):
+        if self.steps == (self.episode_length):
             self.done = True
 
         #  saving info

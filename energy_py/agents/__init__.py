@@ -3,7 +3,7 @@ import logging
 # from energy_py.agents.dqn import DQN
 from energy_py.agents.dqn import DQN
 from energy_py.agents.classifier import ClassifierAgent
-from energy_py.agents.naive import NaiveFlex, RandomAgent
+from energy_py.agents.naive import NaiveFlex, RandomAgent, AutoFlex
 
 
 logger = logging.getLogger(__name__)
@@ -13,7 +13,8 @@ agent_register = {
     'dqn': DQN,
     'classifier': ClassifierAgent,
     'random': RandomAgent,
-    'naive_flex': NaiveFlex
+    'naive_flex': NaiveFlex,
+    'auto_flex': AutoFlex
 }
 
 

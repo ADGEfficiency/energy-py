@@ -78,7 +78,9 @@ class DispatchAgent(BaseAgent):
 
         """
         obs = kwargs['observation']
-        idx = self.env.observation_info.index('C_cumulative_mean_dispatch_[$/MWh]')
+        idx = self.env.observation_info.index(
+            'C_cumulative_mean_dispatch_[$/MWh]'
+        )
         cumulative_dispatch = obs[0][idx]
 
         if cumulative_dispatch > self.trigger:
@@ -94,22 +96,26 @@ class NaiveFlex(BaseAgent):
     """
     Flexes based on time of day
 
-    works with flex env 1 TODO check repr
-    """
+    args
+        hours (list) hours to flex in
 
-    def __init__(self, hours, run_weekend=False, **kwargs):
-        """
-        args
-            env (object)
-            hours (list) hours to flex in
-            run_weekend (bool)
-        """
-        #  calling init method of the parent Base_Agent class
+    kwargs passed into BaseAgent
+        env (energy_py environment)
+    """
+    def __init__(self, hours, **kwargs):
         super().__init__(**kwargs)
+        assert repr(self.env) == '<energy_py flex-v0 environment>'
 
         #  can be used for a two block period
         #  hours is input in the form
         #  [start, end, start, end]
+
+        #  if block catches the case when we use config files, and hours
+        #  iteratble ends up being a string like '5','9','15','19'
+        if isinstance(hours, str):
+            hours = hours.split(',')
+            hours = [int(h) for h in hours]
+
         assert len(hours) == 4
 
         self.hours = np.concatenate([
@@ -117,30 +123,81 @@ class NaiveFlex(BaseAgent):
             np.arange(hours[2], hours[3]),
         ])
 
-        #  find the integer index of the hour in the observation
         self.hour_index = self.env.observation_info.index('C_hour')
 
     def _act(self, observation):
-        """
-
-        """
-        #  index the observation at 0 because observation is
-        #  shape=(num_samples, observation_length)
         hour = observation[0][self.hour_index]
 
         if hour in self.hours:
-            action = np.array(0) 
-
+            #  2 because we want up then down
+            action = np.array(2)
         else:
-            action = np.array(1) 
+            action = np.array(0)
+
         logging.debug('hour {} action {}'.format(hour, action))
 
         return np.array(action).reshape(1, self.action_space.shape[0])
 
 
+class AutoFlex(BaseAgent):
+    """
+    Flexes based on the price predictions for the current and next hh
+
+    kwargs passed into BaseAgent
+        env (energy_py environment)
+    """
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        assert repr(self.env) == '<energy_py flex-v0 environment>'
+
+        self.minute_index = self.env.observation_info.index('C_minute')
+
+        self.current_fc_index = self.env.observation_info.index(
+            'C_forecast_electricity_price_current_hh_[$/MWh]')
+
+        self.next_fc_index = self.env.observation_info.index(
+            'C_forecast_electricity_price_next_hh_[$/MWh]')
+
+    def _act(self, observation):
+        minute = observation[0][self.minute_index]
+        current_price = observation[0][self.current_fc_index]
+        next_price = observation[0][self.next_fc_index]
+
+        action = 0
+        if minute == 0 or minute == 30:
+            price_delta = current_price - next_price
+            if price_delta > 5:
+                #  1 becuase we wnat down then up
+                action = 1
+
+        logging.debug('minute {} current_p {} next_p {} action {}'.format(
+            minute, current_price, next_price, action)
+                      )
+
+        return np.array(action).reshape(1, self.action_space.shape[0])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class RandomAgent(BaseAgent):
     """
-    An agent that samples the action space.
+    An agent that always randomly samples the action space.
 
     args
         env (object) energy_py environment

@@ -7,8 +7,8 @@ import tensorflow as tf
 import energy_py
 from energy_py.common.utils import save_args, parse_ini, make_logger
 
-from energy_py.common.experiments.runner import Runner
-from energy_py.common.experiments.utils import make_paths
+from energy_py.common.experiments import Runner, save_env_info, make_paths
+
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ def experiment(agent_config,
         save_args(agent_config, path=paths['agent_args'])
 
         #  runner helps to manage our experiment
-        runner = Runner(sess, paths, total_steps, env)
+        runner = Runner(sess, paths, total_steps)
 
         #  outer while loop runs through multiple episodes
         step, episode = 0, 0
@@ -87,6 +87,13 @@ def experiment(agent_config,
                     train_info = agent.learn()
 
             runner.record_episode(env_info=info)
+
+            save_env_info(
+                env,
+                info,
+                len(runner.episode_rewards),
+                paths['env_histories']
+            )
 
 
 def run_config_expt(expt_name, run_name, expt_path):

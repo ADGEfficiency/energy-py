@@ -233,15 +233,15 @@ class FlexV1(BaseEnv):
             logger.debug('up {} down {} relax {} rew {}'.format(
                 self.flex_up, self.flex_down, self.relax, reward))
 
-        self.steps += 1
         next_state = self.get_state(self.steps)
 
         obs_append = self.make_observation_append_list()
         next_observation = self.get_observation(self.steps,
                                                 obs_append)
+        self.steps += 1
 
         #  check to see if we are done
-        if self.steps == (self.episode_length - 1):
+        if self.steps == (self.episode_length):
             done = True
         else:
             done = False

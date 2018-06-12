@@ -20,9 +20,7 @@ class BaseEnv(object):
 
     args
         dataset (str) located in energy_py/experiments/datasets
-        episode_length (int)
-        episode_start (int) integer index of episode start
-        episode_random (bool) whether to randomize the episode start position
+        episode_sample (str) fixed, random
 
     Most energy problems are time series problems
     The BaseEnv has functionality for working with time series data
@@ -34,11 +32,17 @@ class BaseEnv(object):
 
         logger.info('Initializing environment {}'.format(repr(self)))
 
-        self.episode_sample = episode_sample
-        self.episode_length = int(episode_length)
-
         #  load the time series info from csv
         self.state_ts, self.observation_ts = self.load_dataset(dataset)
+
+        self.episode_sample = episode_sample
+
+        if self.episode_sample == 'full':
+            self.episode_length = self.state_ts.shape[0]
+        else: 
+            self.episode_length = int(episode_length)
+
+        assert self.episode_length <= self.state_ts.shape[0]
 
     def _step(self, action): raise NotImplementedError
 
@@ -58,9 +62,11 @@ class BaseEnv(object):
 
         self.state_ep, self.observation_ep = self.get_episode()
 
-        logger.info('Episode start {} \
-                      Episode end {}'.format(self.state_ep.index[0],
-                                             self.state_ep.index[-1]))
+        logger.debug(
+            'Episode start {} Episode end {}'.format(
+                self.state_ep.index[0], self.state_ep.index[-1])
+        )
+
         return self._reset()
 
     def step(self, action):
@@ -166,34 +172,32 @@ class BaseEnv(object):
             state_ep (pd.DataFrame)
         """
         max_len = self.state_ts.shape[0]
+        ep_len = self.episode_length
 
         if self.episode_sample == 'random':
-            if self.episode_length > max_len:
-                start = 0
-                episode_length = max_len
-            else:
-                delta = max_len - self.episode_length
-                episode_length = self.episode_length
+            start = np.random.randint(low=0, high=max_len - ep_len)
 
-                if delta == 0:
-                    start = 0
-                else:
-                    start = np.random.randint(0, max_len - self.episode_length)
-
-        elif self.episode_sample == 'max_length':
+        elif self.episode_sample == 'full':
             start = 0
-            end = max_len
-
+            ep_len = max_len
         else:
-            raise ValueError('Episode sampling method not supported')
+            raise ValueError('episode sample of {} not supported'.format(
+                self.episode_sample))
 
-        end = start + episode_length
-        logging.debug('max_len {} start {} end {}'.format(max_len,
-                                                          start,
-                                                          end))
+        end = start + ep_len
+
+        logging.debug(
+            'sampling episode using {}'.format(self.episode_sample)
+        )
+        logging.debug(
+            'max_len {} start {} end {}'.format(max_len, start, end)
+        )
+
         state_ep = self.state_ts.iloc[start:end, :]
         observation_ep = self.observation_ts.iloc[start:end, :]
+
         assert observation_ep.shape[0] == state_ep.shape[0]
+        assert state_ep.shape[0] == ep_len
 
         return state_ep, observation_ep
 

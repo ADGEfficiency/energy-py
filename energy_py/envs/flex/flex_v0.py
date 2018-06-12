@@ -45,9 +45,9 @@ class FlexV0(BaseEnv):
                  **kwargs):
 
         #  technical energy inputs
-        self.flex_down_size = float(flex_size)
+        self.flex_down_size = -float(flex_size)
         #  flex up we increase consumption by more than when we flex down
-        self.flex_up_size = -float(flex_size * flex_effy)
+        self.flex_up_size = float(flex_size) * float(flex_effy)
 
         #  assume that flex down & up times are the same
         #  model is built to change this eaisly
@@ -234,7 +234,7 @@ class FlexV0(BaseEnv):
 
         #  now we set reward based on the flex_action
         #  /12 so we get reward in terms of $/5 minutes
-        reward = flex_action * electricity_price / 12
+        reward = - flex_action * electricity_price / 12
 
         #  another paranoid check of the counters
         total_counters = self.check_counters()
@@ -252,17 +252,17 @@ class FlexV0(BaseEnv):
             logger.debug('up {} down {} relax {} rew {}'.format(
                 self.flex_up, self.flex_down, self.relax, reward))
 
-        self.steps += 1
         next_state = self.get_state(self.steps)
         next_observation = self.get_observation(self.steps,
                                                 append=[self.avail,
                                                         self.flex_down,
                                                         self.flex_up,
                                                         self.relax])
+        self.steps += 1
 
         #  check to see if we are done
         done = False
-        if self.steps == (self.episode_length - 1):
+        if self.steps == (self.episode_length):
             done = True
 
         self.info = self.update_info(steps=self.steps,
