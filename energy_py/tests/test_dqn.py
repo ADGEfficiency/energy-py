@@ -29,7 +29,7 @@ def setup_agent(sess, double_q=False):
         env (energy_py Battery environment)
     """
 
-    env = energy_py.make_env('Battery')
+    env = energy_py.make_env('battery')
 
     #  use high learning rate to get weight changes
     agent = DQN(

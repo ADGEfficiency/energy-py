@@ -12,7 +12,8 @@ env_config = {'dataset': 'example',
               'flex_time': 6,
               'relax_time': 12,
               'flex_effy': 1.2}
-env = energy_py.make_env('Flex-v0', **env_config)
+
+env = energy_py.make_env('flex-v0', **env_config)
 
 PRICES = env.env.state_ts.values
 

@@ -93,6 +93,8 @@ class DispatchAgent(BaseAgent):
 class NaiveFlex(BaseAgent):
     """
     Flexes based on time of day
+
+    works with flex env 1 TODO check repr
     """
 
     def __init__(self, hours, run_weekend=False, **kwargs):
@@ -127,10 +129,11 @@ class NaiveFlex(BaseAgent):
         hour = observation[0][self.hour_index]
 
         if hour in self.hours:
-            action = self.action_space.high
+            action = np.array(0) 
 
         else:
-            action = self.action_space.low
+            action = np.array(1) 
+        logging.debug('hour {} action {}'.format(hour, action))
 
         return np.array(action).reshape(1, self.action_space.shape[0])
 

@@ -174,12 +174,12 @@ class MountainCarEnv(EnvWrapper):
         return random.choice(self.actions)
 
 
-env_register = {'Flex-v0': FlexEnvV0,
-                'Flex-v1': FlexEnvV1,
-                'Battery': BatteryEnv,
-                'CartPole': CartPoleEnv,
-                'Pendulum': PendulumEnv,
-                'MountainCar': MountainCarEnv}
+env_register = {'flex-v0': FlexEnvV0,
+                'flex-v1': FlexEnvV1,
+                'battery': BatteryEnv,
+                'cartpole-v0': CartPoleEnv,
+                'pendulum-v0': PendulumEnv,
+                'mountaincar-v0': MountainCarEnv}
 
 
 def make_env(env_id, **kwargs):

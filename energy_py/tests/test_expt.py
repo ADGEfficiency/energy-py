@@ -17,7 +17,7 @@ TOTAL_STEPS = 200
 
 PATHS = make_paths('results')
 
-AGENT_CONFIG = {'agent_id': 'DQN',
+AGENT_CONFIG = {'agent_id': 'dqn',
                 'discount': 0.97,
                 'tau': 0.001,
                 'total_steps': TOTAL_STEPS,
@@ -34,7 +34,7 @@ AGENT_CONFIG = {'agent_id': 'DQN',
 
 def test_battery_expt():
 
-    env_config = {'env_id': 'Battery',
+    env_config = {'env_id': 'battery',
                   'dataset': 'example',
                   'episode_length': 10,
                   'episode_sample': 'random',
@@ -48,7 +48,7 @@ def test_battery_expt():
 
 def test_flex_expt():
 
-    env_config = {'env_id': 'Flex-v0',
+    env_config = {'env_id': 'flex-v0',
                   'dataset': 'example',
                   'episode_length': 10,
                   'episode_sample': 'random'}
@@ -61,7 +61,7 @@ def test_flex_expt():
 
 def test_cartpole_expt():
 
-    env_config = {'env_id': 'CartPole'}
+    env_config = {'env_id': 'cartpole-v0'}
 
     experiment(agent_config=AGENT_CONFIG,
                env_config=env_config,

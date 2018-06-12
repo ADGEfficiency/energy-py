@@ -28,8 +28,11 @@ class Runner(object):
 
         self.total_steps = int(total_steps)
 
-        self.state_info = env.env.state_info
-        self.observation_info = env.observation_info
+        try:
+            self.state_info = env.env.state_info
+            self.observation_info = env.observation_info
+        except AttributeError:
+            pass
 
         self.log_freq = 500
 

@@ -1,62 +1,48 @@
+"""v0 of the flexibility environment"""
+
 import logging
 
-from energy_py.common import DiscreteSpace, GlobalSpace
 from energy_py.envs import BaseEnv
+from energy_py.common import DiscreteSpace, GlobalSpace
+
 
 logger = logging.getLogger(__name__)
 
 
 class FlexV0(BaseEnv):
     """
-    An environment to simulate electricity flexibility responding to the price
-    of electricity.
+    Simulate electricity flexibility asset that can only start full cycles 
 
-    Model simulates a flexibiltiy cycle of three stages
+    args
+        flex_size (MW) the size of the decrease in consumption
+        flex_time (int) number of 5 minute periods for both up & down cycles
+        relax_time (int) number of 5 minute periods for the relax cycle
+        flex_effy (float) the increase in demand (i.e. the up cycle)
+
+    optional kwargs that are passed into BaseEnv
+        dataset
+        episode_length
+        episode_start
+        episode_random
+
+    Model simulates a flexibility cycle of three stages
     - flex up = increased consumption
     - flex down = decreased consumption
     - relaxation = agent has to wait until starting the next cycle
 
-    Action space is discrete
+    The agent can choose between three discrete actions
         0 = no_op
-        1 = start flex down then flex up cycle
-        2 = start flex up then flex down cycle
+        1 = start flex down -> flex up cycle
+        2 = start flex up -> flex down cycle
 
-    attributes
-        action_space (GlobalSpace)
-        observation_ts (pd.DataFrame)
-        state_ts (pd.DataFrame)
-        observation_space (GlobalSpace)
-        observation_info (list)
-
-        flex_down_size (float) in MW
-        flex_up_size (float) in MW
-        flex_down_time (int) number of 5 min periods
-        flex_up_time (int) number of 5 min periods
-        relax_time (int) number of 5 min periods
-        flex_down (int) counter
-        flex_up (int) counter
-        relax (int) counter
-        avail (int) binary 0 or 1
-        local_action (int) remembers which action was taken during a cycle
-        flex_counter (int) the number of flexes per episode
-
-    methods
-        _reset()
-        _step(action)
-        check_counters()
-
-    kwargs that can be passed to the parent class BaseEnv
-        dataset_name
-        episode_length
-        episode_start
-        episode_random
+    Once the cycle has started it runs until completion
     """
     def __init__(self,
-                 flex_size=2,  # MW
-                 flex_time=6,  # 5 minute periods
-                 relax_time=12,  # 5 minute periods
-                 flex_effy=1.2,
-                 **kwargs):  # additional consumption in flex up
+                 flex_size=2,   # MW
+                 flex_time=6,   # num 5 minute periods
+                 relax_time=6,  # num 5 minute periods
+                 flex_effy=1.2, # percent
+                 **kwargs):
 
         #  technical energy inputs
         self.flex_down_size = float(flex_size)

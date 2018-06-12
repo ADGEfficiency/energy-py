@@ -42,8 +42,8 @@ if __name__ == '__main__':
     #     'decay_learning_rate': 0.1
     #                 }
 
-    env_config = {'env_id': 'Flex-v1',
-                  'dataset': args.dataset,
+    env_config = {'env_id': 'flex-v0',
+                  'dataset': 'tempus', 
                   'flex_size': 0.2,
                   'max_flex_time': 4,
                   'relax_time': 0,

@@ -7,7 +7,7 @@ import energy_py
 
 
 env_config = {'dataset': 'example',
-              'env_id': 'Flex-v1',
+              'env_id': 'flex-v1',
               'flex_size': 2,
               'max_flex_time': 4,
               'relax_time': 4}

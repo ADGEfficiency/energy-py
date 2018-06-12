@@ -1,25 +1,6 @@
 """
 v1 of the flexibility environment
 
-This model of a flexibility asset lets the agent start and stop at will.
-
-The environment has four modes (occur in order)
-    available (no change in consumption, zero reward)
-    flex_down (reduction in consumption, positive reward)
-    flex_up (increase in consumption, negative reward)
-    relax (no change in consumption, zero reward)
-
-Once a flexibility action has started, the action continues until
-1 - the agent stops it
-2 - a maximum flex time is reached
-
-After the action has finished, a penalty (the flex up cycle) is paid.
-An optional length of relaxation time occurs after the flex up period
-
-TODO
-Currently the relaxation time is a fixed length - in the future this could be a function of the flex_time
-
-Ability to randomly start in different parts of the flex cycle
 """
 
 import logging
@@ -35,36 +16,55 @@ logger = logging.getLogger(__name__)
 
 class FlexV1(BaseEnv):
     """
-    Model of a flexibility system operating in a start/stop configuration
+    Simulate electricity flexibility asset that start and stop cycles
 
-    optional args that can be passed into BaseEnv via kwargs
+    args
+        flex_size (MW) the size of the decrease in consumption
+        flex_time (int) number of 5 minute periods for both up & down cycles
+        relax_time (int) number of 5 minute periods for the relax cycle
+        flex_effy (float) the increase in demand (i.e. the up cycle)
+
+    optional kwargs that are passed into BaseEnv
         dataset
         episode_length
         episode_start
         episode_random
 
-    args
-        flex_size (int) the size of the action in MW
-        max_flex_time (int) limit of flex_down cycle (num 5 mins)
+    Unlike v0, the flex cycle in this env can be stopped
 
+    The environment has four modes (occur in order)
+        available (no change in consumption, zero reward)
+        flex_down (reduction in consumption, positive reward)
+        flex_up (increase in consumption, negative reward)
+        relax (no change in consumption, zero reward)
 
-    attributes
-        avail (int) boolean (0 = unavailable, 1 = available)
-        flex_down (int) counter for the flex down period
-        flex_up (int) counter for the flex up period
-        relax (int) counter for the relax period
-        flex_time (int)
-        flex_counter (int)
+    The agent can choose between three discrete actions
+        0 = start the cycle (ie flex down)
+        1 = stop the down cycle (to start the flex up)
+        2 = no op
+
+    Once a flexibility action has started, the action continues until
+    1 - the agent stops it
+    2 - a maximum flex time is reached
+
+    After the action has finished, a penalty (the flex up cycle) is paid.
+    An optional length of relaxation time occurs after the flex up period
+
+    TODO
+    Currently the relaxation time is a fixed length
+    - in the future this could be a function of the flex_time
+    Ability to randomly start in different parts of the flex cycle
     """
 
     def __init__(self,
-                 flex_size,
-                 max_flex_time,
-                 relax_time,
+                 flex_size=2,   # MW
+                 flex_time=6,   # num 5 minute periods
+                 relax_time=6,  # num 5 minute periods
+                 flex_effy=1.2, # percent
                  **kwargs):
 
         self.flex_size = float(flex_size)
-        self.max_flex_time = int(max_flex_time)
+        self.max_flex_time = int(flex_time)
         self.relax_time = int(relax_time)
 
         #  counters for the different modes of operation
@@ -149,10 +149,9 @@ class FlexV1(BaseEnv):
             action (np.array) shape = (1, 1)
 
         Action space is discrete with three choices
-
-            [0] -> start (if available), continue if in flex_down
-            [1] -> stop (if in flex_down cycle)
-            [2] -> no op
+            [0] -> no op
+            [1] -> start (if available), continue if in flex_down
+            [2] -> stop (if in flex_down cycle)
         """
         #  pull the electricity price out of the state
         price_index = self.state_info.index('C_electricity_price_[$/MWh]')

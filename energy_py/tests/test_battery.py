@@ -4,22 +4,21 @@ import numpy as np
 
 import energy_py
 
-config = {'env_id': 'Battery',
-          'dataset': 'example',
-          'initial_charge': 0,
-          'round_trip_eff': 0.9}
+default_config = {
+    'env_id': 'battery',
+     'dataset': 'example',
+     'initial_charge': 0,
+     'round_trip_eff': 0.9
+}
 
 #  this code is just to get the charge index
 #  so I don't need to do it in each test function
-env = energy_py.make_env(**config)
+env = energy_py.make_env(**default_config)
 charge_index = env.observation_info.index('C_charge_level_[MWh]')
 
 
 def test_charge():
-    config = {'env_id': 'Battery',
-              'dataset': 'example',
-              'initial_charge': 0.0,
-              'round_trip_eff': 0.9}
+    config = default_config 
 
     env = energy_py.make_env(**config)
 
@@ -33,11 +32,10 @@ def test_charge():
 
 
 def test_discharge():
-    config = {'env_id': 'Battery',
-              'dataset': 'example',
-              'capacity': 4.0,
-              'initial_charge': 1.0,
-              'round_trip_eff': 0.9}
+    config = default_config
+    config['initial_charge'] = 1.0
+    config['capacity'] = 4.0
+
     env = energy_py.make_env(**config)
 
     output = env.step(action=np.array([-1.0]).reshape(1, 1))
@@ -49,12 +47,10 @@ def test_discharge():
 
 
 def test_no_op():
+    config = default_config
+    config['initial_charge'] = 0.5 
+    config['capacity'] = 4.0
 
-    config = {'env_id': 'Battery',
-              'dataset': 'example',
-              'capacity': 4.0,
-              'initial_charge': 0.5,
-              'round_trip_eff': 0.9}
     env = energy_py.make_env(**config)
 
     output = env.step(action=np.array([0.0]).reshape(1, 1))
@@ -62,4 +58,3 @@ def test_no_op():
     charge = observation[0][charge_index]
     expected_charge = 2.0
     assert charge == expected_charge
-

@@ -1,7 +1,7 @@
 ##  Flexibility environment
-Environment to simulate a flexbile electricity asset - ie a chiller.  Also known as demnad side response.
+Environment to simulate a flexbile electricity asset - ie a chiller.  Also known as demand side response.
 
-Action space is a discrete action space.  
+Action space is a discrete action space
 ```
 action = np.array([flex_action])
     action = 0 -> no op
