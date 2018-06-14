@@ -56,11 +56,13 @@ class Runner(object):
             'min_rew': np.min(self.episode_rewards),
             'max_rew': np.max(self.episode_rewards)
         }
+
         log_string = 'Episode {:0.0f} step {:0.0f} {:2.1f}%'.format(
             len(self.episode_rewards),
             self.step,
-            self.step / self.total_steps
+            100 * self.step / self.total_steps
         )
+
         #  repeated code here! TODO
         logger.debug(log_string)
         [logger.debug('{} - {}'.format(k, v)) for k, v in summaries.items()]
@@ -71,10 +73,11 @@ class Runner(object):
 
         for tag, value in summaries.items():
             summary = tf.Summary(
-                value=[tf.Summary.Value(tag=tag, simple_value=float(value))]
-            )
+                value=[tf.Summary.Value(tag=tag, simple_value=float(value))])
             self.writer.add_summary(summary, self.step)
+
         self.writer.flush()
+
         with open(self.rewards_path, 'w') as myfile:
             wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
             wr.writerow(self.episode_rewards)
