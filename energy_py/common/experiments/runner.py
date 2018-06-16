@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 """
+=======
+""" 
+>>>>>>> 00e6646b19f7c79ec97710429c47e657e77d215b
 the Runner class has two main functions
 1 - keeping track of episode rewards
 2 - logging reward info to tensorboard
@@ -39,6 +43,7 @@ class Runner(object):
         )
 
         self.log_freq = 500
+
         logging.info('Making runner - log every {} steps'.format(
             self.log_freq))
 
@@ -81,7 +86,10 @@ class Runner(object):
             logger.info('{} - {:2.1f}'.format(
                 'avg_rew_100', summaries['avg_rew_100']
             )
+<<<<<<< HEAD
                         )
+=======
+>>>>>>> 00e6646b19f7c79ec97710429c47e657e77d215b
 
         for tag, value in summaries.items():
             summary = tf.Summary(
