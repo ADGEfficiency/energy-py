@@ -1,4 +1,10 @@
-"""The Runner class helps to run experiments"""
+""" 
+the Runner class has two main functions
+1 - keeping track of episode rewards
+2 - logging reward info to tensorboard
+3 - saving reward history to csv
+"""
+
 
 import csv
 import logging
@@ -27,10 +33,14 @@ class Runner(object):
         self.sess = sess
         self.rewards_path = paths['ep_rewards']
         self.tb_path = paths['tb_rl']
-
         self.total_steps = int(total_steps)
+
+        self.writer = tf.summary.FileWriter(
+            self.tb_path, self.sess.graph
+        )
+
         self.log_freq = 500
-        self.writer = tf.summary.FileWriter(self.tb_path, self.sess.graph)
+        logging.info('Making runner - log every {} steps'.format(self.log_freq))
 
         self.reset()
 
@@ -63,13 +73,14 @@ class Runner(object):
             100 * self.step / self.total_steps
         )
 
-        #  repeated code here! TODO
         logger.debug(log_string)
         [logger.debug('{} - {}'.format(k, v)) for k, v in summaries.items()]
 
         if self.step % self.log_freq == 0:
             logger.info(log_string)
-            [logger.info('{} - {:2.1f}'.format(k, v)) for k, v in summaries.items()]
+            logger.info('{} - {:2.1f}'.format(
+                'avg_rew_100', summaries['avg_rew_100']
+            )
 
         for tag, value in summaries.items():
             summary = tf.Summary(
