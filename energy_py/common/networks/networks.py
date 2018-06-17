@@ -1,7 +1,10 @@
+import logging
 import tensorflow as tf
 
 from energy_py.common.networks.layers import fully_connected_layer
 
+
+logger = logging.getLogger(__name__)
 
 def feed_forward(
         scope,
@@ -21,6 +24,10 @@ def feed_forward(
         hiddens (list) has nodes per layer (includes input layer)
         output_nodes (int)
     """
+    logging.info('Making feed_forward network')
+    logging.info('input {} hiddens {} output {}'.format(
+            input_shape, hiddens, output_nodes))
+
     with tf.name_scope(scope):
         layer = fully_connected_layer(
             'input_layer',

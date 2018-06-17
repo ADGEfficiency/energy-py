@@ -33,7 +33,7 @@ class DQN(BaseAgent):
             batch_size=64,
             learning_rate=0.001,
             learning_rate_decay=1.0,
-            gradient_norm_clip=10,
+            gradient_norm_clip=0.5,
             update_target_net_steps=1,
             tau=0.001,
             **kwargs):
@@ -255,9 +255,9 @@ class DQN(BaseAgent):
                             grads_and_vars[idx] = (tf.clip_by_norm(grad, self.gradient_norm_clip), var)
 
                             self.learn_summaries.append(tf.summary.histogram(
-                                '{}_gradient'.format(var.name),
-                                grad
-                            )
+                                '{}_gradient'.format(
+                                    var.name.replace(':', '_')),
+                                grad)
                                                   )
 
                     self.train_op = optimizer.apply_gradients(grads_and_vars)
@@ -272,14 +272,18 @@ class DQN(BaseAgent):
 
         self.act_summaries.extend([
             tf.summary.histogram(
-                self.online_params[-1].name, self.online_params[-1]),
+                self.online_params[-1].name.replace(':', '_'),
+                self.online_params[-1]),
             tf.summary.histogram(
-                self.online_params[-2].name, self.online_params[-2]),
+                self.online_params[-2].name.replace(':', '_'),
+                self.online_params[-2]),
 
             tf.summary.histogram(
-                self.target_params[-1].name, self.target_params[-1]),
+                self.target_params[-1].name.replace(':', '_'),
+                self.target_params[-1]),
             tf.summary.histogram(
-                self.target_params[-2].name, self.target_params[-2]),
+                self.target_params[-2].name.replace(':', '_'),
+                self.target_params[-2]),
                                ])
 
         self.learn_summaries.extend([
