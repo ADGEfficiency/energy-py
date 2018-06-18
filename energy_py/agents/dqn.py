@@ -25,7 +25,7 @@ class DQN(BaseAgent):
             discount=0.95,
             total_steps=10000,
             num_discrete_actions=20,
-            nodes=(5, 5, 5),
+            layers=(5, 5, 5),
             initial_epsilon=1.0,
             final_epsilon=0.05,
             epsilon_decay_fraction=0.3,
@@ -41,7 +41,14 @@ class DQN(BaseAgent):
         super().__init__(**kwargs)
 
         self.total_steps = int(total_steps)
-        self.nodes = nodes
+        import pdb; pdb.set_trace()
+        self.layers = tuple(layers)
+
+        if isinstance(layers, str):
+            layers = layers.split(',')
+            layers = [int(layers) for layers in layers]
+        else:
+            layers = tuple(layers)
 
         self.epsilon_decay_fraction = float(epsilon_decay_fraction)
         self.initial_epsilon = float(initial_epsilon)
@@ -126,7 +133,7 @@ class DQN(BaseAgent):
                 'online_obs',
                 self.observation,
                 self.env.obs_space_shape,
-                self.nodes,
+                self.layers,
                 self.num_actions,
             )
 
@@ -141,7 +148,7 @@ class DQN(BaseAgent):
                     'online_next_obs',
                     self.next_observation,
                     self.env.obs_space_shape,
-                    self.nodes,
+                    self.layers,
                     self.num_actions,
                 )
 
@@ -170,7 +177,7 @@ class DQN(BaseAgent):
                 'target',
                 self.next_observation,
                 self.env.obs_space_shape,
-                self.nodes,
+                self.layers,
                 self.num_actions,
             )
 
