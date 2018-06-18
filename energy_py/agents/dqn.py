@@ -58,6 +58,7 @@ class DQN(BaseAgent):
         self.learning_rate = float(learning_rate)
         self.learning_rate_decay = float(learning_rate_decay)
         self.gradient_norm_clip = float(gradient_norm_clip)
+        import pdb; pdb.set_trace()
 
         self.update_target_net_steps = update_target_net_steps
         self.tau_val = tau
@@ -255,9 +256,13 @@ class DQN(BaseAgent):
                         var_list=self.online_params
                     )
 
+                    import pdb; pdb.set_trace()
                     for idx, (grad, var) in enumerate(grads_and_vars):
                         if grad is not None:
-                            grads_and_vars[idx] = (tf.clip_by_norm(grad, self.gradient_norm_clip), var)
+                            grads_and_vars[idx] = (tf.clip_by_norm(
+                            grad, float(self.gradient_norm_clip)),
+                            var
+                            )
 
                             self.learn_summaries.append(tf.summary.histogram(
                                 '{}_gradient'.format(
