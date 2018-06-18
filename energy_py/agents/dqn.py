@@ -38,17 +38,15 @@ class DQN(BaseAgent):
             tau=0.001,
             **kwargs):
 
-        import pdb; pdb.set_trace()
         super().__init__(**kwargs)
 
         self.total_steps = int(total_steps)
-        self.layers = tuple(layers)
 
         if isinstance(layers, str):
             layers = layers.split(',')
-            layers = [int(layers) for layers in layers]
+            self.layers = [int(layers) for layers in layers]
         else:
-            layers = tuple(layers)
+            self.layers = tuple(layers)
 
         self.epsilon_decay_fraction = float(epsilon_decay_fraction)
         self.initial_epsilon = float(initial_epsilon)

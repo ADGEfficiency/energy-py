@@ -6,6 +6,7 @@ from energy_py.common.networks.layers import fully_connected_layer
 
 logger = logging.getLogger(__name__)
 
+
 def feed_forward(
         scope,
         input_tensor,
@@ -24,8 +25,8 @@ def feed_forward(
         layers (list) has nodes per layer (includes input layer)
         output_nodes (int)
     """
-    logging.info('Making feed_forward network')
-    logging.info('input {} layers {} output {}'.format(
+    logger.info('Making feed_forward network - {}'.format(scope))
+    logger.info('input {} layers {} output {}'.format(
             input_shape, layers, output_nodes))
 
     with tf.name_scope(scope):

@@ -39,7 +39,7 @@ class Runner(object):
 
         self.log_freq = 500
 
-        logging.info('Making runner - log every {} steps'.format(
+        logger.info('Making runner - log every {} steps'.format(
             self.log_freq))
 
         self.reset()
