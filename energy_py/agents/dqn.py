@@ -38,10 +38,10 @@ class DQN(BaseAgent):
             tau=0.001,
             **kwargs):
 
+        import pdb; pdb.set_trace()
         super().__init__(**kwargs)
 
         self.total_steps = int(total_steps)
-        import pdb; pdb.set_trace()
         self.layers = tuple(layers)
 
         if isinstance(layers, str):
@@ -59,7 +59,7 @@ class DQN(BaseAgent):
 
         self.learning_rate = float(learning_rate)
         self.learning_rate_decay = float(learning_rate_decay)
-        self.gradient_norm_clip = gradient_norm_clip
+        self.gradient_norm_clip = float(gradient_norm_clip)
 
         self.update_target_net_steps = update_target_net_steps
         self.tau_val = tau
