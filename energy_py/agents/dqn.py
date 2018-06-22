@@ -57,8 +57,6 @@ class DQN(BaseAgent):
 
         self.learning_rate = float(learning_rate)
         self.learning_rate_decay = float(learning_rate_decay)
-        self.gradient_norm_clip = float(gradient_norm_clip)
-        import pdb; pdb.set_trace()
 
         self.update_target_net_steps = update_target_net_steps
         self.tau_val = tau
@@ -81,6 +79,13 @@ class DQN(BaseAgent):
                 trainable=False,
                 name='discrete_actions',
             )
+
+            self.gradient_norm_clip = tf.Variable(
+                initial_value=float(gradient_norm_clip),
+                trainable=False,
+                name='gradient_norm_clip'
+            )
+
 
         with tf.variable_scope('placeholders'):
 
@@ -248,32 +253,27 @@ class DQN(BaseAgent):
 
             optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
 
-            if self.gradient_norm_clip:
-                with tf.variable_scope('gradient_clipping'):
+            with tf.variable_scope('gradient_clipping'):
 
-                    grads_and_vars = optimizer.compute_gradients(
-                        loss,
-                        var_list=self.online_params
-                    )
+                grads_and_vars = optimizer.compute_gradients(
+                    loss,
+                    var_list=self.online_params
+                )
 
-                    import pdb; pdb.set_trace()
-                    for idx, (grad, var) in enumerate(grads_and_vars):
-                        if grad is not None:
-                            grads_and_vars[idx] = (tf.clip_by_norm(
-                            grad, float(self.gradient_norm_clip)),
-                            var
-                            )
+                for idx, (grad, var) in enumerate(grads_and_vars):
+                    if grad is not None:
+                        grads_and_vars[idx] = (tf.clip_by_norm(
+                        grad, self.gradient_norm_clip),
+                        var
+                        )
 
-                            self.learn_summaries.append(tf.summary.histogram(
-                                '{}_gradient'.format(
-                                    var.name.replace(':', '_')),
-                                grad)
-                                                  )
+                        self.learn_summaries.append(tf.summary.histogram(
+                            '{}_gradient'.format(
+                                var.name.replace(':', '_')),
+                            grad)
+                                              )
 
-                    self.train_op = optimizer.apply_gradients(grads_and_vars)
-
-            else:
-                self.train_op = optimizer.minimize(loss, var_list=self.online_params)
+                self.train_op = optimizer.apply_gradients(grads_and_vars)
 
         self.act_summaries.extend([
             tf.summary.scalar('learning_rate', self.learning_rate),
