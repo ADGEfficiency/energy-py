@@ -34,7 +34,7 @@ class DQN(BaseAgent):
             learning_rate=0.001,
             learning_rate_decay=1.0,
             gradient_norm_clip=0.5,
-            update_target_net_steps=1,
+            update_target_net=1,
             tau=0.001,
             **kwargs):
 
@@ -58,7 +58,7 @@ class DQN(BaseAgent):
         self.learning_rate = float(learning_rate)
         self.learning_rate_decay = float(learning_rate_decay)
 
-        self.update_target_net_steps = update_target_net_steps
+        self.update_target_net = update_target_net
         self.tau_val = tau
 
         self.discrete_actions = self.env.discretize_action_space(
@@ -371,7 +371,7 @@ class DQN(BaseAgent):
         self.learn_writer.add_summary(summary, self.learn_step)
         self.learn_writer.flush()
 
-        if self.learn_step % self.update_target_net_steps == 0:
+        if self.learn_step % self.update_target_net == 0:
             _ = self.sess.run(
                 self.copy_ops,
                 {self.tau: self.tau_val}
