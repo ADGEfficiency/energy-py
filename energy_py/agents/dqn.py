@@ -58,8 +58,8 @@ class DQN(BaseAgent):
         self.learning_rate = float(learning_rate)
         self.learning_rate_decay = float(learning_rate_decay)
 
-        self.update_target_net = update_target_net
-        self.tau_val = tau
+        self.update_target_net = int(update_target_net)
+        self.tau_val = float(tau)
 
         self.discrete_actions = self.env.discretize_action_space(
             num_discrete_actions)
