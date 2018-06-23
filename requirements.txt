@@ -1,13 +1,11 @@
 absl-py==0.2.2
 astor==0.6.2
 attrs==18.1.0
-beautifulsoup4==4.6.0
 bleach==1.5.0
 bs4==0.0.1
 certifi==2018.4.16
 chardet==3.0.4
 cycler==0.10.0
--e git+https://github.com/ADGEfficiency/energy_py@a9d734cbf2f4f15f8ebabe92c511e0bc7b373ca8#egg=energy_py
 future==0.16.0
 gast==0.2.0
 grpcio==1.12.1
