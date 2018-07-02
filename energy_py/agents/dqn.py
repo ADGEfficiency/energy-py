@@ -224,12 +224,10 @@ class DQN(BaseAgent):
 
             #  batch norm requires some reshaping with a known rank
             #  reshape the input into batch norm, then flatten in loss
-            #  training=True because we want to normalize each batch
+            #  training=True to normalize each batch
+            #  training=False to use historical statistics
             bellman_norm = tf.layers.batch_normalization(
                 tf.reshape(self.bellman, (-1, 1)),
-                center=False,
-                training=True,
-                trainable=False,
             )
 
         with tf.variable_scope('optimization'):

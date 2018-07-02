@@ -37,7 +37,7 @@ def feed_forward(
             layers[0]
         )
 
-        for layer_num, nodes in enumerate(layers[1:]):
+        for layer_num, nodes in enumerate(layers[1:], 1):
             layer = fully_connected_layer(
                 'hidden_layer_{}'.format(layer_num),
                 layer,
