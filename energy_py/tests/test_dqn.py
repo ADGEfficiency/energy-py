@@ -40,7 +40,7 @@ def setup_agent(sess, double_q=False):
         memory_type='deque',
         learning_rate=1.0,
         double_q=double_q,
-        update_target_net_steps=100,
+        update_target_net=100,
     )
 
     for step in range(48):
