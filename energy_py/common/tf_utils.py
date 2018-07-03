@@ -23,7 +23,7 @@ def get_tf_params(scope):
 
 def make_copy_ops(parent, child, scope='copy_ops'):
     """
-    Creates the operations to copy variables 
+    Creates the operations to copy variables
 
     args
         parent (list of tf.Variables)
@@ -40,11 +40,10 @@ def make_copy_ops(parent, child, scope='copy_ops'):
         for p, c in zip(parent, child):
             assert p.name.split('/')[1:] == c.name.split('/')[1:]
 
-            new_value = tf.add(tf.multiply(p, tau),
-                               tf.multiply(c, 1 - tau))
-
-            op = c.assign(new_value)
-
-            copy_ops.append(op)
+            copy_ops.append(
+                c.assign(tf.add(tf.multiply(p, tau),
+                                tf.multiply(c, 1 - tau))
+                         )
+            )
 
     return copy_ops, tau

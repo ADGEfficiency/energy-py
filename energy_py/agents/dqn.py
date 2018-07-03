@@ -228,6 +228,9 @@ class DQN(BaseAgent):
             #  training=False to use historical statistics
             bellman_norm = tf.layers.batch_normalization(
                 tf.reshape(self.bellman, (-1, 1)),
+                center=True,
+                training=False,
+                trainable=True,
             )
 
         with tf.variable_scope('optimization'):
