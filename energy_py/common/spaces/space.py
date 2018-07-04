@@ -25,20 +25,20 @@ class GlobalSpace(object):
     args
         name (str)
         dataset (str)
-
-    Used for state, DiscreteSpaceobservation and action spaces
     """
 
     def __init__(
             self
             name,
-            dataset=None
     ):
-
         self.name = name
 
-        if dataset:
-            self.data = load_dataset(dataset)
+    def from_dataset(self, dataset='example'):
+        self.data = load_dataset(dataset)
+
+    def from_spaces(self, spaces, space_labels):
+        self.spaces = spaces
+        self.info = space_labels
 
     @property
     def shape(self):
@@ -117,7 +117,7 @@ class GlobalSpace(object):
     def sample_episode(self, start, end):
         return self.data.iloc[start: end, :]
 
-    def index_episode(self, steps, append=None):
+    def __getitem__(self, steps, append=None):
         sample = np.array(self.episode.iloc[steps, :])
 
         if append:

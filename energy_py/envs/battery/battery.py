@@ -10,8 +10,7 @@ logger = logging.getLogger(__name__)
 
 class Battery(BaseEnv):
     """
-    An environment that simulates storage of electricity in a battery.
-    Agent chooses to either charge or discharge.
+    Electric battery storage - rewarded by price arbitrage
 
     optionally passed into BaseEnv via kwargs
         dataset (str) located in energy_py/experiments/datasets
@@ -33,42 +32,25 @@ class Battery(BaseEnv):
                  initial_charge=0.00,
                  **kwargs):
 
-        #  technical energy inputs
-        #  initial charge is set during reset()
         self.power_rating = float(power_rating)  # MW
         self.capacity = float(capacity)  # MWh
         self.round_trip_eff = float(round_trip_eff)  # %
         self.initial_charge = initial_charge
 
-        #  initializing the BaseEnv class
         super().__init__(**kwargs)
 
         """
-        SETTING THE ACTION SPACE
-
-        the action space has a single dimension, ranging from max charge
+        action space has a single dimension, ranging from max charge
         to max discharge
 
-        i.e. for a 2 MW battery
-        -2 <-> 2
+        for a 2 MW battery, a range of -2 to 2 MW
         """
-        self.action_space = GlobalSpace([ContinuousSpace(-self.power_rating, 
-                                                         self.power_rating)])
+        self.action_space = GlobalSpace('action').from_spaces(
+            [ContinuousSpace(-self.power_rating, self.power_rating)])
 
-        """
-        SETTING THE OBSERVATION SPACE
-        """
-        #  append on any additional variables we want our agent to see
-        spaces = [ContinuousSpace(0, self.capacity)]
-        space_labels = ['C_charge_level_[MWh]']
+        self.observation_space.extend(ContinuousSpace(0, self.capacity))
+        self.observation_space.info.extend('C_charge_level [MWh]')
 
-        #  create a energy_py GlobalSpace object for the observation space
-        #  the Space and labels for the observation loaded from
-        #  csv are automatically added on in make_observation_space
-        self.observation_space = self.make_observation_space(spaces,
-                                                             space_labels)
-
-        #  set the initial observation by resetting the environment
         self.observation = self.reset()
 
     def __repr__(self):
@@ -80,7 +62,7 @@ class Battery(BaseEnv):
         Resets the environment
 
         returns
-            observation (np.array) the initial observation
+            observation (np.array) initial observation
         """
         #  setting the initial charge
         if self.initial_charge == 'random':
@@ -94,11 +76,11 @@ class Battery(BaseEnv):
         self.steps = 0
         self.done = False
 
-        self.state = self.get_state(steps=self.steps)
-
-        #  charge is passed as a list because 0 will evaluate to falsey
-        self.observation = self.get_observation(steps=self.steps,
-                                                append=[self.charge])
+        self.state = self.state_space[self.steps]
+        self.observation = self.observation_space[
+            self.steps,
+            append=[self.charge]
+        ]
 
         #  pull the charge out of the state variable to check it
         assert self.charge <= self.capacity
@@ -129,21 +111,11 @@ class Battery(BaseEnv):
             done (boolean)
             info (dictionary)
         """
-        #  pulling out the state infomation
-        elect_price_index = self.state_info.index('C_electricity_price_[$/MWh]')
-        electricity_price = self.state[0][elect_price_index]
-
-        old_charge = self.charge
-
-        #  our action is sent to the environment as (1, num_actions)
         assert action.shape == (1, 1)
-
-        #  we pull out the action to make the code below cleaner
+        assert self.action_space.contains(action)
         action = action[0][0]
 
-        #  checking the action is valid
-        assert action >= self.action_space.low
-        assert action <= self.action_space.high
+        old_charge = self.charge
 
         #  convert from MW to MWh/5 min by /12
         net_charge = action / 12
@@ -169,18 +141,18 @@ class Battery(BaseEnv):
         #  and to calculate our actual rate of charge or discharge
         net_rate = net_stored * 12
 
-        #  set a tolerance for the energy balances
-        tolerance = 1e-10
-        #  energy balance
-        assert (self.charge) - (old_charge + net_stored) < tolerance
-        #  check that our net_rate and net_stored are consistent
-        assert (net_rate) - (12 * net_stored) < tolerance
+        #  energy balances
+        assert np.isclose(self.charge - old_charge + net_stored, 0)
+        assert np.isclose(net_rate - net_stored * 12, 0)
 
         #  now we can calculate the reward
         #  the reward is simply the cost to charge
         #  or the benefit from discharging
         #  note that we use the gross rate, this is the effect on the site
         #  import/export
+        electricity_price = self.get_state_variable(
+            'C_electricity_price_[$/MWh]')
+
         reward = -(gross_rate / 12) * electricity_price
 
         logger.debug('step is {:.3f}'.format(self.steps))
@@ -192,17 +164,18 @@ class Battery(BaseEnv):
         logger.debug('net rate is {:.3f} MW'.format(net_rate))
         logger.debug('reward is {:.3f} $/5min'.format(reward))
 
-        next_state = self.get_state(self.steps)
-        next_observation = self.get_observation(self.steps,
-                                                append=[float(self.charge)])
+        next_state = self.state_space[self.steps]
+
+        next_observation = self.observation_space[
+            self.steps,
+            append=[float(self.charge)]
+        ]
+
         self.steps += 1
 
-        #  check to see if episode is done
-        #  -1 in here because of the zero index
         if self.steps == (self.episode_length):
             self.done = True
 
-        #  saving info
         self.info = self.update_info(steps=self.steps,
                                      state=self.state,
                                      observation=self.observation,
@@ -219,17 +192,7 @@ class Battery(BaseEnv):
                                      old_charge=old_charge,
                                      net_stored=net_stored)
 
-        #  moving to next time step
         self.state = next_state
         self.observation = next_observation
 
         return self.observation, reward, self.done, self.info
-
-
-if __name__ == '__main__':
-    import energy_py
-    batt = energy_py.make_env('Battery')
-
-    a = batt.action_space.sample()
-
-    o, r, d, i = batt.step(a)
