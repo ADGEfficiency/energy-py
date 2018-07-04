@@ -8,10 +8,6 @@ class ContinuousSpace(object):
     args
         low  (float) minimum bound for a single dimension
         high (float) maximum bound for a single dimension
-
-    - a car accelerator
-    - load on a gas turbine
-    - speed of a variable speed drive
     """
 
     def __init__(self, low, high):

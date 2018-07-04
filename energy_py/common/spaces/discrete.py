@@ -7,9 +7,6 @@ class DiscreteSpace(object):
 
     args
         num (int) the number of options across the discrete space
-
-    - an on/off switch
-    - a single button on a keyboard
     """
 
     def __init__(self, num):
@@ -23,5 +20,4 @@ class DiscreteSpace(object):
         return np.in1d(x, np.arange(0, self.high))
 
     def discretize(self, n_discr=None):
-        #  we don't use num discrete here
         return np.arange(0, self.high + 1)

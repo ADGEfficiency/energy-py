@@ -1,12 +1,15 @@
-energy_py Space objects - inspired by the OpenAI gym Spaces.
+# Spaces 
 
-Compatability with gym spaces is ideal as it allows energy_py agents
-to be used with gym environments.
+Objects to represent the state, observation and action spaces.
 
-The energy_py GlobalSpace is the equivilant of the gym TupleSpace.
+**discrete.DiscreteSpace**
+- an on/off switch
+- a single button on a keyboard
 
-As GlobalSpaces are created by the environment, discrete representations of
-the spaces that form the GlobalSpace are available on demand via
+**continuous.ContinuousSpace**
+- a car accelerator
+- load on a gas turbine
+- speed of a variable speed drive
 
-GlobalSpace.discretize(n_discr=10)
-sample = GlobalSpace.sample_discrete()
+**global.GlobalSpace**
+- combination of simpler spaces

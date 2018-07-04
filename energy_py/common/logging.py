@@ -1,5 +1,3 @@
-"""energy_py logging setup"""
-
 import logging
 import logging.config
 

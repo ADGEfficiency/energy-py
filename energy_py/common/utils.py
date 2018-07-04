@@ -1,5 +1,4 @@
-"""A collection of generic helper functions"""
-
+""" Generic helper functions """
 import configparser
 import csv
 from itertools import combinations
@@ -8,7 +7,6 @@ import pickle
 import os
 
 import pandas as pd
-
 
 logger = logging.getLogger(__name__)
 
