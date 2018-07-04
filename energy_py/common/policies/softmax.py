@@ -1,7 +1,14 @@
 import tensorflow as tf
 
 
-def softmax_policy(q_values, temperature):
+def softmax_policy(
+        q_values,
+        discrete_actions,
+        step_tensor,
+        decay_steps,
+        initial_temp,
+        final_temp
+):
     """
     A softmax aka a Boltzmann policy
 
@@ -22,7 +29,17 @@ def softmax_policy(q_values, temperature):
 
     Log of the probabilities are taken for speed, accuracy and stability
     """
-    softmax = tf.nn.softmax(tf.divide(q_values, temperature), axis=1)
+
+    temp = tf.train.polynomial_decay(
+                learning_rate=initial_temp,
+                global_step=step_tensor,
+                decay_steps=decay_steps,
+                end_learning_rate=final_temp,
+                power=1.0,
+                name='temperature'
+    )
+
+    softmax = tf.nn.softmax(tf.divide(q_values, temp), axis=1)
 
     log_probs = tf.log(softmax)
 
@@ -30,4 +47,6 @@ def softmax_policy(q_values, temperature):
 
     samples = tf.multinomial(log_probs, num_samples=1)
 
-    return softmax, log_probs, entropy, samples
+    policy = tf.gather(discrete_actions, samples)
+
+    return temp, softmax, log_probs, entropy, samples, policy

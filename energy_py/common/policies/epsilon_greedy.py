@@ -1,12 +1,14 @@
 import tensorflow as tf
 
 
-def epsilon_greedy_policy(q_values,
-                          discrete_actions,
-                          step_tensor,
-                          decay_steps,
-                          initial_epsilon,
-                          final_epsilon):
+def epsilon_greedy_policy(
+        q_values,
+        discrete_actions,
+        step_tensor,
+        decay_steps,
+        initial_epsilon,
+        final_epsilon
+):
     """
     epsilon greedy action selection
 
@@ -36,7 +38,8 @@ def epsilon_greedy_policy(q_values,
         tf.stack([batch_size]),
         minval=0,
         maxval=num_actions,
-        dtype=tf.int64)
+        dtype=tf.int64
+    )
 
     #  generating a probability, one for each sample
     probabilities = tf.random_uniform(
@@ -51,13 +54,15 @@ def epsilon_greedy_policy(q_values,
                 decay_steps=decay_steps,
                 end_learning_rate=final_epsilon,
                 power=1.0,
-                name='epsilon')
+                name='epsilon'
+    )
 
     select_greedy = tf.squeeze(tf.greater(probabilities, epsilon))
 
     indicies = tf.where(
         select_greedy,
         greedy_action_indicies,
-        random_action_indicies)
+        random_action_indicies
+    )
 
     return epsilon, tf.gather(discrete_actions, indicies)

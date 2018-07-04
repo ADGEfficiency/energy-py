@@ -7,7 +7,7 @@ import energy_py
 
 from energy_py.agents.agent import BaseAgent
 from energy_py.common.networks import feed_forward
-from energy_py.common.policies import epsilon_greedy_policy
+from energy_py.common.policies import epsilon_greedy_policy, softmax_policy
 
 from energy_py.common.np_utils import find_sub_array_in_2D_array as find_action
 from energy_py.common.tf_utils import make_copy_ops, get_tf_params
@@ -16,24 +16,27 @@ logger = logging.getLogger(__name__)
 
 
 class DQN(BaseAgent):
-    """
-    The energy_py implementation of Deep Q-Network
-    aka Q-Learning with experience replay and a target network
-    """
     def __init__(
             self,
             discount=0.95,
             total_steps=10000,
+
+            double_q=False,
             num_discrete_actions=20,
-            layers=(5, 5, 5),
+            layers=(64, 32, 16),
+
+            policy='e_greedy',
+            epsilon_decay_fraction=0.3,
             initial_epsilon=1.0,
             final_epsilon=0.05,
-            epsilon_decay_fraction=0.3,
-            double_q=False,
+            initial_temp=10,
+            final_temp=0.5,
+
             batch_size=64,
             learning_rate=0.001,
             learning_rate_decay=1.0,
             gradient_norm_clip=0.5,
+
             update_target_net=1,
             tau=0.001,
             **kwargs):
@@ -41,6 +44,12 @@ class DQN(BaseAgent):
         super().__init__(**kwargs)
 
         self.total_steps = int(total_steps)
+        self.double_q = bool(double_q)
+
+        self.discrete_actions = self.env.discretize_action_space(
+            num_discrete_actions)
+
+        self.num_actions = self.discrete_actions.shape[0]
 
         if isinstance(layers, str):
             layers = layers.split(',')
@@ -48,23 +57,19 @@ class DQN(BaseAgent):
         else:
             self.layers = tuple(layers)
 
+        self.policy = str(policy)
         self.epsilon_decay_fraction = float(epsilon_decay_fraction)
         self.initial_epsilon = float(initial_epsilon)
         self.final_epsilon = float(final_epsilon)
+        self.initial_temp = float(initial_temp)
+        self.final_temp = float(final_temp)
 
-        self.double_q = bool(double_q)
         self.batch_size = int(batch_size)
-
         self.learning_rate = float(learning_rate)
         self.learning_rate_decay = float(learning_rate_decay)
 
         self.update_target_net = int(update_target_net)
         self.tau_val = float(tau)
-
-        self.discrete_actions = self.env.discretize_action_space(
-            num_discrete_actions)
-
-        self.num_actions = self.discrete_actions.shape[0]
 
         with tf.variable_scope('constants'):
 
@@ -156,24 +161,33 @@ class DQN(BaseAgent):
                     self.num_actions,
                 )
 
-        with tf.variable_scope('e_greedy_policy'):
-            self.epsilon, self.policy = epsilon_greedy_policy(
-                self.online_q_values,
-                self.discrete_actions_tensor,
-                self.learn_step_tensor,
-                self.total_steps * self.epsilon_decay_fraction,
-                self.initial_epsilon,
-                self.final_epsilon
-            )
+        with tf.variable_scope('{}_policy'.format(self.policy)):
+            if self.policy == 'e_greedy':
+                self.epsilon, self.policy = epsilon_greedy_policy(
+                    self.online_q_values,
+                    self.discrete_actions_tensor,
+                    self.learn_step_tensor,
+                    self.total_steps * self.epsilon_decay_fraction,
+                    self.initial_epsilon,
+                    self.final_epsilon
+                )
 
-    def build_copy_ops(self):
-        self.online_params = get_tf_params('online')
-        self.target_params = get_tf_params('target')
+            elif self.policy == 'softmax':
+                policy_params = softmax_policy(
+                    self.online_q_values,
+                    self.online_q_values,
+                    self.discrete_actions_tensor,
+                    self.learn_step_tensor,
+                    self.total_steps,
+                    self.initial_temp,
+                    self.final_temp
+                )
 
-        return make_copy_ops(
-            self.online_params,
-            self.target_params,
-        )
+                #  TODO
+                self.temp, _, self.log_probs, self.entropy, _, self.policy = policy_params
+
+            else:
+                raise ValueError('{} policy not supported'.format(self.policy))
 
     def build_learning_graph(self):
         with tf.variable_scope('target', reuse=False):
@@ -185,7 +199,10 @@ class DQN(BaseAgent):
                 self.num_actions,
             )
 
-        self.copy_ops, self.tau = self.build_copy_ops()
+        self.copy_ops, self.tau = make_copy_ops(
+            get_tf_params('online'),
+            get_tf_params('target')
+        )
 
         with tf.variable_scope('bellman_target'):
             self.q_selected_actions = tf.reduce_sum(
@@ -377,60 +394,3 @@ class DQN(BaseAgent):
                 self.copy_ops,
                 {self.tau: self.tau_val}
             )
-
-
-if __name__ == '__main__':
-    import random
-    from energy_py.scripts.experiment import Runner
-    from energy_py.scripts.utils import make_logger
-
-    make_logger({'info_log': 'info.log', 'debug_log': 'debug.log'})
-    discount = 0.99
-    total_steps = 400000
-
-    seed = 3 
-    random.seed(seed)
-    np.random.seed(seed)
-    tf.set_random_seed(seed)
-
-    env = energy_py.make_env('CartPole')
-
-    with tf.Session() as sess:
-        agent = DQN(
-            sess=sess,
-            env=env,
-            total_steps=total_steps,
-            discount=discount,
-            memory_type='deque',
-            act_path='./act_tb',
-            learn_path='./learn_tb',
-            learning_rate=0.0001,  #  must be set in context of learning_rate_decay!
-            learning_rate_decay=0.05,
-            epsilon_decay_fraction=0.5,
-            double_q=True
-        )
-
-        runner = Runner(sess,
-                        {'tb_rl': './tb_rl',
-                         'ep_rewards': './rewards.csv'},
-                        total_steps=total_steps
-                        )
-
-        step = 0
-        while step < total_steps:
-
-            done = False
-            obs = env.reset()
-            while not done:
-                act = agent.act(obs)
-                next_obs, reward, done, info = env.step(act)
-
-                runner.record_step(reward)
-                agent.remember(obs, act, reward, next_obs, done)
-
-                agent.learn()
-
-                obs = next_obs
-                step += 1
-
-            runner.record_episode()

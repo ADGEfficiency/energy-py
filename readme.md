@@ -135,23 +135,18 @@ a specific environment).
 #### energy environments
 The unique contrbition of energy_py are energy focused environments.  Reinforcement learning has the potential to optimize the operation energy systems.  These environments allow experimentation with energy problems by simulation.
 
-**Battery storage**
+[**Electric battery storage**](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/envs/battery)
 
-env_id = 'battery'
+Dispatch of a battery arbitraging wholesale prices.  Battery is defined by a capacity and a maximum rate to charge and
+discharge, with a round trip efficieny applied on storage.
 
-Model of a electric battery.  Optimal dispatch of a battery arbitraging wholesale prices.
-
-**Flex-v0**
-
-env_id = 'flex-v0'
+[**Flex-v0**](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/envs/flex)
 
 Model of a flexibility (i.e. demand side response) asset.  Agent can operate two cycles.  Cycle is a fixed length.
 1. flex_up/flex_down/relax
 2. flex_down/flex_up/relax
 
-**Flex-v1**
-
-env_id = 'flex-v1'
+[**Flex-v1**](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/envs/flex)
 
 Agent can operate a flex_down/flex_up/relax cycle.  Agent can choose to stop the flex_down period.
 
@@ -163,4 +158,5 @@ These wrappers are implemented in the [energy_py environment
 register](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/envs/register.py).
 
 ### Tools to run experiments
+
 In addition to the agents and environments energy_py also provides tools to run experiments.  Visualization of experiment results is done using TensorBoard.
