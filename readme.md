@@ -5,13 +5,14 @@
 energy_py provides an agent, energy environments and experiment tools.  The aim is to prove that reinforcement learning can be used to solve energy problems.
 
 energy_py is built and maintained by Adam Green  [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  
-- [introductory blog post](http://adgefficiency.com/energy_py-reinforcement-learning-for-energy-systems/).
+- [introductory blog post](http://adgefficiency.com/energy_py-reinforcement-learning-for-energy-systems/)
 - [DQN debugging](http://adgefficiency.com/dqn-debugging/)
 - [DDQN hyperparameter tuning](http://adgefficiency.com/dqn-tuning/)
+- [introductory Jupyter notebook](https://github.com/ADGEfficiency/energy_py/blob/master/notebooks/examples/Q_learning_battery.ipynb)
 
 ## Basic usage
 
-Environments and agents are created and used in a similar style as Open AI gym
+Environments and agents are created and used in a style that will be familiar to users of Open AI gym
 
 ```python
 import energy_py
@@ -33,8 +34,6 @@ while not done:
     training_info = agent.learn()
     observation = next_observation
 ```
-
-A detailed example of the low level energy_py framework is given in a Jupyter Notebook using the [DQN agent with the Battery environment](https://github.com/ADGEfficiency/energy_py/blob/master/notebooks/examples/Q_learning_battery.ipynb).
 
 The higher level energy_py API allows running of experiments from [config dictionaries](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/experiments/dict_expt.py) or from [config.ini files](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/experiments/config_expt.py).
 

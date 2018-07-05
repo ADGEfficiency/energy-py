@@ -26,14 +26,13 @@ def save_env_info(env, env_info, episode, env_hist_path):
         env_info (dict) the info dict returned from env.step()
         episode (int)
     """
-    if env.observation_info and env.env.state_info:
+    if hasattr(env.observation_space, 'info') and hasattr(env.state_space, 'info'):
         logging.debug('saving env history')
 
+        state_info = env.state_space.info
+        observation_info = env.observation_space.info
+
         output = []
-
-        observation_info = env.observation_info
-        state_info = env.env.state_info
-
         for key, info in env_info.items():
             if isinstance(info[0], np.ndarray):
                 df = pd.DataFrame(np.array(info).reshape(len(info), -1))
@@ -63,7 +62,7 @@ def save_env_info(env, env_info, episode, env_hist_path):
             output.append(df)
 
         output = pd.concat(output, axis=1)
-        output.index = env.env.state_ep.index
+        output.index = env.state_space.episode.index[:-1]
 
         csv_path = os.path.join(env_hist_path,
                                'ep_{}'.format(episode),

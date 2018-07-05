@@ -46,7 +46,7 @@ class DQN(BaseAgent):
         self.total_steps = int(total_steps)
         self.double_q = bool(double_q)
 
-        self.discrete_actions = self.env.discretize_action_space(
+        self.discrete_actions = self.env.action_space.discretize(
             num_discrete_actions)
 
         self.num_actions = self.discrete_actions.shape[0]
@@ -95,7 +95,7 @@ class DQN(BaseAgent):
         with tf.variable_scope('placeholders'):
 
             self.observation = tf.placeholder(
-                shape=(None, *self.env.obs_space_shape),
+                shape=(None, *self.env.observation_space.shape),
                 dtype=tf.float32,
                 name='observation'
             )
@@ -113,7 +113,7 @@ class DQN(BaseAgent):
             )
 
             self.next_observation = tf.placeholder(
-                shape=(None, *self.env.obs_space_shape),
+                shape=(None, *self.env.observation_space.shape),
                 dtype=tf.float32,
                 name='next_observation'
             )
@@ -141,7 +141,7 @@ class DQN(BaseAgent):
             self.online_q_values = feed_forward(
                 'online_obs',
                 self.observation,
-                self.env.obs_space_shape,
+                self.observation_space.shape,
                 self.layers,
                 self.num_actions,
             )
@@ -156,7 +156,7 @@ class DQN(BaseAgent):
                 self.online_next_obs_q = feed_forward(
                     'online_next_obs',
                     self.next_observation,
-                    self.env.obs_space_shape,
+                    self.observation_space.shape,
                     self.layers,
                     self.num_actions,
                 )
@@ -194,14 +194,17 @@ class DQN(BaseAgent):
             self.target_q_values = feed_forward(
                 'target',
                 self.next_observation,
-                self.env.obs_space_shape,
+                self.observation_space.shape,
                 self.layers,
                 self.num_actions,
             )
 
+        self.online_params = get_tf_params('online')
+        self.target_params = get_tf_params('target')
+
         self.copy_ops, self.tau = make_copy_ops(
-            get_tf_params('online'),
-            get_tf_params('target')
+            self.online_params,
+            self.target_params
         )
 
         with tf.variable_scope('bellman_target'):
@@ -355,7 +358,7 @@ class DQN(BaseAgent):
         logger.debug('observation {}'.format(observation))
         logger.debug('action {}'.format(action))
 
-        return action.reshape(1, *self.env.action_space_shape)
+        return action.reshape(1, *self.env.action_space.shape)
 
     def _learn(self):
         """

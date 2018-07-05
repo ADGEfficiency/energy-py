@@ -212,8 +212,7 @@ class FlexV1(BaseEnv):
             'C_electricity_price [$/MWh]')
 
         #  /12 so we get reward in terms of £/5 minutes
-        reward = -flex_action * electricity_price / 12
-
+        reward = - flex_action * electricity_price / 12
         #  work out the flex counter
         if flex_action == 0:
             flex_counter = 'not_flexing'
@@ -228,40 +227,41 @@ class FlexV1(BaseEnv):
             logger.debug('up {} down {} relax {} rew {}'.format(
                 self.flex_up, self.flex_down, self.relax, reward))
 
-        next_state = self.state_space(self.steps)
+        next_state = self.state_space(self.steps + 1)
         obs_append = self.make_observation_append_list()
         next_observation = self.observation_space(
-            self.steps, obs_append
+            self.steps + 1, obs_append
         )
+
         self.steps += 1
 
-        #  check to see if we are done
-        if self.steps == (self.episode_length):
+        done = False
+        if self.steps == (self.state_space.episode.shape[0] - 1):
             done = True
-        else:
-            done = False
 
-        info = self.update_info(steps=self.steps,
-                                state=self.state,
-                                observation=self.observation,
-                                action=action,
-                                reward=reward,
-                                next_state=next_state,
-                                next_observation=next_observation,
-                                done=done,
+        self.update_info(
+            steps=self.steps,
+            state=self.state,
+            observation=self.observation,
+            action=action,
+            reward=reward,
+            next_state=next_state,
+            next_observation=next_observation,
+            done=done,
 
-                                electricity_price=electricity_price,
-                                flex_down=self.flex_down,
-                                flex_up=self.flex_up,
-                                relax=self.relax,
-                                flex_avail=self.avail,
-                                flex_action=flex_action,
-                                flex_counter=self.flex_counter)
+            electricity_price=electricity_price,
+            flex_down=self.flex_down,
+            flex_up=self.flex_up,
+            relax=self.relax,
+            flex_avail=self.avail,
+            flex_action=flex_action,
+            flex_counter=self.flex_counter
+        )
 
         self.state = next_state
         self.observation = next_observation
 
-        return self.observation, reward, done, info
+        return self.observation, reward, done, self.info
 
     def make_observation_append_list(self):
         """

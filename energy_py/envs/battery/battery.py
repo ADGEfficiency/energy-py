@@ -144,7 +144,7 @@ class Battery(BaseEnv):
         net_rate = net_stored * 12
 
         #  energy balances
-        assert np.isclose(self.charge - old_charge + net_stored, 0)
+        assert np.isclose(self.charge - old_charge - net_stored, 0)
         assert np.isclose(net_rate - net_stored * 12, 0)
 
         #  now we can calculate the reward
@@ -153,9 +153,9 @@ class Battery(BaseEnv):
         #  note that we use the gross rate, this is the effect on the site
         #  import/export
         electricity_price = self.get_state_variable(
-            'C_electricity_price_[$/MWh]')
+            'C_electricity_price [$/MWh]')
 
-        reward = -(gross_rate / 12) * electricity_price
+        reward = - gross_rate * electricity_price / 12
 
         logger.debug('step is {:.3f}'.format(self.steps))
         logger.debug('action was {}'.format(action))
@@ -166,16 +166,15 @@ class Battery(BaseEnv):
         logger.debug('net rate is {:.3f} MW'.format(net_rate))
         logger.debug('reward is {:.3f} $/5min'.format(reward))
 
-        next_state = self.state_space(self.steps)
-
+        next_state = self.state_space(self.steps + 1)
+        obs_append = self.make_observation_append_list()
         next_observation = self.observation_space(
-            self.steps,
-            append=[float(self.charge)]
+            self.steps + 1, obs_append
         )
 
         self.steps += 1
 
-        if self.steps == (self.episode_length):
+        if self.steps == (self.state_space.episode.shape[0] - 1):
             self.done = True
 
         self.info = self.update_info(steps=self.steps,

@@ -39,7 +39,7 @@ class BaseEnv(object):
 
         self.episode_length = min(
             int(episode_length),
-            self.state_space.shape[0]
+            self.state_space.data.shape[0]
         )
 
     def reset(self):
@@ -54,7 +54,9 @@ class BaseEnv(object):
         self.info = collections.defaultdict(list)
         self.outputs = collections.defaultdict(list)
 
-        self.sample_episode()
+        episode = self.sample_episode()
+        self.state_space.episode = episode[0]
+        self.observation_space.episode = episode[1]
 
         logger.debug(
             'Episode start {} Episode end {}'.format(
@@ -87,35 +89,37 @@ class BaseEnv(object):
 
     def sample_episode(self):
         """ Samples a single episode """
-        logging.debug('Sampling episode')
-
         start, end = self.sample_stragety()
+        print('Sampling episode start {} end {}'.format(start, end))
+
         state_ep = self.state_space.sample_episode(start, end)
         obs_ep = self.observation_space.sample_episode(start, end)
 
         assert state_ep.shape[0] == obs_ep.shape[0]
+        return state_ep, obs_ep
 
     def random_sample(self):
         start = np.random.randint(
             low=0,
-            high=self.state_space.shape[0] - self.episode_length
+            high=self.state_space.data.shape[0] - self.episode_length
         )
         return start, start + self.episode_length
 
     def fixed_sample(self):
         if self.episode_length == 0:
-            ep_len = self.state_space.shape[0],
+            ep_len = self.state_space.data.shape[0],
         else:
             ep_len = self.episode_length
 
-        start = self.state_space.shape[0] - self.episode_length
+        start = self.state_space.data.shape[0] - self.episode_length
 
         return start, start + ep_len
 
     def get_state_variable(self, variable_name):
-        return self.state[self.state_space.info.index(variable_name)]
+        return self.state[self.state_space.info.index(variable_name)][0]
 
     def update_info(self, **kwargs):
         for name, data in kwargs.items():
             self.info[name].append(data)
+
         return self.info

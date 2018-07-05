@@ -43,7 +43,7 @@ class CartPoleEnv(EnvWrapper):
         super(CartPoleEnv, self).__init__(env)
 
         self.observation_space = self.env.observation_space
-        self.obs_space_shape = self.observation_space.shape
+        self.observation_space.shape = self.observation_space.shape
 
         self.action_space = self.env.action_space
         self.action_space.shape = (1,)
@@ -60,7 +60,7 @@ class CartPoleEnv(EnvWrapper):
         num_discrete = len(actions)
         self.actions =  np.array(actions).reshape(
             num_discrete,
-            *self.action_space_shape)
+            *self.action_space.shape)
 
         return self.actions
 
@@ -75,7 +75,7 @@ class PendulumEnv(EnvWrapper):
         super(PendulumEnv, self).__init__(env)
 
         self.observation_space = self.env.observation_space
-        self.obs_space_shape = self.observation_space.shape
+        self.observation_space.shape = self.observation_space.shape
 
         self.action_space = GlobalSpace([self.env.action_space])
         self.action_space.shape = self.action_space.shape
@@ -100,10 +100,10 @@ class MountainCarEnv(EnvWrapper):
         super(MountainCarEnv, self).__init__(env)
 
         self.observation_space = self.env.observation_space
-        self.obs_space_shape = self.observation_space.shape
+        self.observation_space.shape = self.observation_space.shape
 
         self.action_space = self.env.action_space
-        self.action_space_shape = (1,)
+        self.action_space.shape = (1,)
         self.action_space.discretize = self.discretize_action_space
         self.action_space.sample_discrete = self.sample_discrete_action
 
@@ -113,7 +113,7 @@ class MountainCarEnv(EnvWrapper):
         num_discrete = len(actions)
         self.actions =  np.array(actions).reshape(
             num_discrete,
-            *self.action_space_shape)
+            *self.action_space.shape)
         return self.actions
 
     def sample_discrete_action(self):

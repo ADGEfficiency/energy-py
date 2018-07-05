@@ -42,19 +42,15 @@ class BaseAgent(object):
         self.env = env
 
         self.observation_space = env.observation_space
-        self.obs_shape = env.observation_space.shape
-        self.observation_info = env.observation_info
-
         self.action_space = env.action_space
-        self.action_shape = env.action_space_shape
 
         #  sending total_steps and initial_random into the memory init
         self.memory_type = memory_type
 
         self.memory = memory_register[memory_type](
             memory_length,
-            self.obs_shape,
-            self.action_shape
+            self.observation_space.shape,
+            self.action_space.shape
         )
 
         #  reward clipping
@@ -110,12 +106,7 @@ class BaseAgent(object):
         logger.debug('Agent is acting')
         self.act_step += 1
 
-        #  some environments (i.e. gym) return observations as flat arrays
-        #  energy_py agents use arrays of shape(batch_size, *shape)
-        observation = observation.reshape(1, *self.obs_shape)
-
-        if hasattr(self, 'observation_processor'):
-            observation = self.observation_processor.transform(observation)
+        observation = observation.reshape(1, *self.observation_space.shape)
 
         return self._act(observation)
 
@@ -148,19 +139,15 @@ class BaseAgent(object):
         """
         logger.debug('Agent is remembering')
 
-        observation = observation.reshape(-1, *self.obs_shape)
-        next_observation = next_observation.reshape(-1, *self.obs_shape)
+        observation = observation.reshape(
+            -1, *self.observation_space.shape)
 
-        if hasattr(self, 'observation_processor'):
-            observation = self.observation_processor.transform(observation)
-            next_observation = self.observation_processor.transform(next_observation)
+        next_observation = next_observation.reshape(
+            -1, *self.observation_space.shape)
 
-        if hasattr(self, 'action_processor'):
-            action = self.action_processor.transform(action)
-
-        #  reward clipping
         if self.min_reward and self.max_reward:
             reward = max(self.min_reward, min(reward, self.max_reward))
 
-        return self.memory.remember(observation, action, reward,
-                                    next_observation, done)
+        return self.memory.remember(
+            observation, action, reward, next_observation, done
+        )

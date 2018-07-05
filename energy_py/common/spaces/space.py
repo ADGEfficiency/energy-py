@@ -78,11 +78,10 @@ class GlobalSpace(object):
         ).reshape(1, *self.shape)
 
     def discretize(self, num_discrete):
-        discrete_spaces = [spc.discretize(num_discrete) for spc in self.spaces]
-        discrete_spaces = [a for a in itertools.product(*discrete_spaces)]
-
-        return np.array(
-            discrete_spaces).reshape(len(discrete_spaces), *self.shape)
+        return np.array([
+            a for a in itertools.product(
+                *[spc.discretize(num_discrete) for spc in self.spaces])
+        ]).reshape(-1, *self.shape)
 
     def generate_spaces(self):
         spaces = []
@@ -104,11 +103,10 @@ class GlobalSpace(object):
         return spaces
 
     def sample_episode(self, start, end):
-        self.episode = self.data.iloc[start: end, :]
-        return self.episode
+        return self.data.iloc[start: end, :]
 
     def __call__(self, steps, append=None):
-        sample = np.array(self.episode.iloc[steps-1, :])
+        sample = np.array(self.episode.iloc[steps, :])
 
         if append:
             sample = np.append(sample, append)

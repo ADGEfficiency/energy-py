@@ -152,10 +152,6 @@ class FlexV0(BaseEnv):
         Flex asset is dispatched if action=1 and not already in a flex cycle
         or relaxing.
         """
-        #  pull the electricity price out of the state
-        price_index = self.state_info.index('C_electricity_price_[$/MWh]')
-        electricity_price = self.state[0][price_index]
-
         assert action.shape == (1, 1)
 
         #  grab the action
@@ -232,7 +228,9 @@ class FlexV0(BaseEnv):
         if self.flex_up > 0:
             flex_action = self.flex_up_size
 
-        #  now we set reward based on the flex_action
+        electricity_price = self.get_state_variable(
+            'C_electricity_price [$/MWh]') 
+
         #  /12 so we get reward in terms of $/5 minutes
         reward = - flex_action * electricity_price / 12
 
@@ -244,7 +242,7 @@ class FlexV0(BaseEnv):
                                                        flex_action))
         #  log the step and electricity price
         logger.debug('step {} elect. price {} $/MWh'.format(
-            self.observation_ts.index[self.steps], electricity_price))
+            self.state_space.episode.index[self.steps], electricity_price))
 
         if total_counters > 0:
             logger.debug('action is {}'.format(action))
@@ -252,17 +250,16 @@ class FlexV0(BaseEnv):
             logger.debug('up {} down {} relax {} rew {}'.format(
                 self.flex_up, self.flex_down, self.relax, reward))
 
-        next_state = self.get_state(self.steps)
-        next_observation = self.get_observation(self.steps,
+        next_state = self.state_space(self.steps + 1)
+        next_observation = self.observation_space(self.steps + 1,
                                                 append=[self.avail,
                                                         self.flex_down,
                                                         self.flex_up,
                                                         self.relax])
         self.steps += 1
 
-        #  check to see if we are done
         done = False
-        if self.steps == (self.episode_length):
+        if self.steps == (self.state_space.episode.shape[0] - 1):
             done = True
 
         self.info = self.update_info(steps=self.steps,
