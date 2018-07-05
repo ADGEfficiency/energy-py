@@ -135,3 +135,13 @@ def save_args(config, path):
             writer.writerow([k]+[v])
 
     return writer
+
+
+def test_index_length(df, freq):
+    test_idx = pd.DatetimeIndex(
+        start=df.index[0],
+        end=df.index[-1],
+        freq=freq
+    )
+
+    assert test_idx.shape[0] == df.shape[0]

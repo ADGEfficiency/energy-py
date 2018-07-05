@@ -1,6 +1,3 @@
-"""
-The base class for energy_py environments
-"""
 import collections
 import logging
 
@@ -17,14 +14,12 @@ logger = logging.getLogger(__name__)
 
 class BaseEnv(object):
     """
-    The base environment class for time series environments
+    Generic time series environment
 
     args
         dataset (str) located in energy_py/experiments/datasets
-        episode_sample (str) fixed, random
-
-    Most energy problems are time series problems
-    The BaseEnv has functionality for working with time series data
+        episode_sample (str) i.e. fixed, random
+        episode_length (int)
     """
     def __init__(self,
                  dataset='example',
@@ -36,11 +31,11 @@ class BaseEnv(object):
         self.state_space = GlobalSpace('state').from_dataset(dataset)
         self.observation_space = GlobalSpace('observation').from_dataset(dataset)
 
-        if self.episode_sample == 'random':
-            self.episode_sample = self.random_sample
+        if episode_sample == 'random':
+            self.sample_stragety = self.random_sample
 
-        if self.episode_sample == 'fixed':
-            self.episode_sample = self.fixed_sample
+        if episode_sample == 'fixed':
+            self.sample_stragety = self.fixed_sample
 
         self.episode_length = min(
             int(episode_length),
@@ -90,22 +85,14 @@ class BaseEnv(object):
         return self._step(action)
 
     def sample_episode(self):
-        """
-        Samples a single episode from the state and observation dataframes
+        """ Samples a single episode """
+        logging.debug('Sampling episode')
 
-        returns
-            observation_ep (pd.DataFrame)
-            state_ep (pd.DataFrame)
-        """
-        logging.debug('Sampling episode'.format(self.episode_sample))
-
-        start, end = self.episode_sample()
-
+        start, end = self.sample_stragety()
         state_ep = self.state_space.sample_episode(start, end)
         obs_ep = self.observation_space.sample_episode(start, end)
-        assert state_ep.shape[0] == obs_ep.shape[0]
 
-        return state_ep, obs_ep
+        assert state_ep.shape[0] == obs_ep.shape[0]
 
     def random_sample(self):
         start = np.random.randint(

@@ -1,5 +1,6 @@
 import logging
 from random import random
+
 import numpy as np
 
 from energy_py.common import ContinuousSpace, GlobalSpace
@@ -46,10 +47,12 @@ class Battery(BaseEnv):
         for a 2 MW battery, a range of -2 to 2 MW
         """
         self.action_space = GlobalSpace('action').from_spaces(
-            [ContinuousSpace(-self.power_rating, self.power_rating)])
+            [ContinuousSpace(-self.power_rating, self.power_rating)],
+            'Rate [MW]'
+        )
 
-        self.observation_space.extend(ContinuousSpace(0, self.capacity))
-        self.observation_space.info.extend('C_charge_level [MWh]')
+        self.observation_space.extend(ContinuousSpace(0, self.capacity),
+                                      'C_charge_level [MWh]')
 
         self.observation = self.reset()
 
@@ -76,11 +79,11 @@ class Battery(BaseEnv):
         self.steps = 0
         self.done = False
 
-        self.state = self.state_space[self.steps]
-        self.observation = self.observation_space[
+        self.state = self.state_space(self.steps)
+        self.observation = self.observation_space(
             self.steps,
             append=[self.charge]
-        ]
+        )
 
         #  pull the charge out of the state variable to check it
         assert self.charge <= self.capacity
@@ -164,12 +167,12 @@ class Battery(BaseEnv):
         logger.debug('net rate is {:.3f} MW'.format(net_rate))
         logger.debug('reward is {:.3f} $/5min'.format(reward))
 
-        next_state = self.state_space[self.steps]
+        next_state = self.state_space(self.steps)
 
-        next_observation = self.observation_space[
+        next_observation = self.observation_space(
             self.steps,
             append=[float(self.charge)]
-        ]
+        )
 
         self.steps += 1
 

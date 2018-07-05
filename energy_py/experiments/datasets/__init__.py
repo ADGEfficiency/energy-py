@@ -1,13 +1,9 @@
-"""
-A registry for datasets
-
-All this registry holds is paths
-"""
-
 import logging
 import os
 
 logger = logging.getLogger(__name__)
+
+from energy_py.common.utils import load_csv, test_index_length
 
 
 def make_registry():
@@ -41,7 +37,15 @@ registry = make_registry()
 
 
 def get_dataset_path(dataset_name):
-
-    logger.debug('Getting dataset {} path'.format(dataset_name))
-
     return registry[dataset_name]
+
+
+def load_dataset(dataset_name, space):
+    logger.info('loading {} - {}'.format(dataset_name, space))
+
+    data = load_csv(get_dataset_path(dataset_name),
+                    '{}.csv'.format(space))
+
+    test_index_length(data, '5min')
+
+    return data

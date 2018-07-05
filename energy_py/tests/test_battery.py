@@ -14,7 +14,7 @@ default_config = {
 #  this code is just to get the charge index
 #  so I don't need to do it in each test function
 env = energy_py.make_env(**default_config)
-charge_index = env.observation_info.index('C_charge_level_[MWh]')
+charge_index = env.observation_space.info.index('C_charge_level [MWh]')
 
 
 def test_charge():

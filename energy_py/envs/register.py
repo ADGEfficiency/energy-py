@@ -25,7 +25,6 @@ class EnvWrapper(object):
 
     def __init__(self, env):
         self.env = env
-        self.observation_info = None
 
     def __repr__(self):
         return repr(self.env)
@@ -35,57 +34,6 @@ class EnvWrapper(object):
 
     def reset(self):
         return self.env.reset()
-
-    def discretize_action_space(self, num_discrete):
-        self.actions = self.action_space.discretize(num_discrete)
-        return self.actions
-
-    def sample_discrete_action(self):
-        return self.env.action_space.sample_discrete()
-
-
-class FlexEnvV0(EnvWrapper):
-
-    def __init__(self, **kwargs):
-        env = FlexV0(**kwargs)
-        super(FlexEnvV0, self).__init__(env)
-
-        self.observation_space = self.env.observation_space
-        self.obs_space_shape = self.observation_space.shape
-        self.observation_info = self.env.observation_info
-        self.action_space = self.env.action_space
-        self.action_space_shape = self.action_space.shape
-
-        self.observation_info = env.observation_info
-
-class FlexEnvV1(EnvWrapper):
-
-    def __init__(self, **kwargs):
-        env = FlexV1(**kwargs)
-        super(FlexEnvV1, self).__init__(env)
-
-        self.observation_space = self.env.observation_space
-        self.obs_space_shape = self.observation_space.shape
-        self.observation_info = self.env.observation_info
-        self.action_space = self.env.action_space
-        self.action_space_shape = self.action_space.shape
-
-        self.observation_info = env.observation_info
-
-class BatteryEnv(EnvWrapper):
-
-    def __init__(self, **kwargs):
-        env = Battery(**kwargs)
-        super(BatteryEnv, self).__init__(env)
-
-        self.observation_space = self.env.observation_space
-        self.obs_space_shape = self.observation_space.shape
-
-        self.observation_info = self.env.observation_info
-        self.action_space = self.env.action_space
-        self.action_space_shape = self.action_space.shape
-
-        self.observation_info = env.observation_info
 
 
 class CartPoleEnv(EnvWrapper):
@@ -98,9 +46,9 @@ class CartPoleEnv(EnvWrapper):
         self.obs_space_shape = self.observation_space.shape
 
         self.action_space = self.env.action_space
-        self.action_space_shape = (1,)
-
+        self.action_space.shape = (1,)
         self.action_space.discretize = self.discretize_action_space
+        self.action_space.sample_discrete = self.sample_discrete_action
 
     def step(self, action):
         #  cartpole doesn't accept an array!
@@ -109,12 +57,11 @@ class CartPoleEnv(EnvWrapper):
     def discretize_action_space(self, num_discrete):
         actions = [act for act in range(self.action_space.n)]
 
-        #  cheat a bit here to ignore the num_discrete arg
-        #  because cartpole is already discrete!
         num_discrete = len(actions)
         self.actions =  np.array(actions).reshape(
             num_discrete,
             *self.action_space_shape)
+
         return self.actions
 
     def sample_discrete_action(self):
@@ -131,12 +78,11 @@ class PendulumEnv(EnvWrapper):
         self.obs_space_shape = self.observation_space.shape
 
         self.action_space = GlobalSpace([self.env.action_space])
-        self.action_space_shape = self.action_space.shape
+        self.action_space.shape = self.action_space.shape
+        self.action_space.discretize = self.discretize_action_space
+        self.action_space.sample_discrete = self.sample_discrete_action
 
     def discretize_action_space(self, num_discrete):
-        """
-        Not every agent will need to do this
-        """
         self.actions = np.linspace(self.action_space.low,
                                    self.action_space.high,
                                    num=num_discrete,
@@ -158,12 +104,12 @@ class MountainCarEnv(EnvWrapper):
 
         self.action_space = self.env.action_space
         self.action_space_shape = (1,)
+        self.action_space.discretize = self.discretize_action_space
+        self.action_space.sample_discrete = self.sample_discrete_action
 
     def discretize_action_space(self, num_discrete):
         actions = [act for act in range(self.action_space.n)]
 
-        #  cheat a bit here to ignore the num_discrete arg
-        #  because mountain_car is already discrete!
         num_discrete = len(actions)
         self.actions =  np.array(actions).reshape(
             num_discrete,
@@ -174,9 +120,9 @@ class MountainCarEnv(EnvWrapper):
         return random.choice(self.actions)
 
 
-env_register = {'flex-v0': FlexEnvV0,
-                'flex-v1': FlexEnvV1,
-                'battery': BatteryEnv,
+env_register = {'flex-v0': FlexV0,
+                'flex-v1': FlexV1,
+                'battery': Battery,
                 'cartpole-v0': CartPoleEnv,
                 'pendulum-v0': PendulumEnv,
                 'mountaincar-v0': MountainCarEnv}
