@@ -2,9 +2,7 @@
 
 **energy_py is reinforcement learning for energy systems**
 
-energy_py provides an agent, energy environments and experiment tools.
-
-The goal of the project is to prove that reinforcement learning can be used to solve energy problems.
+energy_py provides an agent, energy environments and experiment tools.  The aim is to prove that reinforcement learning can be used to solve energy problems.
 
 energy_py is built and maintained by Adam Green - [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  Read more about the motivations and design choics of the project on the [introductory blog post](http://adgefficiency.com/energy_py-reinforcement-learning-for-energy-systems/).
 
