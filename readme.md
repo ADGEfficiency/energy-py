@@ -4,7 +4,7 @@
 
 energy_py provides an agent, energy environments and experiment tools.  The aim is to prove that reinforcement learning can be used to solve energy problems.
 
-energy_py is built and maintained by Adam Green - [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  
+energy_py is built and maintained by Adam Green  [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  
 - [introductory blog post](http://adgefficiency.com/energy_py-reinforcement-learning-for-energy-systems/).
 - [DQN debugging](http://adgefficiency.com/dqn-debugging/)
 - [DDQN hyperparameter tuning](http://adgefficiency.com/dqn-tuning/)
