@@ -1,6 +1,6 @@
 # energy_py
 
-**energy_py is reinforcement learning for energy systems**
+**reinforcement learning for energy systems**
 
 energy_py provides an agent, energy environments and experiment tools.  The aim is to prove that reinforcement learning can be used to solve energy problems.
 
