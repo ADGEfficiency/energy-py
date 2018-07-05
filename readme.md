@@ -2,9 +2,9 @@
 
 **energy_py is reinforcement learning for energy systems**
 
-Using reinforcement learning agents to control virtual energy environments is a necessary step in using reinforcement learning to optimize real world energy systems.
+energy_py provides an agent, energy environments and experiment tools.
 
-energy_py supports this goal by providing a **collection of agents, energy environments and tools to run experiments.**
+The goal of the project is to prove that reinforcement learning can be used to solve energy problems.
 
 energy_py is built and maintained by Adam Green - [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  Read more about the motivations and design choics of the project on the [introductory blog post](http://adgefficiency.com/energy_py-reinforcement-learning-for-energy-systems/).
 
@@ -12,42 +12,29 @@ Read about the recent [DQN rebuild here](http://adgefficiency.com/dqn-debugging/
 
 ## Basic usage
 
-Environments and agents can be created using a low-level API similar to OpenAI gym.
+Environments and agents are created and used in a similar style as Open AI gym
 
 ```python
 import energy_py
 
 TOTAL_STEPS = 100000
 
-#  creating an environment
-env = energy_py.make_env(
-    env_id='battery',
-    dataset_name=example,
-    episode_length=288,
-    power_rating=2
-    )
+env = energy_py.make_env(env_id='battery')
 
-#  creating an agent
 agent = energy_py.make_agent(
     agent_id='dqn',
     env=env
     total_steps=TOTAL_STEPS
     )
 
-#  we can then step through an MDP using the popular reset, step API
 observation = env.reset()
-
 while not done:
-
     action = agent.act(observation)
-
     next_observation, reward, done, info = env.step(action)
-
     training_info = agent.learn()
-
     observation = next_observation
-
 ```
+
 A detailed example of the low level energy_py framework is given in a Jupyter Notebook using the [DQN agent with the Battery environment](https://github.com/ADGEfficiency/energy_py/blob/master/notebooks/examples/Q_learning_battery.ipynb).
 
 The higher level energy_py API allows running of experiments from [config dictionaries](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/experiments/dict_expt.py) or from [config.ini files](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/experiments/config_expt.py).
