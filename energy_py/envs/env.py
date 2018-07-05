@@ -79,6 +79,7 @@ class BaseEnv(object):
             info (dict) auxiliary information
         """
         action = np.array(action).reshape(1, *self.action_space.shape)
+        assert self.action_space.contains(action)
 
         logger.debug('step {} action {}'.format(self.steps, action))
 
@@ -112,7 +113,7 @@ class BaseEnv(object):
         return start, start + ep_len
 
     def get_state_variable(self, variable_name):
-        return self.state[self.state.info.index(variable_name)]
+        return self.state[self.state_space.info.index(variable_name)]
 
     def update_info(self, **kwargs):
         for name, data in kwargs.items():

@@ -115,7 +115,6 @@ class Battery(BaseEnv):
             info (dictionary)
         """
         assert action.shape == (1, 1)
-        assert self.action_space.contains(action)
         action = action[0][0]
 
         old_charge = self.charge

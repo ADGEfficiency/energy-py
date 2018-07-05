@@ -18,7 +18,7 @@ env_config = {
 env = energy_py.make_env(**env_config)
 
 #  pull out the prices so that we can calculate rewards by hand
-PRICES = env.env.state_ts.values
+PRICES = env.state_space.data.loc[:, 'C_electricity_price [$/MWh]']
 
 
 def test_flex_once():

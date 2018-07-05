@@ -28,7 +28,13 @@ class GlobalSpace(object):
         self.name = name
 
     def from_dataset(self, dataset='example'):
-        self.load_dataset(dataset)
+        self.data = energy_py.load_dataset(dataset, self.name)
+
+        self.info = self.data.columns.tolist()
+
+        self.spaces = self.generate_spaces()
+        assert len(self.spaces) == self.data.shape[1]
+
         return self
 
     def from_spaces(self, spaces, space_labels):
@@ -37,6 +43,7 @@ class GlobalSpace(object):
 
         self.spaces = spaces
         self.info = space_labels
+
         return self
 
     @property
@@ -77,17 +84,6 @@ class GlobalSpace(object):
         return np.array(
             discrete_spaces).reshape(len(discrete_spaces), *self.shape)
 
-    def load_dataset(self, dataset):
-        self.data = energy_py.load_dataset(dataset, self.name)
-
-        self.info = self.data.columns.tolist()
-        logger.debug('{} info {}'.format(self.name, self.info))
-
-        self.spaces = self.generate_spaces()
-        assert len(self.spaces) == self.data.shape[1]
-
-        return self.data
-
     def generate_spaces(self):
         spaces = []
 
@@ -112,7 +108,7 @@ class GlobalSpace(object):
         return self.episode
 
     def __call__(self, steps, append=None):
-        sample = np.array(self.episode.iloc[steps, :])
+        sample = np.array(self.episode.iloc[steps-1, :])
 
         if append:
             sample = np.append(sample, append)

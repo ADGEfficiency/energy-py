@@ -15,7 +15,7 @@ env_config = {'dataset': 'example',
 
 env = energy_py.make_env('flex-v0', **env_config)
 
-PRICES = env.env.state_ts.values
+PRICES = env.state_space.data.loc[:, 'C_electricity_price [$/MWh]']
 
 def test_down_up():
     o = env.reset()

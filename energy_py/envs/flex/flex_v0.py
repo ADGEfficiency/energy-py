@@ -72,8 +72,6 @@ class FlexV0(BaseEnv):
         super().__init__(**kwargs)
 
         """
-        SETTING THE ACTION SPACE
-
         Single action - whether to start the flex asset or not
             0 = do nothing
             1 = start flex down then flex up cycle
@@ -83,27 +81,26 @@ class FlexV0(BaseEnv):
         After flex_time is over, relax_time starts
         """
         #  create the action space object
-        self.action_space = GlobalSpace([DiscreteSpace(3)])
+        self.action_space = GlobalSpace('action').from_spaces(
+            [DiscreteSpace(3)],
+            'flex_action'
+        )
 
-        """
-        SETTING THE OBSERVATION SPACE
-        """
-        #  add infomation onto our observation
         spaces = [DiscreteSpace(1),
                   DiscreteSpace(self.flex_down_time),
                   DiscreteSpace(self.flex_up_time),
                   DiscreteSpace(self.relax_time)]
 
-        #  names of these additional observation variables
         space_labels = ['flex_availability',
                         'flex_down_cycle',
                         'flex_up_cycle',
                         'relax_cycle']
 
-        self.observation_space = self.make_observation_space(spaces,
-                                                             space_labels)
+        self.observation_space.extend(
+            spaces,
+            space_labels
+        )
 
-        #  set the initial observation by resetting the environment
         self.observation = self.reset()
 
     def __repr__(self):
@@ -128,12 +125,15 @@ class FlexV0(BaseEnv):
 
         #  Resetting steps, state, observation
         self.steps = 0
-        self.state = self.get_state(steps=self.steps)
-        self.observation = self.get_observation(self.steps,
-                                                append=[self.avail,
-                                                        self.flex_down,
-                                                        self.flex_up,
-                                                        self.relax])
+        self.state = self.state_space(steps=self.steps)
+        self.observation = self.observation_space(
+            self.steps,
+            append=[self.avail,
+                    self.flex_down,
+                    self.flex_up,
+                    self.relax]
+        )
+
         return self.observation
 
     def _step(self, action):

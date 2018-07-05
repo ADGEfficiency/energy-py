@@ -87,13 +87,11 @@ class FlexV1(BaseEnv):
             1 = start (if available), continue if in flex_down
             2 = stop (if in flex_down cycle)
         """
-        self.action_space = GlobalSpace([DiscreteSpace(3)])
+        self.action_space = GlobalSpace('action').from_spaces(
+            [DiscreteSpace(3)],
+            'flex_action'
+        )
 
-        """
-        SETTING THE OBSERVATION SPACE
-        """
-        #  add infomation onto our observation
-        #  all our additional observations are dummies
         obs_spaces_append = self.make_observation_append_list()
         spaces = [DiscreteSpace(1) for _ in obs_spaces_append]
 
@@ -107,8 +105,9 @@ class FlexV1(BaseEnv):
         space_labels.extend(['relax_{}'.format(c)
                               for c in range(self.relax_time + 1)])
 
-        self.observation_space = self.make_observation_space(spaces,
-                                                             space_labels)
+        self.observation_space.extend(
+            spaces, space_labels
+        )
 
         self.observation = self.reset()
 
@@ -132,11 +131,12 @@ class FlexV1(BaseEnv):
         self.flex_counter = 0  # number of actions
 
         self.steps = 0
-        self.state = self.get_state(self.steps)
+        self.state = self.state_space(self.steps)
 
         obs_append = self.make_observation_append_list()
-        self.observation = self.get_observation(self.steps,
-                                                obs_append)
+        self.observation = self.observation_space(
+            self.steps, obs_append
+        )
         return self.observation
 
     def _step(self, action):
@@ -151,14 +151,6 @@ class FlexV1(BaseEnv):
             1 = start (if available), continue if in flex_down
             2 = stop (if in flex_down cycle)
         """
-        #  pull the electricity price out of the state
-        price_index = self.state_info.index('C_electricity_price_[$/MWh]')
-        electricity_price = self.state[0][price_index]
-
-        action = action[0][0]
-        assert action >= self.action_space.spaces[0].low
-        assert action <= self.action_space.spaces[0].high
-
         #  if we are in the flex_down cycle, continue
         if self.flex_down > 0 and action != 2:
             self.flex_down += 1
@@ -216,6 +208,9 @@ class FlexV1(BaseEnv):
         if self.flex_up > 0:
             flex_action = self.flex_size * self.flex_effy
 
+        electricity_price = self.get_state_variable(
+            'C_electricity_price [$/MWh]')
+
         #  /12 so we get reward in terms of £/5 minutes
         reward = -flex_action * electricity_price / 12
 
@@ -233,10 +228,11 @@ class FlexV1(BaseEnv):
             logger.debug('up {} down {} relax {} rew {}'.format(
                 self.flex_up, self.flex_down, self.relax, reward))
 
-        next_state = self.get_state(self.steps)
+        next_state = self.state_space(self.steps)
         obs_append = self.make_observation_append_list()
-        next_observation = self.get_observation(self.steps,
-                                                obs_append)
+        next_observation = self.observation_space(
+            self.steps, obs_append
+        )
         self.steps += 1
 
         #  check to see if we are done
