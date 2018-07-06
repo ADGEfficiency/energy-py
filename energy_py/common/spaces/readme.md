@@ -1,8 +1,8 @@
 # Spaces 
 
-Objects represent state, observation and action spaces.
-
 Space objects are used by both environments and agents.  This interaction with both parts of the library makes a good API very challenging and very useful.
+
+The GlobalSpace object can be used for state, observation and action spaces.
 
 The energy_py Space API is inspired by [Open AI gym](https://github.com/openai/gym/tree/master/gym/spaces).
 
