@@ -1,19 +1,23 @@
 # Spaces 
 
-Objects represent state, observation and action spaces.  Space objects are used by both environments and agents.  The energy_py Space API is inspired by [Open AI gym](https://github.com/openai/gym/tree/master/gym/spaces).
+Objects represent state, observation and action spaces.
 
-## Usage
+Space objects are used by both environments and agents.  This interaction with both parts of the library makes a good API very challenging and very useful.
+
+The energy_py Space API is inspired by [Open AI gym](https://github.com/openai/gym/tree/master/gym/spaces).
+
+## working with action spaces
+
+Action spaces are used by agents
+
+DQN requires a discrete action space.
 
 ```
 from energy_py.common.spaces import ContinuousSpace
 from energy_py.common.spaces import DiscreteSpace
 from energy_py.common.spaces import GlobalSpace
-```
 
-# working with action spaces
-```
 #  create an action space with one discrete action and one continuous action
-
 action_space = GlobalSpace('action').from_spaces(
     [ContinuousSpace(0, 100), DiscreteSpace(3)],
     ['acceleration', 'gear']
@@ -26,13 +30,16 @@ action = action_space.sample()
 assert action_space.contains(action)
 
 #  the space accomodates sampling from a discrete version of the space
-#  first the space is discretized
+#  continuous spaces are discretized into a given number of choices
+#  discrete spaces are left untouched
+
+#  first the space is discretized into 20 choices per space dimension 
 discrete_spaces = action_space.discretize(20)
 
 #  then we can sample from a discrete representation of the space
 action = action_space.sample_discrete()
 ```
-# working with state and observation spaces
+## working with state and observation spaces
 ```
 #  load a state or observation space from a dataset
 state_space = GlobalSpace('state').from_dataset('example')
