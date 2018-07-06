@@ -6,7 +6,7 @@ Space objects are used by both environments and agents.  This interaction with b
 
 The energy_py Space API is inspired by [Open AI gym](https://github.com/openai/gym/tree/master/gym/spaces).
 
-## working with action spaces
+## Working with action spaces
 
 Action spaces are used by agents to understand what they can do in an environment.
 
@@ -39,7 +39,7 @@ discrete_spaces = action_space.discretize(20)
 #  then we can sample from a discrete representation of the space
 action = action_space.sample_discrete()
 ```
-## working with state and observation spaces
+## Working with state and observation spaces
 
 State spaces are used by environments to understand what the current state variables are.  Observation spaces are used by agents to access infomation about the environment.
  
@@ -52,6 +52,6 @@ state_space = GlobalSpace('state').from_dataset('example')
 # we can sample an episode from the state
 episode = state_space.sample_episode(0, 100)
 
-# single state or observations can be accessed by calling the space
+# single state or observations from the current episode can be accessed by calling the space
 state = state_space(steps=0)
 ```
