@@ -40,7 +40,11 @@ discrete_spaces = action_space.discretize(20)
 action = action_space.sample_discrete()
 ```
 ## working with state and observation spaces
+
+State spaces are used by environments to understand what the current state variables are.  Observation spaces are used by agents to access infomation about the environment.
  
+The GlobalSpace object has functionality for loading and sampling episodes from datasets.
+
 ```python
 #  load a state or observation space from a dataset
 state_space = GlobalSpace('state').from_dataset('example')
