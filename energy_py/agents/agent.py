@@ -8,21 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class BaseAgent(object):
-    """
-    The energy_py base agent class
-
-    The main methods of this class are
-        reset
-        act
-        learn
-
-    All agents should override the following methods
-        _reset
-        _act
-    Optionally override
-        _learn
-
-    """
+    """ The energy_py base agent class """
 
     def __init__(self,
                  env,
@@ -31,9 +17,6 @@ class BaseAgent(object):
                  memory_length=10000,
                  min_reward=-10,
                  max_reward=10,
-                 observation_processor=None,
-                 action_processor=None,
-                 target_processor=None,
                  act_path='./act_path',
                  learn_path='./learn_path',
                  **kwargs):
@@ -44,9 +27,7 @@ class BaseAgent(object):
         self.observation_space = env.observation_space
         self.action_space = env.action_space
 
-        #  sending total_steps and initial_random into the memory init
         self.memory_type = memory_type
-
         self.memory = memory_register[memory_type](
             memory_length,
             self.observation_space.shape,
@@ -57,20 +38,10 @@ class BaseAgent(object):
         self.min_reward = min_reward
         self.max_reward = max_reward
 
-        #  keep two step counters internally in the agent
         self.act_step = 0
         self.learn_step = 0
 
-        #  optional objects to process arrays before they hit neural networks
-        if observation_processor:
-            self.observation_processor = processors[observation_processor]()
-
-        if action_processor:
-            self.action_processor = processors[action_processor]()
-
-        if target_processor:
-            self.target_processor = processors[target_processor]()
-
+        #  TODO replace the lists with defaultdict(list)
         self.act_summaries = []
         self.act_writer = tf.summary.FileWriter(act_path)
 
@@ -88,8 +59,9 @@ class BaseAgent(object):
         Resets the agent internals
         """
         logger.debug('Resetting the agent internals')
-
         self.memory.reset()
+        self.act_step = 0
+        self.learn_step = 0
 
         return self._reset()
 
@@ -106,9 +78,7 @@ class BaseAgent(object):
         logger.debug('Agent is acting')
         self.act_step += 1
 
-        observation = observation.reshape(1, *self.observation_space.shape)
-
-        return self._act(observation)
+        return self._act(observation.reshape(1, *self.observation_space.shape))
 
     def learn(self, **kwargs):
         """
@@ -138,12 +108,6 @@ class BaseAgent(object):
             done (np.array)
         """
         logger.debug('Agent is remembering')
-
-        observation = observation.reshape(
-            -1, *self.observation_space.shape)
-
-        next_observation = next_observation.reshape(
-            -1, *self.observation_space.shape)
 
         if self.min_reward and self.max_reward:
             reward = max(self.min_reward, min(reward, self.max_reward))

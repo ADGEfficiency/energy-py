@@ -1,8 +1,10 @@
 # Spaces 
 
-Space objects are used by both environments and agents.  This interaction with both parts of the library makes a good API very challenging and very useful.
+Spaces are used by both environments and agents.  This interaction with both parts of the library makes a good API very challenging and very useful.
 
-The GlobalSpace object can be used for state, observation and action spaces.  The library design is inspired by [Open AI gym](https://github.com/openai/gym/tree/master/gym/spaces).
+Three kinds of spaces are used - state, observation and action spaces.  These are represented using a `GlobalSpace`, which is a combination of simpler spaces.
+
+The library design is inspired by [Open AI gym](https://github.com/openai/gym/tree/master/gym/spaces).
 
 ## Working with action spaces
 
@@ -15,7 +17,7 @@ from energy_py.common.spaces import ContinuousSpace
 from energy_py.common.spaces import DiscreteSpace
 from energy_py.common.spaces import GlobalSpace
 
-#  create an action space with one discrete action and one continuous action
+#  create an action space with one continuous and one discrete action
 action_space = GlobalSpace('action').from_spaces(
     [ContinuousSpace(0, 100), DiscreteSpace(3)],
     ['acceleration', 'gear']
@@ -50,6 +52,6 @@ state_space = GlobalSpace('state').from_dataset('example')
 # we can sample an episode from the state
 episode = state_space.sample_episode(0, 100)
 
-# single state or observations from the current episode can be accessed by calling the space
+# sample from the current episode by calling the space
 state = state_space(steps=0)
 ```
