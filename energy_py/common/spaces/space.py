@@ -26,7 +26,19 @@ class GlobalSpace(object):
             name,
     ):
         self.name = name
-        self._shape = None 
+        self._shape = None
+
+    def __repr__(self):
+        return('<{} space {}>'.format(self.name, self.shape))
+
+    def __call__(self, steps, append=None):
+        sample = np.array(self.episode.iloc[steps, :])
+
+        #  check if append is a numpy array
+        if isinstance(append, np.ndarray):
+            sample = np.append(sample, append)
+
+        return sample.reshape(1, *self.shape)
 
     @property
     def shape(self):
@@ -46,12 +58,12 @@ class GlobalSpace(object):
 
         return self
 
-    def from_spaces(self, spaces, space_labels):
+    def from_spaces(self, spaces, labels):
         if not isinstance(spaces, list):
             spaces = [spaces]
 
         self.spaces = spaces
-        self.info = space_labels
+        self.info = labels 
 
         return self
 
@@ -85,10 +97,12 @@ class GlobalSpace(object):
         ).reshape(1, *self.shape)
 
     def discretize(self, num_discrete):
-        return np.array([
+        self.discrete_spaces = np.array([
             a for a in itertools.product(
                 *[spc.discretize(num_discrete) for spc in self.spaces])
         ]).reshape(-1, *self.shape)
+
+        return self.discrete_spaces
 
     def generate_spaces(self):
         spaces = []
@@ -110,13 +124,5 @@ class GlobalSpace(object):
         return spaces
 
     def sample_episode(self, start, end):
-        return self.data.iloc[start: end, :]
-
-    def __call__(self, steps, append=None):
-        sample = np.array(self.episode.iloc[steps, :])
-
-        #  check if append is a numpy array
-        if isinstance(append, np.ndarray):
-            sample = np.append(sample, append)
-
-        return sample.reshape(1, *self.shape)
+        self.episode = self.data.iloc[start: end, :]
+        return self.episode

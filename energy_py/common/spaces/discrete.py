@@ -14,7 +14,7 @@ class DiscreteSpace(object):
         self.high = num
 
     def sample(self):
-        return np.random.randint(self.high + 1)
+        return np.random.randint(self.high)
 
     def contains(self, x):
         return np.in1d(x, np.arange(0, self.high))

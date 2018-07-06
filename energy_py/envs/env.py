@@ -116,11 +116,6 @@ class BaseEnv(object):
         return start, start + ep_len
 
     def get_state_variable(self, variable_name):
-        print('getting state')
-
-        print(self.state)
-        print('var is {}'.format(variable_name))
-
         return self.state[0][self.state_space.info.index(variable_name)]
 
     def update_info(self, **kwargs):
