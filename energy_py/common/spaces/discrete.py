@@ -20,4 +20,4 @@ class DiscreteSpace(object):
         return np.in1d(x, np.arange(0, self.high))
 
     def discretize(self, n_discr=None):
-        return np.arange(0, self.high + 1)
+        return np.arange(0, self.high)
