@@ -34,7 +34,7 @@ class GlobalSpace(object):
     def __call__(self, steps, append=None):
         sample = np.array(self.episode.iloc[steps, :])
 
-        #  check if append is a numpy array
+        #  needed because bool(np.array(0)) is falsy
         if isinstance(append, np.ndarray):
             sample = np.append(sample, append)
 
