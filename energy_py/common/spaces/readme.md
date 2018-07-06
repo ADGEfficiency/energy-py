@@ -8,11 +8,11 @@ The energy_py Space API is inspired by [Open AI gym](https://github.com/openai/g
 
 ## working with action spaces
 
-Action spaces are used by agents
+Action spaces are used by agents to understand what they can do in an environment.
 
-DQN requires a discrete action space.
+DQN requires a discrete action space.  The GlobalSpace object has functionality to create and sample from a discrete sample of the action space.
 
-```
+```python
 from energy_py.common.spaces import ContinuousSpace
 from energy_py.common.spaces import DiscreteSpace
 from energy_py.common.spaces import GlobalSpace
@@ -40,7 +40,8 @@ discrete_spaces = action_space.discretize(20)
 action = action_space.sample_discrete()
 ```
 ## working with state and observation spaces
-```
+ 
+```python
 #  load a state or observation space from a dataset
 state_space = GlobalSpace('state').from_dataset('example')
 
