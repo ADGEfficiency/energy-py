@@ -26,6 +26,15 @@ class GlobalSpace(object):
             name,
     ):
         self.name = name
+        self._shape = None 
+
+    @property
+    def shape(self):
+        return self._shape
+
+    @shape.getter
+    def shape(self):
+        return (len(self.spaces), )
 
     def from_dataset(self, dataset='example'):
         self.data = energy_py.load_dataset(dataset, self.name)
@@ -46,10 +55,6 @@ class GlobalSpace(object):
 
         return self
 
-    @property
-    def shape(self):
-        return (len(self.spaces), )
-
     def extend(self, space, label):
         if not isinstance(space, list):
             space = [space]
@@ -60,6 +65,8 @@ class GlobalSpace(object):
             label = [label]
 
         self.info.extend(label)
+
+        assert len(self.spaces) == len(self.info)
 
     def contains(self, x):
         return all(
@@ -108,7 +115,8 @@ class GlobalSpace(object):
     def __call__(self, steps, append=None):
         sample = np.array(self.episode.iloc[steps, :])
 
-        if append:
+        #  check if append is a numpy array
+        if isinstance(append, np.ndarray):
             sample = np.append(sample, append)
 
-        return sample.reshape(1, *self.shape) 
+        return sample.reshape(1, *self.shape)

@@ -2,6 +2,8 @@
 
 import logging
 
+import numpy as np
+
 from energy_py.envs import BaseEnv
 from energy_py.common import DiscreteSpace, GlobalSpace
 
@@ -128,10 +130,10 @@ class FlexV0(BaseEnv):
         self.state = self.state_space(steps=self.steps)
         self.observation = self.observation_space(
             self.steps,
-            append=[self.avail,
+            append=np.array([self.avail,
                     self.flex_down,
                     self.flex_up,
-                    self.relax]
+                    self.relax])
         )
 
         return self.observation
@@ -251,11 +253,12 @@ class FlexV0(BaseEnv):
                 self.flex_up, self.flex_down, self.relax, reward))
 
         next_state = self.state_space(self.steps + 1)
-        next_observation = self.observation_space(self.steps + 1,
-                                                append=[self.avail,
-                                                        self.flex_down,
-                                                        self.flex_up,
-                                                        self.relax])
+        next_observation = self.observation_space(
+            self.steps + 1,
+            append=np.array([
+                self.avail, self.flex_down, self.flex_up, self.relax])
+        )
+
         self.steps += 1
 
         done = False

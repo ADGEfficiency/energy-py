@@ -46,17 +46,17 @@ def test_battery_expt():
                paths=PATHS)
 
 
-def test_flex_expt():
+# def test_flex_expt():
 
-    env_config = {'env_id': 'flex-v0',
-                  'dataset': 'example',
-                  'episode_length': 10,
-                  'episode_sample': 'random'}
+#     env_config = {'env_id': 'flex-v0',
+#                   'dataset': 'example',
+#                   'episode_length': 10,
+#                   'episode_sample': 'random'}
 
-    experiment(agent_config=AGENT_CONFIG,
-               env_config=env_config,
-               total_steps=TOTAL_STEPS,
-               paths=PATHS)
+#     experiment(agent_config=AGENT_CONFIG,
+#                env_config=env_config,
+#                total_steps=TOTAL_STEPS,
+#                paths=PATHS)
 
 
 def test_cartpole_expt():

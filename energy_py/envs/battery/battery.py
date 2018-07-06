@@ -51,6 +51,9 @@ class Battery(BaseEnv):
             'Rate [MW]'
         )
 
+        self.state_space.extend(ContinuousSpace(0, self.capacity),
+                                      'C_charge_level [MWh]')
+
         self.observation_space.extend(ContinuousSpace(0, self.capacity),
                                       'C_charge_level [MWh]')
 
@@ -79,10 +82,12 @@ class Battery(BaseEnv):
         self.steps = 0
         self.done = False
 
-        self.state = self.state_space(self.steps)
+        self.state = self.state_space(
+            self.steps, append=np.array(self.charge)
+        )
+
         self.observation = self.observation_space(
-            self.steps,
-            append=[self.charge]
+            self.steps, append=np.array(self.charge),
         )
 
         #  pull the charge out of the state variable to check it
@@ -124,7 +129,7 @@ class Battery(BaseEnv):
 
         #  we first check to make sure this charge is within our capacity limit
         new_charge = np.clip(old_charge + net_charge, 0, self.capacity)
-
+ 
         #  we can now calculate the gross rate of charge or discharge
         gross_rate = (new_charge - old_charge) * 12
 
@@ -166,10 +171,11 @@ class Battery(BaseEnv):
         logger.debug('net rate is {:.3f} MW'.format(net_rate))
         logger.debug('reward is {:.3f} $/5min'.format(reward))
 
-        next_state = self.state_space(self.steps + 1)
-        obs_append = self.make_observation_append_list()
+        next_state = self.state_space(
+            self.steps + 1, append=np.array(self.charge)
+        )
         next_observation = self.observation_space(
-            self.steps + 1, obs_append
+            self.steps + 1, append=np.array(self.charge)
         )
 
         self.steps += 1
