@@ -6,6 +6,7 @@ import numpy as np
 from energy_py.common import ContinuousSpace, GlobalSpace
 from energy_py.envs import BaseEnv
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -27,17 +28,16 @@ class Battery(BaseEnv):
                                also possible to pass 'random'
     """
     def __init__(self,
-                 power_rating=2,
-                 capacity=4,
-                 round_trip_eff=0.9,
-                 initial_charge=0.00,
+                 power_rating=2.0,      # MW
+                 capacity=4.0,          # MWh
+                 round_trip_eff=0.9,    # %
+                 initial_charge=0.0,    # %
                  **kwargs):
 
-        self.power_rating = float(power_rating)  # MW
-        self.capacity = float(capacity)  # MWh
-        self.round_trip_eff = float(round_trip_eff)  # %
-        self.initial_charge = initial_charge
-
+        self.power_rating = float(power_rating)
+        self.capacity = float(capacity)
+        self.round_trip_eff = float(round_trip_eff)
+        self.initial_charge = float(initial_charge)
         super().__init__(**kwargs)
 
         """
@@ -47,7 +47,7 @@ class Battery(BaseEnv):
         for a 2 MW battery, a range of -2 to 2 MW
         """
         self.action_space = GlobalSpace('action').from_spaces(
-            [ContinuousSpace(-self.power_rating, self.power_rating)],
+            ContinuousSpace(-self.power_rating, self.power_rating),
             'Rate [MW]'
         )
 
@@ -78,10 +78,6 @@ class Battery(BaseEnv):
 
         self.charge = float(self.capacity * initial_charge)  # MWh
 
-        #  reseting the step counter, state, observation & done status
-        self.steps = 0
-        self.done = False
-
         self.state = self.state_space(
             self.steps, append=np.array(self.charge)
         )
@@ -90,7 +86,6 @@ class Battery(BaseEnv):
             self.steps, append=np.array(self.charge),
         )
 
-        #  pull the charge out of the state variable to check it
         assert self.charge <= self.capacity
         assert self.charge >= 0
 
@@ -119,9 +114,6 @@ class Battery(BaseEnv):
             done (boolean)
             info (dictionary)
         """
-        assert action.shape == (1, 1)
-        action = action[0][0]
-
         old_charge = self.charge
 
         #  convert from MW to MWh/5 min by /12
@@ -129,7 +121,7 @@ class Battery(BaseEnv):
 
         #  we first check to make sure this charge is within our capacity limit
         new_charge = np.clip(old_charge + net_charge, 0, self.capacity)
- 
+
         #  we can now calculate the gross rate of charge or discharge
         gross_rate = (new_charge - old_charge) * 12
 
@@ -180,8 +172,9 @@ class Battery(BaseEnv):
 
         self.steps += 1
 
+        done = False
         if self.steps == (self.state_space.episode.shape[0] - 1):
-            self.done = True
+            done = True
 
         self.info = self.update_info(steps=self.steps,
                                      state=self.state,
@@ -190,7 +183,7 @@ class Battery(BaseEnv):
                                      reward=reward,
                                      next_state=next_state,
                                      next_observation=next_observation,
-                                     done=self.done,
+                                     done=done,
 
                                      electricity_price=electricity_price,
                                      gross_rate=gross_rate,

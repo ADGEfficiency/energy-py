@@ -62,6 +62,9 @@ class GlobalSpace(object):
         if not isinstance(spaces, list):
             spaces = [spaces]
 
+        if not isinstance(labels, list):
+            labels = [labels]
+
         self.spaces = spaces
         self.info = labels 
 

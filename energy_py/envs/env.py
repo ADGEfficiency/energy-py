@@ -51,6 +51,8 @@ class BaseEnv(object):
         """
         logger.debug('Resetting environment')
 
+        self.steps = 0
+
         self.info = collections.defaultdict(list)
         self.outputs = collections.defaultdict(list)
 
