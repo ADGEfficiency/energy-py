@@ -10,16 +10,17 @@ logger = logging.getLogger(__name__)
 class BaseAgent(object):
     """ The energy_py base agent class """
 
-    def __init__(self,
-                 env,
-                 sess=None,
-                 memory_type='deque',
-                 memory_length=10000,
-                 min_reward=-10,
-                 max_reward=10,
-                 act_path='./act_path',
-                 learn_path='./learn_path',
-                 **kwargs):
+    def __init__(
+            self,
+            env,
+            sess=None,
+            memory_type='deque',
+            memory_length=10000,
+            min_reward=-10,
+            max_reward=10,
+            act_path='./act_path',
+            learn_path='./learn_path'
+    ):
 
         self.sess = sess
         self.env = env

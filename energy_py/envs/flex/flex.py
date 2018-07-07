@@ -1,5 +1,7 @@
 """ v3 of a price responsive flexible electricity asset
 
+Add units onto all of the info dict lists
+
 TODO
 - test suite, both unit tests of the actions and a test_expt
 
@@ -166,26 +168,3 @@ class Flex(BaseEnv):
         self.observation = next_observation
 
         return self.observation, reward, done, self.info
-
-
-if __name__ == '__main__':
-    env = Flex()
-
-    obs = env.reset()
-    done = False
-    step = 0
-
-    while not done:
-        act = np.array(0) 
-
-        if step > 3:
-            act = np.array(1)
-
-        if step > 5:
-            act = np.array(1)
-        next_obs, r, done, i = env.step(act)
-        step += 1
-    import pandas as pd
-    out = pd.DataFrame().from_dict(i)
-    print(out.head(20))
-
