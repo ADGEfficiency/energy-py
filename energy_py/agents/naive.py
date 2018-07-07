@@ -150,15 +150,15 @@ class AutoFlex(BaseAgent):
     """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        assert repr(self.env) == '<energy_py flex-v0 environment>'
+        assert repr(self.env) == '<energy_py flex environment>'
 
-        self.minute_index = self.env.observation_info.index('C_minute')
+        self.minute_index = self.env.observation_space.info.index('C_minute')
 
-        self.current_fc_index = self.env.observation_info.index(
-            'C_forecast_electricity_price_current_hh_[$/MWh]')
+        self.current_fc_index = self.env.observation_space.info.index(
+            'C_forecast_electricity_price_current_hh [$/MWh]')
 
-        self.next_fc_index = self.env.observation_info.index(
-            'C_forecast_electricity_price_next_hh_[$/MWh]')
+        self.next_fc_index = self.env.observation_space.info.index(
+            'C_forecast_electricity_price_next_hh [$/MWh]')
 
     def _act(self, observation):
         minute = observation[0][self.minute_index]
@@ -167,34 +167,20 @@ class AutoFlex(BaseAgent):
 
         action = 0
         if minute == 0 or minute == 30:
+            logger.info('start of period')
             price_delta = current_price - next_price
+            #  if current price is greater than next price
+            #  we increase consumption now
             if price_delta > 5:
-                #  1 becuase we wnat down then up
                 action = 1
+            else:
+                logger.info('no price delta {}'.format(price_delta))
 
-        logging.debug('minute {} current_p {} next_p {} action {}'.format(
+        logger.debug('minute {} current_p {} next_p {} action {}'.format(
             minute, current_price, next_price, action)
                       )
 
-        return np.array(action).reshape(1, self.action_space.shape[0])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        return np.array(action).reshape(1, *self.action_space.shape)
 
 
 class RandomAgent(BaseAgent):

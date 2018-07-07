@@ -48,7 +48,7 @@ class Flex(BaseEnv):
         self.observation = self.reset()
 
     def __repr__(self):
-        return '<energy_py flex-v3 environment>'
+        return '<energy_py flex environment>'
 
     def _reset(self):
         """
@@ -160,7 +160,7 @@ class Flex(BaseEnv):
                 }
 
         self.info = self.update_info(**info)
-        [print('{} {}'.format(k, v)) for k, v in info.items()]
+        [logger.debug('{} {}'.format(k, v)) for k, v in info.items()]
 
         self.state = next_state
         self.observation = next_observation

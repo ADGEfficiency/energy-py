@@ -17,6 +17,9 @@ import pandas as pd
 from energy_py.common import ensure_dir
 
 
+logger = logging.getLogger(__name__)
+
+
 def save_env_info(env, env_info, episode, env_hist_path):
     """
     Saves the environment info dictionary to a csv
@@ -27,7 +30,7 @@ def save_env_info(env, env_info, episode, env_hist_path):
         episode (int)
     """
     if hasattr(env.observation_space, 'info') and hasattr(env.state_space, 'info'):
-        logging.debug('saving env history')
+        logger.debug('saving env history')
 
         state_info = env.state_space.info
         observation_info = env.observation_space.info
@@ -70,5 +73,7 @@ def save_env_info(env, env_info, episode, env_hist_path):
         ensure_dir(csv_path)
         output.to_csv(csv_path)
 
+        logger.debug(output.loc[:, ['action', 'reward']].describe())
+
     else:
-        logging.debug('Not saving env history')
+        logger.debug('Not saving env history')

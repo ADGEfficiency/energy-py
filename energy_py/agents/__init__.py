@@ -13,8 +13,8 @@ agent_register = {
     'dqn': DQN,
     'classifier': ClassifierAgent,
     'random': RandomAgent,
-    'time_flex': TimeFlex,
-    'auto_flex': AutoFlex
+    'timeflex': TimeFlex,
+    'autoflex': AutoFlex
 }
 
 
