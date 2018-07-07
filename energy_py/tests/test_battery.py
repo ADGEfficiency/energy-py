@@ -4,7 +4,8 @@ default_config = {
     'env_id': 'battery',
      'dataset': 'example',
      'initial_charge': 0,
-     'round_trip_eff': 0.9
+     'round_trip_eff': 0.9,
+    'episode_sample': 'full'
 }
 
 env = energy_py.make_env(**default_config)

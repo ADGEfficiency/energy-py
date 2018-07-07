@@ -23,7 +23,7 @@ class BaseEnv(object):
     """
     def __init__(self,
                  dataset='example',
-                 episode_sample='fixed',
+                 episode_sample='full',
                  episode_length=2016):
 
         logger.info('Initializing environment {}'.format(repr(self)))
