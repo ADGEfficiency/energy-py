@@ -124,7 +124,7 @@ class Flex(BaseEnv):
         site_elecricity_consumption = site_demand - net
 
         electricity_price = self.get_state_variable('C_electricity_price [$/MWh]')
-        reward = -(site_elecricity_consumption / 12) * electricity_price
+        reward = - (site_elecricity_consumption / 12) * electricity_price
 
         next_state = self.state_space(self.steps + 1)
 
@@ -152,8 +152,10 @@ class Flex(BaseEnv):
 
             'electricity_price': electricity_price,
             'charge': self.charge,
+            'site_demand': site_demand,
             'stored': stored,
             'discharged': discharged,
+            'site_electricity_consumption': site_elecricity_consumption,
             # 'storage_history': self.storage_history
                 }
 

@@ -66,7 +66,7 @@ def save_env_info(env, env_info, episode, env_hist_path):
 
         csv_path = os.path.join(env_hist_path,
                                'ep_{}'.format(episode),
-                               'hist.csv')
+                               'info.csv')
         ensure_dir(csv_path)
         output.to_csv(csv_path)
 
