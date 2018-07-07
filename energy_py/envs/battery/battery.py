@@ -37,7 +37,7 @@ class Battery(BaseEnv):
         self.power_rating = float(power_rating)
         self.capacity = float(capacity)
         self.round_trip_eff = float(round_trip_eff)
-        self.initial_charge = float(initial_charge)
+        self.initial_charge = initial_charge   # can be 'random' or float
         super().__init__(**kwargs)
 
         """
@@ -154,15 +154,6 @@ class Battery(BaseEnv):
 
         reward = - gross_rate * electricity_price / 12
 
-        logger.debug('step is {:.3f}'.format(self.steps))
-        logger.debug('action was {}'.format(action))
-        logger.debug('old charge was {:.3f} MWh'.format(old_charge))
-        logger.debug('new charge is {:.3f} MWh'.format(self.charge))
-        logger.debug('gross rate is {:.3f} MW'.format(gross_rate))
-        logger.debug('losses were {:.3f} MWh'.format(losses))
-        logger.debug('net rate is {:.3f} MW'.format(net_rate))
-        logger.debug('reward is {:.3f} $/5min'.format(reward))
-
         next_state = self.state_space(
             self.steps + 1, append=np.array(self.charge)
         )
@@ -176,23 +167,28 @@ class Battery(BaseEnv):
         if self.steps == (self.state_space.episode.shape[0] - 1):
             done = True
 
-        self.info = self.update_info(steps=self.steps,
-                                     state=self.state,
-                                     observation=self.observation,
-                                     action=action,
-                                     reward=reward,
-                                     next_state=next_state,
-                                     next_observation=next_observation,
-                                     done=done,
+        info = {
+            'step': self.steps,
+            'state': self.state,
+            'observation': self.observation,
+            'action': action,
+            'reward': reward,
+            'next_state': next_state,
+            'next_observation': next_observation,
+            'done': done,
 
-                                     electricity_price=electricity_price,
-                                     gross_rate=gross_rate,
-                                     losses=losses,
-                                     new_charge=self.charge,
-                                     old_charge=old_charge,
-                                     net_stored=net_stored)
+            'electricity_price': electricity_price,
+            'old_charge': old_charge,
+            'charge': self.charge,
+            'gross_rate': gross_rate,
+            'losses': losses,
+            'net_rate': net_rate
+                }
+
+        self.info = self.update_info(**info)
+        [print('{} {}'.format(k, v)) for k, v in info.items()]
 
         self.state = next_state
         self.observation = next_observation
 
-        return self.observation, reward, self.done, self.info
+        return self.observation, reward, done, self.info

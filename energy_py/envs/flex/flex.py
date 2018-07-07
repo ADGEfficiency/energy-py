@@ -3,6 +3,8 @@
 TODO
 - test suite, both unit tests of the actions and a test_expt
 
+test_no_op
+
 """
 
 from collections import deque
@@ -17,11 +19,11 @@ from energy_py.common import ContinuousSpace, DiscreteSpace, GlobalSpace
 logger = logging.getLogger(__name__)
 
 
-class FlexV3(BaseEnv):
+class Flex(BaseEnv):
 
     def __init__(self,
-                 capacity=2.0,      # MW
-                 release_time=24, # num 5 mins
+                 capacity=2.0,      # MWh
+                 release_time=4, # num 5 mins
                  **kwargs):
 
         self.capacity = float(capacity)
@@ -38,7 +40,7 @@ class FlexV3(BaseEnv):
             DiscreteSpace(3), 'setpoint'
         )
 
-        #  let our agent see the charge level
+        #  let our agent see the stored energy 
         self.observation_space.extend(
             ContinuousSpace(0, self.capacity), 'C_charge_level [MWh]'
         )
@@ -93,32 +95,29 @@ class FlexV3(BaseEnv):
         """
         action = action[0][0]
         site_demand = self.get_state_variable('C_demand [MW]') / 12
-        old_charge = self.charge
 
         #  no-op
         if action == 0:
             stored = 0
-            discharged = self.storage_history.popleft()
-            self.storage_history.append(stored)
+
+            discharged = self.storage_history.pop()
+            self.storage_history.appendleft(stored)
 
         #  cooling setpoint increased
         if action == 1:
-            stored = np.clip(old_charge + site_demand, 0, self.capacity)
-            discharged = self.storage_history.popleft()
-            self.storage_history.append(stored)
+            discharged = self.storage_history.pop()
+
+            spare_capacity = self.capacity - self.charge
+            stored = np.min([spare_capacity, site_demand])
+            self.storage_history.appendleft(stored)
 
         #  cooling setpoint decreased
         elif action == 2:
             stored = 0
 
-            #  empty out the storage TODO a func here
-            total_stored = sum(self.storage_history)
-
-            discharged = total_stored
-
-            [self.storage_history.append(0)
+            discharged = sum(self.storage_history)
+            [self.storage_history.appendleft(0)
              for _ in range(self.storage_history.maxlen)]
-
             assert self.charge == 0
 
         net = stored - discharged
@@ -143,12 +142,23 @@ class FlexV3(BaseEnv):
 
         info = {
             'step': self.steps,
+            'state': self.state,
+            'observation': self.observation,
             'action': action,
             'reward': reward,
+            'next_state': next_state,
+            'next_observation': next_observation,
+            'done': done,
+
+            'electricity_price': electricity_price,
+            'charge': self.charge,
+            'stored': stored,
+            'discharged': discharged,
+            'storage_history': self.storage_history
                 }
 
         self.info = self.update_info(**info)
-        [logger.debug('{} {}'.format(k, v)) for k, v in info.items()]
+        [print('{} {}'.format(k, v)) for k, v in info.items()]
 
         self.state = next_state
         self.observation = next_observation
@@ -161,7 +171,19 @@ if __name__ == '__main__':
 
     obs = env.reset()
     done = False
+    step = 0
 
     while not done:
-        act = env.action_space.sample()
+        act = np.array(0) 
+
+        if step > 3:
+            act = np.array(1)
+
+        if step > 5:
+            act = np.array(1)
         next_obs, r, done, i = env.step(act)
+        step += 1
+    import pandas as pd
+    out = pd.DataFrame().from_dict(i)
+    print(out.head(20))
+
