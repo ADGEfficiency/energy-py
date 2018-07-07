@@ -34,8 +34,8 @@ class BaseEnv(object):
         if episode_sample == 'random':
             self.sample_stragety = self.random_sample
 
-        if episode_sample == 'fixed':
-            self.sample_stragety = self.fixed_sample
+        if episode_sample == 'full':
+            self.sample_stragety = self.full_sample
 
         self.episode_length = min(
             int(episode_length),
@@ -107,15 +107,10 @@ class BaseEnv(object):
         )
         return start, start + self.episode_length
 
-    def fixed_sample(self):
-        if self.episode_length == 0:
-            ep_len = self.state_space.data.shape[0],
-        else:
-            ep_len = self.episode_length
-
-        start = self.state_space.data.shape[0] - self.episode_length
-
-        return start, start + ep_len
+    def full_sample(self):
+        start = 0
+        end = self.state_space.data.shape[0]
+        return start, end
 
     def get_state_variable(self, variable_name):
         return self.state[0][self.state_space.info.index(variable_name)]

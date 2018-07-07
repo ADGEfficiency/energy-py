@@ -154,7 +154,7 @@ class Flex(BaseEnv):
             'charge': self.charge,
             'stored': stored,
             'discharged': discharged,
-            'storage_history': self.storage_history
+            # 'storage_history': self.storage_history
                 }
 
         self.info = self.update_info(**info)
@@ -167,7 +167,7 @@ class Flex(BaseEnv):
 
 
 if __name__ == '__main__':
-    env = FlexV3()
+    env = Flex()
 
     obs = env.reset()
     done = False
