@@ -11,9 +11,6 @@ from energy_py.common.logging import make_logger
 from energy_py.common.experiments import Runner, save_env_info, make_paths
 
 
-logger = logging.getLogger(__name__)
-
-
 def experiment(agent_config,
                env_config,
                total_steps,
@@ -31,6 +28,8 @@ def experiment(agent_config,
 
     Agent and environment are created from config dictionaries.
     """
+    logger = make_logger(paths, 'master')
+
     tf.reset_default_graph()
     with tf.Session() as sess:
 
@@ -98,26 +97,16 @@ def experiment(agent_config,
 
 def run_config_expt(expt_name, run_name, expt_path):
     """
-    Runs a single experiment, reading experiment setup from a .ini
-
-    args
-        expt_name (str)
-        run_name (str)
-        expt_path (str)
-
-    Each experiment is made of multiple runs.  This function will load one run
-    and run an experiment.
+    expt_name (str)
+    run_name (str)
+    expt_path (str)
     """
+    paths = make_paths(expt_path, run_name=run_name),
 
-    paths = make_paths(expt_path, run_name=run_name)
-    logger = make_logger(paths, 'master')
-
-    env_config = parse_ini(paths['common_config'], 'ENV')
-
-    agent_config = parse_ini(paths['run_configs'], run_name)
-
-    experiment(agent_config,
-               env_config,
-               agent_config['total_steps'],
-               paths,
-               seed=agent_config['seed'])
+    experiment(
+        agent_config=parse_ini(paths['run_configs'], run_name),
+        env_config=parse_ini(paths['common_config'], 'ENV')
+        agent_config['total_steps'],
+        paths=paths,
+        seed=agent_config['seed']
+    )

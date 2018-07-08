@@ -22,6 +22,7 @@ agent = energy_py.make_agent(
     )
 
 observation = env.reset()
+
 while not done:
     action = agent.act(observation)
     next_observation, reward, done, info = env.step(action)
@@ -34,15 +35,11 @@ The higher level energy_py API allows running of experiments from [config dictio
 Single call using the experiment function
 
 ```python
-agent_config = {
-    'agent_id': 'dqn',
-    'double_q': True
-                }
 
 energy_py.experiment(
-    agent_config,
-    env_config,
-    total_steps,
+    agent_config={'agent_id': 'dqn', 'double_q': True},
+    env_config={'env_id': 'cartpole'},
+    total_steps=100000,
     paths=energy_py.make_paths('path/to/results')
     )
 
