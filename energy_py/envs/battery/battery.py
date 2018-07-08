@@ -57,8 +57,6 @@ class Battery(BaseEnv):
         self.observation_space.extend(ContinuousSpace(0, self.capacity),
                                       'C_charge_level [MWh]')
 
-        self.observation = self.reset()
-
     def __repr__(self):
         return '<energy_py BATTERY environment - {} MW {} MWh>'.format(
             self.power_rating, self.capacity)
@@ -186,7 +184,7 @@ class Battery(BaseEnv):
                 }
 
         self.info = self.update_info(**info)
-        [print('{} {}'.format(k, v)) for k, v in info.items()]
+        [logger.debug('{} {}'.format(k, v)) for k, v in info.items()]
 
         self.state = next_state
         self.observation = next_observation

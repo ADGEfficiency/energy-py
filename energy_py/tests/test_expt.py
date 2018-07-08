@@ -25,9 +25,8 @@ AGENT_CONFIG = {'agent_id': 'dqn',
                 'layers': (25, 25, 25),
                 'learning_rate': 0.0001,
                 'epsilon_decay_fraction': 0.3,
-                'memory_fraction': 0.15,
                 'memory_type': 'deque',
-                'double_q': True,
+                'double_q': True}
 
 
 def test_battery_expt():

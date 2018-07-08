@@ -73,7 +73,10 @@ def save_env_info(env, env_info, episode, env_hist_path):
         ensure_dir(csv_path)
         output.to_csv(csv_path)
 
-        logger.debug(output.loc[:, ['action', 'reward']].describe())
+        try:
+            logger.debug(output.loc[:, ['action', 'reward']].describe())
+        except KeyError:
+            pass
 
     else:
         logger.debug('Not saving env history')

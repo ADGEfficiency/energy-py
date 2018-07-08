@@ -47,8 +47,6 @@ class Flex(BaseEnv):
             ContinuousSpace(0, self.capacity), 'C_charge_level [MWh]'
         )
 
-        self.observation = self.reset()
-
     def __repr__(self):
         return '<energy_py flex environment>'
 

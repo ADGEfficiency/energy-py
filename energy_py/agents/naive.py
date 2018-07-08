@@ -1,10 +1,4 @@
-""" This naive agent takes actions used predefined rules.
-
-A naive agent is useful as a baseline for comparing with reinforcement
-learning agents.
-
-As the rules are predefined each agent is specific to an environment.
-"""
+""" Naive agents used as baselines """
 import logging
 
 import numpy as np
@@ -16,78 +10,63 @@ logger = logging.getLogger(__name__)
 
 
 class NaiveBatteryAgent(BaseAgent):
-    """
-    Charges at max/min based on the hour of the day.
-    """
+    """ Charges at max/min based on the hour of the day """
 
     def __init__(self, **kwargs):
-        """
-        args
-            env (object)
-        """
-        #  calling init method of the parent Base_Agent class
         super().__init__(**kwargs)
-
-        #  find the integer index of the hour in the observation
-        self.hour_index = self.observation_info.index('D_hour')
+        self.hour_index = self.observation_space.info.index('D_hour')
 
     def _act(self, observation):
-        """
-
-        """
-        #  index the observation at 0 because observation is
-        #  shape=(num_samples, observation_length)
         hour = observation[0][self.hour_index]
-
-        #  grab the spaces list
         act_spaces = self.action_space.spaces
 
+        #  discharge during morning peak
         if hour >= 7 and hour < 10:
-            #  discharge during morning peak
-            action = [act_spaces[0].low, act_spaces[1].high]
+            action = -self.env.power_rating
 
+        #  discharge during evening peak
         elif hour >= 15 and hour < 21:
-            #  discharge during evening peak
-            action = [act_spaces[0].low, act_spaces[1].high]
+            action = -self.env.power_rating
 
+        #  charge at max rate
         else:
-            #  charge at max rate
-            action = [act_spaces[0].high, act_spaces[1].low]
+            action = self.env.power_rating
 
         return np.array(action).reshape(1, self.action_space.shape[0])
 
 
-class DispatchAgent(BaseAgent):
+class FeatureAgent(BaseAgent):
     """
-    Dispatch agent looks at the cumulative mean of the within half hour
-    dispatch price.  Takes action if this cumulative average is greater
-    than the trigger price
+    Takes an action based on the value of a feature
 
     args
         env (object) energy_py environment
         discount (float) discount rate
-        trigget (float) triggers flex action based on cumulative mean price
+        trigget (float) triggers flex action based on the feature
     """
-    def __init__(self, trigger=200, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(
+            self,
+            feature,
+            feature_index,
+            trigger,
+            trigger_action,
+            default_action,
+            **kwargs
+    ):
+        self.feature = feature
+        self.feature_index = feature_index
 
         self.trigger = float(trigger)
+        self.trigger_action = trigger_action
+        self.default_action = default_action
 
-    def _act(self, **kwargs):
-        """
+        super().__init__(**kwargs)
 
-        """
-        obs = kwargs['observation']
-        idx = self.env.observation_info.index(
-            'C_cumulative_mean_dispatch_[$/MWh]'
-        )
-        cumulative_dispatch = obs[0][idx]
+    def _act(self, observation):
 
+        action = self.default_action
         if cumulative_dispatch > self.trigger:
-            action = self.action_space.high
-
-        else:
-            action = self.action_space.low
+            action = self.trigger_action
 
         return np.array(action).reshape(1, self.action_space.shape[0])
 
@@ -98,9 +77,6 @@ class TimeFlex(BaseAgent):
 
     args
         hours (list) hours to flex in
-
-    kwargs passed into BaseAgent
-        env (energy_py environment)
     """
     def __init__(self, hours, **kwargs):
         super().__init__(**kwargs)
@@ -142,14 +118,11 @@ class TimeFlex(BaseAgent):
 
 
 class AutoFlex(BaseAgent):
-    """
-    Flexes based on the price predictions for the current and next hh
+    """ Flexes based on the price predictions for the current and next hh """
 
-    kwargs passed into BaseAgent
-        env (energy_py environment)
-    """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
         assert repr(self.env) == '<energy_py flex environment>'
 
         self.minute_index = self.env.observation_space.info.index('C_minute')
@@ -166,15 +139,17 @@ class AutoFlex(BaseAgent):
         next_price = observation[0][self.next_fc_index]
 
         action = 0
+        #  only take actions on the half hour
         if minute == 0 or minute == 30:
             logger.info('start of period')
-            price_delta = current_price - next_price
-            #  if current price is greater than next price
-            #  we increase consumption now
-            if price_delta > 5:
+
+            delta = next_price - current_price
+            #  if next price is higher, increase consumption now
+            if delta > 5:
                 action = 1
+
             else:
-                logger.info('no price delta {}'.format(price_delta))
+                logger.info('no price delta {}'.format(delta))
 
         logger.debug('minute {} current_p {} next_p {} action {}'.format(
             minute, current_price, next_price, action)
@@ -184,44 +159,10 @@ class AutoFlex(BaseAgent):
 
 
 class RandomAgent(BaseAgent):
-    """
-    An agent that always randomly samples the action space.
+    """ Randomly samples action space """
 
-    args
-        env (object) energy_py environment
-    """
-    def __init__(self,
-                 **kwargs):
-
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     def _act(self, observation):
-        """
-        Agent selects action randomly
-
-        returns
-             action (np.array)
-        """
         return self.action_space.sample()
-
-
-if __name__ == '__main__':
-    import energy_py
-
-    env = energy_py.make_env(
-        'Flex-v1',
-        flex_size=1,
-        max_flex_time=4,
-        relax_time=0,
-        dataset='tempus')
-
-    a = energy_py.make_agent('naive_flex', env=env, hours=(6, 10, 15, 19))
-
-    o = env.reset()
-    done = False
-    while not done:
-        action = a.act(o)
-
-        o, r, done, i = env.step(action)
-
-        print(action)

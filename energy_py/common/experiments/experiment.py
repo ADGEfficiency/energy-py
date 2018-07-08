@@ -47,7 +47,6 @@ def experiment(agent_config,
 
         #  add stuff into the agent config dict
         agent_config['env'] = env
-        agent_config['env_repr'] = repr(env)
         agent_config['sess'] = sess
         agent_config['act_path'] = paths['tb_act']
         agent_config['learn_path'] = paths['tb_learn']
