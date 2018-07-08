@@ -13,14 +13,12 @@ energy_py is built and maintained by Adam Green  [adam.green@adgefficiency.com](
 ```python
 import energy_py
 
-TOTAL_STEPS = 100000
-
 env = energy_py.make_env(env_id='battery')
 
 agent = energy_py.make_agent(
     agent_id='dqn',
-    env=env
-    total_steps=TOTAL_STEPS
+    env=env,
+    total_steps=1000000
     )
 
 observation = env.reset()
