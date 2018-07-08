@@ -2,17 +2,13 @@
 
 **reinforcement learning for energy systems**
 
-energy_py provides an agent, energy environments and experiment tools.  The aim is to prove that reinforcement learning can be used to solve energy problems.
+energy_py provides an agent, energy environments and experiment tools.  The aim is to support work on using reinforcement learning for energy problems.
 
 energy_py is built and maintained by Adam Green  [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  
 - [introductory blog post](http://adgefficiency.com/energy_py-reinforcement-learning-for-energy-systems/)
 - [DQN debugging](http://adgefficiency.com/dqn-debugging/)
 - [DDQN hyperparameter tuning](http://adgefficiency.com/dqn-tuning/)
 - [introductory Jupyter notebook](https://github.com/ADGEfficiency/energy_py/blob/master/notebooks/examples/Q_learning_battery.ipynb)
-
-## Basic usage
-
-Environments and agents are created and used in a style that will be familiar to users of Open AI gym
 
 ```python
 import energy_py
