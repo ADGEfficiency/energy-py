@@ -41,6 +41,7 @@ class Flex(BaseEnv):
         self.action_space = GlobalSpace('action').from_spaces(
             DiscreteSpace(3), 'setpoint'
         )
+        self.action_space.no_op = np.array([0]).reshape(1, 1)
 
         #  let our agent see the stored energy 
         self.observation_space.extend(

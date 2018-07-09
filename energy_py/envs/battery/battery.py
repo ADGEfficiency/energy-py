@@ -50,6 +50,7 @@ class Battery(BaseEnv):
             ContinuousSpace(-self.power_rating, self.power_rating),
             'Rate [MW]'
         )
+        self.action_space.no_op = np.array([0]).reshape(1, 1)
 
         self.state_space.extend(ContinuousSpace(0, self.capacity),
                                       'C_charge_level [MWh]')

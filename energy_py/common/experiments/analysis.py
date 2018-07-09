@@ -84,7 +84,9 @@ class Run(object):
             expt_name,
             run_name
     ):
-        path = join(expt_name, run_name)
+        self.run_name = run_name
+        path = join(expt_name, self.run_name)
+
         self.agent_args = load_agent_args(path)
         self.env_args = load_env_args(path)
 
@@ -100,7 +102,29 @@ class Run(object):
 
 if __name__ == '__main__':
 
-    autoflex = Run('new_flex', 'autoflex')
-
-    def process_experment():
+    def process_experiment(expt_name, runs):
         """ Processes multiple runs into a single experiment summary """
+        if isinstance(runs, str):
+            runs = [runs]
+
+        runs = {run_name: Run(expt_name, run_name)
+                for run_name in runs}
+
+        baseline = runs['no_op'].output['avg_ep_reward']
+
+        for name, run in runs.items():
+            run.output['baseline_delta'] = run.output['avg_ep_reward'] - baseline
+
+            print('{} {}'.format(run.run_name, run.output))
+
+        return runs
+
+    out = process_experiment('new_flex', runs='autoflex')
+
+    #  create the no-nop baseline!!!
+    #  don't need to do a run to do thisj
+    #  but might be eaiser (can use same infrastructure as I just created)
+    #  decided to do the second
+
+
+

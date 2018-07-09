@@ -166,3 +166,13 @@ class RandomAgent(BaseAgent):
 
     def _act(self, observation):
         return self.action_space.sample()
+
+
+class NoOp(BaseAgent):
+    """ Does nothing each step """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def _act(self, observation):
+        return self.action_space.no_op()

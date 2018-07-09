@@ -129,3 +129,8 @@ class GlobalSpace(object):
     def sample_episode(self, start, end):
         self.episode = self.data.iloc[start: end, :]
         return self.episode
+
+    def no_op(self):
+        raise NotImplementedError(
+            'implement this in the environment child class (ie battery, flex etc'
+        )
