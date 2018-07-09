@@ -101,14 +101,15 @@ def run_config_expt(expt_name, run_name, expt_path):
     run_name (str)
     expt_path (str)
     """
-    paths = make_paths(expt_path, run_name=run_name),
+    paths = make_paths(expt_path, run_name=run_name)
 
     agent_config = parse_ini(paths['run_configs'], run_name)
+    env_config = parse_ini(paths['common_config'], 'ENV')
 
     experiment(
         agent_config=agent_config,
-        env_config=parse_ini(paths['common_config'], 'ENV'),
+        env_config=env_config,
         total_steps=agent_config['total_steps'],
         paths=paths,
-        seed=agent_config['seed']
+        seed=agent_config.pop('seed')
     )

@@ -119,7 +119,7 @@ if __name__ == '__main__':
 
         return runs
 
-    out = process_experiment('new_flex', runs='autoflex')
+    out = process_experiment('new_flex', runs=['no_op', 'autoflex'])
 
     #  create the no-nop baseline!!!
     #  don't need to do a run to do thisj

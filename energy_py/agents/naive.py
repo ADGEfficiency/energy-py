@@ -175,4 +175,4 @@ class NoOp(BaseAgent):
         super().__init__(**kwargs)
 
     def _act(self, observation):
-        return self.action_space.no_op()
+        return self.action_space.no_op

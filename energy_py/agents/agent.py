@@ -13,6 +13,7 @@ class BaseAgent(object):
     def __init__(
             self,
             env,
+            total_steps=0,
             sess=None,
             memory_type='deque',
             memory_length=10000,
