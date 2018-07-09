@@ -138,7 +138,11 @@ def test_bellman_target():
 
         bellman_check = rewards.reshape(-1) + discount * check_masked_next_q
 
-        np.testing.assert_array_almost_equal(
+        for val1, val2 in zip(bellman_check, bellman):
+            if val1 != val2:
+                print(val1, val2)
+
+        np.testing.assert_allclose(
             bellman_check.reshape(-1),
             bellman.reshape(-1)
         )
@@ -189,7 +193,7 @@ def test_ddqn_bellman():
              agent.reward: rewards}
         )
 
-        np.testing.assert_array_almost_equal(
+        np.testing.assert_allclose(
             bellman_check.reshape(-1),
             bellman.reshape(-1)
         )
@@ -407,17 +411,3 @@ def test_copy_ops():
                 v1,
                 v2
             )
-
-
-
-
-if __name__ == '__main__':
-    # test_action_selection()
-    # test_bellman_target()
-    # test_ddqn_bellman()
-
-    # test_target_net_weight_init()
-    # test_variable_sharing()
-
-    test_copy_ops()
-    test_variable_sharing()
