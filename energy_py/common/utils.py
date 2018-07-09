@@ -137,6 +137,22 @@ def save_args(config, path):
     return writer
 
 
+def load_args(path, drop=True):
+    with open(path, 'r') as args:
+        lines = {line.split(',')[0]: line.split(',')[1][:-1]
+                 for line in args.readlines()}
+
+        if drop:
+            drop_args = [
+                'act_path', 'learn_path', 'sess', 'env_repr',
+            ]
+
+            [lines.pop(key, None) for key in drop_args]
+
+            return lines
+
+
+
 def test_index_length(df, freq):
     test_idx = pd.DatetimeIndex(
         start=df.index[0],

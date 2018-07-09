@@ -13,7 +13,7 @@ def make_expt_parser():
         args (argparse NameSpace)
     """
     parser = argparse.ArgumentParser(
-        description='energy_py dict expt parser' 
+        description='energy_py dict expt parser'
     )
 
     #  required
