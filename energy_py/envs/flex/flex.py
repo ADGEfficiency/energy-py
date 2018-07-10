@@ -139,7 +139,11 @@ class Flex(BaseEnv):
         if self.steps == (self.state_space.episode.shape[0] - 1):
             done = True
 
-        #  TODO the MDP stuff - suggest this is done in self.update_info call!
+        #  +1 for increased setpoint, zero for no op, -1 for decreased setpoint
+        if action == 2:
+            setpoint = -1
+        else:
+            setpoint = action
 
         info = {
             'step': self.steps,
@@ -157,7 +161,8 @@ class Flex(BaseEnv):
             'stored': stored,
             'discharged': discharged,
             'site_electricity_consumption': site_elecricity_consumption,
-            # 'storage_history': self.storage_history
+            'setpoint': setpoint,
+            'demand_delta': -net
                 }
 
         self.info = self.update_info(**info)

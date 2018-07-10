@@ -139,17 +139,14 @@ class AutoFlex(BaseAgent):
         next_price = observation[0][self.next_fc_index]
 
         action = 0
-        #  only take actions on the half hour
-        if minute == 0 or minute == 30:
-            logger.info('start of period')
+        delta = next_price - current_price
 
-            delta = next_price - current_price
-            #  if next price is higher, increase consumption now
-            if delta > 5:
-                action = 1
+        #  if next price is lower, we want to not consume now (ie to store)
+        if delta < -5:
+            action = 1
 
-            else:
-                logger.info('no price delta {}'.format(delta))
+        else:
+            logger.info('no price delta {}'.format(delta))
 
         logger.debug('minute {} current_p {} next_p {} action {}'.format(
             minute, current_price, next_price, action)
