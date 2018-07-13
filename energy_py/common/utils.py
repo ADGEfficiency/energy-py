@@ -117,16 +117,7 @@ def load_pickle(name):
 
 
 def save_args(config, path):
-    """
-    Saves a config dictionary to a text file
-
-    args
-        config (dict)
-        path (str) path for output text file
-
-    returns
-        writer (object) csv Writer object
-    """
+    """ saves a config dictionary to a text file """
     with open(path, 'w') as outfile:
         writer = csv.writer(outfile)
 
@@ -134,10 +125,9 @@ def save_args(config, path):
             logger.debug('{} : {}'.format(k, v))
             writer.writerow([k]+[v])
 
-    return writer
-
 
 def load_args(path, drop=True):
+    """ loads a dictionary from a text file """
     with open(path, 'r') as args:
         lines = {line.split(',')[0]: line.split(',')[1][:-1]
                  for line in args.readlines()}

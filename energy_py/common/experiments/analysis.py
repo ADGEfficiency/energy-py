@@ -1,12 +1,34 @@
-""" tools for analyzing results of experiments """
+"""
+tools for analyzing results of experiments
+
+energy_py experiments are structured
+
+experiment_1
+    run_1
+        episode_1, episode_2 ... episode_n2
+    run_2
+        episode_1, episode_2 ... episode_n2
+    ...
+
+experiment_2
+    run_1
+        episode_1, episode_2 ... episode_n2
+    run_2
+        episode_1, episode_2 ... episode_n2
+    ...
+"""
+
 import os
 from os.path import join
 
-import pandas as pd
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 from energy_py.common.utils import load_args
 
+
+plt.style.use('ggplot')
 results_path = '/Users/adam/git/energy_py/energy_py/experiments/results/'
 
 
@@ -23,6 +45,7 @@ def load_agent_args(run_name):
 
 
 def read_run_episodes(run_name, verbose=False):
+    """ Reads all episodes for a single run """
 
     episodes = []
     for root, dirs, files in os.walk(
@@ -38,7 +61,7 @@ def read_run_episodes(run_name, verbose=False):
 
 
 def process_episode(episode, verbose=False):
-    """ Processes a single episode episodeory - aka the info dict """
+    """ Process a single episode - aka the info dict returned by env.step() """
 
     #  these should go before __init__
     num_5mins_per_day = 12 * 24
@@ -89,6 +112,90 @@ def process_run(episodes):
     return run_summary
 
 
+def process_experiment(expt_name, runs):
+    """ Processes multiple runs into a single experiment summary """
+    if isinstance(runs, str):
+        runs = [runs]
+
+    runs = {run_name: Run(expt_name, run_name)
+            for run_name in runs}
+
+    # delta creation could be a function TODO
+    baseline = runs['no_op'].output['reward_per_day']
+
+    for name, run in runs.items():
+        run.output['delta_reward_per_day'] = run.output['reward_per_day'] - baseline
+
+        print('{} {}'.format(
+            run.run_name, run.output['delta_reward_per_day']
+        ))
+
+    return runs
+
+
+def plot_time_series(
+        data,
+        y,
+        figsize=(25, 10),
+        fig_name=None,
+        same_plot=False,
+        **kwargs):
+
+    if isinstance(y, str):
+        y = [y]
+
+    if same_plot:
+        nrows = 1
+    else:
+        nrows = len(y)
+
+    figsize = (100, 10)
+
+    f, a = plt.subplots(figsize=figsize, nrows=nrows, sharex=True)
+    a = np.array(a).flatten()
+
+    for idx, y_label in enumerate(y):
+        if same_plot:
+            idx = 0
+        a[idx].set_title(y_label)
+        data.plot(y=y_label, ax=a[idx], **kwargs)
+
+    if fig_name:
+        f.savefig(fig_name)
+
+    return f
+
+
+def plot_figures(plot_data):
+    f = plot_time_series(
+        plot_data,
+        y=['reward', 'electricity_price'],
+        fig_name='fig1.png'
+    )
+
+    f = plot_time_series(
+        plot_data,
+        y=['site_demand', 'site_electricity_consumption'],
+        same_plot=True,
+        fig_name='fig2.png'
+    )
+
+    f = plot_time_series(
+        plot_data,
+        y=['site_demand', 'electricity_price', 'setpoint', 'demand_delta'],
+        fig_name='fig3.png'
+    )
+
+    f = plot_time_series(
+        plot_data,
+        y=['electricity_price', 'setpoint', 'charge'],
+        fig_name='fig4.png'
+    )
+
+
+
+
+
 class Run(object):
     def __init__(
             self,
@@ -109,99 +216,3 @@ class Run(object):
 
     def __call__(self):
         return self.output
-
-
-if __name__ == '__main__':
-
-    def process_experiment(expt_name, runs):
-        """ Processes multiple runs into a single experiment summary """
-        if isinstance(runs, str):
-            runs = [runs]
-
-        runs = {run_name: Run(expt_name, run_name)
-                for run_name in runs}
-
-        # delta creation could be a function TODO
-        baseline = runs['no_op'].output['reward_per_day']
-
-        for name, run in runs.items():
-            run.output['delta_reward_per_day'] = run.output['reward_per_day'] - baseline
-
-
-            print('{} {}'.format(
-                run.run_name, run.output['delta_reward_per_day']
-            ))
-
-        return runs
-
-    out = process_experiment('new_flex', runs=['no_op', 'autoflex'])
-
-    #  create the no-nop baseline!!!
-    #  don't need to do a run to do thisj
-    #  but might be eaiser (can use same infrastructure as I just created)
-    #  decided to do the second
-    import matplotlib.pyplot as plt
-
-    plt.style.use('ggplot')
-
-
-    def plot_time_series(
-            data,
-            y,
-            figsize=(25, 10),
-            fig_name=None,
-            same_plot=False,
-            **kwargs):
-
-        if isinstance(y, str):
-            y = [y]
-
-        if same_plot:
-            nrows = 1
-        else:
-            nrows = len(y)
-
-        figsize = (100, 10)
-
-        f, a = plt.subplots(figsize=figsize, nrows=nrows, sharex=True)
-        a = np.array(a).flatten()
-
-        for idx, y_label in enumerate(y):
-            if same_plot:
-                idx = 0
-            a[idx].set_title(y_label)
-            data.plot(y=y_label, ax=a[idx], **kwargs)
-
-        if fig_name:
-            f.savefig(fig_name)
-
-        return f
-
-    def plot_figures(plot_data):
-        f = plot_time_series(
-            plot_data,
-            y=['reward', 'electricity_price'],
-            fig_name='fig1.png'
-        )
-
-        f = plot_time_series(
-            plot_data,
-            y=['site_demand', 'site_electricity_consumption'],
-            same_plot=True,
-            fig_name='fig2.png'
-        )
-
-        f = plot_time_series(
-            plot_data,
-            y=['site_demand', 'electricity_price', 'setpoint', 'demand_delta'],
-            fig_name='fig3.png'
-        )
-
-        f = plot_time_series(
-            plot_data,
-            y=['electricity_price', 'setpoint', 'charge'],
-            fig_name='fig4.png'
-        )
-
-    plot_figures(out['autoflex'].episodes[0].iloc[:48, :])
-    plot_figures(out['autoflex'].episodes[0].iloc[:, :])
