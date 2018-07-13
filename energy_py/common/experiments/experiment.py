@@ -11,13 +11,14 @@ from energy_py.common.logging import make_logger
 from energy_py.common.experiments import Runner, save_env_info, make_paths
 
 
-def experiment(agent_config,
-               env_config,
-               total_steps,
-               paths,
-               seed=None):
+def experiment(
+        agent_config,
+        env_config,
+        total_steps,
+        paths,
+        seed=None):
     """
-    Run an experiment.  Episodes are run until total_steps are reached.
+    Run an experiment of multiple episodes
 
     args
         agent_config (dict)
@@ -26,23 +27,24 @@ def experiment(agent_config,
         paths (dict)
         seed (int)
 
-    Agent and environment are created from config dictionaries.
+    Episodes are run until total_steps are reached.
+    Agent and environment are created from config dictionaries
     """
     logger = make_logger(paths, 'master')
 
     tf.reset_default_graph()
     with tf.Session() as sess:
 
-        #  optionally set random seeds
+        env = energy_py.make_env(**env_config)
+        save_args(env_config, path=paths['env_args'])
         logger.info('random seed is {}'.format(seed))
+
         if seed:
             seed = int(seed)
+            env.seed(seed)
             random.seed(seed)
             tf.set_random_seed(seed)
             np.random.seed(seed)
-
-        env = energy_py.make_env(**env_config)
-        save_args(env_config, path=paths['env_args'])
 
         #  add stuff into the agent config dict
         agent_config['env'] = env
@@ -96,11 +98,7 @@ def experiment(agent_config,
 
 
 def run_config_expt(expt_name, run_name, expt_path):
-    """
-    expt_name (str)
-    run_name (str)
-    expt_path (str)
-    """
+    """ runs an experiment from a config file """
     paths = make_paths(expt_path, run_name=run_name)
 
     agent_config = parse_ini(paths['run_configs'], run_name)

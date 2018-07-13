@@ -5,16 +5,16 @@ energy_py experiments are structured
 
 experiment_1
     run_1
-        episode_1, episode_2 ... episode_n2
+        episode_1, episode_2 ... episode_n
     run_2
-        episode_1, episode_2 ... episode_n2
+        episode_1, episode_2 ... episode_n
     ...
 
 experiment_2
     run_1
-        episode_1, episode_2 ... episode_n2
+        episode_1, episode_2 ... episode_n
     run_2
-        episode_1, episode_2 ... episode_n2
+        episode_1, episode_2 ... episode_n
     ...
 """
 
