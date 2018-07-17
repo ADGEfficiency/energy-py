@@ -117,17 +117,20 @@ def process_experiment(expt_name, runs):
     if isinstance(runs, str):
         runs = [runs]
 
+    if 'no_op' not in runs:
+        runs.append('no_op')
+
     runs = {run_name: Run(expt_name, run_name)
             for run_name in runs}
 
     # delta creation could be a function TODO
-    baseline = runs['no_op'].output['reward_per_day']
+    baseline = runs['no_op'].summary['reward_per_day']
 
     for name, run in runs.items():
-        run.output['delta_reward_per_day'] = run.output['reward_per_day'] - baseline
+        run.summary['delta_reward_per_day'] = run.summary['reward_per_day'] - baseline
 
         print('{} {}'.format(
-            run.run_name, run.output['delta_reward_per_day']
+            run.run_name, run.summary['delta_reward_per_day']
         ))
 
     return runs
@@ -136,7 +139,7 @@ def process_experiment(expt_name, runs):
 def plot_time_series(
         data,
         y,
-        figsize=(25, 10),
+        figsize=[25, 10],
         fig_name=None,
         same_plot=False,
         **kwargs):
@@ -146,10 +149,11 @@ def plot_time_series(
 
     if same_plot:
         nrows = 1
+
     else:
         nrows = len(y)
 
-    figsize = (100, 10)
+    figsize[1] = 5 * nrows
 
     f, a = plt.subplots(figsize=figsize, nrows=nrows, sharex=True)
     a = np.array(a).flatten()
@@ -166,34 +170,13 @@ def plot_time_series(
     return f
 
 
-def plot_figures(plot_data):
-    f = plot_time_series(
-        plot_data,
-        y=['reward', 'electricity_price'],
-        fig_name='fig1.png'
-    )
-
-    f = plot_time_series(
-        plot_data,
-        y=['site_demand', 'site_electricity_consumption'],
-        same_plot=True,
-        fig_name='fig2.png'
-    )
+def plot_figures(plot_data, fig_path='./'):
 
     f = plot_time_series(
         plot_data,
         y=['site_demand', 'electricity_price', 'setpoint', 'demand_delta'],
-        fig_name='fig3.png'
+        fig_name=join(fig_path, 'fig1.png')
     )
-
-    f = plot_time_series(
-        plot_data,
-        y=['electricity_price', 'setpoint', 'charge'],
-        fig_name='fig4.png'
-    )
-
-
-
 
 
 class Run(object):
@@ -202,6 +185,7 @@ class Run(object):
             expt_name,
             run_name
     ):
+        self.expt_name = expt_name
         self.run_name = run_name
         path = join(expt_name, self.run_name)
 
@@ -212,7 +196,64 @@ class Run(object):
             path, verbose=False
         )
 
-        self.output = process_run(self.episodes)
+        self.summary = process_run(self.episodes)
 
     def __call__(self):
-        return self.output
+        return self.summary
+
+
+if __name__ == '__main__':
+
+    runs = process_experiment('new_flex', 'autoflex')
+
+    autoflex = runs['autoflex']
+
+    last_ep = autoflex.episodes[-1]
+
+    results_path = '/Users/adam/git/research/energy_py/results/'
+
+    plot_figures(last_ep.iloc[-288:, :],
+                 fig_path=results_path)
+
+    def run_markdown_writer(
+            run,
+            path
+    ):
+        with open(join(path, run.run_name, 'run_results.md'), 'w') as text_file:
+                text_file.write(
+                    '## {} run of the {} experiment'.format(
+                        run.run_name, run.expt_name) + os.linesep)
+
+                text_file.write(
+                    '### delta versus the no_op case' + os.linesep)
+
+                text_file.write(
+                    '$/day {:2.2f}'.format(
+                        run.summary['delta_reward_per_day']) + os.linesep)
+
+                text_file.write(
+                    '$/yr {:2.0f}'.format(
+                        run.summary['delta_reward_per_day'] * 365) + os.linesep)
+
+                text_file.write('![img](fig1.png)' + os.linesep)
+
+    run_markdown_writer(autoflex, results_path)
+
+    def expt_markdown_writer(
+            runs,
+            path
+    ):
+        with open(join(path, 'expt_results.md'), 'w') as text_file:
+
+            for run_name, run in runs.items():
+                text_file.write('## ' + run_name + os.linesep)
+
+                text_file.write(
+                    '$/day {:2.2f}'.format(
+                        run.summary['delta_reward_per_day']) + os.linesep)
+
+                text_file.write(
+                    '$/yr {:2.0f}'.format(
+                        run.summary['delta_reward_per_day'] * 365) + os.linesep)
+
+    expt_markdown_writer(runs, results_path)

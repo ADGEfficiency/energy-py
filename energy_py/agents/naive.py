@@ -144,12 +144,13 @@ class AutoFlex(BaseAgent):
         #  if next price is lower, we want to not consume now (ie to store)
         if delta < -5:
             action = 1
+            logger.info('taking action - delta {}'.format(delta))
 
         else:
             logger.info('no price delta {}'.format(delta))
 
-        logger.debug('minute {} current_p {} next_p {} action {}'.format(
-            minute, current_price, next_price, action)
+        logger.debug('minute {} current_p {} next_p {} delta {} action {}'.format(
+            minute, current_price, next_price, delta, action)
                       )
 
         return np.array(action).reshape(1, *self.action_space.shape)

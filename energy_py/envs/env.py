@@ -42,6 +42,10 @@ class BaseEnv(object):
             self.state_space.data.shape[0]
         )
 
+    def seed(self, *args):
+        #  TODO
+        pass
+
     def reset(self):
         """
         Resets the state of the environment, returns an initial observation

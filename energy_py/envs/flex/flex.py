@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 class Flex(BaseEnv):
 
     def __init__(self,
-                 capacity=2.0,      # MWh
-                 release_time=4, # num 5 mins
+                 capacity=0.5,      # MWh
+                 release_time=12,   # num 5 mins
                  **kwargs):
 
         self.capacity = float(capacity)
@@ -43,7 +43,7 @@ class Flex(BaseEnv):
         )
         self.action_space.no_op = np.array([0]).reshape(1, 1)
 
-        #  let our agent see the stored energy 
+        #  let our agent see the stored energy
         self.observation_space.extend(
             ContinuousSpace(0, self.capacity), 'C_charge_level [MWh]'
         )
@@ -108,12 +108,20 @@ class Flex(BaseEnv):
         if action == 1:
             discharged = self.storage_history.pop()
 
-            spare_capacity = self.capacity - self.charge
-            stored = np.min([spare_capacity, site_demand])
+            # spare_capacity = self.capacity - self.charge
+            stored = site_demand
             self.storage_history.appendleft(stored)
 
         #  cooling setpoint decreased
+        #  OR we are full of stored cooling
         elif action == 2:
+            stored = 0
+            discharged = sum(self.storage_history)
+            [self.storage_history.appendleft(0)
+             for _ in range(self.storage_history.maxlen)]
+            assert self.charge == 0
+
+        if sum(self.storage_history) >= self.capacity:
             stored = 0
 
             discharged = sum(self.storage_history)
@@ -126,6 +134,13 @@ class Flex(BaseEnv):
 
         electricity_price = self.get_state_variable('C_electricity_price [$/MWh]')
         reward = - (site_elecricity_consumption / 12) * electricity_price
+
+        baseline_cost = site_demand * electricity_price / 12
+        optimized_cost = site_elecricity_consumption * electricity_price / 12
+
+        #  negative means we are increasing cost
+        #  positive means we are reducing cost
+        delta_cost = baseline_cost - optimized_cost
 
         next_state = self.state_space(self.steps + 1)
 
@@ -162,7 +177,8 @@ class Flex(BaseEnv):
             'discharged': discharged,
             'site_electricity_consumption': site_elecricity_consumption,
             'setpoint': setpoint,
-            'demand_delta': -net
+            'delta_demand': -net,
+            'delta_cost': delta_cost
                 }
 
         self.info = self.update_info(**info)
