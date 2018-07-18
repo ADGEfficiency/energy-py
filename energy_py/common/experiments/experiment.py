@@ -11,29 +11,65 @@ from energy_py.common.logging import make_logger
 from energy_py.common.experiments import Runner, save_env_info, make_paths
 
 
-def experiment(
+def run_experiment(expt_name, run_name, expt_path):
+
+    """ runs an experiment from a config file """
+
+    """
+    Need a new config file expt.ini
+    """
+
+    paths = make_paths(expt_path, run_name=run_name)
+
+    agent_config = parse_ini(paths['agent_config'], run_name)
+    env_config = parse_ini(paths['expt_config'], 'ENV')
+    expt_config = parse_ini(paths['expt_config'], 'EXPT')
+
+    train_steps = int(expt_config['train_steps'])
+    test_steps = int(expt_config['test_steps'])
+    total_steps = int(expt_config['total_steps'])
+
+    seed = expt_config['seed']
+
+    tf.reset_default_graph()
+
+    with tf.Session() as sess:
+
+        agent, env = setup_experiment(
+            sess,
+            agent_config,
+            env_config,
+            paths,
+            seed=seed
+        )
+
+        while steps < total_steps:
+
+            agent, env = training_experiment(sess, agent, env, train_steps)
+
+            agent, env = test_experiment(sess, agent, env, train_steps)
+
+            steps += train_steps + test_steps
+
+
+def setup_experiment(
+        sess,
         agent_config,
         env_config,
-        total_steps,
         paths,
-        seed=None):
+        seed=None
+):
     """
     Run an experiment of multiple episodes
 
     args
         agent_config (dict)
         env_config (dict)
-        total_steps (int)
         paths (dict)
         seed (int)
-
-    Episodes are run until total_steps are reached.
-    Agent and environment are created from config dictionaries
     """
     logger = make_logger(paths, 'master')
 
-    tf.reset_default_graph()
-    with tf.Session() as sess:
 
         env = energy_py.make_env(**env_config)
         save_args(env_config, path=paths['env_args'])
@@ -58,56 +94,87 @@ def experiment(
             agent.acting_writer.add_graph(sess.graph)
         save_args(agent_config, path=paths['agent_args'])
 
-        #  runner helps to manage our experiment
-        runner = Runner(sess, paths, total_steps)
+    return agent, env
 
-        #  outer while loop runs through multiple episodes
-        step, episode = 0, 0
-        while step < int(total_steps):
-            episode += 1
-            done = False
-            observation = env.reset()
 
-            #  inner while loop runs through a single episode
-            while not done:
-                step += 1
-                #  select an action
-                action = agent.act(observation)
-                #  take one step through the environment
-                next_observation, reward, done, info = env.step(action)
-                #  store the experience
+def training_experiment(
+
+):
+    runner = Runner(sess, paths, total_steps)
+
+    #  outer while loop runs through multiple episodes
+    step, episode = 0, 0
+
+    while step < int(total_steps):
+        episode += 1
+        done = False
+        observation = env.reset()
+
+        while not done:
+            step += 1
+
+            action = agent.act(observation)
+
+            next_observation, reward, done, info = env.step(action)
+
+            agent.remember(observation, action, reward,
+                           next_observation, done)
+            runner.record_step(reward)
+
+            observation = next_observation
+
+            #  fill the memory up halfway before we learn
+            #  TODO the agent should decide what to do internally here
+            if step > int(agent.memory.size * 0.5):
+                train_info = agent.learn()
+
+        runner.record_episode(env_info=info)
+
+        save_env_info(
+            env,
+            info,
+            len(runner.episode_rewards),
+            paths['env_histories']
+        )
+
+
+def test_experiment(
+
+        fill_memory=True
+
+):
+
+    runner = Runner(sess, paths, total_steps)
+
+    #  outer while loop runs through multiple episodes
+    step, episode = 0, 0
+
+    while step < int(total_steps):
+        episode += 1
+        done = False
+        observation = env.reset()
+
+        #  inner while loop runs through a single episode
+        while not done:
+            step += 1
+
+            action = agent.act(observation)
+
+            next_observation, reward, done, info = env.step(action)
+
+            if fill_memory:
                 agent.remember(observation, action, reward,
                                next_observation, done)
-                runner.record_step(reward)
-                #  moving to the next time step
-                observation = next_observation
 
-                #  fill the memory up halfway before we learn
-                #  TODO the agent should decide what to do internally here
-                if step > int(agent.memory.size * 0.5):
-                    train_info = agent.learn()
+            runner.record_step(reward)
 
-            runner.record_episode(env_info=info)
+            observation = next_observation
 
-            save_env_info(
-                env,
-                info,
-                len(runner.episode_rewards),
-                paths['env_histories']
-            )
+        runner.record_episode(env_info=info)
 
-
-def run_config_expt(expt_name, run_name, expt_path):
-    """ runs an experiment from a config file """
-    paths = make_paths(expt_path, run_name=run_name)
-
-    agent_config = parse_ini(paths['run_configs'], run_name)
-    env_config = parse_ini(paths['common_config'], 'ENV')
-
-    experiment(
-        agent_config=agent_config,
-        env_config=env_config,
-        total_steps=agent_config['total_steps'],
-        paths=paths,
-        seed=agent_config.pop('seed')
-    )
+        save_env_info(
+            env,
+            info,
+            len(runner.episode_rewards),
+            paths['env_histories']
+        )
