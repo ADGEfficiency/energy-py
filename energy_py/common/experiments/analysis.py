@@ -129,9 +129,10 @@ def process_experiment(expt_name, runs):
     for name, run in runs.items():
         run.summary['delta_reward_per_day'] = run.summary['reward_per_day'] - baseline
 
-        print('{} {}'.format(
-            run.run_name, run.summary['delta_reward_per_day']
-        ))
+        if name is not 'no_op':
+            print('{} reward per day vs no_op $/day {:2.2f}'.format(
+                run.run_name, run.summary['delta_reward_per_day']
+            ))
 
     return runs
 
@@ -153,7 +154,7 @@ def plot_time_series(
     else:
         nrows = len(y)
 
-    figsize[1] = 5 * nrows
+    figsize[1] = 2 * nrows
 
     f, a = plt.subplots(figsize=figsize, nrows=nrows, sharex=True)
     a = np.array(a).flatten()
@@ -174,8 +175,15 @@ def plot_figures(plot_data, fig_path='./'):
 
     f = plot_time_series(
         plot_data,
-        y=['site_demand', 'electricity_price', 'setpoint', 'demand_delta'],
+        y=['site_demand', 'site_electricity_consumption'],
+        same_plot=True,
         fig_name=join(fig_path, 'fig1.png')
+    )
+
+    f = plot_time_series(
+        plot_data,
+        y=['electricity_price', 'setpoint', 'delta_demand', 'charge'],
+        fig_name=join(fig_path, 'fig2.png')
     )
 
 

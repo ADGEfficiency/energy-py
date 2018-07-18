@@ -147,6 +147,7 @@ class AutoFlex(BaseAgent):
             logger.info('taking action - delta {}'.format(delta))
 
         else:
+            action = 2
             logger.info('no price delta {}'.format(delta))
 
         logger.debug('minute {} current_p {} next_p {} delta {} action {}'.format(
