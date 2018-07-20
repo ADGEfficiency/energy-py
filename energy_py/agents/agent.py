@@ -50,12 +50,6 @@ class BaseAgent(object):
         self.learn_summaries = []
         self.learn_writer = tf.summary.FileWriter(learn_path)
 
-    def _reset(self): raise NotImplementedError
-
-    def _act(self, observation): raise NotImplementedError
-
-    def _learn(self, **kwargs): pass
-
     def reset(self):
         """
         Resets the agent internals
@@ -67,12 +61,13 @@ class BaseAgent(object):
 
         return self._reset()
 
-    def act(self, observation):
+    def act(self, observation, explore=1.0):
         """
         Action selection by agent
 
         args
             observation (np array) shape=(1, observation_dim)
+            explore (float) 0.0 = 100% greedy, 1.0 = 100% explore
 
         return
             action (np array) shape=(1, num_actions)
@@ -80,7 +75,10 @@ class BaseAgent(object):
         logger.debug('Agent is acting')
         self.act_step += 1
 
-        return self._act(observation.reshape(1, *self.observation_space.shape))
+        return self._act(
+            observation.reshape(1, *self.observation_space.shape),
+            explore
+        )
 
     def learn(self, **kwargs):
         """

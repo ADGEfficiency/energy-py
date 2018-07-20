@@ -34,6 +34,10 @@ class EnvWrapper(object):
     def reset(self):
         return self.env.reset()
 
+    def seed(self, seed=None):
+        if seed:
+            return self.env.seed(int(seed))
+
 
 class CartPoleEnv(EnvWrapper):
 

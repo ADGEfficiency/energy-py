@@ -1,6 +1,5 @@
 import logging
 import os
-import random
 
 import numpy as np
 import tensorflow as tf
@@ -36,11 +35,7 @@ def setup_experiment(
     logger.info('random seed is {}'.format(seed))
 
     if seed:
-        seed = int(seed)
         env.seed(seed)
-        random.seed(seed)
-        tf.set_random_seed(seed)
-        np.random.seed(seed)
 
     #  add stuff into the agent config dict
     agent_config['env'] = env
@@ -58,9 +53,15 @@ def setup_experiment(
 
 
 def training_experiment(
-
+        sess,
+        agent,
+        env,
+        runner, 
+        paths,
+        total_steps
 ):
-    runner = Runner(sess, paths, total_steps)
+    logger.info('starting training experiment of {} steps'.format(total_steps))
+
 
     #  outer while loop runs through multiple episodes
     step, episode = 0, 0
@@ -83,10 +84,8 @@ def training_experiment(
 
             observation = next_observation
 
-            #  fill the memory up halfway before we learn
-            #  TODO the agent should decide what to do internally here
-            if step > int(agent.memory.size * 0.5):
-                train_info = agent.learn()
+            # TODO agent learn straight away - check what dqn does
+            train_info = agent.learn()
 
         runner.record_episode(env_info=info)
 
@@ -97,14 +96,19 @@ def training_experiment(
             paths['env_histories']
         )
 
+    return agent, env, runner
+
 
 def test_experiment(
-
+        sess,
+        agent,
+        env,
+        runner,
+        paths,
+        total_steps,
         fill_memory=True
-
 ):
-
-    runner = Runner(sess, paths, total_steps)
+    logger.info('starting test experiment of {} steps'.format(total_steps))
 
     #  outer while loop runs through multiple episodes
     step, episode = 0, 0
@@ -118,7 +122,7 @@ def test_experiment(
         while not done:
             step += 1
 
-            action = agent.act(observation)
+            action = agent.act(observation, explore=0)
 
             next_observation, reward, done, info = env.step(action)
 
@@ -138,6 +142,8 @@ def test_experiment(
             len(runner.episode_rewards),
             paths['env_histories']
         )
+
+        return agent, env, runner
 
 """
 Runs a single experiment from config files
@@ -170,13 +176,16 @@ if __name__ == '__main__':
         args.run_name
     )
 
+    logger = make_logger(paths, name='experiment.root')
+
     run_config = parse_ini(paths['run_configs'], args.run_name)
     env_config = parse_ini(paths['expt_config'], 'env')
     expt_config = parse_ini(paths['expt_config'], 'expt')
 
+    total_steps = int(run_config['total_steps'])
+
     train_steps = int(expt_config['train_steps'])
     test_steps = int(expt_config['test_steps'])
-    total_steps = int(expt_config['total_steps'])
 
     #  could pop this in the setup_expt
     seed = run_config.pop('seed')
@@ -198,11 +207,13 @@ if __name__ == '__main__':
         )
 
         steps = 0
+        runner = Runner(sess, paths)
+
         while steps < total_steps:
 
-            agent, env = training_experiment(sess, agent, env, train_steps)
+            agent, env, runner = training_experiment(sess, agent, env, runner, paths, train_steps)
 
-            agent, env = test_experiment(sess, agent, env, train_steps)
+            agent, env, runner = test_experiment(sess, agent, env, runner, paths, test_steps)
 
             steps += train_steps + test_steps
 

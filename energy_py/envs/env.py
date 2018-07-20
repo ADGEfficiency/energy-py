@@ -1,5 +1,7 @@
 import collections
 import logging
+import random
+import tensorflow as tf
 
 import numpy as np
 import pandas as pd
@@ -42,9 +44,17 @@ class BaseEnv(object):
             self.state_space.data.shape[0]
         )
 
-    def seed(self, *args):
-        #  TODO
-        pass
+    def seed(self, seed=None):
+
+        if seed:
+            seed = int(seed)
+
+            logging.debug('setting {} env random seed = {}'.format(
+                repr(self, seed)))
+
+            random.seed(seed)
+            tf.set_random_seed(seed)
+            np.random.seed(seed)
 
     def reset(self):
         """

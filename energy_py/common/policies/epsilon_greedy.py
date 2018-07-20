@@ -7,7 +7,8 @@ def epsilon_greedy_policy(
         step_tensor,
         decay_steps,
         initial_epsilon,
-        final_epsilon
+        final_epsilon,
+        explore_toggle
 ):
     """
     epsilon greedy action selection
@@ -19,6 +20,7 @@ def epsilon_greedy_policy(
         initial_epsilon (float)
         final_epsilon (float)
         epsilon_decay_fraction (float)
+        explore_toggle (bool)
 
     returns
         epsilon (tensor)
@@ -41,11 +43,10 @@ def epsilon_greedy_policy(
         dtype=tf.int64
     )
 
-    #  generating a probability, one for each sample
     probabilities = tf.random_uniform(
         tf.stack([batch_size]),
-        minval=0,
-        maxval=1,
+        minval=0.0,
+        maxval=explore_toggle,
         dtype=tf.float32)
 
     epsilon = tf.train.polynomial_decay(

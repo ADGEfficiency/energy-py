@@ -25,6 +25,8 @@ class DQN(BaseAgent):
             num_discrete_actions=20,
             layers=(64, 32, 16),
 
+            memory_fraction=0.2,
+
             policy='e_greedy',
             epsilon_decay_fraction=0.3,
             initial_epsilon=1.0,
@@ -41,9 +43,13 @@ class DQN(BaseAgent):
             tau=0.001,
             **kwargs):
 
-        super().__init__(**kwargs)
-
         self.total_steps = int(total_steps)
+
+        super().__init__(
+            memory_length=self.total_steps*float(memory_fraction),
+            **kwargs
+        )
+
         self.double_q = bool(double_q)
 
         self.discrete_actions = self.env.action_space.discretize(
@@ -130,6 +136,12 @@ class DQN(BaseAgent):
                 name='learn_step_tensor'
             )
 
+            self.explore_toggle = tf.placeholder(
+                shape=(),
+                dtype=tf.float32,
+                name='explore_toggle'
+            )
+
         self.build_acting_graph()
 
         self.build_learning_graph()
@@ -169,7 +181,8 @@ class DQN(BaseAgent):
                     self.learn_step_tensor,
                     self.total_steps * self.epsilon_decay_fraction,
                     self.initial_epsilon,
-                    self.final_epsilon
+                    self.final_epsilon,
+                    self.explore_toggle
                 )
 
             elif self.policy == 'softmax':
@@ -342,13 +355,14 @@ class DQN(BaseAgent):
     def __repr__(self):
         return '<energy_py DQN agent>'
 
-    def _act(self, observation):
+    def _act(self, observation, explore=1.0):
         """
         Selecting an action based on an observation
         """
         action, summary = self.sess.run(
             [self.policy, self.act_summaries],
             {self.learn_step_tensor: self.learn_step,
+             self.explore_toggle: float(explore),
              self.observation: observation}
         )
 
