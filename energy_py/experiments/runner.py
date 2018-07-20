@@ -25,13 +25,11 @@ class Runner(object):
             self,
             sess,
             paths,
-            total_steps
     ):
 
         self.sess = sess
         self.rewards_path = paths['ep_rewards']
         self.tb_path = paths['tb_rl']
-        self.total_steps = int(total_steps)
 
         self.writer = tf.summary.FileWriter(
             self.tb_path, self.sess.graph
@@ -67,10 +65,9 @@ class Runner(object):
             'max_rew': np.max(self.episode_rewards)
         }
 
-        log_string = 'Episode {:0.0f} step {:0.0f} {:2.1f}%'.format(
+        log_string = 'Episode {:0.0f} step {:0.0f}'.format(
             len(self.episode_rewards),
             self.step,
-            100 * self.step / self.total_steps
         )
 
         logger.debug(log_string)
