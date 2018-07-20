@@ -39,6 +39,10 @@ class DQN(BaseAgent):
             learning_rate_decay=1.0,
             gradient_norm_clip=0.5,
 
+            batch_norm_center=True,
+            batch_norm_training=False,
+            batch_norm_trainable=True,
+
             update_target_net=1,
             tau=0.001,
             **kwargs):
@@ -51,6 +55,9 @@ class DQN(BaseAgent):
         )
 
         self.double_q = bool(double_q)
+        self.batch_norm_center = batch_norm_center
+        self.batch_norm_training = batch_norm_training
+        self.batch_norm_trainable = batch_norm_trainable
 
         self.discrete_actions = self.env.action_space.discretize(
             num_discrete_actions)
@@ -261,9 +268,9 @@ class DQN(BaseAgent):
             #  training=False to use historical statistics
             bellman_norm = tf.layers.batch_normalization(
                 tf.reshape(self.bellman, (-1, 1)),
-                center=True,
-                training=False,
-                trainable=True,
+                center=self.batch_norm_center,
+                training=self.batch_norm_training,
+                trainable=self.batch_norm_trainable
             )
 
         with tf.variable_scope('optimization'):
@@ -312,6 +319,7 @@ class DQN(BaseAgent):
         self.act_summaries.extend([
             tf.summary.scalar('learning_rate', self.learning_rate),
             tf.summary.scalar('epsilon', self.epsilon),
+            tf.summary.scalar('explore_toggle', self.explore_toggle),
                                ])
 
         self.act_summaries.extend([
@@ -356,9 +364,7 @@ class DQN(BaseAgent):
         return '<energy_py DQN agent>'
 
     def _act(self, observation, explore=1.0):
-        """
-        Selecting an action based on an observation
-        """
+        """ selecting an action based on an observation """
         action, summary = self.sess.run(
             [self.policy, self.act_summaries],
             {self.learn_step_tensor: self.learn_step,
@@ -375,9 +381,7 @@ class DQN(BaseAgent):
         return action.reshape(1, *self.env.action_space.shape)
 
     def _learn(self):
-        """
-        Our agent attempts to make sense of the world
-        """
+        """ our agent attempts to make sense of the world """
         if self.memory_type == 'priority':
             raise NotImplementedError(
                 'Add importance sample weights to loss as per pervious version'

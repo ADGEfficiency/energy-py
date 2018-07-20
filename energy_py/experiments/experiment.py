@@ -143,7 +143,7 @@ def test_experiment(
             paths['env_histories']
         )
 
-        return agent, env, runner
+    return agent, env, runner
 
 """
 Runs a single experiment from config files
