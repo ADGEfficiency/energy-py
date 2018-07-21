@@ -144,27 +144,25 @@ def test_experiment(
 
     return agent, env, runner
 
-"""
-Runs a single experiment from config files
-Command line args
-    expt_name - the directory where run results will sit
-    run_name - the section name in results/expt_name/run_configs.ini
+def run_experiment():
+    """
+    Runs a single experiment from config files
 
-Note that here the run_name must be specified, because we need to find the
-correct section in run_configs.ini
+    Command line args
+        expt_name - the directory where run results will sit
+        run_name - the section name in results/expt_name/run_configs.ini
 
-To run the example experiment
-    python config_expt.py example DDQN
+    Note that here the run_name must be specified, because we need to find the
+    correct section in run_configs.ini
 
-Config files are
+    To run the example experiment
+        python config_expt.py example DDQN
 
-
-Protection for parameter variable types is made in the env or the agent inits
-"""
+    Config files are
 
 
-
-if __name__ == '__main__':
+    Protection for parameter variable types is made in the env or the agent inits
+    """
     args = make_config_parser()
 
     #  cwd to avoid looking where package is installed
@@ -216,3 +214,6 @@ if __name__ == '__main__':
 
             steps += train_steps + test_steps
 
+
+if __name__ == '__main__':
+    run_experiment()
