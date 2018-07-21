@@ -26,6 +26,8 @@ def test_e_greedy_policy():
     #  construct the tf graph for testing
     step = tf.placeholder(shape=(), name='learning_step', dtype=tf.int64)
 
+    explore_toggle = tf.placeholder(shape=(), name='explore_toggle', dtype=tf.float32)
+
     decay_steps = 10
     epsilon, policy = epsilon_greedy_policy(
         q_values,
@@ -33,7 +35,9 @@ def test_e_greedy_policy():
         step,
         decay_steps=decay_steps,
         initial_epsilon=1.0,
-        final_epsilon=0.0)
+        final_epsilon=0.0,
+        explore_toggle=explore_toggle
+    )
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -42,6 +46,7 @@ def test_e_greedy_policy():
         optimals = sess.run(
             policy,
             {q_values: test_q_values,
+             explore_toggle: 1.0,
              step: decay_steps + 1}
         )
 
@@ -52,6 +57,7 @@ def test_e_greedy_policy():
         #  check that epislon at one gives random actions
         randoms = sess.run(policy,
                      {q_values: test_q_values,
+                      explore_toggle: 1.0,
                       step: 0})
 
         one_different = False

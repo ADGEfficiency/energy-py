@@ -20,7 +20,7 @@ def epsilon_greedy_policy(
         initial_epsilon (float)
         final_epsilon (float)
         epsilon_decay_fraction (float)
-        explore_toggle (bool)
+        explore_toggle (float)
 
     returns
         epsilon (tensor)

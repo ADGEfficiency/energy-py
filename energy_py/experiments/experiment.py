@@ -11,7 +11,6 @@ from energy_py.common.logging import make_logger
 from energy_py.experiments import Runner, save_env_info, make_paths, make_config_parser
 
 
-
 def setup_experiment(
         sess,
         agent_config,
@@ -143,6 +142,7 @@ def test_experiment(
         )
 
     return agent, env, runner
+
 
 def run_experiment():
     """
