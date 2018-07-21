@@ -163,6 +163,10 @@ def run_experiment():
 
     Protection for parameter variable types is made in the env or the agent inits
     """
+    pass
+
+if __name__ == '__main__':
+    # run_experiment()
     args = make_config_parser()
 
     #  cwd to avoid looking where package is installed
@@ -214,6 +218,3 @@ def run_experiment():
 
             steps += train_steps + test_steps
 
-
-if __name__ == '__main__':
-    run_experiment()
