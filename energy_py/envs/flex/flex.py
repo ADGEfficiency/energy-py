@@ -133,14 +133,12 @@ class Flex(BaseEnv):
         site_elecricity_consumption = site_demand - net
 
         electricity_price = self.get_state_variable('C_electricity_price [$/MWh]')
-        reward = - (site_elecricity_consumption / 12) * electricity_price
-
         baseline_cost = site_demand * electricity_price / 12
         optimized_cost = site_elecricity_consumption * electricity_price / 12
 
         #  negative means we are increasing cost
         #  positive means we are reducing cost
-        delta_cost = baseline_cost - optimized_cost
+        reward = baseline_cost - optimized_cost
 
         next_state = self.state_space(self.steps + 1)
 
@@ -175,10 +173,10 @@ class Flex(BaseEnv):
             'site_demand': site_demand,
             'stored': stored,
             'discharged': discharged,
+            'net': net,
             'site_electricity_consumption': site_elecricity_consumption,
             'setpoint': setpoint,
             'delta_demand': -net,
-            'delta_cost': delta_cost
                 }
 
         self.info = self.update_info(**info)

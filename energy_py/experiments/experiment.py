@@ -84,7 +84,6 @@ def training_experiment(
 
             observation = next_observation
 
-            # TODO agent learn straight away - check what dqn does
             train_info = agent.learn()
 
         runner.record_episode(env_info=info)

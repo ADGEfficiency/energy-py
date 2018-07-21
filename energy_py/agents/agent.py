@@ -77,7 +77,7 @@ class BaseAgent(object):
 
         return self._act(
             observation.reshape(1, *self.observation_space.shape),
-            explore
+            explore=explore
         )
 
     def learn(self, **kwargs):

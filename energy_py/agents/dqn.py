@@ -377,6 +377,8 @@ class DQN(BaseAgent):
 
         logger.debug('observation {}'.format(observation))
         logger.debug('action {}'.format(action))
+        logger.debug('learn_step {}'.format(self.learn_step))
+        logger.debug('explore {}'.format(explore))
 
         return action.reshape(1, *self.env.action_space.shape)
 

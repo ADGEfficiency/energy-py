@@ -133,7 +133,7 @@ class AutoFlex(BaseAgent):
         self.next_fc_index = self.env.observation_space.info.index(
             'C_forecast_electricity_price_next_hh [$/MWh]')
 
-    def _act(self, observation):
+    def _act(self, observation, **kwargs):
         minute = observation[0][self.minute_index]
         current_price = observation[0][self.current_fc_index]
         next_price = observation[0][self.next_fc_index]
@@ -144,17 +144,20 @@ class AutoFlex(BaseAgent):
         #  if next price is lower, we want to not consume now (ie to store)
         if delta < -5:
             action = 1
-            logger.info('taking action - delta {}'.format(delta))
+            logger.debug('taking action - delta {}'.format(delta))
 
         else:
             action = 2
-            logger.info('no price delta {}'.format(delta))
+            logger.debug('no price delta {}'.format(delta))
 
         logger.debug('minute {} current_p {} next_p {} delta {} action {}'.format(
             minute, current_price, next_price, delta, action)
                       )
 
         return np.array(action).reshape(1, *self.action_space.shape)
+
+    def _learn(self, *args, **kwargs):
+        pass
 
 
 class RandomAgent(BaseAgent):
@@ -163,8 +166,11 @@ class RandomAgent(BaseAgent):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def _act(self, observation):
+    def _act(self, observation, **kwargs):
         return self.action_space.sample()
+
+    def _learn(self, *args, **kwargs):
+        pass
 
 
 class NoOp(BaseAgent):

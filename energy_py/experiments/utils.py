@@ -76,9 +76,9 @@ def make_paths(
         'tb_rl': join(results_dir, 'tensorboard', run_name, 'rl'),
         'tb_act': join(results_dir, 'tensorboard', run_name, 'act'),
         'tb_learn': join(results_dir, 'tensorboard', run_name,  'learn'),
-        'env_histories': join(results_dir, 'env_histories'),
 
         #  run specific folders are in another folder
+        'env_histories': join(results_dir, run_name, 'env_histories'),
         'debug_log': join(results_dir, run_name, 'debug.log'),
         'info_log': join(results_dir, run_name, 'info.log'),
         'env_args': join(results_dir, run_name, 'env_args.txt'),

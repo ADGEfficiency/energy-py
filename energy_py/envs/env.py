@@ -50,7 +50,7 @@ class BaseEnv(object):
             seed = int(seed)
 
             logging.debug('setting {} env random seed = {}'.format(
-                repr(self, seed)))
+                repr(self), seed))
 
             random.seed(seed)
             tf.set_random_seed(seed)
