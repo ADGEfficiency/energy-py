@@ -36,33 +36,33 @@ The most common access point for a user will be to run an experiment.  An experi
 
 ```bash
 
-cd energy_py/experiments
+$ cd energy_py/experiments
 
-python experiment.py example dqn
+$ python experiment.py example dqn
 
 ```
 
 Results for this run are then available at
 
 ``` bash
-cd energy_py/experiments/results/example/dqn
+$ cd energy_py/experiments/results/example/dqn
 
-ls
-    agent_args.txt
-    debug.log
-    env_args.txt
-    env_histories
-    ep_rewards.csv
-    expt.ini
-    info.log
-    runs.ini
+$ ls
+agent_args.txt
+debug.log
+env_args.txt
+env_histories
+ep_rewards.csv
+expt.ini
+info.log
+runs.ini
 ```
 
 The progress of an experiment can be watched with TensorBoard
 
 ```bash
 
-tensorboard --logdir='./energy_py/experiments/results'
+$ tensorboard --logdir='./energy_py/experiments/results'
 
 ```
 
@@ -98,20 +98,25 @@ The aim of energy_py is to provide
 - tools to run experiments
 
 The design philosophies of energy_py
-- simple class heirarchy structure (maximum of two levels (i.e. parent child)
-- utilize Python standard library (deques, namedtuples etc) where possible
+- simplicity
+- iterative design
+- simple class heirarchy structure (maximum of two levels)
+- utilize Python standard library (deques, namedtuples etc) 
 - utilize TensorFlow & TensorBoard
 - provide sensible defaults for args
 
+energy_py was heavily infulenced by Open AI [baselines](https://github.com/openai/baselines) and [gym](https://github.com/openai/gym).
+
 ### Agents
 
-energy_py is currently focused on a high quality impelementation of DQN and implementations of naive and heuristic agents for comparison.
+energy_py is currently focused on a high quality impelementation of DQN and along with naive and heuristic agents for comparison.
 
-DQN was chosen because it is
-- established algorithm,
-- many examples of DQN implementations,
+DQN was chosen because:
+- it is an established algorithm,
+- many examples of DQN implementations on GitHub,
 - highly extensible (DDQN, prioritized experience replay, dueling, n-step returns - see [Rainbow](https://arxiv.org/pdf/1710.02298.pdf) for a summary
 - most energy environments have low dimensional action spaces (making discretization tractable).  Discretization still means a loss of action space shape, but the action space dimensionality is reasonable.
+- ability to learn off policy
 
 Naive agents include an agent that randomly samples the action space, independent of observation.  Heuristic agents are
 usually custom built for a specific environment.  Examples of heuristic agents include actions based on the time of day or on the values of a forecast.
