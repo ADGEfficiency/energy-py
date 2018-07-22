@@ -58,9 +58,6 @@ tensorboard --logdir='./energy_py/experiments/results'
 
 ![fig](assets/tb1.png)
 
-![fig](assets/graph.png)
-
-
 ## Installation
 
 To install energy_py using Anaconda
@@ -100,8 +97,9 @@ The design philosophies of energy_py
 
 energy_py is currently focused on a high quality impelementation of DQN and implementations of naive and heuristic agents for comparison.
 
-DQN was chosen because
-- relatively stable algorithm
+DQN was chosen because it is
+- established algorithm,
+- many examples of DQN implementations,
 - highly extensible (DDQN, prioritized experience replay, dueling, n-step returns - see [Rainbow](https://arxiv.org/pdf/1710.02298.pdf) for a summary
 - most energy environments have low dimensional action spaces (making discretization tractable).  Discretization still means a loss of action space shape, but the action space dimensionality is reasonable.
 
@@ -113,15 +111,15 @@ usually custom built for a specific environment.  Examples of heuristic agents i
 energy_py provides custom built models of energy environments and wraps around Open AI gym.  Support for basic gym
 models is included to allow debugging of agents with familiar environments.
 
-gym envs
+#### gym environments
 
-- CartPole-v0 [gym](https://github.com/openai/gym/blob/master/gym/envs/classic_control/cartpole.py) [energy_py](https://github.com/ADGEfficiency/energy_py/blob/dev/energy_py/envs/register.py)
+- CartPole-v0 - [gym](https://github.com/openai/gym/blob/master/gym/envs/classic_control/cartpole.py) - [energy_py](https://github.com/ADGEfficiency/energy_py/blob/dev/energy_py/envs/register.py)
 
-- Pendulum-v0 [gym](https://github.com/openai/gym/blob/master/gym/envs/classic_control/pendulum.py) [energy_py](https://github.com/ADGEfficiency/energy_py/blob/dev/energy_py/envs/register.py)
+- Pendulum-v0 - [gym](https://github.com/openai/gym/blob/master/gym/envs/classic_control/pendulum.py) - [energy_py](https://github.com/ADGEfficiency/energy_py/blob/dev/energy_py/envs/register.py)
 
-- MountainCar-V0' [gym](https://github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.py) [energy_py](https://github.com/ADGEfficiency/energy_py/blob/dev/energy_py/envs/register.py)
+- MountainCar-V0' - [gym](https://github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.py) - [energy_py](https://github.com/ADGEfficiency/energy_py/blob/dev/energy_py/envs/register.py)
 
-energy envs
+#### energy_py environments
 
 - [electric battery storage](https://github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.p://github.com/ADGEfficiency/energy_py/tree/dev/energy_py/envs/battery)
 
