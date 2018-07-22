@@ -71,5 +71,3 @@ def test_np_find_sub_array():
 
         assert find_sub_array_in_2D_array(
             sub_array, discrete_actions) == true_index
-
-
