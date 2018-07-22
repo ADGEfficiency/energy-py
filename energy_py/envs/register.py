@@ -10,7 +10,7 @@ import random
 import gym
 import numpy as np
 
-from energy_py.common import GlobalSpace
+from energy_py.common import GlobalSpace, DiscreteSpace
 
 from energy_py.envs.flex import Flex
 
@@ -99,28 +99,22 @@ class PendulumEnv(EnvWrapper):
 class MountainCarEnv(EnvWrapper):
 
     def __init__(self):
-        env = gym.make('MountainCar-V0')
+        env = gym.make('MountainCar-v0')
         super(MountainCarEnv, self).__init__(env)
 
         self.observation_space = self.env.observation_space
         self.observation_space.shape = self.observation_space.shape
 
-        self.action_space = self.env.action_space
-        self.action_space.shape = (1,)
-        self.action_space.discretize = self.discretize_action_space
-        self.action_space.sample_discrete = self.sample_discrete_action
+        self.action_space = GlobalSpace('action').from_spaces(
+            DiscreteSpace(2), 'push_l_or_r'
+        )
 
-    def discretize_action_space(self, num_discrete):
-        actions = [act for act in range(self.action_space.n)]
+    def step(self, action):
+        #  MC.contains() fails with 2-D array
+        return self.env.step(action[0][0])
 
-        num_discrete = len(actions)
-        self.actions =  np.array(actions).reshape(
-            num_discrete,
-            *self.action_space.shape)
-        return self.actions
-
-    def sample_discrete_action(self):
-        return random.choice(self.actions)
+#     def sample_discrete_action(self):
+#         return self.action_space.sample()
 
 
 env_register = {'flex': Flex,
