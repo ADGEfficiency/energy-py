@@ -2,13 +2,15 @@
 
 **reinforcement learning for energy systems**
 
-energy_py provides an agent, energy environments and experiment tools.  The aim is to support work on using reinforcement learning for energy problems.
+The aim of energy_py is to support work on using reinforcement learning for energy problems.  This library provides agents and environments, as well as tools to run experiments.
 
-energy_py is built and maintained by Adam Green  [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  
+energy_py is built and maintained by Adam Green - [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  
 - [introductory blog post](http://adgefficiency.com/energy_py-reinforcement-learning-for-energy-systems/)
 - [DQN debugging](http://adgefficiency.com/dqn-debugging/)
 - [DDQN hyperparameter tuning](http://adgefficiency.com/dqn-tuning/)
 - [introductory Jupyter notebook](https://github.com/ADGEfficiency/energy_py/blob/master/notebooks/examples/Q_learning_battery.ipynb)
+
+## Basic usage
 
 ```python
 import energy_py
@@ -30,28 +32,34 @@ while not done:
     observation = next_observation
 ```
 
-The higher level energy_py API allows running of experiments from [config dictionaries](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/experiments/dict_expt.py) or from [config.ini files](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/experiments/config_expt.py).
-
-Single call using the experiment function
-
-```python
-
-energy_py.experiment(
-    agent_config={'agent_id': 'dqn', 'double_q': True},
-    env_config={'env_id': 'cartpole'},
-    total_steps=100000,
-    paths=energy_py.make_paths('path/to/results')
-    )
-
-```
-Running a config dictionary experiment from a Terminal.  The experiment will be called 'example_expt' and will use the
-'example' dataset.
+The most common access point for a user will be to run an experiment.  An experiment is run by passing the experiment name and run name as arguments
 
 ```bash
-$ cd energy_py/energy_py/experiments
 
-$ python config_expt.py example_expt 
+cd energy_py/experiments
+
+python experiment.py example dqn
+
 ```
+
+Results for this run are then available at
+
+``` bash
+cd energy_py/experiments/results/example/dqn
+```
+
+The progress of an experiment can be watched with TensorBoard
+
+```bash
+
+tensorboard --logdir='./energy_py/experiments/results'
+
+```
+
+![fig](assets/tb1.png)
+
+![fig](assets/graph.png)
+
 
 ## Installation
 
@@ -89,50 +97,38 @@ The design philosophies of energy_py
 - provide sensible defaults for args
 
 ### Agents
-Agents are the learners and decision makers.  energy_py supports simpler heuristic (i.e. fully random) agents, which are
-often environment specific.  Focus in the library is on building a high quality implementation of DQN and it's
-extensions.
 
-The reason for choosing to focus on DQN the that the current energy_py environments have low dimensional action spaces.
-Agents which use an argmax across the action space require a discrete action space.
+energy_py is currently focused on a high quality impelementation of DQN and implementations of naive and heuristic agents for comparison.
 
-A good summary of DQN variants is given in [Hessel et. al (2017) Rainbow: Combining Improvements in Deep Reinforcement
-Learning](https://arxiv.org/pdf/1710.02298.pdf).
-- DQN - target network & experience replay
-- prioritized experience replay
-- DDQN
-- dueling architecture
+DQN was chosen because
+- relatively stable algorithm
+- highly extensible (DDQN, prioritized experience replay, dueling, n-step returns - see [Rainbow](https://arxiv.org/pdf/1710.02298.pdf) for a summary
+- most energy environments have low dimensional action spaces (making discretization tractable).  Discretization still means a loss of action space shape, but the action space dimensionality is reasonable.
 
-Also implemented are simpler agents such as RandomAgent or agents based on determinsitic rules (usually handcrafted for
-a specific environment).
+Naive agents include an agent that randomly samples the action space, independent of observation.  Heuristic agents are
+usually custom built for a specific environment.  Examples of heuristic agents include actions based on the time of day or on the values of a forecast.
 
 ### Environments
 
-#### energy environments
-The unique contrbition of energy_py are energy focused environments.  Reinforcement learning has the potential to optimize the operation energy systems.  These environments allow experimentation with energy problems by simulation.
+energy_py provides custom built models of energy environments and wraps around Open AI gym.  Support for basic gym
+models is included to allow debugging of agents with familiar environments.
 
-[**Electric battery storage**](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/envs/battery)
+gym envs
 
-Dispatch of a battery arbitraging wholesale prices.  Battery is defined by a capacity and a maximum rate to charge and
-discharge, with a round trip efficieny applied on storage.
+- CartPole-v0 [gym](https://github.com/openai/gym/blob/master/gym/envs/classic_control/cartpole.py) [energy_py](https://github.com/ADGEfficiency/energy_py/blob/dev/energy_py/envs/register.py)
 
-[**Flex-v0**](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/envs/flex)
+- Pendulum-v0 [gym](https://github.com/openai/gym/blob/master/gym/envs/classic_control/pendulum.py) [energy_py](https://github.com/ADGEfficiency/energy_py/blob/dev/energy_py/envs/register.py)
 
-Model of a flexibility (i.e. demand side response) asset.  Agent can operate two cycles.  Cycle is a fixed length.
-1. flex_up/flex_down/relax
-2. flex_down/flex_up/relax
+- MountainCar-V0' [gym](https://github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.py) [energy_py](https://github.com/ADGEfficiency/energy_py/blob/dev/energy_py/envs/register.py)
 
-[**Flex-v1**](https://github.com/ADGEfficiency/energy_py/tree/master/energy_py/envs/flex)
+energy envs
 
-Agent can operate a flex_down/flex_up/relax cycle.  Agent can choose to stop the flex_down period.
+- [electric battery storage](https://github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.p://github.com/ADGEfficiency/energy_py/tree/dev/energy_py/envs/battery)
 
-#### Open AI environments
+Dispatch of a battery arbitraging wholesale prices.  
 
-Also included are wrappers around the Open AI gym environments [CartPole-v0](https://gym.openai.com/envs/CartPole-v0/), [Pendulum-v0](https://github.com/openai/gym/wiki/Pendulum-v0) and [MountainCar-v0](https://github.com/openai/gym/wiki/MountainCar-v0). 
+Battery is defined by a capacity and a maximum rate to charge and discharge, with a round trip efficieny applied on storage.
 
-These wrappers are implemented in the [energy_py environment
-register](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/envs/register.py).
+- [demand side flexibility](https://github.com/ADGEfficiency/energy_py/tree/dev/energy_py/envs/flex)
 
-### Tools to run experiments
-
-In addition to the agents and environments energy_py also provides tools to run experiments.  Visualization of experiment results is done using TensorBoard.
+Dispatch of price responsive demand side flexibility.  Flexible assset is a chiller system, with an action space of the return temperature setpoint.
