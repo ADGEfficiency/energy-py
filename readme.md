@@ -143,12 +143,12 @@ An exploration problem - [gym](https://github.com/openai/gym/blob/master/gym/env
 
 **electric battery storage** 
 
-[energy_py](https://github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.p://github.com/ADGEfficiency/energy_py/tree/dev/energy_py/envs/battery) - Dispatch of a battery arbitraging wholesale prices.  
+Dispatch of a battery arbitraging wholesale prices - [energy_py](https://github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.p://github.com/ADGEfficiency/energy_py/tree/dev/energy_py/envs/battery)
 
 Battery is defined by a capacity and a maximum rate to charge and discharge, with a round trip efficieny applied on storage.
 
 **demand side flexibility** 
 
-[energy_py](https://github.com/ADGEfficiency/energy_py/tree/dev/energy_py/envs/flex)
+Dispatch of price responsive demand side flexibility - [energy_py](https://github.com/ADGEfficiency/energy_py/tree/dev/energy_py/envs/flex)
 
-Dispatch of price responsive demand side flexibility.  Flexible assset is a chiller system, with an action space of the return temperature setpoint.
+Flexible assset is a chiller system, with an action space of the return temperature setpoint.
