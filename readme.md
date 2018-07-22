@@ -108,7 +108,7 @@ energy_py was heavily infulenced by Open AI [baselines](https://github.com/opena
 
 ### Agents
 
-energy_py is currently focused on a high quality impelementation of DQN and along with naive and heuristic agents for comparison.
+energy_py is currently focused on a high quality impelementation of DQN ([ref Mnih et. al (2015)](https://web.stanford.edu/class/psych209/Readings/MnihEtAlHassibis15NatureControlDeepRL.pdf)) and along with naive and heuristic agents for comparison.
 
 DQN was chosen because:
 - it is an established algorithm,
