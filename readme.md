@@ -120,10 +120,10 @@ DQN was chosen because:
 Naive agents include an agent that randomly samples the action space, independent of observation.  Heuristic agents are
 usually custom built for a specific environment.  Examples of heuristic agents include actions based on the time of day or on the values of a forecast.
 
+### Environments
+
 energy_py provides custom built models of energy environments and wraps around Open AI gym.  Support for basic gym
 models is included to allow debugging of agents with familiar environments.
-
-### gym environments
 
 Beware that gym deals with random seeds for action spaces in [particuar
 ways](https://github.com/openai/gym/blob/master/gym/spaces/prng.py).  v0 of gym environments [ignore the selected action
@@ -141,13 +141,13 @@ Inverted pendulum swingup - [gym](https://github.com/openai/gym/blob/master/gym/
 
 An exploration problem - [gym](https://github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.py) - [energy_py](https://github.com/ADGEfficiency/energy_py/blob/dev/energy_py/envs/register.py)
 
-**electric battery storage** 
+**Electric battery storage** 
 
 Dispatch of a battery arbitraging wholesale prices - [energy_py](https://github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.p://github.com/ADGEfficiency/energy_py/tree/dev/energy_py/envs/battery)
 
 Battery is defined by a capacity and a maximum rate to charge and discharge, with a round trip efficieny applied on storage.
 
-**demand side flexibility** 
+**Demand side flexibility** 
 
 Dispatch of price responsive demand side flexibility - [energy_py](https://github.com/ADGEfficiency/energy_py/tree/dev/energy_py/envs/flex)
 
