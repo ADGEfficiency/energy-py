@@ -46,6 +46,16 @@ Results for this run are then available at
 
 ``` bash
 cd energy_py/experiments/results/example/dqn
+
+ls
+    agent_args.txt
+    debug.log
+    env_args.txt
+    env_histories
+    ep_rewards.csv
+    expt.ini
+    info.log
+    runs.ini
 ```
 
 The progress of an experiment can be watched with TensorBoard
