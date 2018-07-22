@@ -19,34 +19,32 @@ def setup_experiment(
         seed=None
 ):
     """
-    Run an experiment of multiple episodes
 
     args
+        sess (tf.Session)
         agent_config (dict)
         env_config (dict)
         paths (dict)
         seed (int)
     """
-    logger = make_logger(paths, 'master')
 
     env = energy_py.make_env(**env_config)
     save_args(env_config, path=paths['env_args'])
-    logger.info('random seed is {}'.format(seed))
 
     if seed:
+        logger.info('random seed is {}'.format(seed))
         env.seed(seed)
 
-    #  add stuff into the agent config dict
     agent_config['env'] = env
     agent_config['sess'] = sess
     agent_config['act_path'] = paths['tb_act']
     agent_config['learn_path'] = paths['tb_learn']
 
-    #  init agent and save args
     agent = energy_py.make_agent(**agent_config)
+    save_args(agent_config, path=paths['agent_args'])
+
     if hasattr(agent, 'acting_writer'):
         agent.acting_writer.add_graph(sess.graph)
-    save_args(agent_config, path=paths['agent_args'])
 
     return agent, env
 
@@ -59,8 +57,9 @@ def training_experiment(
         paths,
         total_steps
 ):
-    logger.info('starting training experiment of {} steps'.format(total_steps))
+    """ experiment of multiple episodes with learning """
 
+    logger.info('starting training experiment of {} steps'.format(total_steps))
 
     #  outer while loop runs through multiple episodes
     step, episode = 0, 0
@@ -70,6 +69,7 @@ def training_experiment(
         done = False
         observation = env.reset()
 
+        #  inner while loop runs through single episode
         while not done:
             step += 1
 
@@ -106,6 +106,8 @@ def test_experiment(
         total_steps,
         fill_memory=True
 ):
+    """ experiment of multiple episodes with no learning or exploration """
+
     logger.info('starting test experiment of {} steps'.format(total_steps))
 
     #  outer while loop runs through multiple episodes
@@ -144,26 +146,17 @@ def test_experiment(
     return agent, env, runner
 
 
-def run_experiment():
+def single_run():
     """
-    Runs a single experiment from config files
-
-    Command line args
-        expt_name - the directory where run results will sit
-        run_name - the section name in results/expt_name/run_configs.ini
-
-    Note that here the run_name must be specified, because we need to find the
-    correct section in run_configs.ini
+    Perform a single run from an experiment
 
     To run the example experiment
-        python config_expt.py example DDQN
+        python experiment.py example dqn
 
-    Config files are
-
-
-    Protection for parameter variable types is made in the env or the agent inits
+    Protection for variable types is made in the env or the agent inits
     """
     pass
+
 
 if __name__ == '__main__':
     # run_experiment()
@@ -217,4 +210,3 @@ if __name__ == '__main__':
             agent, env, runner = test_experiment(sess, agent, env, runner, paths, test_steps)
 
             steps += train_steps + test_steps
-
