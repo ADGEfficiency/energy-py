@@ -131,23 +131,19 @@ ways](https://github.com/openai/gym/blob/master/gym/spaces/prng.py).  v0 of gym 
 
 **CartPole-v0**
 
-[gym](https://github.com/openai/gym/blob/master/gym/envs/classic_control/cartpole.py) - [energy_py](https://github.com/ADGEfficiency/energy_py/blob/dev/energy_py/envs/register.py)
+Classic cartpole balancing - [gym](https://github.com/openai/gym/blob/master/gym/envs/classic_control/cartpole.py) - [energy_py](https://github.com/ADGEfficiency/energy_py/blob/dev/energy_py/envs/register.py)
 
 **Pendulum-v0** 
 
-[gym](https://github.com/openai/gym/blob/master/gym/envs/classic_control/pendulum.py) - [energy_py](https://github.com/ADGEfficiency/energy_py/blob/dev/energy_py/envs/register.py)
+Inverted pendulum swingup - [gym](https://github.com/openai/gym/blob/master/gym/envs/classic_control/pendulum.py) - [energy_py](https://github.com/ADGEfficiency/energy_py/blob/dev/energy_py/envs/register.py)
 
 **MountainCar-v0** 
 
-[gym](https://github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.py) - [energy_py](https://github.com/ADGEfficiency/energy_py/blob/dev/energy_py/envs/register.py)
-
-### energy_py environments
+An exploration problem - [gym](https://github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.py) - [energy_py](https://github.com/ADGEfficiency/energy_py/blob/dev/energy_py/envs/register.py)
 
 **electric battery storage** 
 
-[energy_py](https://github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.p://github.com/ADGEfficiency/energy_py/tree/dev/energy_py/envs/battery)
-
-Dispatch of a battery arbitraging wholesale prices.  
+[energy_py](https://github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.p://github.com/ADGEfficiency/energy_py/tree/dev/energy_py/envs/battery) - Dispatch of a battery arbitraging wholesale prices.  
 
 Battery is defined by a capacity and a maximum rate to charge and discharge, with a round trip efficieny applied on storage.
 
