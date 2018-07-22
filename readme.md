@@ -1,8 +1,6 @@
 # energy_py
 
-**reinforcement learning for energy systems**
-
-The aim of energy_py is to support work on using reinforcement learning for energy problems.  This library provides agents and environments, as well as tools to run experiments.
+energy_py supports reinforcement learning for energy systems.  This library provides agents and environments, as well as tools to run experiments. 
 
 energy_py is built and maintained by Adam Green - [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  
 - [introductory blog post](http://adgefficiency.com/energy_py-reinforcement-learning-for-energy-systems/)
@@ -12,7 +10,7 @@ energy_py is built and maintained by Adam Green - [adam.green@adgefficiency.com]
 
 ## Basic usage
 
-energy_py provides a simple and familiar low-level API for agent and environment initialization and interactions.
+energy_py provides a simple and familiar low-level API for agent and environment initialization and interactions
 
 ```python
 import energy_py
