@@ -12,6 +12,8 @@ energy_py is built and maintained by Adam Green - [adam.green@adgefficiency.com]
 
 ## Basic usage
 
+energy_py provides a simple and familiar low-level API for agent and environment initialization and interactions.
+
 ```python
 import energy_py
 
@@ -39,7 +41,6 @@ The most common access point for a user will be to run an experiment.  An experi
 $ cd energy_py/experiments
 
 $ python experiment.py example dqn
-
 ```
 
 Results for this run are then available at
@@ -70,14 +71,14 @@ $ tensorboard --logdir='./energy_py/experiments/results'
 
 ## Installation
 
-To install energy_py using Anaconda
+The main dependencies of energy_py are TensorFlow, numpy, pandas and matplotlib.
+
+To install energy_py using an Anaconda virtual environment
 
 ```bash
 $ conda create --name energy_py python=3.5.2
 
-$ activate energy_py (windows)
-or
-$ source activate energy_py (unix)
+$ activate energy_py (windows) OR source activate energy_py (unix)
 
 $ git clone https://github.com/ADGEfficiency/energy_py.git
 
