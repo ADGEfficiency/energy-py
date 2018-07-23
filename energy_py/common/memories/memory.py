@@ -1,6 +1,11 @@
 from collections import namedtuple
+import logging
 
 import numpy as np
+
+from energy_py.common.utils import dump_pickle
+
+logger = logging.getLogger(__name__)
 
 
 #  use a namedtuple to store a single sample of experience
@@ -36,27 +41,23 @@ class BaseMemory(object):
     """
     Base class for agent memories
 
-    args
-        size (int)
-        obs_shape (tuple)
-        action_shape (tuple)
-
     The shapes dictionary is used to reshape experience dimensions
     """
-    def __init__(self,
-                 size,
-                 obs_shape,
-                 action_shape):
+    def __init__(
+            self,
+            env,
+            size,
+    ):
 
         self.size = int(size)
         self.shapes = {
-            'observation': obs_shape,
-            'action': action_shape,
+            'observation': env.observation_space.shape,
+            'action': env.action_space.shape,
             'reward': (1,),
-            'next_observation': obs_shape,
+            'next_observation': env.observation_space.shape,
             'done': (1,),
             'importance_weight': (1,),
-            'indexes': (1,) #  does this do anything ? TODO
+            'indexes': (1,)  #  does this do anything ? TODO
         }
 
     def make_batch_dict(self, batch):
@@ -83,3 +84,8 @@ class BaseMemory(object):
             batch_dict[field] = arr.reshape(len(batch), *self.shapes[field])
 
         return batch_dict
+
+    def save(self, path):
+        """ saves the memory to a pickle """
+        logger.info('Saving memory to {}'.format(path))
+        dump_pickle(self, path)

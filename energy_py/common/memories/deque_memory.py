@@ -8,11 +8,6 @@ class DequeMemory(BaseMemory):
     """
     Experience replay memory based on a deque
 
-    args
-        size (int)
-        obs_shape (tuple)
-        action_shape (tuple)
-
     A single sample of experience is held in a namedtuple
     Sequences of experience are kept in a deque
     Batches are randomly sampled from this deque
@@ -20,15 +15,13 @@ class DequeMemory(BaseMemory):
     This requires unpacking the deques for every batch
     - small batch sizes mean this isn't horrifically expensive
     """
+    def __init__(
+            self,
+            env,
+            size=10000
+    ):
 
-    def __init__(self,
-                 size,
-                 obs_shape,
-                 action_shape):
-
-        super().__init__(size,
-                         obs_shape,
-                         action_shape)
+        super().__init__(env, size)
 
         self.experiences = deque(maxlen=self.size)
 
@@ -37,6 +30,9 @@ class DequeMemory(BaseMemory):
 
     def __len__(self):
         return len(self.experiences)
+
+    def __getitem__(self, idx):
+        return self.experiences[idx]
 
     def remember(self, observation, action, reward, next_observation, done):
         """

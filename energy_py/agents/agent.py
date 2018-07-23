@@ -2,7 +2,7 @@ import logging
 
 import tensorflow as tf
 
-from energy_py.common.memories import memory_register
+import energy_py
 
 logger = logging.getLogger(__name__)
 
@@ -13,10 +13,13 @@ class BaseAgent(object):
     def __init__(
             self,
             env,
-            total_steps=0,
             sess=None,
+            total_steps=0,
+
             memory_type='deque',
             memory_length=10000,
+            load_memory_path=None,
+
             min_reward=-10,
             max_reward=10,
             act_path='./act_path',
@@ -29,11 +32,11 @@ class BaseAgent(object):
         self.observation_space = env.observation_space
         self.action_space = env.action_space
 
-        self.memory_type = memory_type
-        self.memory = memory_register[memory_type](
-            memory_length,
-            self.observation_space.shape,
-            self.action_space.shape
+        self.memory = energy_py.make_memory(
+            memory_type=memory_type,
+            env=env,
+            size=memory_length,
+            load_path=load_memory_path
         )
 
         #  reward clipping

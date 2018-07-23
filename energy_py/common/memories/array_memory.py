@@ -7,24 +7,17 @@ class ArrayMemory(BaseMemory):
     """
     Experience memory replay based on numpy arrays
 
-    args
-        size (int)
-        obs_shape (tuple)
-        action_shape (tuple)
-
     Individual numpy arrays for each dimension of experience
 
     First dimension of each array is the memory dimension
     """
+    def __init__(
+            self,
+            env,
+            size=10000
+    ):
 
-    def __init__(self,
-                 size,
-                 obs_shape,
-                 action_shape):
-
-        super().__init__(size,
-                         obs_shape,
-                         action_shape)
+        super().__init__(env, size)
 
         self.obs = np.empty((self.size, *self.shapes['observation']))
         self.acts = np.empty((self.size, *self.shapes['action']))
@@ -60,6 +53,7 @@ class ArrayMemory(BaseMemory):
         #  conditional to reset the counter once we end of the array
         if self.count == self.size:
             self.count = 0
+
         else:
             self.count += 1
 
