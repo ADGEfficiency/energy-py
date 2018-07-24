@@ -77,13 +77,15 @@ def make_paths(
         'tb_act': join(results_dir, 'tensorboard', run_name, 'act'),
         'tb_learn': join(results_dir, 'tensorboard', run_name,  'learn'),
 
-        #  run specific folders are in another folder
+        #  run specific
         'env_histories': join(results_dir, run_name, 'env_histories'),
         'debug_log': join(results_dir, run_name, 'debug.log'),
         'info_log': join(results_dir, run_name, 'info.log'),
         'env_args': join(results_dir, run_name, 'env_args.txt'),
         'agent_args': join(results_dir, run_name, 'agent_args.txt'),
-        'ep_rewards': join(results_dir, run_name, 'ep_rewards.csv')}
+        'ep_rewards': join(results_dir, run_name, 'ep_rewards.csv'),
+        'memory': join(results_dir, run_name, 'memory.pkl')
+    }
 
     #  check that all our paths exist
     for key, path in paths.items():

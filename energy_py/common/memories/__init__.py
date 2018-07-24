@@ -15,7 +15,7 @@ memory_register = {
 
 
 def make_memory(**kwargs):
-    """ makes a memory for an agent to store experience in """
+    """ makes a memory for an agent to store experience """
 
     load_path = kwargs.pop('load_path', None)
 
@@ -28,7 +28,7 @@ def make_memory(**kwargs):
     else:
         memory_id = kwargs.pop('memory_id')
 
-        logger.info('Making memory {}'.format(memory_id))
+        logger.info('Making new {} memory'.format(memory_id))
         [logger.debug('{}: {}'.format(k, v)) for k, v in kwargs.items()]
         memory = memory_register[memory_id]
 

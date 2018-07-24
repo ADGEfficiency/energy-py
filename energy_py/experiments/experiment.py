@@ -40,6 +40,11 @@ def setup_experiment(
     agent_config['act_path'] = paths['tb_act']
     agent_config['learn_path'] = paths['tb_learn']
 
+    agent_memory = agent_config.pop('load_memory', None)
+
+    if agent_memory:
+        agent_config['load_memory_path'] = paths['memory']
+
     agent = energy_py.make_agent(**agent_config)
     save_args(agent_config, path=paths['agent_args'])
 
@@ -170,7 +175,7 @@ if __name__ == '__main__':
         args.run_name
     )
 
-    logger = make_logger(paths, name='experiment.root')
+    logger = make_logger(paths, name=__name__)
 
     run_config = parse_ini(paths['run_configs'], args.run_name)
     env_config = parse_ini(paths['expt_config'], 'env')
@@ -200,6 +205,23 @@ if __name__ == '__main__':
             seed=seed
         )
 
+        def pre_train(agent, pre_train_steps):
+            assert len(agent.memory) > 10
+
+            logging('pretraining agent for {} steps'.format(
+                pre_train_steps))
+
+            pt_step = 0
+            while pt_step < pre_train_steps:
+                agent.learn()
+
+            return agent
+
+        pre_train_steps = run_config.pop('pre_train_steps', None)
+
+        if pre_train_steps:
+            agent = pre_train(agent, pre_train_steps)
+
         steps = 0
         runner = Runner(sess, paths)
 
@@ -210,3 +232,5 @@ if __name__ == '__main__':
             agent, env, runner = test_experiment(sess, agent, env, runner, paths, test_steps)
 
             steps += train_steps + test_steps
+
+        agent.memory.save(paths['agent_memory'])
