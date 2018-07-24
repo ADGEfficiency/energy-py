@@ -384,7 +384,7 @@ class DQN(BaseAgent):
 
     def _learn(self):
         """ our agent attempts to make sense of the world """
-        if self.memory_type == 'priority':
+        if self.memory.type == 'priority':
             raise NotImplementedError(
                 'Add importance sample weights to loss as per pervious version'
             )

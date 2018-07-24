@@ -16,8 +16,8 @@ class ArrayMemory(BaseMemory):
             env,
             size=10000
     ):
-
         super().__init__(env, size)
+        self.type = 'array'
 
         self.obs = np.empty((self.size, *self.shapes['observation']))
         self.acts = np.empty((self.size, *self.shapes['action']))
@@ -33,17 +33,13 @@ class ArrayMemory(BaseMemory):
     def __len__(self):
         return self.count
 
-    def remember(self, observation, action, reward, next_observation, done):
-        """
-        Adds experience to the memory
+    def __getitem__(self, idx):
+            return (
+                self.obs[idx], self.acts[idx], self.rews[idx], self.n_obs[idx], self.term[idx]
+            )
 
-        args
-            observation
-            action
-            reward
-            next_observation
-            done
-        """
+    def remember(self, observation, action, reward, next_observation, done):
+        """ adds experience to the memory """
         self.obs[self.count] = observation
         self.acts[self.count] = action
         self.rews[self.count] = reward
@@ -59,7 +55,7 @@ class ArrayMemory(BaseMemory):
 
     def get_batch(self, batch_size):
         """
-        Samples a batch randomly from the memory.
+        Randomly samples a batch
 
         args
             batch_size (int)

@@ -33,7 +33,7 @@ class BaseAgent(object):
         self.action_space = env.action_space
 
         self.memory = energy_py.make_memory(
-            memory_type=memory_type,
+            memory_id=memory_type,
             env=env,
             size=memory_length,
             load_path=load_memory_path

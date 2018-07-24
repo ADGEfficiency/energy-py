@@ -20,9 +20,8 @@ class DequeMemory(BaseMemory):
             env,
             size=10000
     ):
-
         super().__init__(env, size)
-
+        self.type = 'deque'
         self.experiences = deque(maxlen=self.size)
 
     def __repr__(self):
@@ -35,18 +34,7 @@ class DequeMemory(BaseMemory):
         return self.experiences[idx]
 
     def remember(self, observation, action, reward, next_observation, done):
-        """
-        Adds experience to the memory
-
-        args
-            observation
-            action
-            reward
-            next_observation
-            done
-
-        Deque automatically keeps memory at correct size
-        """
+        """ adds experience to the memory """
         self.experiences.append(Experience(observation,
                                            action,
                                            reward,
@@ -67,5 +55,3 @@ class DequeMemory(BaseMemory):
         batch = random.sample(self.experiences, sample_size)
 
         return self.make_batch_dict(batch)
-
-
