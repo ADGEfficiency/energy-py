@@ -121,8 +121,13 @@ if __name__ == '__main__':
     done = False
     step = 0
 
+    start = 3 
+
     while not done:
-        act = np.array(1)
+        act = np.array(0)
+
+        if step >= start:
+            act = np.array(1)
 
         next_obs, r, done, i = env.step(act)
         step += 1
@@ -133,16 +138,19 @@ if __name__ == '__main__':
     #  this will fail because agent can store demand at end of episode
     # check_energy_balance(info)
 
-    cons = info.loc[:, 'site_consumption'].values[rel_time-1:]
-    dem = info.loc[:, 'site_demand'].values[:-rel_time+1]
+    cons = info.loc[:, 'site_consumption'].values[start+1:]
+    dem = info.loc[:, 'site_demand'].values[start:-1]
     print(info.tail(20))
-    print(cons[-10:])
-    print(dem[-10:])
 
     for idx, (v1, v2) in enumerate(zip(cons, dem)):
-        if v1 != v2:
+        if (v1 != v2) and (idx < 10):
             print('step {}'.format(idx))
             print(v1, v2)
+    print(cons[:10])
+    print(dem[:10])
+
+    print(cons[-10:])
+    print(dem[-10:])
 
     import pdb; pdb.set_trace()
 
