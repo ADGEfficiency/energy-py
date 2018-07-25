@@ -55,6 +55,8 @@ class BaseEnv(object):
             random.seed(seed)
             tf.set_random_seed(seed)
             np.random.seed(seed)
+        else:
+            logging.debug('not setting random seed')
 
     def reset(self):
         """
@@ -98,9 +100,7 @@ class BaseEnv(object):
         """
         action = np.array(action).reshape(1, *self.action_space.shape)
         assert self.action_space.contains(action)
-
         logger.debug('step {} action {}'.format(self.steps, action))
-
         return self._step(action)
 
     def sample_episode(self):
@@ -132,5 +132,4 @@ class BaseEnv(object):
     def update_info(self, **kwargs):
         for name, data in kwargs.items():
             self.info[name].append(data)
-
         return self.info
