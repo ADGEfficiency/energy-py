@@ -41,16 +41,27 @@ class Flex(BaseEnv):
     Supply is stored using a float.  Because supply is a cost, the agent not using
     it by releasing is behaviour I want the agent to learn to avoid
 
+    The structure of the agent is inspired by anecdotal observation of
+    commerical chiller plants reacting to three different setpoints
+    - increased (demand stored)
+    - no_op
+    - decreased (supply stored - i.e. precooling)
+
     """
     def __init__(
             self,
-            capacity=0.5,      # MWh
-            release_time=12,   # num 5 mins
+            capacity=0.5,         # MWh
+            precool_capacity=0.5, # MWh
+            release_time=12,      # num 5 mins
+            precool_power=1,      # MW
             **kwargs
     ):
 
         self.capacity = float(capacity)
+        self.precool_capacity = float(precool_capacity)
+
         self.release_time = int(release_time)
+        self.precool_power = float(precool_power)
         super().__init__(**kwargs)
 
         """
@@ -128,7 +139,7 @@ class Flex(BaseEnv):
 
     def store_supply(self, demand):
 
-        old_precool = self.stored_precool
+        old_precool = self.stored_supply
 
         new_precool = np.clip(
             old_precool + (self.precool_power - demand) / 12,
