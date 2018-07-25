@@ -50,10 +50,10 @@ class Flex(BaseEnv):
     """
     def __init__(
             self,
-            capacity=0.5,         # MWh
+            capacity=4.0,         # MWh
             precool_capacity=0.5, # MWh
             release_time=12,      # num 5 mins
-            precool_power=1,      # MW
+            precool_power=0.05,      # MW
             **kwargs
     ):
 
