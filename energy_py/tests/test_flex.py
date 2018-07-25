@@ -6,6 +6,10 @@ import pandas as pd
 import energy_py
 
 
+def check_energy_balance(info):
+    inc_consumption = info['site_consumption'].sum() - info['site_demand'].sum()
+    assert inc_consumption >= 0
+
 
 def test_no_op():
     env = energy_py.make_env('flex')
@@ -19,51 +23,11 @@ def test_no_op():
         next_obs, r, done, i = env.step(act)
         step += 1
 
-    out = pd.DataFrame().from_dict(i)
+    info = pd.DataFrame().from_dict(i)
 
-    #  this little bit of computation should be in the flex env
+    check_energy_balance(info)
 
-    out['base_costs'] = out['site_demand'] * out['electricity_price']
-    out['opt_costs'] = out['site_electricity_consumption'] * out['electricity_price']
-    out['delta'] = out['base_costs'] - out['opt_costs']
-
-    np.testing.assert_equal(out['delta'].sum(), 0)
-
-
-def test_raise_sp():
-    """ testing raising the setpoint - reducing cooling generation """
-    env = energy_py.make_env('flex', capacity=2.0, release_time=4)
-
-    obs = env.reset()
-    done = False
-    step = 0
-
-    while not done:
-        act = np.array(0)
-        if step >= 3 and step < 7:
-            act = np.array(1)
-
-        next_obs, r, done, i = env.step(act)
-        step += 1
-
-    out = pd.DataFrame().from_dict(i)
-
-    expt = out.iloc[:12, :]
-
-    #  check that we charge and discharge equal amounts of energy
-    np.testing.assert_equal(expt['stored'].sum(), expt['discharged'].sum())
-
-    #  check the timing of the discharge
-    #  making an assumption the capacity is big enough
-    #  could fail if I change the example dataset
-    #  maybe better to use a test dataset TODO
-    np.testing.assert_array_equal(
-        expt.loc[3:7, 'stored'], expt.loc[7:11, 'discharged']
-    )
-
-    np.testing.assert_array_equal(
-        expt.loc[3, 'stored'], expt.loc[7, 'discharged']
-    )
+    np.testing.assert_equal(info['reward'].sum(), 0)
 
 
 def test_lower_setpoint():
@@ -146,6 +110,44 @@ def test_release_when_full():
             cumulative_demand = []
 
 
-
 if __name__ == '__main__':
-    test_release_when_full()
+    test_no_op()
+
+    """ testing raising the setpoint - reducing cooling generation """
+    rel_time = 4
+    env = energy_py.make_env('flex', capacity=8.0, release_time=rel_time)
+
+    obs = env.reset()
+    done = False
+    step = 0
+
+    while not done:
+        act = np.array(1)
+
+        next_obs, r, done, i = env.step(act)
+        step += 1
+
+    info = pd.DataFrame().from_dict(i)
+    print(info.head(10))
+
+    #  this will fail because agent can store demand at end of episode
+    # check_energy_balance(info)
+
+    cons = info.loc[:, 'site_consumption'].values[rel_time-1:]
+    dem = info.loc[:, 'site_demand'].values[:-rel_time+1]
+    print(info.tail(20))
+    print(cons[-10:])
+    print(dem[-10:])
+
+    for idx, (v1, v2) in enumerate(zip(cons, dem)):
+        if v1 != v2:
+            print('step {}'.format(idx))
+            print(v1, v2)
+
+    import pdb; pdb.set_trace()
+
+    np.testing.assert_almost_equal(cons, dem)
+
+
+
+
