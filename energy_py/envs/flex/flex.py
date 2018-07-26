@@ -54,6 +54,7 @@ class Flex(BaseEnv):
             precool_capacity=0.5, # MWh
             release_time=12,      # num 5 mins
             precool_power=0.05,      # MW
+            scale_reward=False,   #  bool - move to baseenv at somepoint TODO
             **kwargs
     ):
 
@@ -91,14 +92,15 @@ class Flex(BaseEnv):
            observation (np.array) the initial observation
         """
         self.steps = 0
-        self._charge = 0
 
-        #  use a deque for stored demand 
+        self._charge = 0  #MWh
+
+        #  use a deque for stored demand (all MWh per 5min)
         self.storage_history = deque(maxlen=self.release_time)
         [self.storage_history.append(0) for _ in range(self.release_time)]
 
-        #  use a float for stored supply
-        self.stored_supply = 0
+        #  float for stored supply
+        self.stored_supply = 0  # MWh
 
         self.state = self.state_space(self.steps)
 
@@ -117,13 +119,15 @@ class Flex(BaseEnv):
         return sum(self.storage_history)
 
     def release_supply(self, demand):
-        released = min(demand, self.stored_supply)
+        """ net off our demand with some stored supply """
+        released = min(demand / 12, self.stored_supply)
         self.stored_supply -= released
         return released
 
     def store_demand(self, demand):
         """ always store - check for the capacity done elsewhere """
-        self.storage_history.appendleft(demand)
+        self.storage_history.appendleft(demand / 12)
+
         print('storing {}'.format(self.storage_history))
         return demand
 
@@ -210,6 +214,12 @@ class Flex(BaseEnv):
         #  negative means we are increasing cost
         #  positive means we are reducing cost
         reward = baseline_cost - optimized_cost
+
+        if self.scale_reward:
+            scale_factor = self.state_space.data[:, 'C_electricity_price [$/MWh]'].max()
+
+            scale_factor *= scale_factor * (self.precool_power + self.state_space.data[:, 'C_demand [MW]'].max())
+            reward = reward / scale_factor
 
         next_state = self.state_space(self.steps + 1)
 
