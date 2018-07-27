@@ -10,6 +10,8 @@ from energy_py.common.logging import make_logger
 
 from energy_py.experiments import Runner, save_env_info, make_paths, make_config_parser
 
+from energy_py.experiments import process_experiment
+
 
 def setup_experiment(
         sess,
@@ -234,3 +236,5 @@ if __name__ == '__main__':
             steps += train_steps + test_steps
 
         agent.memory.save(paths['memory'])
+
+        process_experiment(args.expt_name, args.run_name)

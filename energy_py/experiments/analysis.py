@@ -136,8 +136,8 @@ def process_experiment(expt_name, runs):
                 run.name, run.summary['delta_reward_per_day']
             ))
 
-        run_markdown_writer(run, join(results_path, run.expt, run.name))
 
+    expt_markdown_writer(runs, join(results_path, 'new_flex'))
     return runs
 
 
@@ -191,33 +191,6 @@ def plot_figures(plot_data, fig_path='./'):
     )
 
 
-class Run(object):
-    def __init__(
-            self,
-            expt_name,
-            run_name
-    ):
-        print('Processing run {}'.format(run_name))
-        self.expt = expt_name
-        self.name = run_name
-        path = join(self.expt, self.name)
-
-        self.agent_args = load_agent_args(path)
-        self.env_args = load_env_args(path)
-
-        self.episodes = read_run_episodes(path)
-
-        self.summary = process_run(self.episodes)
-
-        plot_figures(
-            self.episodes[-1].iloc[-288:, :],
-            fig_path=join(results_path, self.expt, self.name)
-        )
-
-    def __call__(self):
-        return self.summary
-
-
 def run_markdown_writer(
         run,
         path
@@ -259,6 +232,34 @@ def expt_markdown_writer(
                     run.summary['delta_reward_per_day'] * 365) + os.linesep)
 
 
+class Run(object):
+    def __init__(
+            self,
+            expt_name,
+            run_name
+    ):
+        print('Processing run {}'.format(run_name))
+        self.expt = expt_name
+        self.name = run_name
+        path = join(self.expt, self.name)
+
+        self.agent_args = load_agent_args(path)
+        self.env_args = load_env_args(path)
+
+        self.episodes = read_run_episodes(path)
+
+        self.summary = process_run(self.episodes)
+
+        plot_figures(
+            self.episodes[-1].iloc[-5*288:, :],
+            fig_path=join(results_path, self.expt, self.name)
+        )
+
+    def __call__(self):
+        return self.summary
+
+
+
 if __name__ == '__main__':
 
     runs = process_experiment(
@@ -266,4 +267,3 @@ if __name__ == '__main__':
         ['autoflex', 'random', 'no_op', 'dqn1', 'dqn3']
     )
 
-    expt_markdown_writer(runs, join(results_path, 'new_flex'))
