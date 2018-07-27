@@ -114,11 +114,11 @@ class Flex(BaseEnv):
         return self.observation
 
     @property
-    def charge(self):
-        return self._charge
+    def stored_demand(self):
+        return self._stored_demand
 
-    @charge.getter
-    def charge(self):
+    @stored_demand.getter
+    def stored_demand(self):
         return sum(self.storage_history)
 
     def release_supply(self, demand):
@@ -205,7 +205,7 @@ class Flex(BaseEnv):
         #  dump out the entire stored demand if we reach capacity
         #  this is the chiller ramping up to full when return temp gets
         #  too high
-        if self.charge >= self.capacity:
+        if self.stored_demand >= self.capacity:
             site_consumption += self.dump_demand()
 
         #  natural release of demand
@@ -230,7 +230,7 @@ class Flex(BaseEnv):
         next_state = self.state_space(self.steps + 1)
 
         next_observation = self.observation_space(
-            self.steps + 1, np.array(self.charge)
+            self.steps + 1, np.array(self.stored_demand)
         )
 
         self.steps += 1
@@ -260,7 +260,8 @@ class Flex(BaseEnv):
             'done': done,
 
             'electricity_price': electricity_price,
-            'charge': self.charge,
+            'stored_demand': stored_demand,
+            'stored_supply': stored_supply,
             'site_demand': site_demand,
             'site_consumption': site_consumption,
             'setpoint': setpoint,

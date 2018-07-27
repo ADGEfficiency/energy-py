@@ -1,6 +1,8 @@
 """
 tools for analyzing results of experiments
 
+TODO - clean up how the paths flow through Run
+
 energy_py experiments are structured
 
 experiment_1
@@ -55,12 +57,13 @@ def read_run_episodes(run_name):
 
         for f in files:
             episodes.append(pd.read_csv(join(root, f), index_col=0, parse_dates=True))
+
     print('{} {} episodes'.format(run_name, len(episodes)))
 
     return episodes
 
 
-def process_episode(episode, verbose=False):
+def process_episode(episode):
     """ Process a single episode - aka the info dict returned by env.step() """
 
     #  these should go before __init__
@@ -77,9 +80,6 @@ def process_episode(episode, verbose=False):
         'reward_per_5min': reward_per_5min,
         'reward_per_day': reward_per_5min * num_5mins_per_day
     }
-
-    if verbose:
-        [print('{} {:2.0f}'.format(k, v)) for k, v in summary.items()]
 
     return summary
 
@@ -120,7 +120,7 @@ def process_experiment(expt_name, runs):
     if 'no_op' not in runs:
         runs.append('no_op')
 
-    print('Processing {} expt with runs {}'.format(expt_name, runs))
+    print('Processing expt {} runs {}'.format(expt_name, runs))
 
     runs = {run_name: Run(expt_name, run_name)
             for run_name in runs}
@@ -133,8 +133,10 @@ def process_experiment(expt_name, runs):
 
         if name is not 'no_op':
             print('{} reward per day vs no_op $/day {:2.2f}'.format(
-                run.run_name, run.summary['delta_reward_per_day']
+                run.name, run.summary['delta_reward_per_day']
             ))
+
+        run_markdown_writer(run, join(results_path, run.expt, run.name))
 
     return runs
 
@@ -184,7 +186,7 @@ def plot_figures(plot_data, fig_path='./'):
 
     f = plot_time_series(
         plot_data,
-        y=['electricity_price', 'setpoint', 'delta_demand', 'charge'],
+        y=['electricity_price', 'setpoint', 'reward', 'site_consumption'],  # TODO add stored_demand, supply etc
         fig_name=join(fig_path, 'fig2.png')
     )
 
@@ -195,10 +197,10 @@ class Run(object):
             expt_name,
             run_name
     ):
-        print('Processing on run {}'.format(expt_name, run_name))
-        self.expt_name = expt_name
-        self.run_name = run_name
-        path = join(expt_name, self.run_name)
+        print('Processing run {}'.format(run_name))
+        self.expt = expt_name
+        self.name = run_name
+        path = join(self.expt, self.name)
 
         self.agent_args = load_agent_args(path)
         self.env_args = load_env_args(path)
@@ -207,64 +209,61 @@ class Run(object):
 
         self.summary = process_run(self.episodes)
 
+        plot_figures(
+            self.episodes[-1].iloc[-288:, :],
+            fig_path=join(results_path, self.expt, self.name)
+        )
+
     def __call__(self):
         return self.summary
+
+
+def run_markdown_writer(
+        run,
+        path
+):
+    with open(join(path, 'run_results.md'), 'w+') as text_file:
+            text_file.write(
+                '## {} run of the {} experiment'.format(
+                    run.name, run.expt) + os.linesep)
+
+            text_file.write(
+                '### delta versus the no_op case' + os.linesep)
+
+            text_file.write(
+                '$/day {:2.2f}'.format(
+                    run.summary['delta_reward_per_day']) + os.linesep)
+
+            text_file.write(
+                '$/yr {:2.0f}'.format(
+                    run.summary['delta_reward_per_day'] * 365) + os.linesep)
+
+            text_file.write('![img](fig1.png)' + os.linesep)
+
+
+def expt_markdown_writer(
+        runs,
+        path
+):
+    with open(join(path, 'expt_results.md'), 'w') as text_file:
+
+        for run_name, run in runs.items():
+            text_file.write('## ' + run_name + os.linesep)
+
+            text_file.write(
+                '$/day {:2.2f}'.format(
+                    run.summary['delta_reward_per_day']) + os.linesep)
+
+            text_file.write(
+                '$/yr {:2.0f}'.format(
+                    run.summary['delta_reward_per_day'] * 365) + os.linesep)
 
 
 if __name__ == '__main__':
 
     runs = process_experiment(
         'new_flex',
-        ['autoflex', 'random', 'no_op']
+        ['autoflex', 'random', 'no_op', 'dqn1', 'dqn3']
     )
 
-    autoflex = runs['autoflex']
-
-    last_ep = autoflex.episodes[-1]
-
-
-    plot_figures(last_ep.iloc[-288:, :],
-                 fig_path=results_path)
-
-    def run_markdown_writer(
-            run,
-            path
-    ):
-        with open(join(path, run.run_name, 'run_results.md'), 'w') as text_file:
-                text_file.write(
-                    '## {} run of the {} experiment'.format(
-                        run.run_name, run.expt_name) + os.linesep)
-
-                text_file.write(
-                    '### delta versus the no_op case' + os.linesep)
-
-                text_file.write(
-                    '$/day {:2.2f}'.format(
-                        run.summary['delta_reward_per_day']) + os.linesep)
-
-                text_file.write(
-                    '$/yr {:2.0f}'.format(
-                        run.summary['delta_reward_per_day'] * 365) + os.linesep)
-
-                text_file.write('![img](fig1.png)' + os.linesep)
-
-    run_markdown_writer(autoflex, results_path)
-
-    def expt_markdown_writer(
-            runs,
-            path
-    ):
-        with open(join(path, 'expt_results.md'), 'w') as text_file:
-
-            for run_name, run in runs.items():
-                text_file.write('## ' + run_name + os.linesep)
-
-                text_file.write(
-                    '$/day {:2.2f}'.format(
-                        run.summary['delta_reward_per_day']) + os.linesep)
-
-                text_file.write(
-                    '$/yr {:2.0f}'.format(
-                        run.summary['delta_reward_per_day'] * 365) + os.linesep)
-
-    expt_markdown_writer(runs, results_path)
+    expt_markdown_writer(runs, join(results_path, 'new_flex'))
