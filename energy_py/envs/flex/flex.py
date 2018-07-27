@@ -63,6 +63,9 @@ class Flex(BaseEnv):
 
         self.release_time = int(release_time)
         self.precool_power = float(precool_power)
+
+        self.scale_reward = scale_reward
+
         super().__init__(**kwargs)
 
         """
@@ -120,18 +123,21 @@ class Flex(BaseEnv):
 
     def release_supply(self, demand):
         """ net off our demand with some stored supply """
+        """ args MW return MW """
         released = min(demand / 12, self.stored_supply)
         self.stored_supply -= released
-        return released
+        return released * 12
 
     def store_demand(self, demand):
         """ always store - check for the capacity done elsewhere """
+        """ args MW return MW """
         self.storage_history.appendleft(demand / 12)
 
         print('storing {}'.format(self.storage_history))
         return demand
 
     def dump_demand(self):
+        """ returns MW """
         dumped = sum(self.storage_history)
 
         [self.storage_history.appendleft(0)
@@ -139,10 +145,10 @@ class Flex(BaseEnv):
 
         assert self.charge == 0
 
-        return dumped
+        return dumped * 12
 
     def store_supply(self, demand):
-
+        """ args MW return MW """
         old_precool = self.stored_supply
 
         new_precool = np.clip(

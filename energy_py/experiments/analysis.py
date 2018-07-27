@@ -21,6 +21,7 @@ experiment_2
 import os
 from os.path import join
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -29,8 +30,8 @@ from energy_py.common.utils import load_args
 
 
 plt.style.use('ggplot')
-results_path = '/Users/adam/git/energy_py/energy_py/experiments/results/'
 
+results_path = './results/'
 
 def load_env_args(run_name):
     return load_args(
@@ -212,13 +213,15 @@ class Run(object):
 
 if __name__ == '__main__':
 
-    runs = process_experiment('new_flex', 'autoflex')
+    runs = process_experiment(
+        'new_flex',
+        ['autoflex', 'random', 'no_op']
+    )
 
     autoflex = runs['autoflex']
 
     last_ep = autoflex.episodes[-1]
 
-    results_path = '/Users/adam/git/research/energy_py/results/'
 
     plot_figures(last_ep.iloc[-288:, :],
                  fig_path=results_path)

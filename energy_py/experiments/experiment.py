@@ -233,4 +233,4 @@ if __name__ == '__main__':
 
             steps += train_steps + test_steps
 
-        agent.memory.save(paths['agent_memory'])
+        agent.memory.save(paths['memory'])
