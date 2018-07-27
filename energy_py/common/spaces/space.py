@@ -16,6 +16,9 @@ class GlobalSpace(object):
     """
     A combination of simpler spaces
 
+    TODO - raise exception if try to call .discrete_spaces
+    before running discretize()
+
     args
         name (str)
         dataset (str)
