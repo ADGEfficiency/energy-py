@@ -22,12 +22,12 @@ import os
 from os.path import join
 
 import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
 from energy_py.common.utils import load_args
-
 
 plt.style.use('ggplot')
 
@@ -45,7 +45,7 @@ def load_agent_args(run_name):
     )
 
 
-def read_run_episodes(run_name, verbose=False):
+def read_run_episodes(run_name):
     """ Reads all episodes for a single run """
 
     episodes = []
@@ -55,8 +55,7 @@ def read_run_episodes(run_name, verbose=False):
 
         for f in files:
             episodes.append(pd.read_csv(join(root, f), index_col=0, parse_dates=True))
-    if verbose:
-        print('read {} episodes'.format(len(episodes)))
+    print('{} {} episodes'.format(run_name, len(episodes)))
 
     return episodes
 
@@ -121,6 +120,8 @@ def process_experiment(expt_name, runs):
     if 'no_op' not in runs:
         runs.append('no_op')
 
+    print('Processing {} expt with runs {}'.format(expt_name, runs))
+
     runs = {run_name: Run(expt_name, run_name)
             for run_name in runs}
 
@@ -176,7 +177,7 @@ def plot_figures(plot_data, fig_path='./'):
 
     f = plot_time_series(
         plot_data,
-        y=['site_demand', 'site_electricity_consumption'],
+        y=['site_demand', 'site_consumption'],
         same_plot=True,
         fig_name=join(fig_path, 'fig1.png')
     )
@@ -194,6 +195,7 @@ class Run(object):
             expt_name,
             run_name
     ):
+        print('Processing on run {}'.format(expt_name, run_name))
         self.expt_name = expt_name
         self.run_name = run_name
         path = join(expt_name, self.run_name)
@@ -201,9 +203,7 @@ class Run(object):
         self.agent_args = load_agent_args(path)
         self.env_args = load_env_args(path)
 
-        self.episodes = read_run_episodes(
-            path, verbose=False
-        )
+        self.episodes = read_run_episodes(path)
 
         self.summary = process_run(self.episodes)
 
