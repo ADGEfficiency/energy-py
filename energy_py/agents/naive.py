@@ -178,5 +178,8 @@ class NoOp(BaseAgent):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def _act(self, observation):
+    def _act(self, observation, **kwargs):
         return self.action_space.no_op
+
+    def _learn(self, *args, **kwargs):
+        pass
