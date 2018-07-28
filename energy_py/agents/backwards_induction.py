@@ -18,6 +18,8 @@ state = env.observation_space.data.iloc[step, :]
 
 state_actions = get_state_actions(state)
 
+actions = env.action_space.discrete_spaces
+
 # def get_viable_transitions(step, state, actions):
 
 

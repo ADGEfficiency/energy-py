@@ -65,6 +65,8 @@ $ tensorboard --logdir='./energy_py/experiments/results'
 
 ```
 
+Learning performance of the DQN agent on the flexibility environment across two random seeds.  The red line is a naive benchmark agent.  The reward per episode can be directly interpreted as dollars per day.
+
 ![fig](assets/tb1.png)
 
 ## Installation
@@ -110,11 +112,12 @@ energy_py was heavily infulenced by Open AI [baselines](https://github.com/opena
 
 energy_py is currently focused on a high quality impelementation of DQN ([ref Mnih et. al (2015)](https://web.stanford.edu/class/psych209/Readings/MnihEtAlHassibis15NatureControlDeepRL.pdf)) and along with naive and heuristic agents for comparison.
 
-DQN was chosen because:
-- it is an established algorithm,
-- many examples of DQN implementations on GitHub,
+DQN was chosen because
+
+- it is an established algorithm
+- many examples of DQN implementations on GitHub
 - highly extensible (DDQN, prioritized experience replay, dueling, n-step returns - see [Rainbow](https://arxiv.org/pdf/1710.02298.pdf) for a summary
-- most energy environments have low dimensional action spaces (making discretization tractable).  Discretization still means a loss of action space shape, but the action space dimensionality is reasonable.
+- most energy environments have low dimensional action spaces (making discretization tractable).  Discretization still means a loss of action space shape, but the action space dimensionality is reasonable
 - ability to learn off policy
 
 Naive agents include an agent that randomly samples the action space, independent of observation.  Heuristic agents are
