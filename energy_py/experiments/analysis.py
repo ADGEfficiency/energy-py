@@ -29,11 +29,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from energy_py.common.utils import load_args
+from energy_py.common.utils import load_args, ensure_dir
+
 
 plt.style.use('ggplot')
 
 results_path = './results/'
+
 
 def load_env_args(run_name):
     return load_args(
@@ -170,6 +172,7 @@ def plot_time_series(
         data.plot(y=y_label, ax=a[idx], **kwargs)
 
     if fig_name:
+        ensure_dir(fig_name)
         f.savefig(fig_name)
 
     return f
@@ -250,10 +253,19 @@ class Run(object):
 
         self.summary = process_run(self.episodes)
 
-        plot_figures(
-            self.episodes[-1].iloc[-5*288:, :],
-            fig_path=join(results_path, self.expt, self.name)
-        )
+        plot_ep = 5
+        for episode in range(len(self.episodes))[-plot_ep:]:
+            print('plotting last {} episodes'.format(plot_ep))
+
+            plot_figure(
+                self.episodes[episode].iloc[-288:, :],
+                fig_path=join(
+                    results_path,
+                    self.expt,
+                    self.name,
+                    'episode_{}'.format(episode)
+                )
+            )
 
     def __call__(self):
         return self.summary
