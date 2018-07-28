@@ -3,6 +3,7 @@
 energy_py supports reinforcement learning for energy systems.  This library provides agents and environments, as well as tools to run experiments. 
 
 energy_py is built and maintained by Adam Green - [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  
+
 - [introductory blog post](http://adgefficiency.com/energy_py-reinforcement-learning-for-energy-systems/)
 - [DQN debugging](http://adgefficiency.com/dqn-debugging/)
 - [DDQN hyperparameter tuning](http://adgefficiency.com/dqn-tuning/)
@@ -32,10 +33,9 @@ while not done:
     observation = next_observation
 ```
 
-The most common access point for a user will be to run an experiment.  An experiment is run by passing the experiment name and run name as arguments
+The most common access point for a user will be to run an experiment.  The experiment is setup using config files that live in `energy_py/experiments/configs`.  An experiment is run by passing the experiment name and run name as arguments
 
 ```bash
-
 $ cd energy_py/experiments
 
 $ python experiment.py example dqn
@@ -114,11 +114,10 @@ energy_py is currently focused on a high quality impelementation of DQN ([ref Mn
 
 DQN was chosen because
 
-- it is an established algorithm
-- many examples of DQN implementations on GitHub
-- highly extensible (DDQN, prioritized experience replay, dueling, n-step returns - see [Rainbow](https://arxiv.org/pdf/1710.02298.pdf) for a summary
 - most energy environments have low dimensional action spaces (making discretization tractable).  Discretization still means a loss of action space shape, but the action space dimensionality is reasonable
-- ability to learn off policy
+- highly extensible (DDQN, prioritized experience replay, dueling, n-step returns - see [Rainbow](https://arxiv.org/pdf/1710.02298.pdf) for a summary
+- able to learn off policy
+- established algorithm, with many implementations on GitHub
 
 Naive agents include an agent that randomly samples the action space, independent of observation.  Heuristic agents are
 usually custom built for a specific environment.  Examples of heuristic agents include actions based on the time of day or on the values of a forecast.
@@ -128,9 +127,7 @@ usually custom built for a specific environment.  Examples of heuristic agents i
 energy_py provides custom built models of energy environments and wraps around Open AI gym.  Support for basic gym
 models is included to allow debugging of agents with familiar environments.
 
-Beware that gym deals with random seeds for action spaces in [particuar
-ways](https://github.com/openai/gym/blob/master/gym/spaces/prng.py).  v0 of gym environments [ignore the selected action
-25% of the time](http://amid.fish/reproducing-deep-rl) and repeat the previous action (to make environment more stochastic).  v4 can remove this randomness.
+Beware that gym deals with random seeds for action spaces in [particuar ways](https://github.com/openai/gym/blob/master/gym/spaces/prng.py).  v0 of gym environments [ignore the selected action 25% of the time](http://amid.fish/reproducing-deep-rl) and repeat the previous action (to make environment more stochastic).  v4 can remove this randomness.
 
 **CartPole-v0**
 
@@ -154,4 +151,5 @@ Battery is defined by a capacity and a maximum rate to charge and discharge, wit
 
 Dispatch of price responsive demand side flexibility - [energy_py](https://github.com/ADGEfficiency/energy_py/tree/dev/energy_py/envs/flex)
 
-Flexible asset is a chiller system, with an action space of the return temperature setpoint.
+Flexible asset is a chiller system, with an action space of the return temperature setpoint.  An increased setpoint will
+reduce demand, decreased will increase demand.

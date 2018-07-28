@@ -106,7 +106,7 @@ class BaseEnv(object):
     def sample_episode(self):
         """ Samples a single episode """
         start, end = self.sample_stragety()
-        print('Sampling episode start {} end {}'.format(start, end))
+        logger.debug('Sampling episode start {} end {}'.format(start, end))
 
         state_ep = self.state_space.sample_episode(start, end)
         obs_ep = self.observation_space.sample_episode(start, end)
