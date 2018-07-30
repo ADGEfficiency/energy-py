@@ -55,6 +55,7 @@ class BaseEnv(object):
             random.seed(seed)
             tf.set_random_seed(seed)
             np.random.seed(seed)
+
         else:
             logging.debug('not setting random seed')
 

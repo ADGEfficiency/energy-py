@@ -59,7 +59,7 @@ class Flex(BaseEnv):
     ):
 
         self.capacity = float(capacity)
-        self.precool_capacity = float(precool_capacity)
+        self.supply_capacity = float(precool_capacity)
 
         self.release_time = int(release_time)
         self.precool_power = float(precool_power)
@@ -79,13 +79,17 @@ class Flex(BaseEnv):
         )
         self.action_space.no_op = np.array([0]).reshape(1, 1)
 
-        #  let our agent see the stored energy
-        self.observation_space.extend(
-            ContinuousSpace(0, self.capacity), 'C_charge_level [MWh]'
-        )
+        #  let our agent see the stored demand
+        #  let our agent see the stored supply
+        #  see precool power?
 
-    def __repr__(self):
-        return '<energy_py flex environment>'
+        #  obs space is created during env init
+        self.observation_space.extend(
+            [ContinuousSpace(0, self.capacity),
+            ContinuousSpace(0, self.supply_capacity)],
+            ['C_stored_demand [MWh]',
+            'C_stored_supply[MWh]'],
+        )
 
     def _reset(self):
         """
@@ -100,7 +104,7 @@ class Flex(BaseEnv):
 
         #  use a deque for stored demand (all MWh per 5min)
         self.storage_history = deque(maxlen=self.release_time)
-        [self.storage_history.append(0) for _ in range(self.release_time)]
+        [self.storage_history.appendleft(0) for _ in range(self.release_time)]
 
         #  float for stored supply
         self.stored_supply = 0  # MWh
@@ -108,7 +112,9 @@ class Flex(BaseEnv):
         self.state = self.state_space(self.steps)
 
         self.observation = self.observation_space(
-            self.steps, np.array(self.charge)
+            self.steps, np.array(
+                [self.stored_demand, self.stored_supply]
+            )
         )
 
         return self.observation
@@ -133,7 +139,7 @@ class Flex(BaseEnv):
         """ args MW return MW """
         self.storage_history.appendleft(demand / 12)
 
-        print('storing {}'.format(self.storage_history))
+        logger.debug('storing {}'.format(self.storage_history))
         return demand
 
     def dump_demand(self):
@@ -143,7 +149,7 @@ class Flex(BaseEnv):
         [self.storage_history.appendleft(0)
          for _ in range(self.storage_history.maxlen)]
 
-        assert self.charge == 0
+        assert self.stored_demand == 0
 
         return dumped * 12
 
@@ -184,18 +190,26 @@ class Flex(BaseEnv):
         #  ie move from var = self.fun(). site_cons += var
         #  to site_cons += self.fun() etc
 
+        released_demand = self.storage_history.pop()
+
         #  no-op
         if action == 0:
             released_supply = self.release_supply(site_consumption)
+            self.storage_history.appendleft(0)
+            # print('released supply {}'.format(released_supply))
             site_consumption -= released_supply
 
         #  raising setpoint (reducing demand)
-        elif action == 1:
+        if action == 1:
             stored_demand = self.store_demand(site_consumption)
             site_consumption -= stored_demand
+            # print('{} stored demand {} site_consumption'.format(
+            #     stored_demand, site_consumption))
+
+        site_consumption += released_demand * 12
 
         #  reducing setpoint (increasing demand)
-        else:
+        if action == 2:
             stored_demand_dump = self.dump_demand()
             site_consumption += stored_demand_dump
 
@@ -208,12 +222,15 @@ class Flex(BaseEnv):
         if self.stored_demand >= self.capacity:
             site_consumption += self.dump_demand()
 
-        #  natural release of demand
-        if self.storage_history:
-            released_demand = self.storage_history.pop()
-            site_consumption += released_demand
+        print('released demand {}'.format(released_demand))
 
-        electricity_price = self.get_state_variable('C_electricity_price [$/MWh]')
+        # if action == 1:
+        #     print('test before save')
+        #     print('{} stored demand {} site_consumption'.format(
+        #         stored_demand, site_consumption))
+
+        electricity_price = self.get_state_variable(
+            'C_electricity_price [$/MWh]')
         baseline_cost = site_demand * electricity_price / 12
         optimized_cost = site_consumption * electricity_price / 12
 
@@ -230,7 +247,9 @@ class Flex(BaseEnv):
         next_state = self.state_space(self.steps + 1)
 
         next_observation = self.observation_space(
-            self.steps + 1, np.array(self.stored_demand)
+            self.steps + 1, np.array(
+                [self.stored_demand, self.stored_supply]
+            )
         )
 
         self.steps += 1
@@ -239,6 +258,7 @@ class Flex(BaseEnv):
         if self.steps == (self.state_space.episode.shape[0] - 1):
             done = True
             # TODO add in mechanism to dump out stored demand
+            # at the end of the episode
             # not implementing now because I want to see if the agents learn
             # that they can store for free at the end (ie in the last few
             # steps of the episode, where steps_left < release_time)
@@ -260,10 +280,11 @@ class Flex(BaseEnv):
             'done': done,
 
             'electricity_price': electricity_price,
-            'stored_demand': stored_demand,
-            'stored_supply': stored_supply,
+            'stored_demand': self.stored_demand,
+            'stored_supply': self.stored_supply,
             'site_demand': site_demand,
             'site_consumption': site_consumption,
+            'net_discharged': site_consumption - site_demand,
             'setpoint': setpoint,
                 }
 
