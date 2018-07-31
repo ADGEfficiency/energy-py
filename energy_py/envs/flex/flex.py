@@ -51,18 +51,17 @@ class Flex(BaseEnv):
     def __init__(
             self,
             capacity=4.0,         # MWh
-            precool_capacity=0.5, # MWh
+            supply_capacity=0.5, # MWh
             release_time=12,      # num 5 mins
-            precool_power=0.05,      # MW
+            supply_power=0.05,      # MW
             scale_reward=False,   #  bool - move to baseenv at somepoint TODO
             **kwargs
     ):
 
         self.capacity = float(capacity)
-        self.supply_capacity = float(precool_capacity)
+        self.supply_capacity = float(supply_capacity)
 
         self.release_time = int(release_time)
-        self.precool_power = float(precool_power)
 
         self.scale_reward = scale_reward
 
@@ -90,6 +89,13 @@ class Flex(BaseEnv):
             ['C_stored_demand [MWh]',
             'C_stored_supply[MWh]'],
         )
+
+        #  supply = precooling
+        #  i.e how much power we consume during precooling
+        self.supply_power = float(max(
+            supply_power,
+            self.state_space.data.loc[:, 'C_demand [MW]'].max()
+        ))
 
     def _reset(self):
         """
@@ -157,16 +163,18 @@ class Flex(BaseEnv):
         """ args MW return MW """
         old_precool = self.stored_supply
 
-        new_precool = np.clip(
-            old_precool + (self.precool_power - demand) / 12,
-            0,
-            self.precool_capacity
+        power_capacity_for_supply = self.supply_power - demand
+
+        stored_supply = np.min(
+            [self.supply_capacity - old_precool,
+            power_capacity_for_supply / 12]
         )
 
-        precooling = new_precool - old_precool
-        self.stored_supply += precooling
+        self.stored_supply += stored_supply
 
-        return precooling * 12
+        precooling = stored_supply * 12
+
+        return demand + precooling
 
     def _step(self, action):
         """
@@ -213,8 +221,7 @@ class Flex(BaseEnv):
             stored_demand_dump = self.dump_demand()
             site_consumption += stored_demand_dump
 
-            precooling = self.store_supply(site_consumption)
-            site_consumption += precooling
+            site_consumption = self.store_supply(site_consumption)
 
         #  dump out the entire stored demand if we reach capacity
         #  this is the chiller ramping up to full when return temp gets
@@ -241,7 +248,7 @@ class Flex(BaseEnv):
         if self.scale_reward:
             scale_factor = self.state_space.data[:, 'C_electricity_price [$/MWh]'].max()
 
-            scale_factor *= scale_factor * (self.precool_power + self.state_space.data[:, 'C_demand [MW]'].max())
+            scale_factor *= scale_factor * (self.supply_power + self.state_space.data[:, 'C_demand [MW]'].max())
             reward = reward / scale_factor
 
         next_state = self.state_space(self.steps + 1)
