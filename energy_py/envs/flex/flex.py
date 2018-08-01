@@ -229,7 +229,7 @@ class Flex(BaseEnv):
         if self.stored_demand >= self.capacity:
             site_consumption += self.dump_demand()
 
-        print('released demand {}'.format(released_demand))
+        logging.debug('released demand {}'.format(released_demand))
 
         # if action == 1:
         #     print('test before save')
