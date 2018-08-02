@@ -32,20 +32,7 @@ energy_py = supporting experimentation
 
 ---?image=/assets/energy_py_talk/repo.png&size=auto 100%
 
----
-
-```bash
-#  high level api running experiments from config files
-
-$ cd energy_py/experiments
-
-
-$ python experiment.py example dqn
-
-
-$ tensorboard --logdir='./results/example/tensorboard'
-
-```
+---?code=assets/high_level.py&lang=bash
 
 ---
 
