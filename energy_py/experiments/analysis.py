@@ -1,9 +1,14 @@
 """
-tools for analyzing results of experiments
-
 TODO - clean up how the paths flow through Run
 
-energy_py experiments are structured
+tools for analyzing results of experiments
+
+the code takes advantage of the structure in an energy_py experiment
+
+episodes - runs - experiments
+
+A single run has multiple episodes
+A single experiment has multiple runs
 
 experiment_1
     run_1
@@ -18,35 +23,25 @@ experiment_2
     run_2
         episode_1, episode_2 ... episode_n
     ...
-"""
 
+The code is organized by
+
+- process_episode/run/experiment (3 funcs)
+- plot_episode/run/experiment (3 funcs)
+
+"""
 import os
 from os.path import join
 
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
 from energy_py.common.utils import load_args, ensure_dir
+from energy_py.experiments.markdown_writers import run_markdown_writer, expt_markdown_writer
+from energy_py.experiments.plotting import plot_flex_episode
 
-
-plt.style.use('ggplot')
 
 results_path = './results/'
-
-
-def load_env_args(run_name):
-    return load_args(
-        join(results_path, run_name, 'agent_args.txt')
-    )
-
-
-def load_agent_args(run_name):
-    return load_args(
-        join(results_path, run_name, 'agent_args.txt')
-    )
 
 
 def read_run_episodes(run_name):
@@ -73,14 +68,13 @@ def process_episode(episode):
     reward_per_5min = episode['reward'].sum() / episode.shape[0]
 
     summary = {
-        'total_episode_reward': episode['reward'].sum(),
-        'avg_electricity_price': episode['electricity_price'].mean(),
-        'no_ops': episode[episode['action'] == 0].shape[0] / episode.shape[0],
-        'count_increase_setpoint': episode[episode['action'] == 1].shape[0],
-        'count_decrease_setpoint': episode[episode['action'] == 2].shape[0],
+        'total_reward': episode['reward'].sum(),
+        # 'no_ops': episode[episode['action'] == 0].shape[0] / episode.shape[0],
+        # 'count_increase_setpoint': episode[episode['action'] == 1].shape[0],
+        # 'count_decrease_setpoint': episode[episode['action'] == 2].shape[0],
 
-        'reward_per_5min': reward_per_5min,
-        'reward_per_day': reward_per_5min * num_5mins_per_day
+        # 'reward_per_5min': reward_per_5min,
+        # 'reward_per_day': reward_per_5min * num_5mins_per_day
     }
 
     return summary
@@ -105,10 +99,10 @@ def process_run(episodes):
         'avg_ep_reward': avg_ep_reward,
         'num_episodes': len(episodes),
         'num_loss_episodes': run_summary[run_summary['total_episode_reward'] < 0].shape[0],
-        'no_ops': run_summary['no_ops'].mean(),
+        # 'no_ops': run_summary['no_ops'].mean(),
 
-        'reward_per_5min': run_summary['reward_per_5min'].mean(),
-        'reward_per_day': run_summary['reward_per_day'].mean()
+        # 'reward_per_5min': run_summary['reward_per_5min'].mean(),
+        # 'reward_per_day': run_summary['reward_per_day'].mean()
     }
 
     return run_summary
@@ -140,99 +134,8 @@ def process_experiment(expt_name, runs):
 
 
     expt_markdown_writer(runs, join(results_path, 'new_flex'))
+
     return runs
-
-
-def plot_time_series(
-        data,
-        y,
-        figsize=[25, 10],
-        fig_name=None,
-        same_plot=False,
-        **kwargs):
-
-    if isinstance(y, str):
-        y = [y]
-
-    if same_plot:
-        nrows = 1
-
-    else:
-        nrows = len(y)
-
-    figsize[1] = 2 * nrows
-
-    f, a = plt.subplots(figsize=figsize, nrows=nrows, sharex=True)
-    a = np.array(a).flatten()
-
-    for idx, y_label in enumerate(y):
-        if same_plot:
-            idx = 0
-        a[idx].set_title(y_label)
-        data.plot(y=y_label, ax=a[idx], **kwargs)
-
-    if fig_name:
-        ensure_dir(fig_name)
-        f.savefig(fig_name)
-
-    return f
-
-
-def plot_figures(plot_data, fig_path='./'):
-
-    f = plot_time_series(
-        plot_data,
-        y=['site_demand', 'site_consumption'],
-        same_plot=True,
-        fig_name=join(fig_path, 'fig1.png')
-    )
-
-    f = plot_time_series(
-        plot_data,
-        y=['electricity_price', 'setpoint', 'reward', 'site_consumption'],  # TODO add stored_demand, supply etc
-        fig_name=join(fig_path, 'fig2.png')
-    )
-
-
-def run_markdown_writer(
-        run,
-        path
-):
-    with open(join(path, 'run_results.md'), 'w+') as text_file:
-            text_file.write(
-                '## {} run of the {} experiment'.format(
-                    run.name, run.expt) + os.linesep)
-
-            text_file.write(
-                '### delta versus the no_op case' + os.linesep)
-
-            text_file.write(
-                '$/day {:2.2f}'.format(
-                    run.summary['delta_reward_per_day']) + os.linesep)
-
-            text_file.write(
-                '$/yr {:2.0f}'.format(
-                    run.summary['delta_reward_per_day'] * 365) + os.linesep)
-
-            text_file.write('![img](fig1.png)' + os.linesep)
-
-
-def expt_markdown_writer(
-        runs,
-        path
-):
-    with open(join(path, 'expt_results.md'), 'w') as text_file:
-
-        for run_name, run in runs.items():
-            text_file.write('## ' + run_name + os.linesep)
-
-            text_file.write(
-                '$/day {:2.2f}'.format(
-                    run.summary['delta_reward_per_day']) + os.linesep)
-
-            text_file.write(
-                '$/yr {:2.0f}'.format(
-                    run.summary['delta_reward_per_day'] * 365) + os.linesep)
 
 
 class Run(object):
@@ -246,30 +149,47 @@ class Run(object):
         self.name = run_name
         path = join(self.expt, self.name)
 
-        self.agent_args = load_agent_args(path)
-        self.env_args = load_env_args(path)
+        #  args are dicts
+        self.agent_args = load_args(
+            join(results_path, run_name, 'agent_args.txt')
+        )
+        self.env_args = load_args(
+            join(results_path, run_name, 'env_args.txt')
+        )
 
+        #  self.episodes is a list
         self.episodes = read_run_episodes(path)
+        self.episode_rewards = [ep['total_reward'] for ep in self.episodes]
 
+        #  summary is a dict
         self.summary = process_run(self.episodes)
 
-        plot_ep = 5
-        for episode in range(len(self.episodes))[-plot_ep:]:
-            print('plotting last {} episodes'.format(plot_ep))
+        if self.env_args['env_id'] == 'flex':
+            plot_ep = 5
+            for episode in range(len(self.episodes))[-plot_ep:]:
+                print('plotting last {} episodes'.format(plot_ep))
 
-            plot_figures(
-                self.episodes[episode].iloc[-288:, :],
-                fig_path=join(
-                    results_path,
-                    self.expt,
-                    self.name,
-                    'episode_{}'.format(episode)
+                plot_flex_episode(
+                    self.episodes[episode].iloc[-288:, :],
+                    fig_path=join(
+                        results_path,
+                        self.expt,
+                        self.name,
+                        'episode_{}'.format(episode)
+                    )
                 )
-            )
 
     def __call__(self):
         return self.summary
 
+
+def plot_run(run):
+
+    plot_time_series(
+    pass
+
+def plot_experiment():
+    pass
 
 
 if __name__ == '__main__':

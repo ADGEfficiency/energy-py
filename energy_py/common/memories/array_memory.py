@@ -25,7 +25,19 @@ class ArrayMemory(BaseMemory):
         self.n_obs = np.empty((self.size, *self.shapes['next_observation']))
         self.term = np.empty((self.size, *self.shapes['done']), dtype=bool)
 
-        self.count = 0
+        self._count = -1
+
+    @property
+    def count(self):
+        return self._count
+
+    @count.getter
+    def count(self):
+        print(self.count, self.size)
+        if self.count == self.size:
+            self.count = 0
+        else:
+            self.count += 1
 
     def __repr__(self):
         return '<class ArrayMemory size={}>'.format(self.size)
@@ -47,11 +59,7 @@ class ArrayMemory(BaseMemory):
         self.n_obs[self.count] = next_observation
         self.term[self.count] = done
 
-        #  conditional to reset the counter once we end of the array
-        if self.count == self.size:
-            self.count = 0
-        else:
-            self.count += 1
+        count = self.count
 
     def get_batch(self, batch_size):
         """ randomly samples a batch """
