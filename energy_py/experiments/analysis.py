@@ -257,7 +257,7 @@ class Run(object):
         for episode in range(len(self.episodes))[-plot_ep:]:
             print('plotting last {} episodes'.format(plot_ep))
 
-            plot_figure(
+            plot_figures(
                 self.episodes[episode].iloc[-288:, :],
                 fig_path=join(
                     results_path,
