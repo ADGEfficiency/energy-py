@@ -1,4 +1,5 @@
 import os
+from os.path import join
 
 
 def run_markdown_writer(
@@ -28,15 +29,12 @@ def expt_markdown_writer(
         runs,
         path
 ):
-    with open(join(path, 'expt_results.md'), 'w') as text_file:
+    with open(join(path, 'expt_results.md'), 'w+') as text_file:
 
         for run_name, run in runs.items():
             text_file.write('## ' + run_name + os.linesep)
 
-            text_file.write(
-                '$/day {:2.2f}'.format(
-                    run.summary['delta_reward_per_day']) + os.linesep)
+            text_file.write(join(run_name, 'ep_rewards.png'))
 
-            text_file.write(
-                '$/yr {:2.0f}'.format(
-                    run.summary['delta_reward_per_day'] * 365) + os.linesep)
+            #  TODO adding stuff to summary
+

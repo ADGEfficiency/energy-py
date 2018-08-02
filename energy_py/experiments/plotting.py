@@ -3,6 +3,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 
+from energy_py.common.utils import ensure_dir
+
 
 plt.style.use('ggplot')
 

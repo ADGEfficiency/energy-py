@@ -36,26 +36,26 @@ from os.path import join
 import numpy as np
 import pandas as pd
 
-from energy_py.common.utils import load_args, ensure_dir
-from energy_py.experiments.markdown_writers import run_markdown_writer, expt_markdown_writer
-from energy_py.experiments.plotting import plot_flex_episode
+from energy_py.common.utils import load_args
+from energy_py.experiments.markdown_writers import expt_markdown_writer
+from energy_py.experiments.plotting import plot_flex_episode, plot_time_series
 
 
 results_path = './results/'
 
 
-def read_run_episodes(run_name):
+def read_run_episodes(path):
     """ Reads all episodes for a single run """
 
     episodes = []
     for root, dirs, files in os.walk(
-            join(results_path, run_name, 'env_histories')
+            join(path, 'env_histories')
     ):
 
         for f in files:
             episodes.append(pd.read_csv(join(root, f), index_col=0, parse_dates=True))
 
-    print('{} {} episodes'.format(run_name, len(episodes)))
+    print('{} {} episodes'.format(path, len(episodes)))
 
     return episodes
 
@@ -113,27 +113,14 @@ def process_experiment(expt_name, runs):
     if isinstance(runs, str):
         runs = [runs]
 
-    if 'no_op' not in runs:
-        runs.append('no_op')
-
     print('Processing expt {} runs {}'.format(expt_name, runs))
 
     runs = {run_name: Run(expt_name, run_name)
             for run_name in runs}
 
-    # delta creation could be a function TODO
-    baseline = runs['no_op'].summary['reward_per_day']
+    plot_experiment(runs, expt_name)
 
-    for name, run in runs.items():
-        run.summary['delta_reward_per_day'] = run.summary['reward_per_day'] - baseline
-
-        if name is not 'no_op':
-            print('{} reward per day vs no_op $/day {:2.2f}'.format(
-                run.name, run.summary['delta_reward_per_day']
-            ))
-
-
-    expt_markdown_writer(runs, join(results_path, 'new_flex'))
+    expt_markdown_writer(runs, join(results_path, expt_name))
 
     return runs
 
@@ -147,25 +134,22 @@ class Run(object):
         print('Processing run {}'.format(run_name))
         self.expt = expt_name
         self.name = run_name
-        path = join(self.expt, self.name)
+        path = join(results_path, self.expt, self.name)
 
         #  args are dicts
         self.agent_args = load_args(
-            join(results_path, run_name, 'agent_args.txt')
+            join(path, 'agent_args.txt')
         )
         self.env_args = load_args(
-            join(results_path, run_name, 'env_args.txt')
+            join(path, 'env_args.txt')
         )
 
-        #  self.episodes is a list
-        self.episodes = read_run_episodes(path)
-        self.episode_rewards = pd.DataFrame(
-            [ep['total_reward'] for ep in self.episodes],
-            columns='total_reward'
-        )
+        #  self.episodes is a list TODO
+        # self.episodes = read_run_episodes(path)
+        self.episode_rewards = pd.read_csv(join(path, 'episode_rewards.csv'))
 
         #  summary is a dict
-        self.summary = process_run(self.episodes)
+        # self.summary = process_run(self.episodes)
 
         if self.env_args['env_id'] == 'flex':
             plot_ep = 5
@@ -191,7 +175,7 @@ def plot_run(run):
     plot_time_series(
         run.episode_rewards,
         'total_reward',
-        fig_name=join(
+        fig_path=join(
             results_path,
             run.expt,
             run.name,
@@ -200,10 +184,10 @@ def plot_run(run):
     )
 
 
-def plot_experiment(experiment):
+def plot_experiment(runs, expt_name):
 
     all_eps = pd.concat(
-        [run.epsiode_rewards for run in experiment],
+        [run.episode_rewards for _, run in runs.items()],
         axis=1
     )
 
@@ -211,9 +195,9 @@ def plot_experiment(experiment):
         all_eps,
         all_eps.columns,
         same_plot=True,
-        fig_name=join(
+        fig_path=join(
             results_path,
-            run.expt,
+            expt_name,
             'total_episode_rewards.png'
         )
     )
@@ -222,6 +206,6 @@ def plot_experiment(experiment):
 if __name__ == '__main__':
 
     runs = process_experiment(
-        'example',
-        ['autoflex', 'random', 'dqn']
+        'cartpole_example',
+        ['dqn']
     )

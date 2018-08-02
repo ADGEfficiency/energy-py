@@ -83,7 +83,7 @@ def make_paths(
         'info_log': join(results_dir, run_name, 'info.log'),
         'env_args': join(results_dir, run_name, 'env_args.txt'),
         'agent_args': join(results_dir, run_name, 'agent_args.txt'),
-        'ep_rewards': join(results_dir, run_name, 'ep_rewards.csv'),
+        'ep_rewards': join(results_dir, run_name, 'episode_rewards.csv'),
         'memory': join(results_dir, run_name, 'memory.pkl')
     }
 

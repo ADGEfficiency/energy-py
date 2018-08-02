@@ -9,6 +9,7 @@ import csv
 import logging
 
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 
 
@@ -16,17 +17,11 @@ logger = logging.getLogger(__name__)
 
 
 class Runner(object):
-    """
-    Giving the runner total steps allows a percent of expt stat - very useful
-    Also can control how often it logs
-    """
-
     def __init__(
             self,
             sess,
             paths,
     ):
-
         self.sess = sess
         self.rewards_path = paths['ep_rewards']
         self.tb_path = paths['tb_rl']
@@ -37,7 +32,7 @@ class Runner(object):
 
         self.log_freq = 500
 
-        logger.info('Making runner - log every {} steps'.format(
+        logger.info('Making runner - log every {} episodes'.format(
             self.log_freq))
 
         self.reset()
@@ -64,16 +59,17 @@ class Runner(object):
             'min_rew': np.min(self.episode_rewards),
             'max_rew': np.max(self.episode_rewards)
         }
+        episode_number = len(self.episode_rewards)
 
         log_string = 'Episode {:0.0f} step {:0.0f}'.format(
-            len(self.episode_rewards),
+            episode_number,
             self.step,
         )
 
         logger.debug(log_string)
         [logger.debug('{} - {}'.format(k, v)) for k, v in summaries.items()]
 
-        if self.step % self.log_freq == 0:
+        if episode_number % self.log_freq == 0:
             logger.info(log_string)
             logger.info('{} - {:2.1f}'.format(
                 'avg_rew_100', summaries['avg_rew_100']
@@ -87,8 +83,6 @@ class Runner(object):
 
         self.writer.flush()
 
-        with open(self.rewards_path, 'w') as myfile:
-            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
-            wr.writerow(self.episode_rewards)
+        pd.DataFrame(data=self.episode_rewards).to_csv(self.rewards_path)
 
         self.current_episode_rewards = []
