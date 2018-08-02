@@ -42,15 +42,7 @@ class DequeMemory(BaseMemory):
                                            done))
 
     def get_batch(self, batch_size):
-        """
-        Samples a batch randomly from the memory
-
-        args
-            batch_size (int)
-
-        returns
-            batch_dict (dict)
-        """
+        """ samples a batch randomly from the memory """
         sample_size = min(batch_size, len(self))
         batch = random.sample(self.experiences, sample_size)
 

@@ -5,11 +5,11 @@ from energy_py.common.memories.memory import BaseMemory
 
 class ArrayMemory(BaseMemory):
     """
-    Experience memory replay based on numpy arrays
+    Experience replay memory where experience is randomly sampled
 
     Individual numpy arrays for each dimension of experience
 
-    First dimension of each array is the memory dimension
+    First dimension is the number of samples of experience
     """
     def __init__(
             self,
@@ -35,7 +35,8 @@ class ArrayMemory(BaseMemory):
 
     def __getitem__(self, idx):
             return (
-                self.obs[idx], self.acts[idx], self.rews[idx], self.n_obs[idx], self.term[idx]
+                self.obs[idx], self.acts[idx], self.rews[idx],
+                self.n_obs[idx], self.term[idx]
             )
 
     def remember(self, observation, action, reward, next_observation, done):
@@ -49,27 +50,18 @@ class ArrayMemory(BaseMemory):
         #  conditional to reset the counter once we end of the array
         if self.count == self.size:
             self.count = 0
-
         else:
             self.count += 1
 
     def get_batch(self, batch_size):
-        """
-        Randomly samples a batch
-
-        args
-            batch_size (int)
-
-        returns
-            batch_dict (dict)
-        """
+        """ randomly samples a batch """
         sample_size = min(batch_size, len(self))
         indicies = np.random.randint(len(self), size=sample_size)
 
-        batch_dict = {'observations': self.obs[indicies],
-                      'actions': self.acts[indicies],
-                      'rewards': self.rews[indicies],
-                      'next_observations': self.n_obs[indicies],
-                      'done': self.term[indicies]}
-
-        return batch_dict
+        return {
+            'observation': self.obs[indicies],
+            'action': self.acts[indicies],
+            'reward': self.rews[indicies],
+            'next_observation': self.n_obs[indicies],
+            'done': self.term[indicies]
+        }

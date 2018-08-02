@@ -275,7 +275,6 @@ class Run(object):
 if __name__ == '__main__':
 
     runs = process_experiment(
-        'new_flex',
-        ['autoflex', 'random', 'no_op', 'dqn1', 'dqn3']
+        'example',
+        ['autoflex', 'random', 'dqn']
     )
-

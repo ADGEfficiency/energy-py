@@ -394,6 +394,7 @@ class DQN(BaseAgent):
         #  awkward bit - finding the action indicies using np :(
         #  working on a tensorflow solution
         indicies = []
+        import pdb; pdb.set_trace()
         for action in batch['action']:
             indicies.append(
                 find_action(np.array(action).reshape(-1), self.discrete_actions)

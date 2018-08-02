@@ -125,7 +125,7 @@ class AutoFlex(BaseAgent):
 
         assert repr(self.env) == '<energy_py flex environment>'
 
-        self.minute_index = self.env.observation_space.info.index('C_minute')
+        self.hh_tick_index = self.env.observation_space.info.index('D_hh_tick')
 
         self.current_fc_index = self.env.observation_space.info.index(
             'C_forecast_electricity_price_current_hh [$/MWh]')
@@ -134,7 +134,7 @@ class AutoFlex(BaseAgent):
             'C_forecast_electricity_price_next_hh [$/MWh]')
 
     def _act(self, observation, **kwargs):
-        minute = observation[0][self.minute_index]
+        hh_tick = observation[0][self.hh_tick_index]
         current_price = observation[0][self.current_fc_index]
         next_price = observation[0][self.next_fc_index]
 
@@ -142,7 +142,7 @@ class AutoFlex(BaseAgent):
         delta = next_price - current_price
 
         #  if next price is lower, we want to not consume now (ie to store)
-        if delta < -5:
+        if delta < -5 and minute == 1:
             action = 1
             logger.debug('taking action - delta {}'.format(delta))
 
