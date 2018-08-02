@@ -3,7 +3,7 @@ import logging
 
 import numpy as np
 
-from energy_py.common.utils import dump_pickle
+from energy_py.common.utils import dump_pickle, ensure_dir
 
 logger = logging.getLogger(__name__)
 
@@ -88,4 +88,5 @@ class BaseMemory(object):
     def save(self, path):
         """ saves the memory to a pickle """
         logger.info('Saving memory to {}'.format(path))
+        ensure_dir(path)
         dump_pickle(self, path)

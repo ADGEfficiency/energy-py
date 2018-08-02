@@ -14,7 +14,6 @@ import tensorflow as tf
 import energy_py
 
 from energy_py.common.tf_utils import get_tf_params
-from energy_py.agents import DQN
 
 
 def setup_agent(sess, double_q=False):
@@ -32,7 +31,8 @@ def setup_agent(sess, double_q=False):
     env = energy_py.make_env('battery')
 
     #  use high learning rate to get weight changes
-    agent = DQN(
+    agent = energy_py.make_agent(
+        agent_id='dqn',
         sess=sess,
         env=env,
         total_steps=10,
