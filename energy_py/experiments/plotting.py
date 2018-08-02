@@ -11,7 +11,7 @@ def plot_time_series(
         data,
         y,
         figsize=[25, 10],
-        fig_name=None,
+        fig_path=None,
         same_plot=False,
         **kwargs):
 
@@ -35,9 +35,9 @@ def plot_time_series(
         a[idx].set_title(y_label)
         data.plot(y=y_label, ax=a[idx], **kwargs)
 
-    if fig_name:
-        ensure_dir(fig_name)
-        f.savefig(fig_name)
+    if fig_path:
+        ensure_dir(fig_path)
+        f.savefig(fig_path)
 
     return f
 
@@ -48,11 +48,11 @@ def plot_flex_episode(plot_data, fig_path='./'):
         plot_data,
         y=['site_demand', 'site_consumption'],
         same_plot=True,
-        fig_name=join(fig_path, 'fig1.png')
+        fig_path=join(fig_path, 'fig1.png')
     )
 
     f = plot_time_series(
         plot_data,
         y=['electricity_price', 'setpoint', 'reward', 'site_consumption'],
-        fig_name=join(fig_path, 'fig2.png')
+        fig_path=join(fig_path, 'fig2.png')
     )

@@ -159,7 +159,10 @@ class Run(object):
 
         #  self.episodes is a list
         self.episodes = read_run_episodes(path)
-        self.episode_rewards = [ep['total_reward'] for ep in self.episodes]
+        self.episode_rewards = pd.DataFrame(
+            [ep['total_reward'] for ep in self.episodes],
+            columns='total_reward'
+        )
 
         #  summary is a dict
         self.summary = process_run(self.episodes)
@@ -186,10 +189,34 @@ class Run(object):
 def plot_run(run):
 
     plot_time_series(
-    pass
+        run.episode_rewards,
+        'total_reward',
+        fig_name=join(
+            results_path,
+            run.expt,
+            run.name,
+            'total_episode_rewards.png'
+        )
+    )
 
-def plot_experiment():
-    pass
+
+def plot_experiment(experiment):
+
+    all_eps = pd.concat(
+        [run.epsiode_rewards for run in experiment],
+        axis=1
+    )
+
+    plot_time_series(
+        all_eps,
+        all_eps.columns,
+        same_plot=True,
+        fig_name=join(
+            results_path,
+            run.expt,
+            'total_episode_rewards.png'
+        )
+    )
 
 
 if __name__ == '__main__':

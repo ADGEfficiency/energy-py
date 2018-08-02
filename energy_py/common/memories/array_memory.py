@@ -25,25 +25,14 @@ class ArrayMemory(BaseMemory):
         self.n_obs = np.empty((self.size, *self.shapes['next_observation']))
         self.term = np.empty((self.size, *self.shapes['done']), dtype=bool)
 
-        self._count = -1
-
-    @property
-    def count(self):
-        return self._count
-
-    @count.getter
-    def count(self):
-        print(self.count, self.size)
-        if self.count == self.size:
-            self.count = 0
-        else:
-            self.count += 1
+        self.cursor = 0
+        self.count = 0
 
     def __repr__(self):
         return '<class ArrayMemory size={}>'.format(self.size)
 
     def __len__(self):
-        return self.count
+        return min(self.count, self.size)
 
     def __getitem__(self, idx):
             return (
@@ -53,13 +42,19 @@ class ArrayMemory(BaseMemory):
 
     def remember(self, observation, action, reward, next_observation, done):
         """ adds experience to the memory """
-        self.obs[self.count] = observation
-        self.acts[self.count] = action
-        self.rews[self.count] = reward
-        self.n_obs[self.count] = next_observation
-        self.term[self.count] = done
+        self.obs[self.cursor] = observation
+        self.acts[self.cursor] = action
+        self.rews[self.cursor] = reward
+        self.n_obs[self.cursor] = next_observation
+        self.term[self.cursor] = done
 
-        count = self.count
+        #  conditional to reset the counter once we end of the array
+        if self.cursor == self.size - 1:
+            self.cursor = 0
+        else:
+            self.cursor += 1
+
+        self.count += 1
 
     def get_batch(self, batch_size):
         """ randomly samples a batch """
