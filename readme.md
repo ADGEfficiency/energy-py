@@ -1,6 +1,6 @@
 # energy_py
 
-energy_py supports reinforcement learning for energy systems.  This library provides agents and environments, as well as tools to run experiments. 
+energy_py supports running reinforcement learning experiments on energy environments.
 
 energy_py is built and maintained by Adam Green - [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  
 
@@ -11,7 +11,15 @@ energy_py is built and maintained by Adam Green - [adam.green@adgefficiency.com]
 
 ## Basic usage
 
-energy_py provides a simple and familiar low-level API for agent and environment initialization and interactions
+The most common access point for a user will be to run an experiment.  The experiment is setup using config files that live in `energy_py/experiments/configs`.  An experiment is run by passing the experiment name and run name as arguments
+
+```bash
+$ cd energy_py/experiments
+
+$ python experiment.py example dqn
+```
+
+energy_py provides a simple and familiar gym style low-level API for agent and environment initialization and interactions
 
 ```python
 import energy_py
@@ -31,14 +39,6 @@ while not done:
     next_observation, reward, done, info = env.step(action)
     training_info = agent.learn()
     observation = next_observation
-```
-
-The most common access point for a user will be to run an experiment.  The experiment is setup using config files that live in `energy_py/experiments/configs`.  An experiment is run by passing the experiment name and run name as arguments
-
-```bash
-$ cd energy_py/experiments
-
-$ python experiment.py example dqn
 ```
 
 Results for this run are then available at
@@ -106,11 +106,11 @@ The design philosophies of energy_py
 - utilize TensorFlow & TensorBoard
 - provide sensible defaults for args
 
-energy_py was heavily infulenced by Open AI [baselines](https://github.com/openai/baselines) and [gym](https://github.com/openai/gym).
+energy_py was heavily influenced by Open AI [baselines](https://github.com/openai/baselines) and [gym](https://github.com/openai/gym).
 
 ### Agents
 
-energy_py is currently focused on a high quality impelementation of DQN ([ref Mnih et. al (2015)](https://web.stanford.edu/class/psych209/Readings/MnihEtAlHassibis15NatureControlDeepRL.pdf)) and along with naive and heuristic agents for comparison.
+energy_py is currently focused on a high quality implementation of DQN ([ref Mnih et. al (2015)](https://web.stanford.edu/class/psych209/Readings/MnihEtAlHassibis15NatureControlDeepRL.pdf)) and along with naive and heuristic agents for comparison.
 
 DQN was chosen because
 
@@ -127,7 +127,7 @@ usually custom built for a specific environment.  Examples of heuristic agents i
 energy_py provides custom built models of energy environments and wraps around Open AI gym.  Support for basic gym
 models is included to allow debugging of agents with familiar environments.
 
-Beware that gym deals with random seeds for action spaces in [particuar ways](https://github.com/openai/gym/blob/master/gym/spaces/prng.py).  v0 of gym environments [ignore the selected action 25% of the time](http://amid.fish/reproducing-deep-rl) and repeat the previous action (to make environment more stochastic).  v4 can remove this randomness.
+Beware that gym deals with random seeds for action spaces in [particular ways](https://github.com/openai/gym/blob/master/gym/spaces/prng.py).  v0 of gym environments [ignore the selected action 25% of the time](http://amid.fish/reproducing-deep-rl) and repeat the previous action (to make environment more stochastic).  v4 can remove this randomness.
 
 **CartPole-v0**
 

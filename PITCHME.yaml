@@ -1,0 +1,3 @@
+highlight : tomorrow
+theme: simple
+theme-override : PITCHME.css
