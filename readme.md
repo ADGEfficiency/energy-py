@@ -91,20 +91,25 @@ $ python setup.py develop (developing package)
 $ pip install --ignore-installed -r requirements.txt
 
 ```
-### Project 
+### Philosophy
 
 The aim of energy_py is to provide 
+
 - high quality implementations of agents suited to solving energy problems
-- mutiple energy environments
+- energy environments based on decarbonization problems
 - tools to run experiments
 
-The design philosophies of energy_py
+The design philosophies of energy_py are
+
 - simplicity
 - iterative design
-- simple class heirarchy structure (maximum of two levels)
+- simple class hierarchy structure (maximum of two levels)
+- ideally code will document itself - comments only used when needed
 - utilize Python standard library (deques, namedtuples etc) 
-- utilize TensorFlow & TensorBoard
+- utilize tensorflow & tensorboard
 - provide sensible defaults for args
+
+Preference is given to improving and iterating on existing designs over implementing new agents or environments.
 
 energy_py was heavily influenced by Open AI [baselines](https://github.com/openai/baselines) and [gym](https://github.com/openai/gym).
 
