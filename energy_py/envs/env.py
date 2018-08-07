@@ -30,8 +30,8 @@ class BaseEnv(object):
 
         logger.info('Initializing environment {}'.format(repr(self)))
 
-        self.state_space = GlobalSpace('state').from_dataset(dataset)
-        self.observation_space = GlobalSpace('observation').from_dataset(dataset)
+        self.state_space = GlobalSpace('state').from_dataset(str(dataset))
+        self.observation_space = GlobalSpace('observation').from_dataset(str(dataset))
 
         if episode_sample == 'random':
             self.sample_stragety = self.random_sample
