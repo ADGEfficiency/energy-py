@@ -37,7 +37,7 @@ registry = make_registry()
 
 
 def get_dataset_path(dataset_name):
-    return registry[dataset_name]
+    return registry[str(dataset_name)]
 
 
 def load_dataset(dataset_name, space):
