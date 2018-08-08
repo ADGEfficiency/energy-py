@@ -6,7 +6,7 @@ import tensorflow as tf
 import energy_py
 
 from energy_py.agents.agent import BaseAgent
-from energy_py.common.networks import feed_forward
+from energy_py.common.networks import feed_forward_network
 from energy_py.common.policies import epsilon_greedy_policy, softmax_policy
 
 from energy_py.common.np_utils import find_sub_array_in_2D_array as find_action
@@ -157,9 +157,7 @@ class DQN(BaseAgent):
 
         with tf.variable_scope('online') as scope:
 
-            import pdb; pdb.set_trace()
-
-            self.online_q_values = feed_forward(
+            self.online_q_values = feed_forward_network(
                 'online_obs',
                 self.observation,
                 self.observation_space.shape,
@@ -174,7 +172,7 @@ class DQN(BaseAgent):
             if self.double_q:
                 scope.reuse_variables()
 
-                self.online_next_obs_q = feed_forward(
+                self.online_next_obs_q = feed_forward_network(
                     'online_next_obs',
                     self.next_observation,
                     self.observation_space.shape,
@@ -213,7 +211,7 @@ class DQN(BaseAgent):
 
     def build_learning_graph(self):
         with tf.variable_scope('target', reuse=False):
-            self.target_q_values = feed_forward(
+            self.target_q_values = feed_forward_network(
                 'target',
                 self.next_observation,
                 self.observation_space.shape,

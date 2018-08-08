@@ -1,8 +1,11 @@
 # import cupy as cp
+import logging
 import numpy as np
 
 from functools import reduce
 import operator
+
+logger = logging.getLogger(__name__)
 
 board_size = 4
 
@@ -24,7 +27,7 @@ def add_number(board):
     empty_pos = board == 0
     n_empty = np.sum(empty_pos,axis=(1), keepdims=True)
     pos = np.floor(np.random.random((board.shape[0],1))*n_empty).astype(np.int)
-    
+
     e_sum = np.cumsum(empty_pos, axis=1)-1
     e_sum[~empty_pos] = -1
     mask = (e_sum == pos)
@@ -34,9 +37,9 @@ def add_number(board):
 
 def move(board, direction):
     board = board.copy()
-    horizontal = direction % 2 == 1  
+    horizontal = direction % 2 == 1
     invert = direction > 2
-    
+
     board[horizontal] = np.transpose(board[horizontal], axes=(0, 2, 1))
     board[invert] = np.flip(board[invert], axis=1)
 
@@ -58,7 +61,7 @@ def up_step(board):
     board = np.moveaxis(board, 0, 2)
     for i in range(board.shape[0] - 1):
         is_same = (board[i] == board[i + 1])
-        
+
         board[i, is_same] = 2 * board[i, is_same]
         board[i + 1, is_same] = 0
 
@@ -92,7 +95,10 @@ class Games:
             np.ones_like(actions)
         )
 
-        return self.boards, rewards, is_game_over, {}
+        if is_game_over:
+            logger.info(self.boards)
+
+        return self.boards, rewards, is_game_over, {'board': self.boards}
 
 def test_empty():
     empty = empty_boards()
@@ -119,7 +125,7 @@ def test_squash():
 
     squashed = empty_boards()
     squashed[:, 0, 0] = 4
-    
+
     assert((squashed == up(falling)).all())
 
 def test_sum_constant():

@@ -9,7 +9,7 @@ def fully_connected_layer(
         activation='relu'
 ):
     """
-    Creates a single fully connected layer
+    a single fully connected layer
 
     args
         scope (str) usually 'input_layer' or 'hidden_layer_2' etc
@@ -17,10 +17,6 @@ def fully_connected_layer(
         input_shape (tuple or int)
         output_nodes (int)
         activation (str) currently support relu or linear
-
-    To correctly name the variables and still allow variable sharing:
-    with tf.name_scope('online_network):
-        layer = fully_connected_layer('input_layer', ...)
 
     """
     #  feed input shape as a tuple for support for high dimensional inputs
@@ -55,3 +51,22 @@ def fully_connected_layer(
     else:
         raise ValueError(
             'Activation of {} not supported'.format(activation))
+
+
+def convolutional_layer(
+        scope,
+        input_tensor,
+        filters,
+        kernel_size, 
+        stride,
+):
+    """ a single convolutional layer """
+
+    with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
+        return tf.layers.conv2d(
+            inputs=input_tensor,
+            filters=filters,
+            kernel_size=kernel_size,
+            strides=stride,
+            activation=tf.nn.relu
+        )
