@@ -23,3 +23,18 @@ class ContinuousSpace(object):
     def discretize(self, n_discr):
         return np.linspace(self.low, self.high, n_discr).tolist()
 
+
+class ImageSpace(object):
+    """
+    2D image
+    """
+
+    def __init__(self, low, high, shape):
+        self.low  = float(low)
+        self.high = float(high)
+        self.shape = shape
+
+    def contains(self, x):
+        return x.shape == self.shape and (x >= self.low).all() and (x <= self.high).all()
+
+

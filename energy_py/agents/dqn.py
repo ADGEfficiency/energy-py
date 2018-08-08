@@ -157,6 +157,8 @@ class DQN(BaseAgent):
 
         with tf.variable_scope('online') as scope:
 
+            import pdb; pdb.set_trace()
+
             self.online_q_values = feed_forward(
                 'online_obs',
                 self.observation,

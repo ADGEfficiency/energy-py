@@ -189,7 +189,7 @@ if __name__ == '__main__':
     test_steps = int(expt_config['test_steps'])
 
     #  could pop this in the setup_expt
-    seed = run_config.pop('seed')
+    seed = run_config.pop('seed', None)
 
     #  could hve a way to copy run config args into the env
     #  sometimes we want to change more than the agent/seed - ie episode sampling

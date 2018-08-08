@@ -42,10 +42,10 @@ class ArrayMemory(BaseMemory):
 
     def remember(self, observation, action, reward, next_observation, done):
         """ adds experience to the memory """
-        self.obs[self.cursor] = observation
+        self.obs[self.cursor] = observation.reshape(*self.shapes['observation'])
         self.acts[self.cursor] = action
         self.rews[self.cursor] = reward
-        self.n_obs[self.cursor] = next_observation
+        self.n_obs[self.cursor] = next_observation.reshape(*self.shapes['observation'])
         self.term[self.cursor] = done
 
         #  conditional to reset the counter once we end of the array
