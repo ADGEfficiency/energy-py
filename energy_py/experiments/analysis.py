@@ -146,7 +146,12 @@ class Run(object):
 
         #  self.episodes is a list TODO
         # self.episodes = read_run_episodes(path)
-        self.episode_rewards = pd.read_csv(join(path, 'episode_rewards.csv'))
+        self.episode_rewards = pd.read_csv(
+            join(path, 'episode_rewards.csv'),
+            index_col=0
+        )
+
+        self.episode_rewards.columns = [self.name]
 
         #  summary is a dict
         # self.summary = process_run(self.episodes)
@@ -161,7 +166,7 @@ class Run(object):
                     fig_path=join(
                         results_path,
                         self.expt,
-                        self.name,
+                        elf.name,
                         'episode_{}'.format(episode)
                     )
                 )
@@ -175,6 +180,7 @@ def plot_run(run):
     plot_time_series(
         run.episode_rewards,
         'total_reward',
+        kind='line',
         fig_path=join(
             results_path,
             run.expt,
@@ -207,5 +213,5 @@ if __name__ == '__main__':
 
     runs = process_experiment(
         'cartpole_example',
-        ['dqn']
+        ['dqn', 'random']
     )
