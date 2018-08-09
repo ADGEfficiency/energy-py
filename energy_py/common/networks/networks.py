@@ -14,7 +14,8 @@ def feed_forward_network(
         input_shape,
         layers,
         output_nodes,
-        output_activation='linear'
+        output_activation='linear',
+        **kwargs  #  used to soak up args used for conv only
 ):
     """
     Creates a feed forward neural network (aka multilayer perceptron)
@@ -68,7 +69,9 @@ def convolutional_network(
         layers,
 
         output_nodes,
-        output_activation='linear'
+        output_activation='linear',
+        **kwargs  #  used to soak up args used for ff only
+
 ):
     """
 

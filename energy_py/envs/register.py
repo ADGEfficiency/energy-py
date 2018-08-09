@@ -1,8 +1,4 @@
-"""
-A registry for environments supported by energy_py
-
-Combination of native energy_py environments and wrapped gym environments
-"""
+""" register for energy_py and gym envs """
 
 import logging
 

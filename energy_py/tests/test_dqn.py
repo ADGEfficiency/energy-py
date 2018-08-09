@@ -1,11 +1,4 @@
-"""
-Test suite for DQN
-
-Issue where I don't ahve any terminals!!!
-
-Maybe better to redo the memory as randomly sampling rather than
-stepping
-"""
+""" test suite for DQN """
 import random
 
 import numpy as np

@@ -12,6 +12,9 @@ from energy_py.common.policies import epsilon_greedy_policy, softmax_policy
 from energy_py.common.np_utils import find_sub_array_in_2D_array as find_action
 from energy_py.common.tf_utils import make_copy_ops, get_tf_params
 
+from energy_py import make_network
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -22,8 +25,15 @@ class DQN(BaseAgent):
             total_steps=10000,
 
             double_q=False,
-            num_discrete_actions=20,
+            network='ff',
+
+            filters=None,
+            kernels=None,
+            strides=None,
+
             layers=(64, 32, 16),
+
+            num_discrete_actions=20,
 
             memory_fraction=0.2,
 
@@ -63,6 +73,12 @@ class DQN(BaseAgent):
             num_discrete_actions)
 
         self.num_actions = self.discrete_actions.shape[0]
+
+        self.network_id = network
+
+        self.filters = filters
+        self.kernels = kernels
+        self.strides = strides
 
         if isinstance(layers, str):
             layers = layers.split(',')
@@ -157,12 +173,26 @@ class DQN(BaseAgent):
 
         with tf.variable_scope('online') as scope:
 
-            self.online_q_values = feed_forward_network(
-                'online_obs',
-                self.observation,
-                self.observation_space.shape,
-                self.layers,
-                self.num_actions,
+            # self.online_q_values = feed_forward_network(
+            #     'online_obs',
+            #     self.observation,
+            #     self.observation_space.shape,
+            #     self.layers,
+            #     self.num_actions,
+            # )
+
+            self.online_q_values = make_network(
+                network_id=self.network_id,
+
+                scope='online_obs',
+                input_tensor=self.observation,
+                input_shape=self.observation_space.shape,
+                layers=self.layers,
+                output_nodes=self.num_actions,
+
+                filters=self.filters,
+                kernels=self.kernels,
+                strides=self.strides
             )
 
             self.act_summaries.extend([
@@ -172,12 +202,26 @@ class DQN(BaseAgent):
             if self.double_q:
                 scope.reuse_variables()
 
-                self.online_next_obs_q = feed_forward_network(
-                    'online_next_obs',
-                    self.next_observation,
-                    self.observation_space.shape,
-                    self.layers,
-                    self.num_actions,
+                # self.online_next_obs_q = feed_forward_network(
+                #     'online_next_obs',
+                #     self.next_observation,
+                #     self.observation_space.shape,
+                #     self.layers,
+                #     self.num_actions,
+                # )
+
+                self.online_next_obs_q = make_network(
+                    network_id=self.network_id,
+
+                    scope='online_next_obs',
+                    input_tensor=self.next_observation,
+                    input_shape=self.observation_space.shape,
+                    layers=self.layers,
+                    output_nodes=self.num_actions,
+
+                    filters=self.filters,
+                    kernels=self.kernels,
+                    strides=self.strides
                 )
 
         with tf.variable_scope('{}_policy'.format(self.policy)):
@@ -211,12 +255,26 @@ class DQN(BaseAgent):
 
     def build_learning_graph(self):
         with tf.variable_scope('target', reuse=False):
-            self.target_q_values = feed_forward_network(
-                'target',
-                self.next_observation,
-                self.observation_space.shape,
-                self.layers,
-                self.num_actions,
+            # self.target_q_values = feed_forward_network(
+            #     'target',
+            #     self.next_observation,
+            #     self.observation_space.shape,
+            #     self.layers,
+            #     self.num_actions,
+            # )
+
+            self.target_q_values = make_network(
+                network_id=self.network_id,
+
+                scope='target',
+                input_tensor=self.next_observation,
+                input_shape=self.observation_space.shape,
+                layers=self.layers,
+                output_nodes=self.num_actions,
+
+                filters=self.filters,
+                kernels=self.kernels,
+                strides=self.strides
             )
 
         self.online_params = get_tf_params('online')
