@@ -10,12 +10,16 @@ from energy_py.common.spaces.continuous import ImageSpace
 
 class Game2048(object):
 
-    def __init__(self):
+    def __init__(
+            self,
+            observation_dims='flat'
+    ):
         self.n_boards = 1
         self.N = 4
         self.game = Games(
             n_boards=self.n_boards,
-            N=self.N
+            N=self.N,
+            observation_dims=observation_dims
         )
 
         self.action_space = GlobalSpace('action').from_spaces(
@@ -23,7 +27,15 @@ class Game2048(object):
             'move_tile'
         )
 
-        self.observation_space = ImageSpace(low=0, high=2048, shape=(16,))
+        if observation_dims == 'flat':
+            self.observation_space = ImageSpace(
+                low=0, high=2048, shape=(16,)
+            )
+
+        elif observation_dims == '2D':
+            self.observation_space = ImageSpace(
+                low=0, high=2048, shape=(4, 4, 1)
+            )
 
     def step(self, action):
         action = action.reshape(self.n_boards)

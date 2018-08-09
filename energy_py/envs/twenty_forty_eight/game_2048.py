@@ -74,9 +74,16 @@ def up_step(board):
     return board
 
 class Games:
-    def __init__(self, n_boards, N=4):
+    def __init__(
+            self,
+            n_boards,
+            N=4,
+            observation_dims='flat'
+    ):
         self.boards = empty_boards(n_boards=n_boards, N=N)
         self.n_boards = n_boards
+
+        self.observation_dims = observation_dims
 
     def step(self, actions):
         previous_boards = self.boards
@@ -97,6 +104,12 @@ class Games:
 
         if is_game_over:
             logger.info(self.boards)
+
+        if self.observation_dims == 'flat':
+            observation = self.boards.reshape(1, 16)
+
+        elif self.observation_dims == '2D':
+            observation = self.boards.reshape(1, 4, 4)
 
         return self.boards, rewards, is_game_over, {'board': self.boards}
 

@@ -35,18 +35,21 @@ class ArrayMemory(BaseMemory):
         return min(self.count, self.size)
 
     def __getitem__(self, idx):
-            return (
-                self.obs[idx], self.acts[idx], self.rews[idx],
-                self.n_obs[idx], self.term[idx]
-            )
+        return (
+            self.obs[idx],
+            self.acts[idx].reshape(1, *self.shapes['action']),
+            self.rews[idx],
+            self.n_obs[idx],
+            self.term[idx]
+        )
 
     def remember(self, observation, action, reward, next_observation, done):
         """ adds experience to the memory """
-        self.obs[self.cursor] = observation.reshape(*self.shapes['observation'])
-        self.acts[self.cursor] = action
-        self.rews[self.cursor] = reward
-        self.n_obs[self.cursor] = next_observation.reshape(*self.shapes['observation'])
-        self.term[self.cursor] = done
+        self.obs[self.cursor] = observation.reshape(1, *self.shapes['observation'])
+        self.acts[self.cursor] = action.reshape(1, *self.shapes['action'])
+        self.rews[self.cursor] = np.array(reward).reshape(1, *self.shapes['reward'])
+        self.n_obs[self.cursor] = next_observation.reshape(1, *self.shapes['observation'])
+        self.term[self.cursor] = done.reshape(1, *self.shapes['done'])
 
         #  conditional to reset the counter once we end of the array
         if self.cursor == self.size - 1:

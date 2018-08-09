@@ -142,12 +142,20 @@ def load_args(path, drop=True):
             return lines
 
 
-
 def test_index_length(df, freq):
     test_idx = pd.DatetimeIndex(
         start=df.index[0],
         end=df.index[-1],
         freq=freq
     )
-
     assert test_idx.shape[0] == df.shape[0]
+
+
+def read_iterable_from_config(argument):
+    if isinstance(argument, str):
+        argument = argument.split(',')
+        argument = [int(argument) for argument in argument]
+    else:
+        argument = tuple(argument)
+
+    return argument

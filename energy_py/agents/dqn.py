@@ -11,6 +11,7 @@ from energy_py.common.policies import epsilon_greedy_policy, softmax_policy
 
 from energy_py.common.np_utils import find_sub_array_in_2D_array as find_action
 from energy_py.common.tf_utils import make_copy_ops, get_tf_params
+from energy_py.common.utils import read_iterable_from_config
 
 from energy_py import make_network
 
@@ -71,20 +72,13 @@ class DQN(BaseAgent):
 
         self.discrete_actions = self.env.action_space.discretize(
             num_discrete_actions)
-
         self.num_actions = self.discrete_actions.shape[0]
 
         self.network_id = network
-
-        self.filters = filters
-        self.kernels = kernels
-        self.strides = strides
-
-        if isinstance(layers, str):
-            layers = layers.split(',')
-            self.layers = [int(layers) for layers in layers]
-        else:
-            self.layers = tuple(layers)
+        self.layers = read_iterable_from_config(layers)
+        self.filters = read_iterable_from_config(filters)
+        self.kernels = read_iterable_from_config(kernels)
+        self.strides = read_iterable_from_config(strides)
 
         self.policy = str(policy)
         self.epsilon_decay_fraction = float(epsilon_decay_fraction)

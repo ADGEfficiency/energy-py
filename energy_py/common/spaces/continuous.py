@@ -37,4 +37,5 @@ class ImageSpace(object):
     def contains(self, x):
         return x.shape == self.shape and (x >= self.low).all() and (x <= self.high).all()
 
-
+    def sample(self):
+        return np.random.uniform(low=self.low, high=self.high, size=self.shape)

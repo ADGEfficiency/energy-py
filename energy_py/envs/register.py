@@ -6,7 +6,7 @@ from energy_py.envs.flex import Flex
 from energy_py.envs.battery import Battery
 from energy_py.envs.gym import CartPoleEnv, PendulumEnv, MountainCarEnv
 
-from energy_py.envs.games.ep_wrapper import Game2048
+from energy_py.envs.twenty_forty_eight.ep_wrapper import Game2048
 
 
 logger = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ env_register = {
     'cartpole-v0': CartPoleEnv,
     'pendulum-v0': PendulumEnv,
     'mountaincar-v0': MountainCarEnv,
-    'game': Game2048
+    '2048': Game2048
 }
 
 
