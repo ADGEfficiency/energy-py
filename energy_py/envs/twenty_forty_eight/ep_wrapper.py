@@ -46,9 +46,3 @@ class Game2048(object):
             self.n_boards, self.N
         )
         return self.game.boards
-
-env = Game2048()
-
-obs = env.reset()
-
-obs, rew, done, _ = env.step(np.array([1]))
