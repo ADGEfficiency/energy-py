@@ -84,9 +84,9 @@ $ git clone https://github.com/ADGEfficiency/energy_py.git
 
 $ cd energy_py
 
-$ python setup.py install (using package)
-or
-$ python setup.py develop (developing package)
+#  currently the package only works when installed as develop
+#  this is to do with how the dataset csvs are loaded - [see issue here](https://github.com/ADGEfficiency/energy_py/issues/34)
+$ python setup.py develop 
 
 $ pip install --ignore-installed -r requirements.txt
 
