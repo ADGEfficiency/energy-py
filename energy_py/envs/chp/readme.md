@@ -21,6 +21,8 @@ The carbon value of CHP is a function of
 
 This model is based on natural gas as the fuel in gas turbines, gas engines, steam boilers.
 
+The carbon value of CHP in the real world depends 
+
 ### Technical
 
 The aim of this model is to introduce all the common components of a CHP system 
@@ -49,6 +51,8 @@ energy in = energy out
 
 mass flow in * enthalpy in = mass flow out * enthalpy out
 ```
+
+For example - consider the mass and energy balance around a steam header.  The mass balance will change as the loads on gas turbines etc change, or as demand for steam changes.  The energy balance will change as these different temperature and pressure (ie enthalpy) inputs and outputs changes. 
 
 This means that the engineer must choose whether to balance either mass or energy.  Steam based systems (i.e. combined cycle gas turbines) can be balanced using mass.  Hot water systems (i.e. district heating) can be balanced using heat.  
 
