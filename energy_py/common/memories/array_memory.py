@@ -19,11 +19,13 @@ class ArrayMemory(BaseMemory):
         super().__init__(env, size)
         self.type = 'array'
 
-        self.obs = np.empty((self.size, *self.shapes['observation']))
-        self.acts = np.empty((self.size, *self.shapes['action']))
-        self.rews = np.empty((self.size, *self.shapes['reward']))
-        self.n_obs = np.empty((self.size, *self.shapes['next_observation']))
-        self.term = np.empty((self.size, *self.shapes['done']), dtype=bool)
+        empty = np.empty
+
+        self.obs = empty((self.size, *self.shapes['observation']))
+        self.acts = empty((self.size, *self.shapes['action']))
+        self.rews = empty((self.size, *self.shapes['reward']))
+        self.n_obs = empty((self.size, *self.shapes['next_observation']))
+        self.term = empty((self.size, *self.shapes['done']), dtype=bool)
 
         self.cursor = 0
         self.count = 0
@@ -45,11 +47,22 @@ class ArrayMemory(BaseMemory):
 
     def remember(self, observation, action, reward, next_observation, done):
         """ adds experience to the memory """
-        self.obs[self.cursor] = observation.reshape(1, *self.shapes['observation'])
-        self.acts[self.cursor] = action.reshape(1, *self.shapes['action'])
-        self.rews[self.cursor] = np.array(reward).reshape(1, *self.shapes['reward'])
-        self.n_obs[self.cursor] = next_observation.reshape(1, *self.shapes['observation'])
-        self.term[self.cursor] = done.reshape(1, *self.shapes['done'])
+        ar = np.array
+
+        self.obs[self.cursor] = ar(observation).reshape(
+            1, *self.shapes['observation'])
+
+        self.acts[self.cursor] = ar(action).reshape(
+            1, *self.shapes['action'])
+
+        self.rews[self.cursor] = ar(reward).reshape(
+            1, *self.shapes['reward'])
+
+        self.n_obs[self.cursor] = ar(next_observation).reshape(
+            1, *self.shapes['observation'])
+
+        self.term[self.cursor] = ar(done).reshape(
+            1, *self.shapes['done'])
 
         #  conditional to reset the counter once we end of the array
         if self.cursor == self.size - 1:

@@ -76,9 +76,11 @@ class DQN(BaseAgent):
 
         self.network_id = network
         self.layers = read_iterable_from_config(layers)
-        self.filters = read_iterable_from_config(filters)
-        self.kernels = read_iterable_from_config(kernels)
-        self.strides = read_iterable_from_config(strides)
+
+        if self.network_id == 'conv':
+            self.filters = read_iterable_from_config(filters)
+            self.kernels = read_iterable_from_config(kernels)
+            self.strides = read_iterable_from_config(strides)
 
         self.policy = str(policy)
         self.epsilon_decay_fraction = float(epsilon_decay_fraction)
@@ -189,7 +191,7 @@ class DQN(BaseAgent):
                 strides=self.strides
             )
 
-            self.act_summaries.extend([
+            self.summaries['acting'].extend([
                 tf.summary.histogram('acting_q_values', self.online_q_values)
             ])
 
@@ -360,7 +362,7 @@ class DQN(BaseAgent):
                         var
                         )
 
-                        self.learn_summaries.append(tf.summary.histogram(
+                        self.summaries['learning'].append(tf.summary.histogram(
                             '{}_gradient'.format(
                                 var.name.replace(':', '_')),
                             grad)
@@ -368,13 +370,13 @@ class DQN(BaseAgent):
 
                 self.train_op = optimizer.apply_gradients(grads_and_vars)
 
-        self.act_summaries.extend([
+        self.summaries['acting'].extend([
             tf.summary.scalar('learning_rate', self.learning_rate),
             tf.summary.scalar('epsilon', self.epsilon),
             tf.summary.scalar('explore_toggle', self.explore_toggle),
                                ])
 
-        self.act_summaries.extend([
+        self.summaries['acting'].extend([
             tf.summary.histogram(
                 self.online_params[-1].name.replace(':', '_'),
                 self.online_params[-1]),
@@ -390,7 +392,7 @@ class DQN(BaseAgent):
                 self.target_params[-2]),
                                ])
 
-        self.learn_summaries.extend([
+        self.summaries['learning'].extend([
             tf.summary.histogram('bellman', self.bellman),
             tf.summary.histogram('bellman_norm', bellman_norm),
             tf.summary.scalar('loss', loss),
@@ -399,8 +401,8 @@ class DQN(BaseAgent):
             tf.summary.histogram('target_q_values', self.target_q_values),
                                ])
 
-        self.act_summaries = tf.summary.merge(self.act_summaries)
-        self.learn_summaries = tf.summary.merge(self.learn_summaries)
+        self.summaries['acting'] = tf.summary.merge(self.summaries['acting'])
+        self.summaries['learning'] = tf.summary.merge(self.summaries['learning'])
 
         self.sess.run(
             tf.global_variables_initializer()
@@ -418,14 +420,14 @@ class DQN(BaseAgent):
     def _act(self, observation, explore=1.0):
         """ selecting an action based on an observation """
         action, summary = self.sess.run(
-            [self.policy, self.act_summaries],
+            [self.policy, self.summaries['acting']],
             {self.learn_step_tensor: self.learn_step,
              self.explore_toggle: float(explore),
              self.observation: observation}
         )
 
-        self.act_writer.add_summary(summary, self.act_step)
-        self.act_writer.flush()
+        self.writers['acting'].add_summary(summary, self.act_step)
+        self.writers['acting'].flush()
 
         logger.debug('observation {}'.format(observation))
         logger.debug('action {}'.format(action))
@@ -452,7 +454,7 @@ class DQN(BaseAgent):
             )
 
         _, summary = self.sess.run(
-            [self.train_op, self.learn_summaries],
+            [self.train_op, self.summaries['learning']],
             {self.learn_step_tensor: self.learn_step,
              self.observation: batch['observation'],
              self.selected_action_indicies: indicies,
@@ -461,8 +463,8 @@ class DQN(BaseAgent):
              self.terminal: batch['done']  #  should be ether done or terminal TODO
              }
         )
-        self.learn_writer.add_summary(summary, self.learn_step)
-        self.learn_writer.flush()
+        self.writers['learning'].add_summary(summary, self.learn_step)
+        self.writers['learning'].flush()
 
         if self.learn_step % self.update_target_net == 0:
             _ = self.sess.run(

@@ -1,3 +1,4 @@
+from collections import defaultdict
 import logging
 
 import tensorflow as tf
@@ -47,11 +48,25 @@ class BaseAgent(object):
         self.learn_step = 0
 
         #  TODO replace the lists with defaultdict(list)
-        self.act_summaries = []
-        self.act_writer = tf.summary.FileWriter(act_path)
+        # self.act_summaries = []
+        # self.act_writer = tf.summary.FileWriter(act_path)
 
-        self.learn_summaries = []
-        self.learn_writer = tf.summary.FileWriter(learn_path)
+        # self.learn_summaries = []
+        # self.learn_writer = tf.summary.FileWriter(learn_path)
+
+        self.summaries = {
+            'acting': [],
+            'learning': []
+        }
+        self.writers = {
+            'acting': tf.summary.FileWriter(act_path),
+            'learning': tf.summary.FileWriter(learn_path)
+        }
+
+        #  TODO
+        self.filters = None
+        self.kernels = None
+        self.strides = None
 
     def reset(self):
         """
