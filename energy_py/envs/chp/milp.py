@@ -30,28 +30,17 @@ class GasTurbine(object):
     ):
         self.prob = prob
 
-        #  MW
         self.size = size
+
+        self.cont = LpVariable(name, 0, self.ub)
+        self.binary = LpVariable('{}_bin'.format(name), lowBound=0, upBound=1, cat='Integer')
+
+        self.load = self.cont * (1/100)
 
         self.effy = {
             'electrical': 0.28,
             'thermal': 0.4
         }
-
-        #  %
-        self.cont = LpVariable(name, 0, self.ub)
-
-        # self.binary = LpVariable(
-        #     '{}_binary'.format(name),
-        #     0,
-        #     1,
-        #     cat='Integer'
-        # )
-
-        self.binary = LpVariable('bin', lowBound=0, upBound=1, cat='Integer')
-
-        #  MW
-        self.load = self.cont * (1/100)
 
     def steam_generated(self):
         """ t/h """
@@ -78,13 +67,18 @@ class Boiler(object):
             parasitics=0.0
     ):
         self.prob = prob
+
+        self.lb = min_turndown
+        self.ub = size
+
+        self.cont = LpVariable(name, 0, size)
+        self.binary = LpVariable('{}_bin'.format(name), lowBound=0, upBound=1, cat='Integer')
+        self.load = self.cont
+
         self.effy = {
             'thermal': 0.8
         }
 
-        #  t/h
-        self.load = LpVariable(name, min_turndown, size)
-        #  MW
         self.parasitics = parasitics
 
     def steam_generated(self):
@@ -121,11 +115,12 @@ prob += sum([asset.gas_burnt() for asset in assets]) * gas_price \
     - sum([asset.power_generated() for asset in assets]) * electricity_price
 
 #  then add constraints
-prob += sum([asset.steam_generated() for asset in assets]) == 10
+prob += sum([asset.steam_generated() for asset in assets]) == 100
 
 #  asset constraints
-prob += assets[0].cont - assets[0].ub * assets[0].binary <= 0
-prob += assets[0].lb * assets[0].binary - assets[0].cont <= 0
+for asset in assets:
+    prob += asset.cont - asset.ub * asset.binary <= 0
+    prob += asset.lb * asset.binary - asset.cont <= 0
 
 prob.writeLP('chp.lp')
 
