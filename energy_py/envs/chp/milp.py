@@ -114,8 +114,10 @@ assets = [
 prob += sum([asset.gas_burnt() for asset in assets]) * gas_price \
     - sum([asset.power_generated() for asset in assets]) * electricity_price
 
-#  then add constraints
-prob += sum([asset.steam_generated() for asset in assets]) == 100
+prob += sum([asset.steam_generated() for asset in assets]) == 100, 'steam_balance'
+
+net_grid = LpVariable('net_power_to_site', -100, 100)
+prob += sum([asset.power_generated() for asset in assets]) + net_grid == 100, 'power_balance'
 
 #  asset constraints
 for asset in assets:
