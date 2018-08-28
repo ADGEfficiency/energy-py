@@ -116,7 +116,6 @@ class DQN(BaseAgent):
                 name='gradient_norm_clip'
             )
 
-
         with tf.variable_scope('placeholders'):
 
             self.observation = tf.placeholder(
@@ -169,14 +168,6 @@ class DQN(BaseAgent):
 
         with tf.variable_scope('online') as scope:
 
-            # self.online_q_values = feed_forward_network(
-            #     'online_obs',
-            #     self.observation,
-            #     self.observation_space.shape,
-            #     self.layers,
-            #     self.num_actions,
-            # )
-
             self.online_q_values = make_network(
                 network_id=self.network_id,
 
@@ -197,14 +188,6 @@ class DQN(BaseAgent):
 
             if self.double_q:
                 scope.reuse_variables()
-
-                # self.online_next_obs_q = feed_forward_network(
-                #     'online_next_obs',
-                #     self.next_observation,
-                #     self.observation_space.shape,
-                #     self.layers,
-                #     self.num_actions,
-                # )
 
                 self.online_next_obs_q = make_network(
                     network_id=self.network_id,
@@ -251,13 +234,6 @@ class DQN(BaseAgent):
 
     def build_learning_graph(self):
         with tf.variable_scope('target', reuse=False):
-            # self.target_q_values = feed_forward_network(
-            #     'target',
-            #     self.next_observation,
-            #     self.observation_space.shape,
-            #     self.layers,
-            #     self.num_actions,
-            # )
 
             self.target_q_values = make_network(
                 network_id=self.network_id,
@@ -358,8 +334,8 @@ class DQN(BaseAgent):
                 for idx, (grad, var) in enumerate(grads_and_vars):
                     if grad is not None:
                         grads_and_vars[idx] = (tf.clip_by_norm(
-                        grad, self.gradient_norm_clip),
-                        var
+                            grad, self.gradient_norm_clip),
+                            var
                         )
 
                         self.summaries['learning'].append(tf.summary.histogram(
@@ -463,6 +439,7 @@ class DQN(BaseAgent):
              self.terminal: batch['done']  #  should be ether done or terminal TODO
              }
         )
+
         self.writers['learning'].add_summary(summary, self.learn_step)
         self.writers['learning'].flush()
 

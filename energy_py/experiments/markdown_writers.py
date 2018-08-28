@@ -34,7 +34,9 @@ def expt_markdown_writer(
         for run_name, run in runs.items():
             text_file.write('## ' + run_name + os.linesep)
 
-            text_file.write(join(run_name, 'ep_rewards.png'))
+            text_file.write(
+                join('![img]({})'.format(run_name), 'ep_rewards.png')
+            )
 
             #  TODO adding stuff to summary
 

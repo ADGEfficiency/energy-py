@@ -26,7 +26,7 @@ def plot_time_series(
     else:
         nrows = len(y)
 
-    figsize[1] = 2 * nrows
+    figsize[1] = 4 * nrows
 
     f, a = plt.subplots(figsize=figsize, nrows=nrows, sharex=True)
     a = np.array(a).flatten()

@@ -84,7 +84,7 @@ def make_paths(
         'env_args': join(results_dir, run_name, 'env_args.txt'),
         'agent_args': join(results_dir, run_name, 'agent_args.txt'),
         'ep_rewards': join(results_dir, run_name, 'episode_rewards.csv'),
-        'memory': join(results_dir, run_name, 'memory.pkl')
+        'memory': join(config_dir, '{}_memory.pkl'.format(run_name))
     }
 
     #  check that all our paths exist
