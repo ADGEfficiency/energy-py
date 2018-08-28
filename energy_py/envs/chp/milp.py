@@ -101,7 +101,7 @@ class Boiler(object):
 
 enthalpy =  (2851.34 - 418.991) / 1000
 gas_price = 20
-electricity_price = 1000
+electricity_price = 10
 
 prob = LpProblem('cost minimization', LpMinimize)
 
