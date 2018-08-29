@@ -95,7 +95,7 @@ def experiment(
             observation = next_observation
 
             #  only learn once memory is full
-            if len(agent.memory) > 10000:
+            if len(agent.memory) > min(agent.memory.size, 10000):
                 train_info = agent.learn()
 
         runner.record_episode(env_info=info)
@@ -111,14 +111,13 @@ def experiment(
 
 
 def pre_train(agent, pre_train_steps):
-    """ not being used """
-    assert len(agent.memory) > 10
+    """ code to fit the value function from an existing memory """
+    assert len(agent.memory) > 1000
 
     logging('pretraining agent for {} steps'.format(
         pre_train_steps))
 
-    pt_step = 0
-    while pt_step < pre_train_steps:
+    for _ in range(pre_train_steps):
         agent.learn()
 
     return agent

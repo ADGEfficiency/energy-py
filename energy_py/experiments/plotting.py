@@ -58,3 +58,12 @@ def plot_flex_episode(plot_data, fig_path='./'):
         y=['electricity_price', 'setpoint', 'reward', 'site_consumption'],
         fig_path=join(fig_path, 'fig2.png')
     )
+
+def plot_battery_episode(plot_data, fig_path='./'):
+    pass
+
+
+
+
+
+
