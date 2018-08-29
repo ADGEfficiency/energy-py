@@ -90,7 +90,7 @@ class Flex(BaseEnv):
         #  supply = precooling
         #  i.e how much power we consume during precooling
         self.supply_power = float(max(
-            supply_power,
+            float(supply_power),
             self.state_space.data.loc[:, 'C_demand [MW]'].max()
         ))
 
