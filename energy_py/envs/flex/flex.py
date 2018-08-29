@@ -54,7 +54,6 @@ class Flex(BaseEnv):
             supply_capacity=0.5, # MWh
             release_time=12,      # num 5 mins
             supply_power=0.05,      # MW
-            scale_reward=False,   #  bool - move to baseenv at somepoint TODO
             **kwargs
     ):
 
@@ -62,8 +61,6 @@ class Flex(BaseEnv):
         self.supply_capacity = float(supply_capacity)
 
         self.release_time = int(release_time)
-
-        self.scale_reward = scale_reward
 
         super().__init__(**kwargs)
 
@@ -244,12 +241,6 @@ class Flex(BaseEnv):
         #  negative means we are increasing cost
         #  positive means we are reducing cost
         reward = baseline_cost - optimized_cost
-
-        if self.scale_reward:
-            scale_factor = self.state_space.data[:, 'C_electricity_price [$/MWh]'].max()
-
-            scale_factor *= scale_factor * (self.supply_power + self.state_space.data[:, 'C_demand [MW]'].max())
-            reward = reward / scale_factor
 
         next_state = self.state_space(self.steps + 1)
 

@@ -128,10 +128,10 @@ class AutoFlex(BaseAgent):
         self.hh_tick_index = self.env.observation_space.info.index('D_hh_tick')
 
         self.current_fc_index = self.env.observation_space.info.index(
-            'C_forecast_electricity_price_current_hh [$/MWh]')
+            'C_forecast_electricity_price_hh_0 [$/MWh]')
 
         self.next_fc_index = self.env.observation_space.info.index(
-            'C_forecast_electricity_price_next_hh [$/MWh]')
+            'C_forecast_electricity_price_hh_1 [$/MWh]')
 
     def _act(self, observation, **kwargs):
         hh_tick = observation[0][self.hh_tick_index]
