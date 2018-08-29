@@ -21,8 +21,8 @@ def setup_experiment(
         seed=None
 ):
     """
+    Initialize an experiment
 
-    args
         sess (tf.Session)
         agent_config (dict)
         env_config (dict)
@@ -65,18 +65,10 @@ def experiment(
         runner,
         paths,
         total_steps,
-        mode='training',
 ):
     """ experiment of multiple episodes with learning """
 
-    logger.info('starting {} experiment of {} steps'.format(mode, total_steps))
-
-    if mode == 'training':
-        explore = 1.0
-    elif mode == 'testing':
-        explore = 0.0
-    else:
-        raise ValueError('mode of {} not supported'.format(mode))
+    logger.info('starting experiment of {} steps'.format(total_steps))
 
     #  outer while loop runs through multiple episodes
     step, episode = 0, 0
@@ -90,7 +82,8 @@ def experiment(
         while not done:
             step += 1
 
-            action = agent.act(observation, explore=explore)
+            #  hardcoded in to explore
+            action = agent.act(observation, explore=1.0)
 
             next_observation, reward, done, info = env.step(action)
 
@@ -101,7 +94,8 @@ def experiment(
 
             observation = next_observation
 
-            if mode == 'training':
+            #  only learn once memory is full
+            if len(agent.memory) > 10000:
                 train_info = agent.learn()
 
         runner.record_episode(env_info=info)
@@ -117,6 +111,7 @@ def experiment(
 
 
 def pre_train(agent, pre_train_steps):
+    """ not being used """
     assert len(agent.memory) > 10
 
     logging('pretraining agent for {} steps'.format(
@@ -160,9 +155,6 @@ if __name__ == '__main__':
 
     total_steps = int(run_config['total_steps'])
 
-    train_steps = int(expt_config['train_steps'])
-    test_steps = int(expt_config['test_steps'])
-
     #  could pop this in the setup_expt
     seed = run_config.pop('seed', None)
 
@@ -182,25 +174,11 @@ if __name__ == '__main__':
             seed=seed
         )
 
-        pre_train_steps = run_config.pop('pre_train_steps', None)
-
-        if pre_train_steps:
-            agent = pre_train(agent, pre_train_steps)
-
-        steps = 0
         runner = Runner(sess, paths)
 
-        while steps < total_steps:
-            agent, env, runner = experiment(
-                sess, agent, env, runner, paths, train_steps
-            )
-
-            if train_steps > 0:
-                agent, env, runner = experiment(
-                    sess, agent, env, runner, paths, test_steps, mode='testing'
-                )
-
-            steps += train_steps + test_steps
+        agent, env, runner = experiment(
+            sess, agent, env, runner, paths, total_steps
+        )
 
         agent.memory.save(paths['memory'])
 
