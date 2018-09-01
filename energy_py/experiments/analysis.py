@@ -38,7 +38,7 @@ import pandas as pd
 
 from energy_py.common.utils import load_args
 from energy_py.experiments.markdown_writers import expt_markdown_writer
-from energy_py.experiments.plotting import plot_flex_episode, plot_time_series
+from energy_py.experiments.plotting import plot_flex_episode, plot_time_series, plot_battery_episode
 
 
 results_path = './results/'
@@ -162,6 +162,21 @@ class Run(object):
                 print('plotting last {} episodes'.format(plot_ep))
 
                 plot_flex_episode(
+                    self.episodes[episode].iloc[-288:, :],
+                    fig_path=join(
+                        results_path,
+                        self.expt,
+                        elf.name,
+                        'episode_{}'.format(episode)
+                    )
+                )
+
+        if self.env_args['env_id'] == 'battery':
+            plot_ep = 5
+            for episode in range(len(self.episodes))[-plot_ep:]:
+                print('plotting last {} episodes'.format(plot_ep))
+
+                plot_battery_episode(
                     self.episodes[episode].iloc[-288:, :],
                     fig_path=join(
                         results_path,

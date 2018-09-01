@@ -60,10 +60,9 @@ def plot_flex_episode(plot_data, fig_path='./'):
     )
 
 def plot_battery_episode(plot_data, fig_path='./'):
-    pass
 
-
-
-
-
-
+    f = plot_time_series(
+        plot_data,
+        y=['electricity_price', 'new_charge', 'reward'],
+        fig_path=join(fig_path, 'fig1.png')
+    )
