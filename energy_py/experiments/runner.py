@@ -21,6 +21,7 @@ class Runner(object):
             self,
             sess,
             paths,
+            log_freq=500,
     ):
         self.sess = sess
         self.rewards_path = paths['ep_rewards']
@@ -30,7 +31,7 @@ class Runner(object):
             self.tb_path, self.sess.graph
         )
 
-        self.log_freq = 500
+        self.log_freq = log_freq
 
         logger.info('Making runner - log every {} episodes'.format(
             self.log_freq))
@@ -83,6 +84,8 @@ class Runner(object):
 
         self.writer.flush()
 
-        pd.DataFrame(data=self.episode_rewards).to_csv(self.rewards_path)
+        pd.DataFrame(
+            np.array(self.episode_rewards).reshape(-1, 1),
+        ).to_csv(self.rewards_path)
 
         self.current_episode_rewards = []

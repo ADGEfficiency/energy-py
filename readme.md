@@ -66,6 +66,8 @@ $ tensorboard --logdir='./energy_py/experiments/results'
 
 Learning performance of the DQN agent on the flexibility environment across two random seeds.  The red line is a naive benchmark agent.  The reward per episode can be directly interpreted as dollars per day.
 
+Performance of a baseline agent versus two learning agents on the flexibility environment:
+
 ![fig](assets/tb1.png)
 
 ## Installation
