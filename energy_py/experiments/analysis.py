@@ -38,8 +38,9 @@ import pandas as pd
 
 from energy_py.common.utils import load_args
 from energy_py.experiments.markdown_writers import expt_markdown_writer
-from energy_py.experiments.plotting import plot_flex_episode, plot_time_series, plot_battery_episode
-
+from energy_py.experiments.plotting import plot_battery_episode
+from energy_py.experiments.plotting import plot_flex_episode
+from energy_py.experiments.plotting import plot_time_series
 
 results_path = './results/'
 
