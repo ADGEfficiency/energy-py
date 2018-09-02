@@ -7,8 +7,9 @@ energy_py is built and maintained by Adam Green - [adam.green@adgefficiency.com]
 - [introductory blog post](http://adgefficiency.com/energy_py-reinforcement-learning-for-energy-systems/)
 - [DQN debugging](http://adgefficiency.com/dqn-debugging/)
 - [DDQN hyperparameter tuning](http://adgefficiency.com/dqn-tuning/)
+- [example of low level API - DQN and battery environment](https://github.com/ADGEfficiency/energy_py/blob/master/notebooks/examples/DQN_battery_example.ipynb)
 
-## Basic usage
+## Basic use
 
 The most common access point for a user will be to run an experiment.  The experiment is setup using config files that live in `energy_py/experiments/configs`.  An experiment is run by passing the experiment name and run name as arguments
 

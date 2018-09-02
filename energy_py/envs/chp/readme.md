@@ -57,3 +57,7 @@ For example - consider the mass and energy balance around a steam header.  The m
 This means that the engineer must choose whether to balance either mass or energy.  Steam based systems (i.e. combined cycle gas turbines) can be balanced using mass.  Hot water systems (i.e. district heating) can be balanced using heat.  
 
 Note that electrical power balances can be done alongside either mass or energy - there is no bi-linearity.
+
+## Plants to model
+
+Biomass boiler + steam turbine (Kinleith)
