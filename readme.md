@@ -4,7 +4,7 @@ energy_py supports running reinforcement learning experiments on energy environm
 
 energy_py is built and maintained by Adam Green - [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  
 
-- [introductory blog post](http://adgefficiency.com/energy_py-reinforcement-learning-for-energy-systems/)
+- [introductory blog post](http://www.adgefficiency.com/energy_py-reinforcement-learning-for-energy-systems/)
 - [DQN debugging](http://adgefficiency.com/dqn-debugging/)
 - [DDQN hyperparameter tuning](http://adgefficiency.com/dqn-tuning/)
 - [example of low level API - DQN and battery environment](https://github.com/ADGEfficiency/energy_py/blob/master/notebooks/examples/DQN_battery_example.ipynb)
