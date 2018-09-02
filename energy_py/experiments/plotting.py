@@ -1,3 +1,5 @@
+from os.path import join
+
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -59,10 +61,15 @@ def plot_flex_episode(plot_data, fig_path='./'):
         fig_path=join(fig_path, 'fig2.png')
     )
 
+    return f
+
+
 def plot_battery_episode(plot_data, fig_path='./'):
 
     f = plot_time_series(
         plot_data,
-        y=['electricity_price', 'new_charge', 'reward'],
+        y=['electricity_price', 'state_C_charge_level [MWh]'],
         fig_path=join(fig_path, 'fig1.png')
     )
+
+    return f
