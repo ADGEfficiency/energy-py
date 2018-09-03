@@ -142,15 +142,15 @@ class AutoFlex(BaseAgent):
         delta = next_price - current_price
 
         #  if next price is lower, we want to not consume now (ie to store)
-        if delta < -5 and minute == 1:
+        if delta < -5 and hh_tick == 1:
             action = 1
             logger.debug('taking action - delta {}'.format(delta))
 
         else:
             logger.debug('no price delta {}'.format(delta))
 
-        logger.debug('minute {} current_p {} next_p {} delta {} action {}'.format(
-            minute, current_price, next_price, delta, action)
+        logger.debug('hh_tick {} current_p {} next_p {} delta {} action {}'.format(
+            hh_tick, current_price, next_price, delta, action)
                       )
 
         return np.array(action).reshape(1, *self.action_space.shape)

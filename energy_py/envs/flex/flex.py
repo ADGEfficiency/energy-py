@@ -94,6 +94,9 @@ class Flex(BaseEnv):
             self.state_space.data.loc[:, 'C_demand [MW]'].max()
         ))
 
+    def __repr__(self):
+        return '<energy_py flex environment>'
+
     def _reset(self):
         """
         Resets the environment
