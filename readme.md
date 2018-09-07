@@ -1,32 +1,32 @@
-# energy_py
+# energypy
 
-energy_py supports running reinforcement learning experiments on energy environments.
+energypy supports running reinforcement learning experiments on energy environments.
 
-energy_py is built and maintained by Adam Green - [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  
+energypy is built and maintained by Adam Green - [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  
 
-- [introductory blog post](http://www.adgefficiency.com/energy_py-reinforcement-learning-for-energy-systems/)
+- [introductory blog post](http://www.adgefficiency.com/energypy-reinforcement-learning-for-energy-systems/)
 - [DQN debugging](http://adgefficiency.com/dqn-debugging/)
 - [DDQN hyperparameter tuning](http://adgefficiency.com/dqn-tuning/)
-- [example of low level API - DQN and battery environment](https://github.com/ADGEfficiency/energy_py/blob/master/notebooks/examples/DQN_battery_example.ipynb)
+- [example of low level API - DQN and battery environment](https://github.com/ADGEfficiency/energypy/blob/master/notebooks/examples/DQN_battery_example.ipynb)
 
 ## Basic use
 
-The most common access point for a user will be to run an experiment.  The experiment is setup using config files that live in `energy_py/experiments/configs`.  An experiment is run by passing the experiment name and run name as arguments
+The most common access point for a user will be to run an experiment.  The experiment is setup using config files that live in `energypy/experiments/configs`.  An experiment is run by passing the experiment name and run name as arguments
 
 ```bash
-$ cd energy_py/experiments
+$ cd energypy/experiments
 
 $ python experiment.py example dqn
 ```
 
-energy_py provides a simple and familiar gym style low-level API for agent and environment initialization and interactions
+energypy provides a simple and familiar gym style low-level API for agent and environment initialization and interactions
 
 ```python
-import energy_py
+import energypy
 
-env = energy_py.make_env(env_id='battery')
+env = energypy.make_env(env_id='battery')
 
-agent = energy_py.make_agent(
+agent = energypy.make_agent(
     agent_id='dqn',
     env=env,
     total_steps=1000000
@@ -44,7 +44,7 @@ while not done:
 Results for this run are then available at
 
 ``` bash
-$ cd energy_py/experiments/results/example/dqn
+$ cd energypy/experiments/results/example/dqn
 
 $ ls
 agent_args.txt
@@ -61,7 +61,7 @@ The progress of an experiment can be watched with TensorBoard
 
 ```bash
 
-$ tensorboard --logdir='./energy_py/experiments/results'
+$ tensorboard --logdir='./energypy/experiments/results'
 
 ```
 
@@ -73,21 +73,21 @@ Performance of a baseline agent versus two learning agents on the flexibility en
 
 ## Installation
 
-The main dependencies of energy_py are TensorFlow, numpy, pandas and matplotlib.
+The main dependencies of energypy are TensorFlow, numpy, pandas and matplotlib.
 
-To install energy_py using an Anaconda virtual environment
+To install energypy using an Anaconda virtual environment
 
 ```bash
-$ conda create --name energy_py python=3.5.2
+$ conda create --name energypy python=3.5.2
 
-$ activate energy_py (windows) OR source activate energy_py (unix)
+$ activate energypy (windows) OR source activate energypy (unix)
 
-$ git clone https://github.com/ADGEfficiency/energy_py.git
+$ git clone https://github.com/ADGEfficiency/energypy.git
 
-$ cd energy_py
+$ cd energypy
 
 #  currently the package only works when installed as develop
-#  this is to do with how the dataset csvs are loaded - [see issue here](https://github.com/ADGEfficiency/energy_py/issues/34)
+#  this is to do with how the dataset csvs are loaded - [see issue here](https://github.com/ADGEfficiency/energypy/issues/34)
 $ python setup.py develop 
 
 $ pip install --ignore-installed -r requirements.txt
@@ -95,13 +95,13 @@ $ pip install --ignore-installed -r requirements.txt
 ```
 ### Philosophy
 
-The aim of energy_py is to provide 
+The aim of energypy is to provide 
 
 - high quality implementations of agents suited to solving energy problems
 - energy environments based on decarbonization problems
 - tools to run experiments
 
-The design philosophies of energy_py are
+The design philosophies of energypy are
 
 - simplicity
 - iterative design
@@ -113,11 +113,11 @@ The design philosophies of energy_py are
 
 Preference is given to improving and iterating on existing designs over implementing new agents or environments.
 
-energy_py was heavily influenced by Open AI [baselines](https://github.com/openai/baselines) and [gym](https://github.com/openai/gym).
+energypy was heavily influenced by Open AI [baselines](https://github.com/openai/baselines) and [gym](https://github.com/openai/gym).
 
 ### Agents
 
-energy_py is currently focused on a high quality implementation of DQN ([ref Mnih et. al (2015)](https://web.stanford.edu/class/psych209/Readings/MnihEtAlHassibis15NatureControlDeepRL.pdf)) and along with naive and heuristic agents for comparison.
+energypy is currently focused on a high quality implementation of DQN ([ref Mnih et. al (2015)](https://web.stanford.edu/class/psych209/Readings/MnihEtAlHassibis15NatureControlDeepRL.pdf)) and along with naive and heuristic agents for comparison.
 
 DQN was chosen because
 
@@ -131,32 +131,32 @@ usually custom built for a specific environment.  Examples of heuristic agents i
 
 ### Environments
 
-energy_py provides custom built models of energy environments and wraps around Open AI gym.  Support for basic gym
+energypy provides custom built models of energy environments and wraps around Open AI gym.  Support for basic gym
 models is included to allow debugging of agents with familiar environments.
 
 Beware that gym deals with random seeds for action spaces in [particular ways](https://github.com/openai/gym/blob/master/gym/spaces/prng.py).  v0 of gym environments [ignore the selected action 25% of the time](http://amid.fish/reproducing-deep-rl) and repeat the previous action (to make environment more stochastic).  v4 can remove this randomness.
 
 **CartPole-v0**
 
-Classic cartpole balancing - [gym](https://github.com/openai/gym/blob/master/gym/envs/classic_control/cartpole.py) - [energy_py](https://github.com/ADGEfficiency/energy_py/blob/dev/energy_py/envs/register.py)
+Classic cartpole balancing - [gym](https://github.com/openai/gym/blob/master/gym/envs/classic_control/cartpole.py) - [energypy](https://github.com/ADGEfficiency/energypy/blob/dev/energypy/envs/register.py)
 
 **Pendulum-v0** 
 
-Inverted pendulum swingup - [gym](https://github.com/openai/gym/blob/master/gym/envs/classic_control/pendulum.py) - [energy_py](https://github.com/ADGEfficiency/energy_py/blob/dev/energy_py/envs/register.py)
+Inverted pendulum swingup - [gym](https://github.com/openai/gym/blob/master/gym/envs/classic_control/pendulum.py) - [energypy](https://github.com/ADGEfficiency/energypy/blob/dev/energypy/envs/register.py)
 
 **MountainCar-v0** 
 
-An exploration problem - [gym](https://github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.py) - [energy_py](https://github.com/ADGEfficiency/energy_py/blob/dev/energy_py/envs/register.py)
+An exploration problem - [gym](https://github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.py) - [energypy](https://github.com/ADGEfficiency/energypy/blob/dev/energypy/envs/register.py)
 
 **Electric battery storage** 
 
-Dispatch of a battery arbitraging wholesale prices - [energy_py](https://github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.p://github.com/ADGEfficiency/energy_py/tree/dev/energy_py/envs/battery)
+Dispatch of a battery arbitraging wholesale prices - [energypy](https://github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.p://github.com/ADGEfficiency/energypy/tree/dev/energypy/envs/battery)
 
 Battery is defined by a capacity and a maximum rate to charge and discharge, with a round trip efficiency applied on storage.
 
 **Demand side flexibility** 
 
-Dispatch of price responsive demand side flexibility - [energy_py](https://github.com/ADGEfficiency/energy_py/tree/dev/energy_py/envs/flex)
+Dispatch of price responsive demand side flexibility - [energypy](https://github.com/ADGEfficiency/energypy/tree/dev/energypy/envs/flex)
 
 Flexible asset is a chiller system, with an action space of the return temperature setpoint.  An increased setpoint will
 reduce demand, decreased will increase demand.

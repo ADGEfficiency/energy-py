@@ -3,7 +3,7 @@ import logging
 
 import numpy as np
 
-from energy_py.agents.agent import BaseAgent
+from energypy.agents.agent import BaseAgent
 
 
 logger = logging.getLogger(__name__)
@@ -35,42 +35,6 @@ class NaiveBatteryAgent(BaseAgent):
         return np.array(action).reshape(1, self.action_space.shape[0])
 
 
-class FeatureAgent(BaseAgent):
-    """
-    Takes an action based on the value of a feature
-
-    args
-        env (object) energy_py environment
-        discount (float) discount rate
-        trigget (float) triggers flex action based on the feature
-    """
-    def __init__(
-            self,
-            feature,
-            feature_index,
-            trigger,
-            trigger_action,
-            default_action,
-            **kwargs
-    ):
-        self.feature = feature
-        self.feature_index = feature_index
-
-        self.trigger = float(trigger)
-        self.trigger_action = trigger_action
-        self.default_action = default_action
-
-        super().__init__(**kwargs)
-
-    def _act(self, observation):
-
-        action = self.default_action
-        if cumulative_dispatch > self.trigger:
-            action = self.trigger_action
-
-        return np.array(action).reshape(1, self.action_space.shape[0])
-
-
 class TimeFlex(BaseAgent):
     """
     Flexes based on time of day
@@ -80,7 +44,7 @@ class TimeFlex(BaseAgent):
     """
     def __init__(self, hours, **kwargs):
         super().__init__(**kwargs)
-        assert repr(self.env) == '<energy_py flex-v0 environment>'
+        assert repr(self.env) == '<energypy flex-v0 environment>'
 
         #  can be used for a two block period
         #  hours is input in the form
@@ -123,7 +87,7 @@ class AutoFlex(BaseAgent):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        assert repr(self.env) == '<energy_py flex environment>'
+        assert repr(self.env) == '<energypy flex environment>'
 
         self.hh_tick_index = self.env.observation_space.info.index('D_hh_tick')
 

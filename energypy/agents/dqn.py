@@ -3,17 +3,14 @@ import logging
 import numpy as np
 import tensorflow as tf
 
-import energy_py
+from energypy.agents.agent import BaseAgent
+from energypy.common.policies import epsilon_greedy_policy, softmax_policy
 
-from energy_py.agents.agent import BaseAgent
-from energy_py.common.networks import feed_forward_network
-from energy_py.common.policies import epsilon_greedy_policy, softmax_policy
+from energypy.common.np_utils import find_sub_array_in_2D_array as find_action
+from energypy.common.tf_utils import make_copy_ops, get_tf_params
+from energypy.common.utils import read_iterable_from_config
 
-from energy_py.common.np_utils import find_sub_array_in_2D_array as find_action
-from energy_py.common.tf_utils import make_copy_ops, get_tf_params
-from energy_py.common.utils import read_iterable_from_config
-
-from energy_py import make_network
+from energypy import make_network
 
 
 logger = logging.getLogger(__name__)
@@ -270,8 +267,8 @@ class DQN(BaseAgent):
                 online_actions = tf.argmax(self.online_next_obs_q, axis=1)
 
                 unmasked_next_state_max_q = tf.reduce_sum(
-                    self.target_q_values * tf.one_hot(online_actions,
-                                                 self.num_actions),
+                    self.target_q_values * tf.one_hot(
+                        online_actions, self.num_actions),
                     axis=1,
                     keepdims=True
                 )
@@ -287,15 +284,18 @@ class DQN(BaseAgent):
                 self.terminal,
                 tf.zeros_like(unmasked_next_state_max_q),
                 unmasked_next_state_max_q,
-		name='terminal_mask'
+                name='terminal_mask'
             )
 
             self.bellman = self.reward + self.discount * self.next_state_max_q
 
-            #  batch norm requires some reshaping with a known rank
-            #  reshape the input into batch norm, then flatten in loss
-            #  training=True to normalize each batch
-            #  training=False to use historical statistics
+            """
+            batch norm requires some reshaping with a known rank
+            reshape the input into batch norm, then flatten in loss
+            training=True to normalize each batch
+            training=False to use historical statistics
+            """
+
             bellman_norm = tf.layers.batch_normalization(
                 tf.reshape(self.bellman, (-1, 1)),
                 center=self.batch_norm_center,
@@ -322,7 +322,8 @@ class DQN(BaseAgent):
                     name='learning_rate'
                 )
 
-            optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
+            optimizer = tf.train.AdamOptimizer(
+                learning_rate=self.learning_rate)
 
             with tf.variable_scope('gradient_clipping'):
 
@@ -391,7 +392,7 @@ class DQN(BaseAgent):
         )
 
     def __repr__(self):
-        return '<energy_py DQN agent>'
+        return '<energypy DQN agent>'
 
     def _act(self, observation, explore=1.0):
         """ selecting an action based on an observation """

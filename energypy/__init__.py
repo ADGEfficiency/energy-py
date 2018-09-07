@@ -1,14 +1,14 @@
-from energy_py.common import feed_forward_network, convolutional_network
-from energy_py.common import make_network
+from energypy.common import feed_forward_network, convolutional_network
+from energypy.common import make_network
 
-from energy_py.agents import make_agent
-from energy_py.envs import make_env
+from energypy.agents import make_agent
+from energypy.envs import make_env
 
-from energy_py.common.memories import make_memory
-from energy_py.common import policy_register
+from energypy.common.memories import make_memory
+from energypy.common import policy_register
 
-from energy_py.experiments import experiment, make_paths
-from energy_py.experiments.datasets import load_dataset, get_dataset_path
-from energy_py.experiments.runner import Runner
+from energypy.experiments import experiment, make_paths
+from energypy.experiments.datasets import load_dataset, get_dataset_path
+from energypy.experiments.runner import Runner
 
-from energy_py.common.logging import make_logger
+from energypy.common.logging import make_logger
