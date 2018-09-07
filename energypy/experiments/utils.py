@@ -1,5 +1,4 @@
 import argparse
-import datetime
 import os
 from shutil import copyfile
 
@@ -30,7 +29,8 @@ def make_config_parser():
 def make_paths(
         experiments_dir,
         expt_name,
-        run_name
+        run_name,
+        load_configs=True
 ):
     """
     Creates a dictionary of paths for use with experiments
@@ -63,13 +63,28 @@ def make_paths(
     #  rename the join function to make code below eaiser to read
     join = os.path.join
 
-    config_dir = join(experiments_dir, 'configs', expt_name)
     results_dir = join(experiments_dir, 'results', expt_name)
 
-    paths = {
-        #  config files
-        'expt_config': join(config_dir, 'expt.ini'),
-        'run_configs': join(config_dir, 'runs.ini'),
+    if load_configs:
+        config_dir = join(experiments_dir, 'configs', expt_name)
+
+        config_paths = {
+            'expt_config': join(config_dir, 'expt.ini'),
+            'run_configs': join(config_dir, 'runs.ini')
+        }
+
+        #  copy config files into results directory
+        copyfile(
+            config_paths['expt_config'], join(results_dir, run_name, 'expt.ini')
+        )
+
+        copyfile(
+            config_paths['run_configs'], join(results_dir, run_name, 'runs.ini')
+        )
+    else:
+        config_paths = {}
+
+    results_paths = {
 
         #  tensorboard runs are all in the tensoboard folder
         #  this is for easy comparision of runs
@@ -87,17 +102,11 @@ def make_paths(
         'memory': join(results_dir, '{}_memory.pkl'.format(run_name))
     }
 
+    paths = {**config_paths, **results_paths}
+
     #  check that all our paths exist
     for key, path in paths.items():
         ensure_dir(path)
 
-    #  copy config files into results directory
-    copyfile(
-        paths['expt_config'], join(results_dir, run_name, 'expt.ini')
-    )
-
-    copyfile(
-        paths['run_configs'], join(results_dir, run_name, 'runs.ini')
-    )
 
     return paths

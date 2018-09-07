@@ -54,6 +54,7 @@ def setup_experiment(
         agent.acting_writer.add_graph(sess.graph)
 
     #  TODO copy the dataset into the run folder as well
+    logger.info('setup experiment of {} steps'.format(total_steps))
 
     return agent, env
 
@@ -68,7 +69,6 @@ def experiment(
 ):
     """ experiment of multiple episodes with learning """
 
-    logger.info('starting experiment of {} steps'.format(total_steps))
 
     #  outer while loop runs through multiple episodes
     step, episode = 0, 0

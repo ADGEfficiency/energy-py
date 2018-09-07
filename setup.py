@@ -8,7 +8,7 @@ setup(
     description='reinforcement learning for energy systems',
     author='Adam Green',
     author_email='adam.green@adgefficiency.com',
-    url='http://adgefficiency.com/',
+    url='http://www.adgefficiency.com/',
 
     packages=find_packages(exclude=['tests', 'tests.*']),
     package_dir={'energy_py': 'energy_py'},
