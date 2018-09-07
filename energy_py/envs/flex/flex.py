@@ -51,9 +51,9 @@ class Flex(BaseEnv):
     def __init__(
             self,
             capacity=4.0,         # MWh
-            supply_capacity=0.5, # MWh
+            supply_capacity=0.5,  # MWh
             release_time=12,      # num 5 mins
-            supply_power=0.05,      # MW
+            supply_power=0.05,    # MW
             **kwargs
     ):
 
@@ -73,7 +73,15 @@ class Flex(BaseEnv):
         self.action_space = GlobalSpace('action').from_spaces(
             DiscreteSpace(3), 'setpoint'
         )
+
         self.action_space.no_op = np.array([0]).reshape(1, 1)
+
+        self.state_space.extend(
+            [ContinuousSpace(0, self.episode_length),
+             ContinuousSpace(0, self.capacity),
+             ContinuousSpace(0, self.supply_capacity)],
+            ['Step', 'C_stored_demand [MWh]', 'C_stored_supply[MWh]'],
+        )
 
         #  let our agent see the stored demand
         #  let our agent see the stored supply
@@ -82,9 +90,8 @@ class Flex(BaseEnv):
         #  obs space is created during env init
         self.observation_space.extend(
             [ContinuousSpace(0, self.capacity),
-            ContinuousSpace(0, self.supply_capacity)],
-            ['C_stored_demand [MWh]',
-            'C_stored_supply[MWh]'],
+             ContinuousSpace(0, self.supply_capacity)],
+            ['C_stored_demand [MWh]', 'C_stored_supply[MWh]'],
         )
 
         #  supply = precooling
@@ -115,7 +122,11 @@ class Flex(BaseEnv):
         #  float for stored supply
         self.stored_supply = 0  # MWh
 
-        self.state = self.state_space(self.steps)
+        self.state = self.state_space(
+            self.steps, np.array(
+                [self.steps, self.stored_demand, self.stored_supply]
+            )
+        )
 
         self.observation = self.observation_space(
             self.steps, np.array(
@@ -245,7 +256,11 @@ class Flex(BaseEnv):
         #  positive means we are reducing cost
         reward = baseline_cost - optimized_cost
 
-        next_state = self.state_space(self.steps + 1)
+        next_state = self.state_space(
+            self.steps + 1, np.array(
+                [self.steps + 1, self.stored_demand, self.stored_supply]
+            )
+        )
 
         next_observation = self.observation_space(
             self.steps + 1, np.array(

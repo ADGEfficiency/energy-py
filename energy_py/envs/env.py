@@ -99,6 +99,10 @@ class BaseEnv(object):
             done (boolean)
             info (dict) auxiliary information
         """
+        if not hasattr(self, 'state'):
+            raise ValueError(
+                'You need to reset the environment before calling step()')
+
         action = np.array(action).reshape(1, *self.action_space.shape)
         assert self.action_space.contains(action)
         logger.debug('step {} action {}'.format(self.steps, action))
