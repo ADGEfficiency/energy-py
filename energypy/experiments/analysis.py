@@ -3,7 +3,7 @@ TODO - clean up how the paths flow through Run
 
 tools for analyzing results of experiments
 
-the code takes advantage of the structure in an energy_py experiment
+the code takes advantage of the structure in an energypy experiment
 
 episodes - runs - experiments
 
@@ -36,11 +36,11 @@ from os.path import join
 import numpy as np
 import pandas as pd
 
-from energy_py.common.utils import load_args
-from energy_py.experiments.markdown_writers import expt_markdown_writer
-from energy_py.experiments.plotting import plot_battery_episode
-from energy_py.experiments.plotting import plot_flex_episode
-from energy_py.experiments.plotting import plot_time_series
+from energypy.common.utils import load_args
+from energypy.experiments.markdown_writers import expt_markdown_writer
+from energypy.experiments.plotting import plot_battery_episode
+from energypy.experiments.plotting import plot_flex_episode
+from energypy.experiments.plotting import plot_time_series
 
 results_path = './results/'
 
