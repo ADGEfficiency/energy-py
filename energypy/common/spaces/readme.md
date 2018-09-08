@@ -13,9 +13,9 @@ Action spaces are used by agents to understand what they can do in an environmen
 DQN requires a discrete action space.  The GlobalSpace object has functionality to create and sample from a discrete sample of the action space.
 
 ```python
-from energy_py.common.spaces import ContinuousSpace
-from energy_py.common.spaces import DiscreteSpace
-from energy_py.common.spaces import GlobalSpace
+from energypy.common.spaces import ContinuousSpace
+from energypy.common.spaces import DiscreteSpace
+from energypy.common.spaces import GlobalSpace
 
 #  create an action space with one continuous and one discrete action
 action_space = GlobalSpace('action').from_spaces(

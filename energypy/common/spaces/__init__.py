@@ -1,3 +1,3 @@
-from energy_py.common.spaces.discrete import DiscreteSpace
-from energy_py.common.spaces.continuous import ContinuousSpace
-from energy_py.common.spaces.space import GlobalSpace
+from energypy.common.spaces.discrete import DiscreteSpace
+from energypy.common.spaces.continuous import ContinuousSpace
+from energypy.common.spaces.space import GlobalSpace

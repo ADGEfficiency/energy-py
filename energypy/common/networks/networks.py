@@ -1,8 +1,8 @@
 import logging
 import tensorflow as tf
 
-from energy_py.common.networks.layers import fully_connected_layer
-from energy_py.common.networks.layers import convolutional_layer
+from energypy.common.networks.layers import fully_connected_layer
+from energypy.common.networks.layers import convolutional_layer
 
 
 logger = logging.getLogger(__name__)

@@ -4,9 +4,9 @@ import itertools
 import pandas as pd
 import numpy as np
 
-import energy_py
-from energy_py.common.spaces.discrete import DiscreteSpace
-from energy_py.common.spaces.continuous import ContinuousSpace
+import energypy
+from energypy.common.spaces.discrete import DiscreteSpace
+from energypy.common.spaces.continuous import ContinuousSpace
 
 
 logger = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ class GlobalSpace(object):
         return (len(self.spaces), )
 
     def from_dataset(self, dataset='example'):
-        self.data = energy_py.load_dataset(dataset, self.name)
+        self.data = energypy.load_dataset(dataset, self.name)
 
         self.info = self.data.columns.tolist()
 
