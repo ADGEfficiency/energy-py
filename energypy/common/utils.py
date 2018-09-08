@@ -1,4 +1,3 @@
-""" Generic helper functions """
 import configparser
 import csv
 from itertools import combinations

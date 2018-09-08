@@ -5,5 +5,5 @@ tensorboard --logdir=run1:./results/new_flex/tensorboard/dqn1/rl,run2:./results/
 
 #  copy results to local machine
 rsync -chavzP --exclude 'tensorboard' --exclude 'env_histories' --exclude '*.log'
-adam@ec2-34-242-11-163.eu-west-1.compute.amazonaws.com:/home/adam/git/energy_py/energy_py/experiments/results/new_flex
+adam@ec2-34-242-11-163.eu-west-1.compute.amazonaws.com:/home/adam/git/energypy/energypy/experiments/results/new_flex
 /Users/adam/Downloads
