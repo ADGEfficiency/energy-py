@@ -1,16 +1,15 @@
 import logging
 import os
 
-import numpy as np
 import tensorflow as tf
 
-import energy_py
-from energy_py.common.utils import save_args, parse_ini
-from energy_py.common.logging import make_logger
+import energypy
+from energypy.common.utils import save_args, parse_ini
+from energypy.common.logging import make_logger
 
-from energy_py.experiments import Runner, save_env_info, make_paths, make_config_parser
+from energypy.experiments import Runner, save_env_info, make_paths, make_config_parser
 
-from energy_py.experiments import process_experiment
+from energypy.experiments import process_experiment
 
 
 def setup_experiment(
@@ -30,7 +29,7 @@ def setup_experiment(
         seed (int)
     """
 
-    env = energy_py.make_env(**env_config)
+    env = energypy.make_env(**env_config)
     save_args(env_config, path=paths['env_args'])
 
     if seed:
@@ -47,7 +46,7 @@ def setup_experiment(
     if agent_memory:
         agent_config['load_memory_path'] = paths['memory']
 
-    agent = energy_py.make_agent(**agent_config)
+    agent = energypy.make_agent(**agent_config)
     save_args(agent_config, path=paths['agent_args'])
 
     if hasattr(agent, 'acting_writer'):

@@ -14,7 +14,7 @@ import os
 import numpy as np
 import pandas as pd
 
-from energy_py.common import ensure_dir
+from energypy.common import ensure_dir
 
 
 logger = logging.getLogger(__name__)

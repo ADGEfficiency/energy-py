@@ -3,7 +3,7 @@ import os
 from shutil import copyfile
 
 
-from energy_py.common import ensure_dir
+from energypy.common import ensure_dir
 
 
 def make_config_parser():
@@ -14,7 +14,7 @@ def make_config_parser():
         args (argparse NameSpace)
     """
     parser = argparse.ArgumentParser(
-        description='energy_py config expt argparser'
+        description='energypy config expt argparser'
     )
 
     #  required
@@ -36,7 +36,7 @@ def make_paths(
     Creates a dictionary of paths for use with experiments
 
     args
-        experiments_dir (str) usually energy_py/energy_py/experiments
+        experiments_dir (str) usually energypy/energypy/experiments
         expt_name (str)
         run_name (str)
 
