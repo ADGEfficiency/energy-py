@@ -73,13 +73,15 @@ def make_paths(
             'run_configs': join(config_dir, 'runs.ini')
         }
 
+        ensure_dir(join(results_dir, run_name))
+
         #  copy config files into results directory
         copyfile(
-            config_paths['expt_config'], join(results_dir, run_name, 'expt.ini')
+            config_paths['expt_config'], join(results_dir, 'expt.ini')
         )
 
         copyfile(
-            config_paths['run_configs'], join(results_dir, run_name, 'runs.ini')
+            config_paths['run_configs'], join(results_dir, 'runs.ini')
         )
     else:
         config_paths = {}
