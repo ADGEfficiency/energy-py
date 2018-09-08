@@ -6,3 +6,4 @@ from energypy.experiments.experiment import experiment
 from energypy.experiments.plotting import plot_battery_episode
 from energypy.experiments.plotting import plot_flex_episode
 from energypy.experiments.plotting import plot_time_series
+from energypy.experiments.load_dataset import load_dataset
