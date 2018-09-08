@@ -1,9 +1,9 @@
-""" tests for the energy_py flex environment """
+""" tests for the energypy flex environment """
 
 import numpy as np
 import pandas as pd
 
-import energy_py
+import energypy
 
 
 def check_energy_balance(info):
@@ -12,7 +12,7 @@ def check_energy_balance(info):
 
 
 def test_no_op():
-    env = energy_py.make_env('flex')
+    env = energypy.make_env('flex')
 
     obs = env.reset()
     done = False
@@ -31,7 +31,7 @@ def test_no_op():
 
 
 def test_increase_setpoint():
-    env = energy_py.make_env(
+    env = energypy.make_env(
         'flex',
         capacity=4.0,
         supply_capacity=0.5,
@@ -74,7 +74,7 @@ def test_increase_setpoint():
 
 def test_decrease_setpoint():
     """ tests the precooling - but sets release time and capacity high """
-    env = energy_py.make_env(
+    env = energypy.make_env(
         'flex',
         capacity=4.0,
         supply_capacity=100, # large to ignore the effect

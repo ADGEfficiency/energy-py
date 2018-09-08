@@ -3,13 +3,13 @@ import logging
 
 import tensorflow as tf
 
-import energy_py
+import energypy
 
 logger = logging.getLogger(__name__)
 
 
 class BaseAgent(object):
-    """ The energy_py base agent class """
+    """ The energypy base agent class """
 
     def __init__(
             self,
@@ -33,7 +33,7 @@ class BaseAgent(object):
         self.observation_space = env.observation_space
         self.action_space = env.action_space
 
-        self.memory = energy_py.make_memory(
+        self.memory = energypy.make_memory(
             memory_id=memory_type,
             env=env,
             size=memory_length,

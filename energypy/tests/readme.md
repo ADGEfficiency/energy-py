@@ -1,4 +1,1 @@
-Suite of tests for energy_py.
-
-Tests are built using py.test.
-
+Suite of tests for energypy - built using pytest

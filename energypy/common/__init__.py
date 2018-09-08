@@ -1,10 +1,10 @@
-from energy_py.common.utils import ensure_dir
+from energypy.common.utils import ensure_dir
 
-from energy_py.common.memories import memory_register, calculate_returns
-from energy_py.common.policies import policy_register
+from energypy.common.memories import memory_register, calculate_returns
+from energypy.common.policies import policy_register
 
-from energy_py.common.networks import feed_forward_network, convolutional_network
-from energy_py.common.networks import make_network
+from energypy.common.networks import feed_forward_network, convolutional_network
+from energypy.common.networks import make_network
 
-from energy_py.common.spaces import GlobalSpace, DiscreteSpace, ContinuousSpace
+from energypy.common.spaces import GlobalSpace, DiscreteSpace, ContinuousSpace
 

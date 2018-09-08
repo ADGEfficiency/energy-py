@@ -1,12 +1,12 @@
-""" tests for the energy_py convolutional nn """
+""" tests for the energypy convolutional nn """
 import random
 
 import numpy as np
 import tensorflow as tf
 
-import energy_py
+import energypy
 
-from energy_py.common.tf_utils import get_tf_params
+from energypy.common.tf_utils import get_tf_params
 
 
 def setup_agent(sess, double_q=False):
@@ -17,17 +17,17 @@ def setup_agent(sess, double_q=False):
         sess (tf.Session)
 
     returns
-        agent (energy_py DQN agent)
-        env (energy_py Battery environment)
+        agent (energypy DQN agent)
+        env (energypy Battery environment)
     """
 
-    env = energy_py.make_env(
+    env = energypy.make_env(
         '2048',
         observation_dims='2D'
     )
 
     #  use high learning rate to get weight changes
-    agent = energy_py.make_agent(
+    agent = energypy.make_agent(
         agent_id='dqn',
         sess=sess,
         env=env,

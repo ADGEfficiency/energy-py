@@ -2,9 +2,9 @@ import random
 
 import numpy as np
 
-from energy_py.common.memories.memory import Experience, calculate_returns
-# from energy_py.common.memories import PrioritizedReplay
-from energy_py.common.trees import SumTree, MinTree
+from energypy.common.memories.memory import Experience, calculate_returns
+# from energypy.common.memories import PrioritizedReplay
+from energypy.common.trees import SumTree, MinTree
 
 
 def generate_experience(obs_shape, action_shape):

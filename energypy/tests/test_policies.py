@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-from energy_py.common.policies import epsilon_greedy_policy
+from energypy.common.policies import epsilon_greedy_policy
 
 
 def test_e_greedy_policy():

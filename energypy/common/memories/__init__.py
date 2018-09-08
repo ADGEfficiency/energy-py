@@ -1,5 +1,7 @@
 import logging
 
+from energypy.common.memories.memory import calculate_returns
+
 from energypy.common.memories.array_memory import ArrayMemory
 from energypy.common.memories.deque_memory import DequeMemory
 

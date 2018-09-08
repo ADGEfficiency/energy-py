@@ -1,4 +1,4 @@
-import energy_py
+import energypy
 
 default_config = {
     'env_id': 'battery',
@@ -8,7 +8,7 @@ default_config = {
     'episode_sample': 'full'
 }
 
-env = energy_py.make_env(**default_config)
+env = energypy.make_env(**default_config)
 obs = env.reset()
 
 
@@ -28,7 +28,7 @@ def test_discharge():
     config['initial_charge'] = 1.0
     config['capacity'] = 4.0
 
-    env = energy_py.make_env(**config)
+    env = energypy.make_env(**config)
     obs = env.reset()
 
     rew, next_obs, d, i = env.step(-1.0)
@@ -45,7 +45,7 @@ def test_no_op():
     config['initial_charge'] = 0.5
     config['capacity'] = 4.0
 
-    env = energy_py.make_env(**config)
+    env = energypy.make_env(**config)
     obs = env.reset()
 
     rew, next_obs, d, i = env.step(0)

@@ -3,7 +3,7 @@ import logging
 
 import numpy as np
 
-from energy_py.common.utils import dump_pickle, ensure_dir
+from energypy.common.utils import dump_pickle, ensure_dir
 
 logger = logging.getLogger(__name__)
 

@@ -1,12 +1,12 @@
 import numpy as np
 
-import energy_py
+import energypy
 
 
 def test_load_pickle_memory():
-    env = energy_py.make_env('cartpole-v0')
+    env = energypy.make_env('cartpole-v0')
 
-    mem = energy_py.make_memory(
+    mem = energypy.make_memory(
         memory_id='array', env=env)
 
     state = env.observation_space.sample()
@@ -21,7 +21,7 @@ def test_load_pickle_memory():
 
     mem.save('./results/test_mem.pkl')
 
-    new_mem = energy_py.make_memory(
+    new_mem = energypy.make_memory(
         load_path='./results/test_mem.pkl'
     )
 

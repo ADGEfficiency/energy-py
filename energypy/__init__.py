@@ -8,7 +8,6 @@ from energypy.common.memories import make_memory
 from energypy.common import policy_register
 
 from energypy.experiments import experiment, make_paths
-from energypy.experiments.datasets import load_dataset, get_dataset_path
 from energypy.experiments.runner import Runner
 
 from energypy.common.logging import make_logger
