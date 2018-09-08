@@ -8,6 +8,7 @@ energypy is built and maintained by Adam Green - [adam.green@adgefficiency.com](
 - [DQN debugging](http://adgefficiency.com/dqn-debugging/)
 - [DDQN hyperparameter tuning](http://adgefficiency.com/dqn-tuning/)
 - [example of low level API - DQN and battery environment](https://github.com/ADGEfficiency/energypy/blob/master/notebooks/examples/DQN_battery_example.ipynb)
+- [talk covering two years of lessons working on energypy](https://gitpitch.com/ADGEfficiency/energy-py-talk#/)
 
 ## Basic use
 
