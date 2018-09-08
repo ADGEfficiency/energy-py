@@ -2,11 +2,11 @@ import numpy as np
 
 from .game_2048 import Games, empty_boards
 
-from energy_py.envs import BaseEnv
+from energypy.envs import BaseEnv
 
-from energy_py.common.spaces import DiscreteSpace, GlobalSpace
+from energypy.common.spaces import DiscreteSpace, GlobalSpace
 
-from energy_py.common.spaces.continuous import ImageSpace
+from energypy.common.spaces.continuous import ImageSpace
 
 class Game2048(object):
 

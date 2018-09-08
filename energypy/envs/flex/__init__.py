@@ -1,1 +1,1 @@
-from energy_py.envs.flex.flex import Flex
+from energypy.envs.flex.flex import Flex

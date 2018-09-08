@@ -3,8 +3,8 @@ from random import random
 
 import numpy as np
 
-from energy_py.common import ContinuousSpace, GlobalSpace
-from energy_py.envs import BaseEnv
+from energypy.common import ContinuousSpace, GlobalSpace
+from energypy.envs import BaseEnv
 
 
 logger = logging.getLogger(__name__)
@@ -15,7 +15,7 @@ class Battery(BaseEnv):
     Electric battery storage - rewarded by price arbitrage
 
     optionally passed into BaseEnv via kwargs
-        dataset (str) located in energy_py/experiments/datasets
+        dataset (str) located in energypy/experiments/datasets
         episode_length (int)
         episode_start (int) integer index of episode start
         episode_random (bool) whether to randomize the episode start position
@@ -53,13 +53,13 @@ class Battery(BaseEnv):
         self.action_space.no_op = np.array([0]).reshape(1, 1)
 
         self.state_space.extend(ContinuousSpace(0, self.capacity),
-                                      'C_charge_level [MWh]')
+                                'C_charge_level [MWh]')
 
         self.observation_space.extend(ContinuousSpace(0, self.capacity),
                                       'C_charge_level [MWh]')
 
     def __repr__(self):
-        return '<energy_py BATTERY environment - {} MW {} MWh>'.format(
+        return '<energypy BATTERY environment - {} MW {} MWh>'.format(
             self.power_rating, self.capacity)
 
     def _reset(self):
@@ -104,7 +104,7 @@ class Battery(BaseEnv):
         args
             action (np.array) shape=(1, 1)
                 first dimension is the batch dimension - 1 for a single action
-                second dimension is the charge 
+                second dimension is the charge
                 (-self.rating <-> self.power_rating)
 
         returns

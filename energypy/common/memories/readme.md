@@ -18,25 +18,24 @@ class Agent
                                     next_observation, done)
 ```
 
-
-**calculate_returns()**
+## calculate_returns()
 - function to calculate the Monte Carlo discounted return
 
-**class Memory**
+## class Memory
 - the base class for memories
 - Experience namedtuple is used to hold a single sample of experience
 
-**class DequeMemory**
+## class DequeMemory
 - is the fastest impelmentation
 - uses a deque to store experience as namedtuples (one per step)
 - sampling by indexing experience and unpacking into arrays
 
-**class ArrayMemory**
+## class ArrayMemory
 - stores each dimension of experience (state, action etc)
   in separate numpy arrays
 - sampling experience is done by indexing each array
 
-**class PrioritizedReplay**
+## class PrioritizedReplay
 - implementation of prioritized experience replay
 
 [Schaul et. al (2015) Prioritized Experience Replay](https://arxiv.org/abs/1511.05952).

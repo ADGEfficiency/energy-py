@@ -1,12 +1,12 @@
-""" register for energy_py and gym envs """
+""" register for energypy and gym envs """
 
 import logging
 
-from energy_py.envs.flex import Flex
-from energy_py.envs.battery import Battery
-from energy_py.envs.gym import CartPoleEnv, PendulumEnv, MountainCarEnv
+from energypy.envs.flex import Flex
+from energypy.envs.battery import Battery
+from energypy.envs.gym import CartPoleEnv, PendulumEnv, MountainCarEnv
 
-from energy_py.envs.twenty_forty_eight.ep_wrapper import Game2048
+from energypy.envs.twenty_forty_eight.ep_wrapper import Game2048
 
 
 logger = logging.getLogger(__name__)

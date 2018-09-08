@@ -1,9 +1,6 @@
-import random
-
 import gym
-import numpy as np
 
-from energy_py.common import GlobalSpace, DiscreteSpace, ContinuousSpace
+from energypy.common import GlobalSpace, DiscreteSpace, ContinuousSpace
 
 
 class EnvWrapper(object):

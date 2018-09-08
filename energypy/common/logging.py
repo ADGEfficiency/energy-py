@@ -4,7 +4,7 @@ import logging.config
 
 def make_logger(paths, name=None):
     """
-    Sets up the energy_py logging stragety.  INFO to console, DEBUG to file.
+    Sets up the energypy logging stragety.  INFO to console, DEBUG to file.
 
     args
         paths (dict)

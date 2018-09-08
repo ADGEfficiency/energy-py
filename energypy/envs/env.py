@@ -4,11 +4,8 @@ import random
 import tensorflow as tf
 
 import numpy as np
-import pandas as pd
 
-import energy_py
-from energy_py.common.spaces import ContinuousSpace, DiscreteSpace, GlobalSpace
-from energy_py.common.utils import load_csv
+from energypy.common.spaces import GlobalSpace
 
 
 logger = logging.getLogger(__name__)
@@ -19,7 +16,7 @@ class BaseEnv(object):
     Generic time series environment
 
     args
-        dataset (str) located in energy_py/experiments/datasets
+        dataset (str) located in energypy/experiments/datasets
         episode_sample (str) i.e. fixed, random
         episode_length (int)
     """

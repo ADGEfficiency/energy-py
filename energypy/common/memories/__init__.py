@@ -1,11 +1,9 @@
 import logging
 
-from energy_py.common.memories.array_memory import ArrayMemory
-from energy_py.common.memories.deque_memory import DequeMemory
+from energypy.common.memories.array_memory import ArrayMemory
+from energypy.common.memories.deque_memory import DequeMemory
 
-from energy_py.common.memories.memory import calculate_returns
-
-from energy_py.common.utils import load_pickle
+from energypy.common.utils import load_pickle
 
 
 logger = logging.getLogger(__name__)

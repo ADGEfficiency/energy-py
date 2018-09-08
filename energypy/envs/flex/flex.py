@@ -9,8 +9,8 @@ import logging
 
 import numpy as np
 
-from energy_py.envs import BaseEnv
-from energy_py.common import ContinuousSpace, DiscreteSpace, GlobalSpace
+from energypy.envs import BaseEnv
+from energypy.common import ContinuousSpace, DiscreteSpace, GlobalSpace
 
 
 logger = logging.getLogger(__name__)
@@ -102,7 +102,7 @@ class Flex(BaseEnv):
         ))
 
     def __repr__(self):
-        return '<energy_py flex environment>'
+        return '<energypy flex environment>'
 
     def _reset(self):
         """

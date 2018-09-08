@@ -1,1 +1,1 @@
-from energy_py.envs.battery.battery import Battery
+from energypy.envs.battery.battery import Battery

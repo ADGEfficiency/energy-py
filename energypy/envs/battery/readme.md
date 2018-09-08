@@ -1,4 +1,5 @@
-## Battery environment
+# Battery environment
+
 An environment simulating electric battery storage.
 
 The action for this env is
@@ -20,7 +21,8 @@ reward = -(gross_rate / 12) * electricity_price
 The round trip efficiency of the battery is modelled by reducing the charge.
 
 ## Basic usage
-A demo Jupyter Notebook is [available here.](https://github.com/ADGEfficiency/energy_py/blob/master/energy_py/main/notebooks/battery/env_demo.ipynb).
+
+A demo Jupyter Notebook is [available here.](https://github.com/ADGEfficiency/energypy/blob/master/energypy/main/notebooks/battery/env_demo.ipynb).
 
 ## Key technical assumptions
 
