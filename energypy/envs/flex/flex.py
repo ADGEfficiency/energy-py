@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 class Flex(BaseEnv):
     """
-    ## demand side response model
+    Price responsive flexible demand model
 
     Asset can operate in four dimensions
     1. store demand (reducing site electricity consumption)
@@ -32,7 +32,7 @@ class Flex(BaseEnv):
     Storing and releasing supply is the the inverse - controlling an asset by
     increasing electricity consumption - avoiding consuming electricity later
 
-    ## structure of the agent
+    ## structure of the env
 
     Demand is stored and released from a deque.  A deque structure is used so that
     even if the agent keeps the setpoint raised, the demand will be released
@@ -256,32 +256,43 @@ class Flex(BaseEnv):
         #  positive means we are reducing cost
         reward = baseline_cost - optimized_cost
 
-        next_state = self.state_space(
-            self.steps + 1, np.array(
-                [self.steps + 1, self.stored_demand, self.stored_supply]
-            )
-        )
-
-        next_observation = self.observation_space(
-            self.steps + 1, np.array(
-                [self.stored_demand, self.stored_supply]
-            )
-        )
-
-        self.steps += 1
-
         done = False
-        if self.steps == (self.state_space.episode.shape[0] - 1):
+        # print(self.steps)
+        print(self.steps)
+        print(self.state_space.episode.shape)
+
+        if self.steps == self.state_space.episode.shape[0] - 1:
+            print('done')
             done = True
+
+            next_state = np.zeros((1, *self.state_space.shape))
+            next_observation = np.zeros((1, *self.observation_space.shape))
+
             # TODO add in mechanism to dump out stored demand
             # at the end of the episode
             # not implementing now because I want to see if the agents learn
             # that they can store for free at the end (ie in the last few
             # steps of the episode, where steps_left < release_time)
 
+        else:
+            next_state = self.state_space(
+                self.steps + 1, np.array(
+                    [self.steps + 1, self.stored_demand, self.stored_supply]
+                )
+            )
+
+            next_observation = self.observation_space(
+                self.steps + 1, np.array(
+                    [self.stored_demand, self.stored_supply]
+                )
+            )
+
+        self.steps += 1
+
         setpoint = 0
         if action == 1:
             setpoint = 1
+
         elif action == 2:
             setpoint = -1
 
@@ -309,5 +320,6 @@ class Flex(BaseEnv):
 
         self.state = next_state
         self.observation = next_observation
+
 
         return self.observation, reward, done, self.info
