@@ -1,18 +1,27 @@
 import io
+from os.path import join
 import pkg_resources
 
 import pandas as pd
 
 
 def load_dataset(dataset, name):
-    """ TODO only gets example data """
+    """ load example dataset or load from user supplied path """
 
-    path = 'experiments/datasets/example/{}.csv'.format(name)
+    if dataset == 'example':
 
-    data = pkg_resources.resource_string('energypy', path)
+        path = 'experiments/datasets/example/{}.csv'.format(name) 
+        data = pkg_resources.resource_string('energypy', path)
 
-    csv = pd.read_csv(
-        io.BytesIO(data), index_col=0, parse_dates=True
-    )
+        csv = pd.read_csv(
+            io.BytesIO(data), index_col=0, parse_dates=True
+        )
+
+    else:
+        csv = pd.read_csv(
+            join(dataset, name + '.csv'),
+            index_col=0,
+            parse_dates=True
+        )
 
     return csv
