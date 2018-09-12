@@ -61,3 +61,6 @@ def test_fixed():
     i = pd.DataFrame().from_dict(i)
 
     assert i.shape[0] == 108
+
+if __name__ == '__main__':
+    test_fixed()
