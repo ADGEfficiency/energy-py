@@ -62,20 +62,18 @@ class Runner(object):
         }
         episode_number = len(self.episode_rewards)
 
-        log_string = 'Episode {:0.0f} step {:0.0f}'.format(
+        log = 'ep {:0.0f} step {:0.0f} - avg_rew_100 {:0.2f}'.format(
             episode_number,
             self.step,
+            summaries['avg_rew_100']
         )
 
-        logger.debug(log_string)
-        [logger.debug('{} - {}'.format(k, v)) for k, v in summaries.items()]
-
         if episode_number % self.log_freq == 0:
-            logger.info(log_string)
-            logger.info('{} - {:2.1f}'.format(
-                'avg_rew_100', summaries['avg_rew_100']
-            )
-                        )
+            logger.info(log)
+
+        logger.debug(log)
+
+        [logger.debug('{} - {}'.format(k, v)) for k, v in summaries.items()]
 
         for tag, value in summaries.items():
             summary = tf.Summary(

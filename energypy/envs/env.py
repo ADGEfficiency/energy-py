@@ -20,10 +20,12 @@ class BaseEnv(object):
         episode_sample (str) i.e. fixed, random
         episode_length (int)
     """
-    def __init__(self,
-                 dataset='example',
-                 episode_sample='full',
-                 episode_length=2016):
+    def __init__(
+            self,
+            dataset='example',
+            episode_sample='full',
+            episode_length=2016
+    ):
 
         logger.info('Initializing environment {}'.format(repr(self)))
 
@@ -35,6 +37,9 @@ class BaseEnv(object):
 
         if episode_sample == 'full':
             self.sample_stragety = self.full_sample
+
+        if episode_sample == 'fixed':
+            self.sample_stragety = self.fixed_sample
 
         self.episode_length = min(
             int(episode_length),
@@ -126,6 +131,11 @@ class BaseEnv(object):
     def full_sample(self):
         start = 0
         end = self.state_space.data.shape[0]
+        return start, end
+
+    def fixed_sample(self):
+        start = 0
+        end = self.episode_length
         return start, end
 
     def get_state_variable(self, variable_name):
