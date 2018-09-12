@@ -166,12 +166,12 @@ class Battery(BaseEnv):
         else:
             next_state = self.state_space(
                 self.steps + 1,
-                np.array([new_charge])
+                np.array([self.charge])
             )
 
             next_observation = self.observation_space(
                 self.steps + 1,
-                np.array([new_charge])
+                np.array([self.charge])
             )
 
         self.steps += 1
