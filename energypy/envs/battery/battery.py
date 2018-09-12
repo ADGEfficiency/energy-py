@@ -27,12 +27,14 @@ class Battery(BaseEnv):
         initial_charge (float or str) inital charge as pct of capacity [%]
                                also possible to pass 'random'
     """
-    def __init__(self,
-                 power_rating=2.0,      # MW
-                 capacity=4.0,          # MWh
-                 round_trip_eff=0.9,    # %
-                 initial_charge=0.0,    # %
-                 **kwargs):
+    def __init__(
+            self,
+            power_rating=2.0,      # MW
+            capacity=4.0,          # MWh
+            round_trip_eff=0.9,    # %
+            initial_charge=0.0,    # %
+            **kwargs
+    ):
 
         self.power_rating = float(power_rating)
         self.capacity = float(capacity)
@@ -153,18 +155,26 @@ class Battery(BaseEnv):
 
         reward = - gross_rate * electricity_price / 12
 
-        next_state = self.state_space(
-            self.steps + 1, append=np.array(self.charge)
-        )
-        next_observation = self.observation_space(
-            self.steps + 1, append=np.array(self.charge)
-        )
+        done = False
+
+        if self.steps == self.state_space.episode.shape[0] - 1:
+            done = True
+
+            next_state = np.zeros((1, *self.state_space.shape))
+            next_observation = np.zeros((1, *self.observation_space.shape))
+
+        else:
+            next_state = self.state_space(
+                self.steps + 1,
+                np.array([new_charge])
+            )
+
+            next_observation = self.observation_space(
+                self.steps + 1,
+                np.array([new_charge])
+            )
 
         self.steps += 1
-
-        done = False
-        if self.steps == (self.state_space.episode.shape[0] - 1):
-            done = True
 
         info = {
             'step': self.steps,

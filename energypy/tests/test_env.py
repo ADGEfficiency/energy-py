@@ -5,9 +5,9 @@ import pandas as pd
 import energypy
 
 
-def test_random():
+def random(env):
     env = energypy.make_env(
-        'flex',
+        env,
         episode_sample='random',
         episode_length=24
     )
@@ -25,9 +25,9 @@ def test_random():
     assert i.shape[0] == 24
 
 
-def test_full():
+def full(env):
     env = energypy.make_env(
-        'flex',
+        env,
         episode_sample='full'
     )
 
@@ -43,9 +43,10 @@ def test_full():
 
     assert i.shape[0] == env.state_space.data.shape[0]
 
-def test_fixed():
+
+def fixed(env):
     env = energypy.make_env(
-        'flex',
+        env,
         episode_sample='fixed',
         episode_length=108
     )
@@ -62,5 +63,13 @@ def test_fixed():
 
     assert i.shape[0] == 108
 
-if __name__ == '__main__':
-    test_fixed()
+
+tests = [random, full, fixed]
+
+
+def test_battery():
+    [test('battery') for test in tests]
+
+
+def test_flex():
+    [test('flex') for test in tests]

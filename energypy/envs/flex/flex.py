@@ -247,6 +247,13 @@ class Flex(BaseEnv):
         #     print('{} stored demand {} site_consumption'.format(
         #         stored_demand, site_consumption))
 
+        setpoint = 0
+        if action == 1:
+            setpoint = 1
+
+        elif action == 2:
+            setpoint = -1
+
         electricity_price = self.get_state_variable(
             'C_electricity_price [$/MWh]')
         baseline_cost = site_demand * electricity_price / 12
@@ -257,12 +264,8 @@ class Flex(BaseEnv):
         reward = baseline_cost - optimized_cost
 
         done = False
-        # print(self.steps)
-        print(self.steps)
-        print(self.state_space.episode.shape)
 
         if self.steps == self.state_space.episode.shape[0] - 1:
-            print('done')
             done = True
 
             next_state = np.zeros((1, *self.state_space.shape))
@@ -276,25 +279,17 @@ class Flex(BaseEnv):
 
         else:
             next_state = self.state_space(
-                self.steps + 1, np.array(
-                    [self.steps + 1, self.stored_demand, self.stored_supply]
-                )
+                self.steps + 1,
+                np.array([self.steps + 1, self.stored_demand,
+                          self.stored_supply])
             )
 
             next_observation = self.observation_space(
-                self.steps + 1, np.array(
-                    [self.stored_demand, self.stored_supply]
-                )
+                self.steps + 1,
+                np.array([self.stored_demand, self.stored_supply])
             )
 
         self.steps += 1
-
-        setpoint = 0
-        if action == 1:
-            setpoint = 1
-
-        elif action == 2:
-            setpoint = -1
 
         info = {
             'step': self.steps,
@@ -320,6 +315,5 @@ class Flex(BaseEnv):
 
         self.state = next_state
         self.observation = next_observation
-
 
         return self.observation, reward, done, self.info
