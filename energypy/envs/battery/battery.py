@@ -174,8 +174,6 @@ class Battery(BaseEnv):
                 np.array([self.charge])
             )
 
-        self.steps += 1
-
         info = {
             'step': self.steps,
             'state': self.state,
@@ -197,6 +195,7 @@ class Battery(BaseEnv):
         self.info = self.update_info(**info)
         [logger.debug('{} {}'.format(k, v)) for k, v in info.items()]
 
+        self.steps += 1
         self.state = next_state
         self.observation = next_observation
 

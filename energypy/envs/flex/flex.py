@@ -240,6 +240,10 @@ class Flex(BaseEnv):
         if self.stored_demand >= self.capacity:
             site_consumption += self.dump_demand()
 
+        #  do the same if the episode is over - dump everything out
+        if self.steps == self.state_space.episode.shape[0] - 1:
+            site_consumption += self.dump_demand()
+
         logging.debug('released demand {}'.format(released_demand))
 
         # if action == 1:
@@ -271,12 +275,6 @@ class Flex(BaseEnv):
             next_state = np.zeros((1, *self.state_space.shape))
             next_observation = np.zeros((1, *self.observation_space.shape))
 
-            # TODO add in mechanism to dump out stored demand
-            # at the end of the episode
-            # not implementing now because I want to see if the agents learn
-            # that they can store for free at the end (ie in the last few
-            # steps of the episode, where steps_left < release_time)
-
         else:
             next_state = self.state_space(
                 self.steps + 1,
@@ -288,8 +286,6 @@ class Flex(BaseEnv):
                 self.steps + 1,
                 np.array([self.stored_demand, self.stored_supply])
             )
-
-        self.steps += 1
 
         info = {
             'step': self.steps,
@@ -313,6 +309,7 @@ class Flex(BaseEnv):
         self.info = self.update_info(**info)
         [logger.debug('{} {}'.format(k, v)) for k, v in info.items()]
 
+        self.steps += 1
         self.state = next_state
         self.observation = next_observation
 
