@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 import gym
 
 from energypy.common import GlobalSpace, DiscreteSpace, ContinuousSpace
@@ -7,6 +9,7 @@ class EnvWrapper(object):
 
     def __init__(self, env):
         self.env = env
+        self.info = defaultdict(list)
 
     def __repr__(self):
         return repr(self.env)
@@ -36,7 +39,9 @@ class CartPoleEnv(EnvWrapper):
 
     def step(self, action):
         #  doesn't accept an array!
-        return self.env.step(action[0][0])
+        next_state, reward, done, info = self.env.step(action[0][0])
+        self.info['reward'].append(reward)
+        return next_state, reward, done, self.info
 
 
 class PendulumEnv(EnvWrapper):
