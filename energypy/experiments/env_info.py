@@ -44,6 +44,7 @@ def save_env_info(env, info, episode, env_hist_path=None):
 
         try:
             logger.debug(output.loc[:, ['action', 'reward']].describe())
+
         except KeyError:
             pass
 
@@ -87,6 +88,6 @@ def process_env_info(env, info):
         output.append(df)
 
     output = pd.concat(output, axis=1)
-    output.index = env.state_space.episode.index[:-1]
+    output.index = env.state_space.episode.index
 
     return output

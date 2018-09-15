@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class DQN(BaseAgent):
+
     def __init__(
             self,
             discount=0.95,

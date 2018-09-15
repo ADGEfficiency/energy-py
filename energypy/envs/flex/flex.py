@@ -58,6 +58,7 @@ class Flex(BaseEnv):
     ):
 
         self.capacity = float(capacity)
+        #  this should look at the max of the data ????
         self.supply_capacity = float(supply_capacity)
 
         self.release_time = int(release_time)
@@ -146,46 +147,42 @@ class Flex(BaseEnv):
 
     def release_supply(self, demand):
         """ net off our demand with some stored supply """
-        """ args MW return MW """
-        released = min(demand / 12, self.stored_supply)
+        """ args MWh return MWh """
+        released = min(demand, self.stored_supply)
         self.stored_supply -= released
-        return released * 12
+        return released
 
     def store_demand(self, demand):
         """ always store - check for the capacity done elsewhere """
-        """ args MW return MW """
-        self.storage_history.appendleft(demand / 12)
-
-        logger.debug('storing {}'.format(self.storage_history))
+        """ args MWh return MWh """
+        self.storage_history.appendleft(demand)
         return demand
 
     def dump_demand(self):
-        """ returns MW """
+        """ returns MWh """
         dumped = sum(self.storage_history)
 
         [self.storage_history.appendleft(0)
          for _ in range(self.storage_history.maxlen)]
-
         assert self.stored_demand == 0
 
-        return dumped * 12
+        return dumped
 
     def store_supply(self, demand):
-        """ args MW return MW """
-        old_precool = self.stored_supply
+        """ args MWh return MWh """
+        old_stored_supply = self.stored_supply  # MWh
 
-        power_capacity_for_supply = self.supply_power - demand
+        #  here we are assuming that supply power can always be
+        #  met in excess of whatever demand there is
 
         stored_supply = np.min(
-            [self.supply_capacity - old_precool,
-            power_capacity_for_supply / 12]
+            [self.supply_capacity - old_stored_supply,
+            self.supply_power / 12]
         )
 
         self.stored_supply += stored_supply
 
-        precooling = stored_supply * 12
-
-        return demand + precooling
+        return demand + stored_supply
 
     def _step(self, action):
         """
@@ -202,36 +199,40 @@ class Flex(BaseEnv):
         """
         action = action[0][0]  #  could do this in BaseAgent
 
+        #  do everything in the MWh / 5 min space
         site_demand = self.get_state_variable('C_demand [MW]') / 12
         site_consumption = site_demand
 
         #  these can be simplified - unless info wanted for debug
-        #  ie move from var = self.fun(). site_cons += var
+        #  ie move from var = self.fun(), site_cons += var
         #  to site_cons += self.fun() etc
+
+        #  could just return info from the funcs if you want it here
 
         released_demand = self.storage_history.pop()
 
         #  no-op
         if action == 0:
+            setpoint = 0
             released_supply = self.release_supply(site_consumption)
             self.storage_history.appendleft(0)
-            # print('released supply {}'.format(released_supply))
             site_consumption -= released_supply
 
         #  raising setpoint (reducing demand)
         if action == 1:
+            setpoint = 1
             stored_demand = self.store_demand(site_consumption)
             site_consumption -= stored_demand
-            # print('{} stored demand {} site_consumption'.format(
-            #     stored_demand, site_consumption))
 
-        site_consumption += released_demand * 12
+        site_consumption += released_demand
 
         #  reducing setpoint (increasing demand)
         if action == 2:
+            setpoint = -1
             stored_demand_dump = self.dump_demand()
             site_consumption += stored_demand_dump
 
+            #  different logic (returning site cons from func)
             site_consumption = self.store_supply(site_consumption)
 
         #  dump out the entire stored demand if we reach capacity
@@ -246,22 +247,10 @@ class Flex(BaseEnv):
 
         logging.debug('released demand {}'.format(released_demand))
 
-        # if action == 1:
-        #     print('test before save')
-        #     print('{} stored demand {} site_consumption'.format(
-        #         stored_demand, site_consumption))
-
-        setpoint = 0
-        if action == 1:
-            setpoint = 1
-
-        elif action == 2:
-            setpoint = -1
-
         electricity_price = self.get_state_variable(
             'C_electricity_price [$/MWh]')
-        baseline_cost = site_demand * electricity_price / 12
-        optimized_cost = site_consumption * electricity_price / 12
+        baseline_cost = site_demand * electricity_price * 12
+        optimized_cost = site_consumption * electricity_price * 12
 
         #  negative means we are increasing cost
         #  positive means we are reducing cost

@@ -40,6 +40,7 @@ class CartPoleEnv(EnvWrapper):
     def step(self, action):
         #  doesn't accept an array!
         next_state, reward, done, info = self.env.step(action[0][0])
+        self.info['action'].append(action[0][0])
         self.info['reward'].append(reward)
         return next_state, reward, done, self.info
 
