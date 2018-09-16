@@ -103,6 +103,7 @@ class GlobalSpace(object):
         ).reshape(1, *self.shape)
 
     def discretize(self, num_discrete):
+        #  TODO makes sense for num_discrete to be odd to ensure you get a 0
         self.discrete_spaces = np.array([
             a for a in itertools.product(
                 *[spc.discretize(num_discrete) for spc in self.spaces])

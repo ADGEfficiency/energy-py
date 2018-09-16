@@ -148,25 +148,28 @@ class Flex(BaseEnv):
     def release_supply(self, demand):
         """ net off our demand with some stored supply """
         """ args MWh return MWh """
-        released = min(demand, self.stored_supply)
-        self.stored_supply -= released
-        return released
+        released_supply = min(demand, self.stored_supply)
+        self.stored_supply -= released_supply
+        self.storage_history.appendleft(0)
+        demand -= released_supply
+        return demand, released_supply
 
-    def store_demand(self, demand):
+    def store_demand(self, stored_demand):
         """ always store - check for the capacity done elsewhere """
         """ args MWh return MWh """
-        self.storage_history.appendleft(demand)
-        return demand
+        self.storage_history.appendleft(stored_demand)
 
-    def dump_demand(self):
-        """ returns MWh """
+        return 0, stored_demand
+
+    def dump_demand(self, demand):
+        """ args MWh returns MWh """
         dumped = sum(self.storage_history)
 
         [self.storage_history.appendleft(0)
          for _ in range(self.storage_history.maxlen)]
         assert self.stored_demand == 0
 
-        return dumped
+        return demand - dumped, dumped
 
     def store_supply(self, demand):
         """ args MWh return MWh """
@@ -182,7 +185,7 @@ class Flex(BaseEnv):
 
         self.stored_supply += stored_supply
 
-        return demand + stored_supply
+        return demand + stored_supply, stored_supply
 
     def _step(self, action):
         """
@@ -203,47 +206,37 @@ class Flex(BaseEnv):
         site_demand = self.get_state_variable('C_demand [MW]') / 12
         site_consumption = site_demand
 
-        #  these can be simplified - unless info wanted for debug
-        #  ie move from var = self.fun(), site_cons += var
-        #  to site_cons += self.fun() etc
-
-        #  could just return info from the funcs if you want it here
-
-        released_demand = self.storage_history.pop()
-
         #  no-op
         if action == 0:
             setpoint = 0
-            released_supply = self.release_supply(site_consumption)
-            self.storage_history.appendleft(0)
-            site_consumption -= released_supply
+            site_consumption, released_supply = self.release_supply(site_consumption)
 
         #  raising setpoint (reducing demand)
         if action == 1:
             setpoint = 1
-            stored_demand = self.store_demand(site_consumption)
-            site_consumption -= stored_demand
+            site_consumption, stored_demand = self.store_demand(site_consumption)
 
+        #  done after the setpoint raising so we don't re-store demand
+        released_demand = self.storage_history.pop()
         site_consumption += released_demand
 
         #  reducing setpoint (increasing demand)
         if action == 2:
             setpoint = -1
-            stored_demand_dump = self.dump_demand()
-            site_consumption += stored_demand_dump
+            site_consumption, stored_demand_dump = self.dump_demand(site_consumption)
 
             #  different logic (returning site cons from func)
-            site_consumption = self.store_supply(site_consumption)
+            site_consumption, stored_supply = self.store_supply(site_consumption)
 
         #  dump out the entire stored demand if we reach capacity
         #  this is the chiller ramping up to full when return temp gets
         #  too high
         if self.stored_demand >= self.capacity:
-            site_consumption += self.dump_demand()
+            site_consumption += self.dump_demand(site_consumption)[0]
 
         #  do the same if the episode is over - dump everything out
         if self.steps == self.state_space.episode.shape[0] - 1:
-            site_consumption += self.dump_demand()
+            site_consumption += self.dump_demand(site_consumption)[0]
 
         logging.debug('released demand {}'.format(released_demand))
 
