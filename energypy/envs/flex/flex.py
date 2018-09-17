@@ -17,37 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class Flex(BaseEnv):
-    """
-    Price responsive flexible demand model
-
-    Asset can operate in four dimensions
-    1. store demand (reducing site electricity consumption)
-    2. release demand (increasing site electricity consumption)
-    3. storing supply (increases site electricity consumption)
-    4. releasing supply (decreases site electricity consumption)
-
-    Storing and releasing demand is the classic use of demand side response
-    where the control is based on reducing the asset electricity consumption
-
-    Storing and releasing supply is the the inverse - controlling an asset by
-    increasing electricity consumption - avoiding consuming electricity later
-
-    ## structure of the env
-
-    Demand is stored and released from a deque.  A deque structure is used so that
-    even if the agent keeps the setpoint raised, the demand will be released
-    The time difference between store and release is the length of the deque
-
-    Supply is stored using a float.  Because supply is a cost, the agent not using
-    it by releasing is behaviour I want the agent to learn to avoid
-
-    The structure of the agent is inspired by anecdotal observation of
-    commerical chiller plants reacting to three different setpoints
-    - increased (demand stored)
-    - no_op
-    - decreased (supply stored - i.e. precooling)
-
-    """
+    """ price responsive flexible demand model """
     def __init__(
             self,
             capacity=4.0,         # MWh
@@ -58,7 +28,8 @@ class Flex(BaseEnv):
     ):
 
         self.capacity = float(capacity)
-        #  this should look at the max of the data ????
+
+        #  this should look at the max of the data - TODO
         self.supply_capacity = float(supply_capacity)
 
         self.release_time = int(release_time)
@@ -113,14 +84,20 @@ class Flex(BaseEnv):
            observation (np.array) the initial observation
         """
         self.steps = 0
+        self._charge = 0  # MWh
 
-        self._charge = 0  #MWh
+        """
+        Demand is stored and released from a deque.  A deque is used so that
+        even if the agent keeps the setpoint raised, the demand will be released
 
-        #  use a deque for stored demand (all MWh per 5min)
+        The time difference between store and release is the length of the deque
+
+        The deque stores MWh/5 min
+        """
         self.storage_history = deque(maxlen=self.release_time)
         [self.storage_history.appendleft(0) for _ in range(self.release_time)]
 
-        #  float for stored supply
+        #  use a float for the inverse of stored demand
         self.stored_supply = 0  # MWh
 
         self.state = self.state_space(
@@ -150,7 +127,7 @@ class Flex(BaseEnv):
         """ args MWh return MWh """
         released_supply = min(demand, self.stored_supply)
         self.stored_supply -= released_supply
-        self.storage_history.appendleft(0)
+        # self.storage_history.appendleft(0)  ?????
         demand -= released_supply
         return demand, released_supply
 
@@ -161,7 +138,7 @@ class Flex(BaseEnv):
 
         return 0, stored_demand
 
-    def dump_demand(self, demand):
+    def release_demand(self, demand):
         """ args MWh returns MWh """
         dumped = sum(self.storage_history)
 
@@ -188,72 +165,60 @@ class Flex(BaseEnv):
         return demand + stored_supply, stored_supply
 
     def _step(self, action):
-        """
-        One step through the environment
-
-        args
-            action (np.array) shape=(1, 1)
-
-        returns
-            observation (np.array) shape=(1, self.observation_space.shape*)
-            reward (float)
-            done (bool)
-            info (dict)
-        """
+        """ one step through the environment """
         action = action[0][0]  #  could do this in BaseAgent
 
         #  do everything in the MWh / 5 min space
         site_demand = self.get_state_variable('C_demand [MW]') / 12
-        site_consumption = site_demand
+        flexed = site_demand 
 
         #  no-op
         if action == 0:
             setpoint = 0
-            site_consumption, released_supply = self.release_supply(site_consumption)
+            flexed, released_supply = self.release_supply(flexed)
 
         #  raising setpoint (reducing demand)
         if action == 1:
             setpoint = 1
-            site_consumption, stored_demand = self.store_demand(site_consumption)
+            flexed, stored_demand = self.store_demand(flexed)
 
         #  done after the setpoint raising so we don't re-store demand
         released_demand = self.storage_history.pop()
-        site_consumption += released_demand
+        flexed += released_demand
 
         #  reducing setpoint (increasing demand)
         if action == 2:
             setpoint = -1
-            site_consumption, stored_demand_dump = self.dump_demand(site_consumption)
+            flexed, stored_demand_dump = self.release_demand(flexed)
 
             #  different logic (returning site cons from func)
-            site_consumption, stored_supply = self.store_supply(site_consumption)
+            flexed, stored_supply = self.store_supply(flexed)
 
         #  dump out the entire stored demand if we reach capacity
         #  this is the chiller ramping up to full when return temp gets
         #  too high
         if self.stored_demand >= self.capacity:
-            site_consumption += self.dump_demand(site_consumption)[0]
+            flexed += self.release_demand(flexed)[0]
 
         #  do the same if the episode is over - dump everything out
         if self.steps == self.state_space.episode.shape[0] - 1:
-            site_consumption += self.dump_demand(site_consumption)[0]
+            flexed += self.release_demand(flexed)[0]
 
         logging.debug('released demand {}'.format(released_demand))
 
         electricity_price = self.get_state_variable(
             'C_electricity_price [$/MWh]')
         baseline_cost = site_demand * electricity_price * 12
-        optimized_cost = site_consumption * electricity_price * 12
+        flexed_cost = flexed * electricity_price * 12
 
         #  negative means we are increasing cost
         #  positive means we are reducing cost
-        reward = baseline_cost - optimized_cost
+        reward = baseline_cost - flexed_cost
 
         done = False
 
         if self.steps == self.state_space.episode.shape[0] - 1:
             done = True
-
             next_state = np.zeros((1, *self.state_space.shape))
             next_observation = np.zeros((1, *self.observation_space.shape))
 
@@ -283,8 +248,8 @@ class Flex(BaseEnv):
             'stored_demand': self.stored_demand,
             'stored_supply': self.stored_supply,
             'site_demand': site_demand,
-            'site_consumption': site_consumption,
-            'net_discharged': site_consumption - site_demand,
+            'flexed': flexed,
+            'net_discharged': flexed - site_demand,
             'setpoint': setpoint,
                 }
 
