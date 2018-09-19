@@ -323,8 +323,13 @@ class DQN(BaseAgent):
                     name='learning_rate'
                 )
 
-            optimizer = tf.train.AdamOptimizer(
-                learning_rate=self.learning_rate)
+            # optimizer = tf.train.AdamOptimizer(
+            #     learning_rate=self.learning_rate
+            # )
+
+            optimizer = tf.train.RMSPropOptimizer(
+                learning_rate=self.learning_rate
+            )
 
             with tf.variable_scope('gradient_clipping'):
 
