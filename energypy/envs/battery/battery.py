@@ -32,7 +32,7 @@ class Battery(BaseEnv):
             power_rating=2.0,      # MW
             capacity=4.0,          # MWh
             round_trip_eff=0.9,    # %
-            initial_charge=0.0,    # %
+            initial_charge=0.5,    # %
             **kwargs
     ):
 
