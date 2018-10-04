@@ -67,8 +67,6 @@ def experiment(
         total_steps,
 ):
     """ experiment of multiple episodes with learning """
-
-
     #  outer while loop runs through multiple episodes
     step, episode = 0, 0
 
@@ -110,7 +108,7 @@ def experiment(
 
 
 def pre_train(agent, pre_train_steps):
-    """ code to fit the value function from an existing memory """
+    """ fit the value function from an existing memory """
     assert len(agent.memory) > 1000
 
     logging('pretraining agent for {} steps'.format(

@@ -135,7 +135,6 @@ class Flex(BaseEnv):
         """ always store - check for the capacity done elsewhere """
         """ args MWh return MWh """
         self.storage_history.appendleft(stored_demand)
-
         return 0, stored_demand
 
     def release_demand(self, demand):
@@ -157,7 +156,7 @@ class Flex(BaseEnv):
 
         stored_supply = np.min(
             [self.supply_capacity - old_stored_supply,
-            self.supply_power / 12]
+            (self.supply_power / 12) - demand]
         )
 
         self.stored_supply += stored_supply
@@ -170,41 +169,34 @@ class Flex(BaseEnv):
 
         #  do everything in the MWh / 5 min space
         site_demand = self.get_state_variable('C_demand [MW]') / 12
-        flexed = site_demand 
+        flexed = site_demand
 
         #  no-op
         if action == 0:
             setpoint = 0
             flexed, released_supply = self.release_supply(flexed)
+            flexed, dumped = self.release_demand(flexed)
 
         #  raising setpoint (reducing demand)
         if action == 1:
             setpoint = 1
             flexed, stored_demand = self.store_demand(flexed)
 
-        #  done after the setpoint raising so we don't re-store demand
-        released_demand = self.storage_history.pop()
-        flexed += released_demand
-
         #  reducing setpoint (increasing demand)
         if action == 2:
             setpoint = -1
             flexed, stored_demand_dump = self.release_demand(flexed)
-
-            #  different logic (returning site cons from func)
             flexed, stored_supply = self.store_supply(flexed)
 
         #  dump out the entire stored demand if we reach capacity
         #  this is the chiller ramping up to full when return temp gets
         #  too high
         if self.stored_demand >= self.capacity:
-            flexed += self.release_demand(flexed)[0]
+            flexed, dumped = self.release_demand(flexed)
 
         #  do the same if the episode is over - dump everything out
         if self.steps == self.state_space.episode.shape[0] - 1:
-            flexed += self.release_demand(flexed)[0]
-
-        logging.debug('released demand {}'.format(released_demand))
+            flexed, dumped = self.release_demand(flexed)
 
         electricity_price = self.get_state_variable(
             'C_electricity_price [$/MWh]')

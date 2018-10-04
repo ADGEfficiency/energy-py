@@ -1,4 +1,4 @@
-""" tests for the energypy flex environment """
+""" tests for the energypy flexed environment """
 
 import numpy as np
 import pandas as pd
@@ -7,7 +7,7 @@ import energypy
 
 
 def check_energy_balance(info):
-    inc_consumption = info['site_consumption'].sum() - info['site_demand'].sum()
+    inc_consumption = info['flexed'].sum() - info['site_demand'].sum()
     assert inc_consumption >= 0
 
 
@@ -58,17 +58,17 @@ def test_increase_setpoint():
 
     info = pd.DataFrame().from_dict(i)
 
-    sub = info.loc[:, ['site_demand', 'site_consumption', 'setpoint']]
+    sub = info.loc[:, ['site_demand', 'flexed', 'setpoint']]
 
     np.testing.assert_array_equal(
-        info.loc[:, 'site_consumption'].values[2:5],
+        info.loc[:, 'flexed'].values[2:5],
         np.zeros(5-2)
     )
 
     np.testing.assert_array_almost_equal(
         info.loc[:, 'site_demand'].values[5:5+3] +
         info.loc[:, 'site_demand'].values[2:5],
-        info.loc[:, 'site_consumption'].values[5:5+3]
+        info.loc[:, 'flexed'].values[5:5+3]
     )
 
 
@@ -94,24 +94,16 @@ def test_decrease_setpoint():
 
         if (step >= 2) and (step <= 5):
             act = np.array(2)
-            print(step, act)
 
         next_obs, r, done, i = env.step(act)
         step += 1
 
     info = pd.DataFrame().from_dict(i)
 
-    sub = info.loc[:, ['site_demand', 'site_consumption', 'setpoint',
+    sub = info.loc[:, ['site_demand', 'flexed', 'setpoint',
                        'stored_supply']]
 
-    print(sub.head(15))
-
-    np.testing.assert_array_equal(
-        info.loc[:, 'site_consumption'].values[2:5],
-        np.full(5-2, env.supply_power)
-    )
-
-    np.testing.assert_almost_equal(
-        env.supply_power * 4 / 12 - np.sum(info.loc[:, 'site_demand'].values[2:6]) / 12,
-        info.loc[:, 'stored_supply'][5]
+    np.testing.assert_array_almost_equal(
+        info.loc[:, 'flexed'].values[2:5],
+        np.full(5-2, env.supply_power / 12)
     )
