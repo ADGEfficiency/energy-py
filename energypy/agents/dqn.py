@@ -40,8 +40,8 @@ class DQN(BaseAgent):
             epsilon_decay_fraction=0.3,
             initial_epsilon=1.0,
             final_epsilon=0.05,
-            initial_temp=10,
-            final_temp=0.5,
+            initial_temp=1.0,
+            final_temp=0.05,
 
             batch_size=64,
             learning_rate=0.001,
