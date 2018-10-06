@@ -2,9 +2,7 @@
 
 energypy supports running reinforcement learning experiments on energy environments.
 
-energypy is built and maintained by Adam Green - [adam.green@adgefficiency.com](adam.green@adgefficiency.com).  
-
-[![Build Status](https://travis-ci.org/ADGEfficiency/energy-py.svg?branch=master)](https://travis-ci.org/ADGEfficiency/energy-py)
+energypy is built and maintained by Adam Green - [adam.green@adgefficiency.com](adam.green@adgefficiency.com) - [![Build Status](https://travis-ci.org/ADGEfficiency/energy-py.svg?branch=master)](https://travis-ci.org/ADGEfficiency/energy-py)
 
 - [introductory blog post](http://www.adgefficiency.com/energypy-reinforcement-learning-for-energy-systems/)
 - [DQN debugging](http://adgefficiency.com/dqn-debugging/)
