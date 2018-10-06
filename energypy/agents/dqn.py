@@ -40,8 +40,6 @@ class DQN(BaseAgent):
             epsilon_decay_fraction=0.3,
             initial_epsilon=1.0,
             final_epsilon=0.05,
-            initial_temp=1.0,
-            final_temp=0.05,
 
             batch_size=64,
             learning_rate=0.001,
@@ -84,8 +82,6 @@ class DQN(BaseAgent):
         self.epsilon_decay_fraction = float(epsilon_decay_fraction)
         self.initial_epsilon = float(initial_epsilon)
         self.final_epsilon = float(final_epsilon)
-        self.initial_temp = float(initial_temp)
-        self.final_temp = float(final_temp)
 
         self.batch_size = int(batch_size)
         self.learning_rate = float(learning_rate)
@@ -216,16 +212,15 @@ class DQN(BaseAgent):
             elif self.policy == 'softmax':
                 policy_params = softmax_policy(
                     self.online_q_values,
-                    self.online_q_values,
                     self.discrete_actions_tensor,
                     self.learn_step_tensor,
                     self.total_steps,
-                    self.initial_temp,
-                    self.final_temp
+                    self.initial_epsilon,
+                    self.final_epsilon
                 )
 
                 #  TODO
-                self.temp, _, self.log_probs, self.entropy, _, self.policy = policy_params
+                self.epsilon, _, self.log_probs, self.entropy, _, self.policy = policy_params
 
             else:
                 raise ValueError('{} policy not supported'.format(self.policy))
