@@ -3,6 +3,7 @@ import itertools
 
 import pandas as pd
 import numpy as np
+from sklearn.preprocessing import StandardScaler
 
 import energypy
 from energypy.common.spaces.discrete import DiscreteSpace
@@ -52,7 +53,14 @@ class GlobalSpace(object):
         return (len(self.spaces), )
 
     def from_dataset(self, dataset='example'):
-        self.data = energypy.load_dataset(dataset, self.name)
+        data = energypy.load_dataset(dataset, self.name)
+
+        if self.name == 'observation':
+            data.loc[:, :] = StandardScaler().fit_transform(data.values)
+            logger.debug('scaled {} dataset'.format(self.name))
+            logger.info(data.describe())
+
+        self.data = data
 
         self.info = self.data.columns.tolist()
 
