@@ -53,8 +53,6 @@ def save_env_info(env, info, episode, env_hist_path=None):
     else:
         logger.debug('Not saving env history')
 
-    return output
-
 
 
 def process_env_info(env, info):
