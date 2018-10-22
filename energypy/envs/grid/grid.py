@@ -82,12 +82,20 @@ market = [
 
 bid_stack = [participant.bid() for participant in market]
 
-dispatch = settle_market(bid_stack, demand=25, date='1')
-
-print(dispatch)
+dispatched_bids = settle_market(bid_stack, demand=25, date='1')
 
 #  could do this in settlemarket
-df = pd.concat(
-    [pd.DataFrame(bid._asdict(), index=[bid.date]) for bid in dispatch],
+bids = pd.concat(
+    [pd.DataFrame(bid._asdict(), index=[bid.date]) for bid in dispatched_bids],
     axis=0
 )
+
+aggs = {
+    'price': np.max,
+    'offer': np.sum,
+    'dispatch': np.sum
+}
+
+summary = bids.groupby(bids.index).agg(aggs)
+
+#  todo carbon
