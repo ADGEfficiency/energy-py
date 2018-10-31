@@ -318,11 +318,7 @@ class DQN(BaseAgent):
                     name='learning_rate'
                 )
 
-            # optimizer = tf.train.AdamOptimizer(
-            #     learning_rate=self.learning_rate
-            # )
-
-            optimizer = tf.train.RMSPropOptimizer(
+            optimizer = tf.train.AdamOptimizer(
                 learning_rate=self.learning_rate
             )
 
