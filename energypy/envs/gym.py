@@ -51,8 +51,11 @@ class PendulumEnv(EnvWrapper):
         env = gym.make('Pendulum-v0')
         super(PendulumEnv, self).__init__(env)
 
-        self.observation_space = GlobalSpace('observation').from_spaces(
-            ContinuousSpace(low=-env.max_torque, high=env.max_torque)
+        self.observation_space = self.env.observation_space
+
+        self.action_space = GlobalSpace('action').from_spaces(
+            ContinuousSpace(low=-env.env.max_torque, high=env.env.max_torque),
+            'applied_torque'
         )
 
 

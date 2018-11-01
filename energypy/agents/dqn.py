@@ -32,7 +32,7 @@ class DQN(BaseAgent):
 
             layers=(64, 32, 16),
 
-            num_discrete_actions=20,
+            num_discrete_actions=5,
 
             memory_fraction=0.2,
 
