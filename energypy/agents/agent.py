@@ -24,7 +24,8 @@ class BaseAgent(object):
             min_reward=-10,
             max_reward=10,
             act_path='./act_path',
-            learn_path='./learn_path'
+            learn_path='./learn_path',
+            **kwargs
     ):
 
         self.sess = sess
