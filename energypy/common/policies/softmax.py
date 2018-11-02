@@ -12,13 +12,6 @@ def softmax_policy(
     """
     A softmax aka a Boltzmann policy
 
-    args
-        q_values (tensor) (batch_size, num_actions)
-        temperature (tensor) (1,)
-
-    returns
-        actions (tensor) (batch_size, action_dimensions)
-
     Higher temperature -> more exploration
 
     Basic structure of the policy from here
