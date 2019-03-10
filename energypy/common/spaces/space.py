@@ -1,16 +1,11 @@
-import logging
 import itertools
 
-import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 
 import energypy
 from energypy.common.spaces.discrete import DiscreteSpace
 from energypy.common.spaces.continuous import ContinuousSpace
-
-
-logger = logging.getLogger(__name__)
 
 
 class GlobalSpace(object):
@@ -57,8 +52,6 @@ class GlobalSpace(object):
 
         if self.name == 'observation':
             data.loc[:, :] = StandardScaler().fit_transform(data.values)
-            logger.debug('scaled {} dataset'.format(self.name))
-            logger.info(data.describe())
 
         self.data = data
 
@@ -77,7 +70,7 @@ class GlobalSpace(object):
             labels = [labels]
 
         self.spaces = spaces
-        self.info = labels 
+        self.info = labels
 
         return self
 

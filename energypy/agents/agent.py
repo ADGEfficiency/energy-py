@@ -48,13 +48,6 @@ class BaseAgent(object):
         self.act_step = 0
         self.learn_step = 0
 
-        #  TODO replace the lists with defaultdict(list)
-        # self.act_summaries = []
-        # self.act_writer = tf.summary.FileWriter(act_path)
-
-        # self.learn_summaries = []
-        # self.learn_writer = tf.summary.FileWriter(learn_path)
-
         self.summaries = {
             'acting': [],
             'learning': []

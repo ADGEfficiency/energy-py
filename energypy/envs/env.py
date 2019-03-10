@@ -1,5 +1,4 @@
 import collections
-import logging
 import random
 import tensorflow as tf
 
@@ -8,26 +7,23 @@ import numpy as np
 from energypy.common.spaces import GlobalSpace
 
 
-logger = logging.getLogger(__name__)
-
-
 class BaseEnv(object):
     """
     Generic time series environment
 
     args
+        seed (int)
         dataset (str) located in energypy/experiments/datasets
         episode_sample (str) i.e. fixed, random
         episode_length (int)
     """
     def __init__(
             self,
+            seed=None,
             dataset='example',
             episode_sample='full',
             episode_length=2016
     ):
-
-        logger.info('Initializing environment {}'.format(repr(self)))
 
         self.state_space = GlobalSpace('state').from_dataset(str(dataset))
         self.observation_space = GlobalSpace('observation').from_dataset(str(dataset))
@@ -46,20 +42,15 @@ class BaseEnv(object):
             self.state_space.data.shape[0]
         )
 
-    def seed(self, seed=None):
-
         if seed:
-            seed = int(seed)
+            self.seed(seed)
 
-            logging.debug('setting {} env random seed = {}'.format(
-                repr(self), seed))
+    def seed(self, seed):
 
-            random.seed(seed)
-            tf.set_random_seed(seed)
-            np.random.seed(seed)
-
-        else:
-            logging.debug('not setting random seed')
+        seed = int(seed)
+        random.seed(seed)
+        tf.set_random_seed(seed)
+        np.random.seed(seed)
 
     def reset(self):
         """

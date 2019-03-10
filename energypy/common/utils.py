@@ -5,8 +5,6 @@ import logging
 import pickle
 import os
 
-import pandas as pd
-
 logger = logging.getLogger(__name__)
 
 
@@ -43,20 +41,6 @@ def ensure_dir(file_path):
 
     if not os.path.exists(directory):
         os.makedirs(directory)
-
-
-def load_csv(*paths):
-    """
-    Loads a csv into a dataframe
-
-    args
-        paths (iterable) strings to be formed into a path
-    """
-    return pd.read_csv(
-        os.path.join(*paths),
-        index_col=0,
-        parse_dates=True
-    )
 
 
 def parse_ini(filepath, section):

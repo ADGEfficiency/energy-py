@@ -1,10 +1,9 @@
 from setuptools import setup, find_packages
 
-
 setup(
     name='energypy',
+    version='0.3.0',
 
-    version='0.2',
     description='reinforcement learning for energy systems',
     author='Adam Green',
     author_email='adam.green@adgefficiency.com',
@@ -16,5 +15,9 @@ setup(
 
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
-    install_requires=[]
+    install_requires=['Click'],
+    entry_points='''
+            [console_scripts]
+            ep-expt=energypy.experimentsv2.first_look:cli
+        '''
 )

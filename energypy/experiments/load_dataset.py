@@ -2,7 +2,7 @@ import io
 from os.path import join
 import pkg_resources
 
-import pandas as pd
+# import pandas as pd
 
 
 def load_dataset(dataset, name):
