@@ -1,11 +1,8 @@
 from collections import defaultdict
-import logging
 
 import tensorflow as tf
 
 import energypy
-
-logger = logging.getLogger(__name__)
 
 
 class BaseAgent(object):
@@ -66,7 +63,6 @@ class BaseAgent(object):
         """
         Resets the agent internals
         """
-        logger.debug('Resetting the agent internals')
         self.memory.reset()
         self.act_step = 0
         self.learn_step = 0
@@ -84,7 +80,6 @@ class BaseAgent(object):
         return
             action (np array) shape=(1, num_actions)
         """
-        logger.debug('Agent is acting')
         self.act_step += 1
 
         return self._act(
@@ -103,7 +98,6 @@ class BaseAgent(object):
         return
             training_history (object) info about learning (i.e. loss)
         """
-        logger.debug('Agent is learning')
         self.learn_step += 1
 
         return self._learn(**kwargs)
@@ -119,8 +113,6 @@ class BaseAgent(object):
             next_observation (np.array)
             done (np.array)
         """
-        logger.debug('Agent is remembering')
-
         if self.min_reward and self.max_reward:
             reward = max(self.min_reward, min(reward, self.max_reward))
 

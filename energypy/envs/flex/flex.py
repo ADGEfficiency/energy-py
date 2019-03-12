@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 class Flex(BaseEnv):
     """ price responsive flexible demand model """
+
     def __init__(
             self,
             capacity=4.0,         # MWh
@@ -226,7 +227,7 @@ class Flex(BaseEnv):
                 np.array([self.stored_demand, self.stored_supply])
             )
 
-        info = {
+        transition = {
             'step': self.steps,
             'state': self.state,
             'observation': self.observation,
@@ -245,8 +246,8 @@ class Flex(BaseEnv):
             'setpoint': setpoint,
                 }
 
-        self.info = self.update_info(**info)
-        [logger.debug('{} {}'.format(k, v)) for k, v in info.items()]
+        for k, v in transition.items():
+            transition[k] = np.array(v).tolist()
 
         self.steps += 1
         self.state = next_state

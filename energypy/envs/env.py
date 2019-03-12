@@ -22,7 +22,7 @@ class BaseEnv(object):
             seed=None,
             dataset='example',
             episode_sample='full',
-            episode_length=2016
+            episode_length=2016,
     ):
 
         self.state_space = GlobalSpace('state').from_dataset(str(dataset))
@@ -59,8 +59,6 @@ class BaseEnv(object):
         returns
             observation (np array) initial observation
         """
-        logger.debug('Resetting environment')
-
         self.steps = 0
 
         self.info = collections.defaultdict(list)
@@ -69,12 +67,6 @@ class BaseEnv(object):
         episode = self.sample_episode()
         self.state_space.episode = episode[0]
         self.observation_space.episode = episode[1]
-
-        logger.debug(
-            'Episode start {} Episode end {}'.format(
-                self.state_space.episode.index[0],
-                self.state_space.episode.index[-1])
-        )
 
         return self._reset()
 
@@ -98,13 +90,11 @@ class BaseEnv(object):
 
         action = np.array(action).reshape(1, *self.action_space.shape)
         assert self.action_space.contains(action)
-        logger.debug('step {} action {}'.format(self.steps, action))
         return self._step(action)
 
     def sample_episode(self):
         """ Samples a single episode """
         start, end = self.sample_stragety()
-        logger.debug('Sampling episode start {} end {}'.format(start, end))
 
         state_ep = self.state_space.sample_episode(start, end)
         obs_ep = self.observation_space.sample_episode(start, end)

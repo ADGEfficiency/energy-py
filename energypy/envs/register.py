@@ -20,4 +20,3 @@ env_register = {
 def make_env(env_id, **kwargs):
     """ grabs class from register and initializes """
     return env_register[str(env_id)](**kwargs)
-

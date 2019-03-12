@@ -1,13 +1,10 @@
-import logging
+import json
 from random import random
 
 import numpy as np
 
 from energypy.common import ContinuousSpace, GlobalSpace
 from energypy.envs import BaseEnv
-
-
-logger = logging.getLogger(__name__)
 
 
 class Battery(BaseEnv):
@@ -90,10 +87,6 @@ class Battery(BaseEnv):
         assert self.charge <= self.capacity
         assert self.charge >= 0
 
-        logger.debug('initial state is {}'.format(self.state))
-        logger.debug('initial obs is {}'.format(self.observation))
-        logger.debug('initial charge is {}'.format(self.charge))
-
         return self.observation
 
     def _step(self, action):
@@ -174,8 +167,7 @@ class Battery(BaseEnv):
                 np.array([self.charge])
             )
 
-        info = {
-            'step': self.steps,
+        transition = {
             'state': self.state,
             'observation': self.observation,
             'action': action,
@@ -190,10 +182,13 @@ class Battery(BaseEnv):
             'gross_rate': gross_rate,
             'losses': losses,
             'net_rate': net_rate
-                }
+        }
 
-        self.info = self.update_info(**info)
-        [logger.debug('{} {}'.format(k, v)) for k, v in info.items()]
+        for k, v in transition.items():
+            transition[k] = np.array(v).tolist()
+
+        #  episode logger is set during experiment
+        self.episode_logger.debug(json.dumps(transition))
 
         self.steps += 1
         self.state = next_state

@@ -68,9 +68,9 @@ def cli(expt, run):
 
     cfg = setup_expt(expt)
 
-    agent, env = setup_run(cfg, run)
+    run_cfg, agent, env = setup_run(cfg, run)
 
-    perform_run(agent, env)
+    perform_run(run_cfg, agent, env)
 
 
 def setup_expt(expt):
@@ -94,8 +94,13 @@ def setup_run(cfg, run):
 
     run_dir = os.path.join(cfg['expt']['expt_dir'], run)
     ensure_dir(run_dir)
+    run_cfg['run_dir'] = run_dir
 
-    run_logger = make_new_logger(run_dir, run)
+    ep_dir = os.path.join(run_dir, 'episodes')
+    ensure_dir(ep_dir)
+    run_cfg['ep_dir'] = ep_dir
+
+    run_logger = make_new_logger(run_dir, 'run_info')
 
     dump_config(run_cfg, run_logger)
 
@@ -107,25 +112,28 @@ def setup_run(cfg, run):
 
     agent = energypy.make_agent(**agent_config)
 
-    return agent, env
+    return run_cfg, agent, env
 
 
-def perform_run(agent, env):
+def perform_run(run_cfg, agent, env):
+
+    total_steps = run_cfg['total_steps']
 
     step, episode = 0, 0
-
     while step < int(total_steps):
         episode += 1
-        done = False
+        env.episode_logger = make_new_logger(
+            run_cfg['ep_dir'], 'ep_{}_env'.format(episode)
+        )
 
-        observation = env.reset()
-
-        perform_episode(agent, env)
+        episode_steps = perform_episode(agent, env)
+        step += episode_steps
 
 
 def perform_episode(agent, env):
     done = False
     observation = env.reset()
+    step = 0
 
     while not done:
         step += 1
@@ -144,3 +152,4 @@ def perform_episode(agent, env):
         if len(agent.memory) > min(agent.memory.size, 10000):
             agent.learn()
 
+    return step
