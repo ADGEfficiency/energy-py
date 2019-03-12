@@ -20,8 +20,7 @@ class BaseAgent(object):
 
             min_reward=-10,
             max_reward=10,
-            act_path='./act_path',
-            learn_path='./learn_path',
+            tensorboard_dir=None,
             **kwargs
     ):
 
@@ -45,14 +44,15 @@ class BaseAgent(object):
         self.act_step = 0
         self.learn_step = 0
 
-        self.summaries = {
-            'acting': [],
-            'learning': []
-        }
-        self.writers = {
-            'acting': tf.summary.FileWriter(act_path),
-            'learning': tf.summary.FileWriter(learn_path)
-        }
+        if tensorboard_dir:
+            self.summaries = {
+                'acting': [],
+                'learning': []
+            }
+            self.writers = {
+                'acting': tf.summary.FileWriter(tensorboard_dir+'/acting'),
+                'learning': tf.summary.FileWriter(tensorboard_dir+'/learning')
+            }
 
         #  TODO
         self.filters = None

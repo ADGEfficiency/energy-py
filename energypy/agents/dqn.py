@@ -1,5 +1,3 @@
-import logging
-
 import numpy as np
 import tensorflow as tf
 
@@ -11,9 +9,6 @@ from energypy.common.tf_utils import make_copy_ops, get_tf_params
 from energypy.common.utils import read_iterable_from_config
 
 from energypy import make_network
-
-
-logger = logging.getLogger(__name__)
 
 
 class DQN(BaseAgent):
@@ -402,11 +397,6 @@ class DQN(BaseAgent):
 
         self.writers['acting'].add_summary(summary, self.act_step)
         self.writers['acting'].flush()
-
-        logger.debug('observation {}'.format(observation))
-        logger.debug('action {}'.format(action))
-        logger.debug('learn_step {}'.format(self.learn_step))
-        logger.debug('explore {}'.format(explore))
 
         return action.reshape(1, *self.env.action_space.shape)
 

@@ -5,6 +5,7 @@ import os
 from os.path import expanduser, join
 
 import click
+import tensorflow as tf
 import yaml
 
 import energypy
@@ -66,11 +67,12 @@ def make_new_logger(log_dir, name):
 @click.argument('run', nargs=1)
 def cli(expt, run):
 
-    cfg = setup_expt(expt)
+    with tf.Session() as sess:
+        cfg = setup_expt(expt)
 
-    run_cfg, agent, env = setup_run(cfg, run)
+        run_cfg, agent, env = setup_run(cfg, run, sess)
 
-    perform_run(run_cfg, agent, env)
+        perform_run(run_cfg, agent, env)
 
 
 def setup_expt(expt):
@@ -89,7 +91,7 @@ def setup_expt(expt):
     return cfg
 
 
-def setup_run(cfg, run):
+def setup_run(cfg, run, sess):
     run_cfg = cfg[run]
 
     run_dir = os.path.join(cfg['expt']['expt_dir'], run)
@@ -100,6 +102,9 @@ def setup_run(cfg, run):
     ensure_dir(ep_dir)
     run_cfg['ep_dir'] = ep_dir
 
+    tensorboard_dir = os.path.join(cfg['expt']['expt_dir'], 'tensorboard', run)
+    ensure_dir(tensorboard_dir)
+
     run_logger = make_new_logger(run_dir, 'run_info')
 
     dump_config(run_cfg, run_logger)
@@ -107,8 +112,14 @@ def setup_run(cfg, run):
     env_config = run_cfg['env']
     env = energypy.make_env(**env_config)
 
+    if hasattr(env.observation_space, 'info') and hasattr(env.state_space, 'info'):
+        run_logger.debug(json.dumps({'state_info': env.state_space.info}))
+        run_logger.debug(json.dumps({'observation_info': env.observation_space.info}))
+
     agent_config = run_cfg['agent']
     agent_config['env'] = env
+    agent_config['sess'] = sess
+    agent_config['tensorboard_dir'] = tensorboard_dir
 
     agent = energypy.make_agent(**agent_config)
 
@@ -123,7 +134,7 @@ def perform_run(run_cfg, agent, env):
     while step < int(total_steps):
         episode += 1
         env.episode_logger = make_new_logger(
-            run_cfg['ep_dir'], 'ep_{}_env'.format(episode)
+            run_cfg['ep_dir'], 'ep_{}'.format(episode)
         )
 
         episode_steps = perform_episode(agent, env)
