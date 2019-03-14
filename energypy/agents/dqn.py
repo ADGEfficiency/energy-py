@@ -25,7 +25,7 @@ class DQN(BaseAgent):
             kernels=None,
             strides=None,
 
-            layers=(64, 32, 16),
+            layers=(16, 8),
 
             num_discrete_actions=5,
 
