@@ -1,8 +1,16 @@
 from io import BytesIO
-from os.path import join
+import json
+import os
 import pkg_resources
 
 import pandas as pd
+
+
+def read_logs(log_file_path):
+    with open(log_file_path) as f:
+        logs = f.read().splitlines()
+
+    return [json.loads(log) for log in logs]
 
 
 def load_dataset(dataset, name):
@@ -19,5 +27,16 @@ def load_dataset(dataset, name):
 
     else:
         return pd.read_csv(
-            join(dataset, name + '.csv'), index_col=0, parse_dates=True
+            os.path.join(dataset, name + '.csv'), index_col=0, parse_dates=True
         )
+
+
+def ensure_dir(directory_path):
+    if not os.path.exists(directory_path):
+        os.makedirs(directory_path)
+
+
+def dump_config(cfg, logger):
+    for k, v in cfg.items():
+        logger.info(json.dumps({k: v}))
+
