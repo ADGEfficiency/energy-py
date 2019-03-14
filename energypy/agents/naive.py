@@ -1,12 +1,7 @@
 """ Naive agents used as baselines """
-import logging
-
 import numpy as np
 
 from energypy.agents.agent import BaseAgent
-
-
-logger = logging.getLogger(__name__)
 
 
 class RandomAgent(BaseAgent):
