@@ -69,23 +69,19 @@ class BaseAgent(object):
 
         return self._reset()
 
-    def act(self, observation, explore=1.0):
+    def act(self, observation):
         """
         Action selection by agent
 
         args
             observation (np array) shape=(1, observation_dim)
-            explore (float) 0.0 = 100% greedy, 1.0 = 100% explore
 
         return
             action (np array) shape=(1, num_actions)
         """
         self.act_step += 1
 
-        return self._act(
-            observation.reshape(1, *self.observation_space.shape),
-            explore=explore
-        )
+        return self._act(observation.reshape(1, *self.observation_space.shape))
 
     def learn(self, **kwargs):
         """

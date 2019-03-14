@@ -143,12 +143,6 @@ class DQN(BaseAgent):
                 name='learn_step_tensor'
             )
 
-            self.explore_toggle = tf.placeholder(
-                shape=(),
-                dtype=tf.float32,
-                name='explore_toggle'
-            )
-
         self.build_acting_graph()
 
         self.build_learning_graph()
@@ -201,7 +195,6 @@ class DQN(BaseAgent):
                     self.total_steps * self.epsilon_decay_fraction,
                     self.initial_epsilon,
                     self.final_epsilon,
-                    self.explore_toggle
                 )
 
             elif self.policy == 'softmax':
@@ -342,7 +335,6 @@ class DQN(BaseAgent):
         self.summaries['acting'].extend([
             tf.summary.scalar('learning_rate', self.learning_rate),
             tf.summary.scalar('epsilon', self.epsilon),
-            tf.summary.scalar('explore_toggle', self.explore_toggle),
                                ])
 
         self.summaries['acting'].extend([
@@ -386,12 +378,11 @@ class DQN(BaseAgent):
     def __repr__(self):
         return '<energypy DQN agent>'
 
-    def _act(self, observation, explore=1.0):
+    def _act(self, observation):
         """ selecting an action based on an observation """
         action, summary = self.sess.run(
             [self.policy, self.summaries['acting']],
             {self.learn_step_tensor: self.learn_step,
-             self.explore_toggle: float(explore),
              self.observation: observation}
         )
 
