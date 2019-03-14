@@ -9,7 +9,7 @@ example of the config file
 This config file is passed directly into the experiment CLI, which uses `click`:
 
 ```bash
-$ ep-expt expt_config run
+$ ep-expt expt_config_file run_name
 ```
 
 Where you store these config files is up to you - `~/ep-configs/my_experiment.yaml` is suggested.  Note that a copy of the config file will be copied into the results directory.
@@ -17,13 +17,16 @@ Where you store these config files is up to you - `~/ep-configs/my_experiment.ya
 `energypy` saves results from experiments into a folder in your `~` directory (i.e. `$HOME` on Unix machines):
 
 ```bash
-~/ep-results/my_experiment/...
+~/energypy-results/my_experiment/...
 ```
 
 
 ## TODO
 
 Pretraining from existing memory (see old expt.py)
+
+Analysis
+- plotting of graphs (thats about it?)
 
 ## TESTS
 
