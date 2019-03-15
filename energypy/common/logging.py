@@ -1,50 +1,26 @@
 import logging
 import logging.config
+from os.path import join
+import sys
 
 
-# def make_logger(paths, name=None):
-#     """
-#     Sets up the energypy logging stragety.  INFO to console, DEBUG to file.
+formatter = logging.Formatter('%(message)s')
 
-#     args
-#         paths (dict)
-#         name (str) optional logger name
 
-#     returns
-#         logger (object)
-#     """
-#     if name:
-#         logger = logging.getLogger(name)
-#     else:
-#         logger = logging.getLogger(__name__)
+def make_new_logger(name, log_dir):
+    """Function setup as many loggers as you want"""
+    log_file = join(log_dir, name+'.log')
 
-#     fmt = '%(asctime)s [%(levelname)s]%(name)s: %(message)s'
+    handler = logging.FileHandler(log_file)
+    handler.setFormatter(formatter)
+    handler.setLevel(logging.DEBUG)
 
-#     logging.config.dictConfig({
-#         'version': 1,
-#         'disable_existing_loggers': False,
+    stream = logging.StreamHandler(sys.stdout)
+    stream.setLevel(logging.INFO)
 
-#         'formatters': {'standard': {'format': fmt,
-#                                     'datefmt': '%Y-%m-%d %H:%M:%S'}},
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(handler)
+    logger.addHandler(stream)
 
-#         'handlers': {'console': {'level': 'INFO',
-#                                  'class': 'logging.StreamHandler',
-#                                  'formatter': 'standard'},
-
-#                      'debug_file': {'class': 'logging.FileHandler',
-#                                     'level': 'DEBUG',
-#                                     'filename': paths['debug_log'],
-#                                     'mode': 'w',
-#                                     'formatter': 'standard'},
-
-#                      'info_file': {'class': 'logging.FileHandler',
-#                                    'level': 'INFO',
-#                                    'filename': paths['info_log'],
-#                                    'mode': 'w',
-#                                    'formatter': 'standard'}},
-
-#         'loggers': {'': {'handlers': ['console', 'debug_file', 'info_file', ],
-#                          'level': 'DEBUG',
-#                          'propagate': True}}})
-
-#     return logger
+    return logger

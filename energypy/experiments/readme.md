@@ -1,21 +1,35 @@
-## dict experiments
 
-Run using
+`energypy` uses `yaml` config files to setup experiments.  A single *experiment* is composed of multiple *runs*.  
 
-`$ python dict_expt.py expt_name --run_name --seed`
+```
+example of the config file
 
-Experiment is setup in the `dict_expt.py` script
+```
 
-## config file experiments
+This config file is passed directly into the experiment CLI, which uses `click`:
 
-Run using
+```bash
+$ ep-expt expt_config_file run_name
+```
 
-`$ python config_expt.py expt_name run_name`
+Where you store these config files is up to you - `~/ep-configs/my_experiment.yaml` is suggested.  Note that a copy of the config file will be copied into the results directory.
 
-The seed and dataset name are set in the two config files, found at
+`energypy` saves results from experiments into a folder in your `~` directory (i.e. `$HOME` on Unix machines):
 
-`energypy/experiments/results/expt_name/run_configs.ini`
+```bash
+~/energypy-results/my_experiment/...
+```
 
-`energypy/experiments/results/expt_name/common.ini`
 
-The `run_name` argument refers to the section name in `run_configs.ini`
+## TODO
+
+Pretraining from existing memory (see old expt.py)
+
+Analysis
+- plotting of graphs (thats about it?)
+
+## TESTS
+
+Check seed by rolling out envs / randomly selecting actions
+
+Check that configs get through correctly (check both class and the dumped config)

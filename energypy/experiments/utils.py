@@ -1,114 +1,83 @@
-import argparse
+from io import BytesIO
+import json
 import os
-from shutil import copyfile
+import pkg_resources
+
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+
+from energypy import make_new_logger
 
 
-from energypy.common import ensure_dir
+def read_log(log_file_path):
+    with open(log_file_path) as f:
+        logs = f.read().splitlines()
+
+    return [json.loads(log) for log in logs]
 
 
-def make_config_parser():
-    """
-    Parses arguments from the command line for running config experiments
+def load_dataset(dataset, name):
+    """ load example dataset or load from user supplied path """
+    if dataset == 'example':
+        data = pkg_resources.resource_string(
+            'energypy',
+            'experiments/datasets/example/{}.csv'.format(name)
+        )
 
-    returns
-        args (argparse NameSpace)
-    """
-    parser = argparse.ArgumentParser(
-        description='energypy config expt argparser'
-    )
+        return pd.read_csv(
+            BytesIO(data), index_col=0, parse_dates=True
+        )
 
-    #  required
-    parser.add_argument('expt_name', default=None, type=str)
-    parser.add_argument('run_name', default=None, type=str)
-
-    args = parser.parse_args()
-
-    return args
+    else:
+        return pd.read_csv(
+            os.path.join(dataset, name + '.csv'), index_col=0, parse_dates=True
+        )
 
 
-def make_paths(
-        experiments_dir,
-        expt_name,
-        run_name,
-        load_configs=True
-):
-    """
-    Creates a dictionary of paths for use with experiments
+class Runner():
+    """ logs episode reward stats """
 
-    args
-        experiments_dir (str) usually energypy/energypy/experiments
-        expt_name (str)
-        run_name (str)
+    def __init__(self, sess, run_cfg):
 
-    returns
-        paths (dict) {name: path}
+        self.writer = tf.summary.FileWriter(
+            run_cfg['tensorboard_dir'], sess.graph
+        )
 
-    Folder structure
-        experiments/configs/expt_name/expt.ini
-                                      runs.ini
+        self.logger = make_new_logger('results', run_cfg['run_dir'])
 
-        experiments/results/expt_name/run_name/tensorboard/run_name/rl
-                                                                   /act
-                                                                   /learn
-                                               env_histories/ep_1/info.csv
-                                                             ep_2/info.csv
-                                                             e..
-                                               expt.ini
-                                               runs.ini
-                                               agent_args.txt
-                                               env_args.txt
-                                               info.log
-                                               debug.log
-    """
-    #  rename the join function to make code below eaiser to read
-    join = os.path.join
+        self.reset()
 
-    results_dir = join(experiments_dir, 'results', expt_name)
+    def reset(self):
+        self.history = []
+        self.step = 0
 
-    if load_configs:
-        config_dir = join(experiments_dir, 'configs', expt_name)
+    def record_episode(self, episode_rewards):
 
-        config_paths = {
-            'expt_config': join(config_dir, 'expt.ini'),
-            'run_configs': join(config_dir, 'runs.ini')
+        total_episode_reward = np.sum(episode_rewards)
+        self.history.append(total_episode_reward)
+
+        summaries = {
+            'total_episode_reward': total_episode_reward,
+            'avg_rew_100': np.mean(self.history[-100:]),
+            'min_rew_100': np.min(self.history[-100:]),
+            'max_rew_100': np.max(self.history[-100:]),
+            'avg_rew': np.mean(self.history),
+            'min_rew': np.min(self.history),
+            'max_rew': np.max(self.history)
         }
 
-        ensure_dir(join(results_dir, run_name))
+        for tag, value in summaries.items():
+            summary = tf.Summary(
+                value=[tf.Summary.Value(tag=tag, simple_value=float(value))])
+            self.writer.add_summary(summary, self.step)
 
-        #  copy config files into results directory
-        copyfile(
-            config_paths['expt_config'], join(results_dir, 'expt.ini')
-        )
+        self.writer.flush()
 
-        copyfile(
-            config_paths['run_configs'], join(results_dir, 'runs.ini')
-        )
-    else:
-        config_paths = {}
+        log = {
+            'episode': len(self.history), 
+            'reward': total_episode_reward, 
+            'rew_100': summaries['avg_rew_100']
+        }
 
-    results_paths = {
-
-        #  tensorboard runs are all in the tensoboard folder
-        #  this is for easy comparision of runs
-        'tb_rl': join(results_dir, 'tensorboard', run_name, 'rl'),
-        'tb_act': join(results_dir, 'tensorboard', run_name, 'act'),
-        'tb_learn': join(results_dir, 'tensorboard', run_name,  'learn'),
-
-        #  run specific
-        'env_histories': join(results_dir, run_name, 'env_histories'),
-        'debug_log': join(results_dir, run_name, 'debug.log'),
-        'info_log': join(results_dir, run_name, 'info.log'),
-        'env_args': join(results_dir, run_name, 'env_args.txt'),
-        'agent_args': join(results_dir, run_name, 'agent_args.txt'),
-        'ep_rewards': join(results_dir, run_name, 'episode_rewards.csv'),
-        'memory': join(results_dir, '{}_memory.pkl'.format(run_name))
-    }
-
-    paths = {**config_paths, **results_paths}
-
-    #  check that all our paths exist
-    for key, path in paths.items():
-        ensure_dir(path)
-
-
-    return paths
+        self.logger.info(json.dumps(log))

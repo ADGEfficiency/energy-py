@@ -1,5 +1,6 @@
 from setuptools import setup, find_packages
 
+
 setup(
     name='energypy',
     version='0.3.0',
@@ -18,6 +19,6 @@ setup(
     install_requires=['Click'],
     entry_points='''
             [console_scripts]
-            ep-expt=energypy.experimentsv2.first_look:cli
+            ep-expt=energypy.experiments.cli:cli
         '''
 )
