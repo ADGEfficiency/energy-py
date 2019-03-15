@@ -386,8 +386,9 @@ class DQN(BaseAgent):
              self.observation: observation}
         )
 
-        self.writers['acting'].add_summary(summary, self.act_step)
-        self.writers['acting'].flush()
+        if hasattr(self, 'writers'):
+            self.writers['acting'].add_summary(summary, self.act_step)
+            self.writers['acting'].flush()
 
         return action.reshape(1, *self.env.action_space.shape)
 
@@ -419,8 +420,9 @@ class DQN(BaseAgent):
              }
         )
 
-        self.writers['learning'].add_summary(summary, self.learn_step)
-        self.writers['learning'].flush()
+        if hasattr(self, 'writers'):
+            self.writers['learning'].add_summary(summary, self.learn_step)
+            self.writers['learning'].flush()
 
         if self.learn_step % self.update_target_net == 0:
             _ = self.sess.run(

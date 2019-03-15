@@ -4,7 +4,7 @@ import tensorflow as tf
 
 import numpy as np
 
-from energypy.common.spaces import GlobalSpace
+import energypy as ep
 
 
 class BaseEnv(object):
@@ -25,8 +25,8 @@ class BaseEnv(object):
             episode_length=2016,
     ):
 
-        self.state_space = GlobalSpace('state').from_dataset(str(dataset))
-        self.observation_space = GlobalSpace('observation').from_dataset(str(dataset))
+        self.state_space = ep.GlobalSpace('state').from_dataset(str(dataset))
+        self.observation_space = ep.GlobalSpace('observation').from_dataset(str(dataset))
 
         if episode_sample == 'random':
             self.sample_stragety = self.random_sample
@@ -67,6 +67,9 @@ class BaseEnv(object):
         episode = self.sample_episode()
         self.state_space.episode = episode[0]
         self.observation_space.episode = episode[1]
+
+        if not hasattr(self, 'episode_logger'):
+            self.episode_logger = ep.make_new_logger('episode')
 
         return self._reset()
 

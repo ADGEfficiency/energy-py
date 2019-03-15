@@ -44,11 +44,12 @@ class BaseAgent(object):
         self.act_step = 0
         self.learn_step = 0
 
+        self.summaries = {
+            'acting': [],
+            'learning': []
+        }
+
         if tensorboard_dir:
-            self.summaries = {
-                'acting': [],
-                'learning': []
-            }
             self.writers = {
                 'acting': tf.summary.FileWriter(tensorboard_dir+'/acting'),
                 'learning': tf.summary.FileWriter(tensorboard_dir+'/learning')
