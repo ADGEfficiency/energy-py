@@ -19,5 +19,5 @@ class DiscreteSpace(object):
     def contains(self, x):
         return np.in1d(x, np.arange(0, self.high))
 
-    def discretize(self, n_discr=None):
+    def discretize(self, num_discrete=None):
         return np.arange(0, self.high)

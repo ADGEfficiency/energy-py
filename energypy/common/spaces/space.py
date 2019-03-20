@@ -47,6 +47,53 @@ class GlobalSpace(object):
     def shape(self):
         return (len(self.spaces), )
 
+    @property
+    def low(self):
+        return self._low
+
+    @low.getter
+    def low(self):
+        return np.array([spc.low for spc in self.spaces]).reshape(*self.shape)
+
+    @property
+    def high(self):
+        return self._low
+
+    @high.getter
+    def high(self):
+        return np.array([spc.high for spc in self.spaces]).reshape(*self.shape)
+
+    @property
+    def num_discrete_spaces(self):
+        return self._discrete_spaces
+
+    @num_discrete_spaces.getter
+    def num_discrete_spaces(self):
+        try:
+            len(self.discrete_spaces)
+        except AttributeError:
+            self.discrete_spaces = self.discretize()
+
+        return len(self.discrete_spaces)
+
+    def sample_discrete(self):
+        try:
+            len(self.discrete_spaces)
+        except AttributeError:
+            self.discrete_spaces = self.discretize()
+
+        return np.array(
+            self.discrete_spaces[np.random.randint(0, len(self.discrete_spaces))]
+        ).reshape(1, *self.shape)
+
+    def discretize(self, num_discrete=None):
+        self.discrete_spaces = np.array([
+            a for a in itertools.product(
+                *[spc.discretize(num_discrete) for spc in self.spaces])
+        ]).reshape(-1, *self.shape)
+
+        return self.discrete_spaces
+
     def from_dataset(self, dataset='example'):
         data = energypy.load_dataset(dataset, self.name)
 
@@ -94,23 +141,6 @@ class GlobalSpace(object):
 
     def sample(self):
         return np.array([spc.sample() for spc in self.spaces]).reshape(1, *self.shape)
-
-    def sample_discrete(self):
-        if not hasattr(self, 'discrete_spaces'):
-            raise ValueError('space is not discrete - call self.discretize')
-
-        return np.array(
-            self.discrete_spaces[np.random.randint(0, len(self.discrete_spaces))]
-        ).reshape(1, *self.shape)
-
-    def discretize(self, num_discrete):
-        #  TODO makes sense for num_discrete to be odd to ensure you get a 0
-        self.discrete_spaces = np.array([
-            a for a in itertools.product(
-                *[spc.discretize(num_discrete) for spc in self.spaces])
-        ]).reshape(-1, *self.shape)
-
-        return self.discrete_spaces
 
     def generate_spaces(self):
         spaces = []

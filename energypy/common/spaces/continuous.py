@@ -20,8 +20,11 @@ class ContinuousSpace(object):
     def contains(self, x):
         return (x >= self.low) and (x <= self.high)
 
-    def discretize(self, n_discr):
-        return np.linspace(self.low, self.high, n_discr).tolist()
+    def discretize(self, num_discrete):
+        if num_discrete is None:
+            raise ValueError('Specify the discretized space dimension')
+        else:
+            return np.linspace(self.low, self.high, num_discrete).tolist()
 
 
 class ImageSpace(object):
