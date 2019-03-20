@@ -1,0 +1,17 @@
+expt:
+    name: test
+
+run1: &defaults
+    total_steps: 10000
+
+    env:
+        env_id: battery
+        dataset: example
+
+    agent:
+        agent_id: random
+
+run2:
+    <<: *defaults
+    agent:
+        agent_id: dqn
