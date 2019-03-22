@@ -86,7 +86,7 @@ energy-py currently implements:
 
 ## Further reading
 
-- [introductory blog post](http://www.adgefficiency.com/energypy-reinforcement-learning-for-energy-systems/)
+- [Introductory blog post](http://www.adgefficiency.com/energypy-reinforcement-learning-for-energy-systems/)
 - [DQN debugging](http://adgefficiency.com/dqn-debugging/)
 - [DDQN hyperparameter tuning](http://adgefficiency.com/dqn-tuning/)
 - [Jupyter notebook example of low level API - DQN and battery environment](https://github.com/ADGEfficiency/energypy/blob/master/notebooks/examples/DQN_battery_example.ipynb)
