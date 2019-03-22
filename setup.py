@@ -19,6 +19,6 @@ setup(
     install_requires=['Click'],
     entry_points='''
             [console_scripts]
-            ep-expt=energypy.experiments.cli:cli
+            energypy-experiment=energypy.experiments.cli:cli
         '''
 )

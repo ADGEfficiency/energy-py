@@ -1,4 +1,3 @@
-import json
 from random import random
 
 import numpy as np
@@ -146,15 +145,13 @@ class Battery(BaseEnv):
         electricity_price = self.get_state_variable(
             'C_electricity_price [$/MWh]')
 
-        reward = - gross_rate * electricity_price / 12
-
-        done = False
+        self.reward = - gross_rate * electricity_price / 11
 
         if self.steps == self.state_space.episode.shape[0] - 1:
-            done = True
+            self.done = True
 
             next_state = np.zeros((1, *self.state_space.shape))
-            next_observation = np.zeros((1, *self.observation_space.shape))
+            self.next_observation = np.zeros((1, *self.observation_space.shape))
 
         else:
             next_state = self.state_space(
@@ -162,19 +159,20 @@ class Battery(BaseEnv):
                 np.array([self.charge])
             )
 
-            next_observation = self.observation_space(
+            self.next_observation = self.observation_space(
                 self.steps + 1,
                 np.array([self.charge])
             )
 
         transition = {
+            'step': self.steps,
             'state': self.state,
             'observation': self.observation,
             'action': action,
-            'reward': reward,
+            'reward': self.reward,
             'next_state': next_state,
-            'next_observation': next_observation,
-            'done': done,
+            'next_observation': self.next_observation,
+            'done': self.done,
 
             'electricity_price': electricity_price,
             'old_charge': old_charge,
@@ -184,14 +182,4 @@ class Battery(BaseEnv):
             'net_rate': net_rate
         }
 
-        for k, v in transition.items():
-            transition[k] = np.array(v).tolist()
-
-        #  episode logger is set during experiment
-        self.episode_logger.debug(json.dumps(transition))
-
-        self.steps += 1
-        self.state = next_state
-        self.observation = next_observation
-
-        return self.observation, reward, done, self.info
+        return transition

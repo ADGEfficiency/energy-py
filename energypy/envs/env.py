@@ -1,4 +1,5 @@
 import collections
+import json
 import random
 import tensorflow as tf
 
@@ -46,6 +47,7 @@ class BaseEnv(object):
             self.seed(seed)
 
     def seed(self, seed):
+        """ sets random seed for modules """
 
         seed = int(seed)
         random.seed(seed)
@@ -71,6 +73,8 @@ class BaseEnv(object):
         if not hasattr(self, 'episode_logger'):
             self.episode_logger = ep.make_new_logger('episode')
 
+        self.done = False
+
         return self._reset()
 
     def step(self, action):
@@ -93,7 +97,21 @@ class BaseEnv(object):
 
         action = np.array(action).reshape(1, *self.action_space.shape)
         assert self.action_space.contains(action)
-        return self._step(action)
+
+        transition = self._step(action)
+
+        for k, v in transition.items():
+            transition[k] = np.array(v).tolist()
+            self.info[k].append(v)
+
+        #  episode logger is set during experiment
+        self.episode_logger.debug(json.dumps(transition))
+
+        self.steps += 1
+        self.state = np.array(transition['next_state']).reshape(1, *self.state_space.shape)
+        self.observation = np.array(transition['next_observation']).reshape(1, *self.observation_space.shape)
+
+        return self.observation, self.reward, self.done, self.info
 
     def sample_episode(self):
         """ Samples a single episode """

@@ -2,6 +2,7 @@
 # from https://github.com/github/gitignore/blob/master/Python.gitignore
 *.DS_Store
 *.pytest_cache
+*.swp
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

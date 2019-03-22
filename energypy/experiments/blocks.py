@@ -14,7 +14,7 @@ def setup_expt(expt):
     cfg = yaml.load(expt)
 
     home = expanduser('~')
-    expt_dir = '{}/energypy-results/{}'.format(home, cfg['expt']['name'])
+    expt_dir = '{}/energy-py-results/{}'.format(home, cfg['expt']['name'])
     ensure_dir(expt_dir)
 
     expt_logger = make_new_logger('expt', expt_dir)

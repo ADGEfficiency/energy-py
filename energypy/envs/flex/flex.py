@@ -206,14 +206,12 @@ class Flex(BaseEnv):
 
         #  negative means we are increasing cost
         #  positive means we are reducing cost
-        reward = baseline_cost - flexed_cost
-
-        done = False
+        self.reward = baseline_cost - flexed_cost
 
         if self.steps == self.state_space.episode.shape[0] - 1:
-            done = True
+            self.done = True
             next_state = np.zeros((1, *self.state_space.shape))
-            next_observation = np.zeros((1, *self.observation_space.shape))
+            self.next_observation = np.zeros((1, *self.observation_space.shape))
 
         else:
             next_state = self.state_space(
@@ -222,7 +220,7 @@ class Flex(BaseEnv):
                           self.stored_supply])
             )
 
-            next_observation = self.observation_space(
+            self.next_observation = self.observation_space(
                 self.steps + 1,
                 np.array([self.stored_demand, self.stored_supply])
             )
@@ -232,10 +230,10 @@ class Flex(BaseEnv):
             'state': self.state,
             'observation': self.observation,
             'action': action,
-            'reward': reward,
+            'reward': self.reward,
             'next_state': next_state,
-            'next_observation': next_observation,
-            'done': done,
+            'next_observation': self.next_observation,
+            'done': self.done,
 
             'electricity_price': electricity_price,
             'stored_demand': self.stored_demand,
@@ -246,11 +244,4 @@ class Flex(BaseEnv):
             'setpoint': setpoint,
                 }
 
-        for k, v in transition.items():
-            transition[k] = np.array(v).tolist()
-
-        self.steps += 1
-        self.state = next_state
-        self.observation = next_observation
-
-        return self.observation, reward, done, self.info
+        return transition
