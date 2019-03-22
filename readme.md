@@ -2,7 +2,9 @@
 
 [![Build Status](https://travis-ci.org/ADGEfficiency/energy-py.svg?branch=master)](https://travis-ci.org/ADGEfficiency/energy-py)
 
-energypy is a framework for running reinforcement learning experiments on energy environments.  energypy is built and maintained by Adam Green - [adam.green@adgefficiency.com](adam.green@adgefficiency.com).
+energypy is a framework for running reinforcement learning experiments on energy environments.  
+
+energypy is built and maintained by Adam Green - [adam.green@adgefficiency.com](adam.green@adgefficiency.com).
 
 ## Installation
 
@@ -16,7 +18,7 @@ $ python setup.py install
 
 ## Basic use
 
-The most common access point for a user will be to run an experiment.  An experiment is run by passing a `yaml` config file along with the name of the run:
+The most common access point will be to run an experiment from a config file.  An experiment is run by passing a `yaml` config file along with the name of the run:
 
 ```bash
 $ ep-experiment energypy/experiments/example_config.yaml run1
