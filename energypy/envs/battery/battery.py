@@ -17,24 +17,24 @@ class Battery(BaseEnv):
         episode_random (bool) whether to randomize the episode start position
 
     args
-        power_rating (float) maximum rate of battery charge or discharge [MW]
+        power (float) maximum rate of battery charge or discharge [MW]
         capacity (float) amount of electricity that can be stored [MWh]
-        round_trip_eff (float) round trip efficiency of storage [%]
+        efficiency (float) round trip efficiency of storage [%]
         initial_charge (float or str) inital charge as pct of capacity [%]
                                also possible to pass 'random'
     """
     def __init__(
             self,
-            power_rating=2.0,      # MW
-            capacity=4.0,          # MWh
-            round_trip_eff=0.9,    # %
-            initial_charge=0.5,    # %
+            power=2.0,
+            capacity=4.0,
+            efficiency=0.9,
+            initial_charge=0.5,
             **kwargs
     ):
 
-        self.power_rating = float(power_rating)
+        self.power = float(power)
         self.capacity = float(capacity)
-        self.round_trip_eff = float(round_trip_eff)
+        self.efficiency = float(efficiency)
         self.initial_charge = initial_charge   # can be 'random' or float
         super().__init__(**kwargs)
 
@@ -45,7 +45,7 @@ class Battery(BaseEnv):
         for a 2 MW battery, a range of -2 to 2 MW
         """
         self.action_space = GlobalSpace('action').from_spaces(
-            ContinuousSpace(-self.power_rating, self.power_rating),
+            ContinuousSpace(-self.power, self.power),
             'Rate [MW]'
         )
         self.action_space.no_op = np.array([0]).reshape(1, 1)
@@ -57,8 +57,8 @@ class Battery(BaseEnv):
                                       'C_charge_level [MWh]')
 
     def __repr__(self):
-        return '<energypy BATTERY environment - {} MW {} MWh>'.format(
-            self.power_rating, self.capacity)
+        return '<energypy BATTERY env - {:2.1f} MW {:2.1f} MWh>'.format(
+            self.power, self.capacity)
 
     def _reset(self):
         """
@@ -99,7 +99,7 @@ class Battery(BaseEnv):
             action (np.array) shape=(1, 1)
                 first dimension is the batch dimension - 1 for a single action
                 second dimension is the charge
-                (-self.rating <-> self.power_rating)
+                (-self.rating <-> self.power)
 
         returns
             observation (np.array) shape=(1, len(self.observation_space)
@@ -121,7 +121,7 @@ class Battery(BaseEnv):
         #  now we account for losses / the round trip efficiency
         if gross_rate > 0:
             #  we lose electricity when we charge
-            losses = gross_rate * (1 - self.round_trip_eff) / 12
+            losses = gross_rate * (1 - self.efficiency) / 12
         else:
             #  we don't lose anything when we discharge
             losses = 0

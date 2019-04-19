@@ -77,7 +77,7 @@ class BaseEnv(object):
 
         return self._reset()
 
-    def step(self, action):
+    def step(self, action, log=True):
         """
         Run one timestep of the environment's dynamics.
 
@@ -104,8 +104,9 @@ class BaseEnv(object):
             transition[k] = np.array(v).tolist()
             self.info[k].append(v)
 
-        #  episode logger is set during experiment
-        self.episode_logger.debug(json.dumps(transition))
+        if log:
+            #  episode logger is set during experiment
+            self.episode_logger.debug(json.dumps(transition))
 
         self.steps += 1
         self.state = np.array(transition['next_state']).reshape(1, *self.state_space.shape)
