@@ -2,26 +2,21 @@ from random import random
 
 import numpy as np
 
-from energypy.common import ContinuousSpace, GlobalSpace
+from energypy.common.spaces import StateSpace, ActionSpace, PrimCfg
 from energypy.envs import BaseEnv
+
+from collections import namedtuple
 
 
 class Battery(BaseEnv):
     """
-    Electric battery storage - rewarded by price arbitrage
-
-    optionally passed into BaseEnv via kwargs
-        dataset (str) located in energypy/experiments/datasets
-        episode_length (int)
-        episode_start (int) integer index of episode start
-        episode_random (bool) whether to randomize the episode start position
+    Electric battery operating in price arbitrage
 
     args
-        power (float) maximum rate of battery charge or discharge [MW]
-        capacity (float) amount of electricity that can be stored [MWh]
-        efficiency (float) round trip efficiency of storage [%]
-        initial_charge (float or str) inital charge as pct of capacity [%]
-                               also possible to pass 'random'
+        power [MW]
+        capacity [MWh]
+        efficiency [%]
+        initial_charge [% or 'random']
     """
     def __init__(
             self,
@@ -29,58 +24,72 @@ class Battery(BaseEnv):
             capacity=4.0,
             efficiency=0.9,
             initial_charge=0.5,
+            episode_length=2016,
+            sample_strat='fixed',
+
+            prices=None,
             **kwargs
     ):
-
         self.power = float(power)
         self.capacity = float(capacity)
         self.efficiency = float(efficiency)
-        self.initial_charge = initial_charge   # can be 'random' or float
+        self.initial_charge = initial_charge
+
+        self.sample_strat = sample_strat
+
         super().__init__(**kwargs)
 
+        if prices is not None:
+            self.state_space = StateSpace('state').from_primitives(
+                PrimCfg('price [$/MWh]', min(prices), max(prices), 'continuous', prices),
+                PrimCfg('charge [MWh]', 0, self.capacity, 'continuous', None)
+            )
+
+            #  TODO
+            self.observation_space = self.state_space
+
+        else:
+            self.state_space = StateSpace.from_dataset('example')
+
+        assert self.state_space.num_samples == self.observation_space.num_samples
+
+        self.episode_length = min(episode_length, self.state_space.num_samples)
         """
         action space has a single dimension, ranging from max charge
         to max discharge
 
         for a 2 MW battery, a range of -2 to 2 MW
         """
-        self.action_space = GlobalSpace('action').from_spaces(
-            ContinuousSpace(-self.power, self.power),
-            'Rate [MW]'
+        self.action_space = ActionSpace().from_primitives(
+            PrimCfg('Rate [MW]', -self.power, power, 'continuous', None)
         )
-        self.action_space.no_op = np.array([0]).reshape(1, 1)
-
-        self.state_space.extend(ContinuousSpace(0, self.capacity),
-                                'C_charge_level [MWh]')
-
-        self.observation_space.extend(ContinuousSpace(0, self.capacity),
-                                      'C_charge_level [MWh]')
 
     def __repr__(self):
         return '<energypy BATTERY env - {:2.1f} MW {:2.1f} MWh>'.format(
             self.power, self.capacity)
 
     def _reset(self):
-        """
-        Resets the environment
-
-        returns
-            observation (np.array) initial observation
-        """
-        #  setting the initial charge
+        """ samples new episode, returns initial observation """
+        #  initial charge in percent
         if self.initial_charge == 'random':
-            initial_charge = random()  # %
+            initial_charge = random()
         else:
-            initial_charge = float(self.initial_charge)  # %
+            initial_charge = float(self.initial_charge)
 
-        self.charge = float(self.capacity * initial_charge)  # MWh
+        #  charge in MWh
+        self.charge = float(self.capacity * initial_charge)
 
-        self.state = self.state_space(
-            self.steps, append=np.array(self.charge)
+        #  new episode
+        self.start, self.end = self.state_space.sample_episode(
+            self.sample_strat, episode_length=self.episode_length
         )
 
+        #  set initial state and observation
+        self.state = self.state_space(
+            self.steps, self.start, append={'charge [MWh]': self.charge}
+        )
         self.observation = self.observation_space(
-            self.steps, append=np.array(self.charge),
+            self.steps, self.start, append={'charge [MWh]': self.charge}
         )
 
         assert self.charge <= self.capacity
@@ -90,22 +99,10 @@ class Battery(BaseEnv):
 
     def _step(self, action):
         """
-        One step through the environment.
-
-        Battery is charged or discharged according to
-        the action.
-
-        args
-            action (np.array) shape=(1, 1)
-                first dimension is the batch dimension - 1 for a single action
-                second dimension is the charge
-                (-self.rating <-> self.power)
+        one step through the environment
 
         returns
-            observation (np.array) shape=(1, len(self.observation_space)
-            reward (float)
-            done (boolean)
-            info (dictionary)
+            transition (dict)
         """
         old_charge = self.charge
 
@@ -142,26 +139,23 @@ class Battery(BaseEnv):
         #  or the benefit from discharging
         #  note that we use the gross rate, this is the effect on the site
         #  import/export
-        electricity_price = self.get_state_variable(
-            'C_electricity_price [$/MWh]')
+        electricity_price = self.get_state_variable('price [$/MWh]')
 
         self.reward = - gross_rate * electricity_price / 11
 
-        if self.steps == self.state_space.episode.shape[0] - 1:
+        if self.steps == self.end - 1:
             self.done = True
-
             next_state = np.zeros((1, *self.state_space.shape))
             self.next_observation = np.zeros((1, *self.observation_space.shape))
 
         else:
             next_state = self.state_space(
-                self.steps + 1,
-                np.array([self.charge])
+                self.steps + 1, self.start,
+                append={'charge [MWh]': float(self.charge)}
             )
-
             self.next_observation = self.observation_space(
-                self.steps + 1,
-                np.array([self.charge])
+                self.steps + 1, self.start,
+                append={'charge [MWh]': float(self.charge)}
             )
 
         transition = {
@@ -181,5 +175,9 @@ class Battery(BaseEnv):
             'losses': losses,
             'net_rate': net_rate
         }
+
+        self.steps += 1
+        self.state = transition['next_state']
+        self.observation = transition['next_observation']
 
         return transition

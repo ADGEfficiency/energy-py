@@ -2,7 +2,7 @@ from collections import defaultdict
 
 import gym
 
-from energypy.common import GlobalSpace, DiscreteSpace, ContinuousSpace
+from energypy.common import DiscreteSpace, ContinuousSpace
 
 
 class EnvWrapper(object):

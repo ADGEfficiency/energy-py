@@ -4,8 +4,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 
 import energypy
-from energypy.common.spaces.discrete import DiscreteSpace
-from energypy.common.spaces.continuous import ContinuousSpace
+from energypy.common.spaces import DiscreteSpace, ContinuousSpace
 
 
 class GlobalSpace(object):

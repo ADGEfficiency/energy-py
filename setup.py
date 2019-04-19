@@ -15,7 +15,7 @@ setup(
     package_data={'energypy': ['experiments/datasets/example/*.csv']},
 
     setup_requires=['pytest-runner'],
-    tests_require=['pytest'],
+    tests_require=['pytest', 'hypothesis'],
     install_requires=['Click'],
     entry_points='''
             [console_scripts]
