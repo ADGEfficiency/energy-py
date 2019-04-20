@@ -39,27 +39,24 @@ class Battery(BaseEnv):
 
         super().__init__(**kwargs)
 
+        #  this is fucking messy
         if prices is not None:
-            self.state_space = StateSpace('state').from_primitives(
+            self.state_space = StateSpace().from_primitives(
                 PrimCfg('price [$/MWh]', min(prices), max(prices), 'continuous', prices),
-                PrimCfg('charge [MWh]', 0, self.capacity, 'continuous', None)
+                PrimCfg('charge [MWh]', 0, self.capacity, 'continuous', 'append')
             )
 
-            #  TODO
-            self.observation_space = self.state_space
-
         else:
-            self.state_space = StateSpace.from_dataset('example')
+            self.state_space = StateSpace().from_dataset('example').append(
+                PrimCfg('charge [MWh]', 0, self.capacity, 'continuous', 'append')
+            )
 
+        #  TODO
+        self.observation_space = self.state_space
         assert self.state_space.num_samples == self.observation_space.num_samples
 
         self.episode_length = min(episode_length, self.state_space.num_samples)
-        """
-        action space has a single dimension, ranging from max charge
-        to max discharge
 
-        for a 2 MW battery, a range of -2 to 2 MW
-        """
         self.action_space = ActionSpace().from_primitives(
             PrimCfg('Rate [MW]', -self.power, power, 'continuous', None)
         )

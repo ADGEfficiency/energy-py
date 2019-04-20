@@ -3,6 +3,7 @@
 *.DS_Store
 *.pytest_cache
 *.swp
+.hypothesis
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

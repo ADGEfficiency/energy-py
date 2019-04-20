@@ -1,12 +1,28 @@
 """ state, observation and action spaces """
 
+from io import BytesIO
+from os.path import join
+import pkg_resources
+
 from collections import namedtuple, OrderedDict
 from itertools import product
 
 import numpy as np
+import pandas as pd
 
 import energypy as ep
 from energypy.common.spaces import DiscreteSpace, ContinuousSpace
+
+
+PrimCfg = namedtuple(
+    'primitive', ['name', 'low', 'high', 'type', 'data']
+)
+
+
+space_register = {
+    'discrete': DiscreteSpace,
+    'continuous': ContinuousSpace
+}
 
 
 class Space(OrderedDict):
@@ -51,21 +67,30 @@ class Space(OrderedDict):
     def from_primitives(self, *primitives):
         for p in primitives:
             self[p.name] = space_register[p.type](p.name, p.low, p.high, data=p.data) 
+        self.num_samples = self.set_num_samples()
+        return self
 
+    def append(self, primitive):
+        p = primitive 
+        self[p.name] = space_register[p.type](p.name, p.low, p.high, data=p.data) 
         self.num_samples = self.set_num_samples()
         return self
 
     def set_num_samples(self):
         num_samples = []
-        for space in self.values():
-            if space.data is not None:
+        for name, space in self.items():
+
+            if space.data == 'append':
+                pass
+
+            else:
                 num_samples.append(np.array(space.data).shape[0])
 
-        if num_samples:
-            assert max(num_samples) == min(num_samples)
-            return max(num_samples)
-        else:
-            return None
+            if num_samples:
+                assert max(num_samples) == min(num_samples)
+                return max(num_samples)
+            else:
+                return None
 
 
 class StateSpace(Space):
@@ -77,12 +102,12 @@ class StateSpace(Space):
         steps = num steps through episode
         start = offset for start of episode
         end = offset for end of episode
-        append = {name: data}
+        append = {name: data}, data from env appended to state / obs
         """
         data = []
         for name, space in self.items():
 
-            if name in append.keys():
+            if space.data == 'append':
                 data.append(append[name])
 
             elif space.data is not None:
@@ -98,6 +123,9 @@ class StateSpace(Space):
             how='full',
             episode_length=None
     ):
+        if episode_length:
+            episode_length = min(episode_length, self.num_samples)
+
         if how == 'full':
             return 0, self.num_samples
 
@@ -117,6 +145,42 @@ class StateSpace(Space):
         else:
             raise ValueError
 
+    def from_dataset(self, dataset):
+
+        #  but what about the appends!
+
+        #  pandas dataframe here
+        #  need both the column names and data
+        data = self.load_dataset(dataset)
+
+        for col in data.columns:
+            d = np.array(data.loc[:, col]).reshape(-1)
+
+            self[col] = space_register['continuous'](
+                col, np.min(d), np.max(d), d)
+
+        self.num_samples = self.set_num_samples()
+
+        return self
+
+    def load_dataset(self, dataset):
+        """ load example dataset or load from user supplied path """
+        if dataset == 'example':
+            data = pkg_resources.resource_string(
+                'energypy',
+                'example-dataset/{}.csv'.format(self.name)
+            )
+
+            return pd.read_csv(
+                BytesIO(data), index_col=0, parse_dates=True
+            )
+
+        else:
+            return pd.read_csv(
+                join(dataset, self.name + '.csv'), index_col=-1, parse_dates=True
+            )
+
+
 
 class ActionSpace(Space):
     def __init__(self, name='action'):
@@ -124,7 +188,7 @@ class ActionSpace(Space):
 
     def discretize(self, num_discrete):
         #  get the discretized elements for each dim of global space
-        discrete = [s.discretize(num_discrete) for s in self]
+        discrete = [spc.discretize(num_discrete) for spc in self.values()]
 
         #  get all combinations of each space (this is curse of dimensionality)
         discrete = [comb for comb in product(*discrete)]
@@ -137,21 +201,11 @@ class ObservationSpace():
         pass
 
 
-PrimCfg = namedtuple(
-    'primitive', ['name', 'low', 'high', 'type', 'data']
-)
-
-space_register = {
-    'discrete': DiscreteSpace,
-    'continuous': ContinuousSpace
-}
-
 if __name__ == '__main__':
 
     prices = 10 * np.random.rand(10)
     batt = ep.make_env('battery', prices=prices, episode_length=20)
 
-    #  episode sample happens during reset
     obs = batt.reset()
     done = False
 

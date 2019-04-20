@@ -9,7 +9,7 @@ class Primitive:
         self.name = name
         self.low  = float(low)
         self.high = float(high)
-        self.data = data
+        self.data = np.array(data).reshape(-1)
 
 
 class ContinuousSpace(Primitive):
@@ -18,8 +18,7 @@ class ContinuousSpace(Primitive):
         super().__init__(*args, **kwargs)
 
     def __call__(self, steps, offset):
-        #  data is a 1-D array
-        return self.data[steps + offset]
+        return float(self.data[steps + offset])
 
     def sample(self):
         return np.random.uniform(low=self.low, high=self.high)
@@ -43,7 +42,7 @@ class DiscreteSpace(Primitive):
 
     def __call__(self, steps, offset):
         #  data is a 1-D array
-        return self.data[steps + offset]
+        return int(self.data[steps + offset])
 
     def sample(self):
         return np.random.randint(self.high)
