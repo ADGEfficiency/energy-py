@@ -140,7 +140,7 @@ class Battery(BaseEnv):
 
         self.reward = - gross_rate * electricity_price / 11
 
-        if self.steps == self.end - 1:
+        if self.steps == self.end:
             self.done = True
             next_state = np.zeros((1, *self.state_space.shape))
             self.next_observation = np.zeros((1, *self.observation_space.shape))

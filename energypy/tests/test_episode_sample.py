@@ -6,18 +6,16 @@ import pytest
 
 
 @pytest.mark.parametrize(
-    'env, episode_sample, episode_length',
+    'env, sample_strat, episode_length',
     (('battery', 'random', 32),
+     ('battery', 'random', 64),
      ('battery', 'fixed', 2016),
-     ('battery', 'full', 0),
-     ('flex', 'random', 32),
-     ('flex', 'fixed', 2016),
-     ('flex', 'full', 0))
+     ('battery', 'full', 0))
 )
-def test_env_lengths(env, episode_sample, episode_length):
+def test_env_lengths(env, sample_strat, episode_length):
     env = energypy.make_env(
         env_id=env,
-        episode_sample=episode_sample,
+        sample_strat=sample_strat,
         episode_length=episode_length
     )
 
@@ -30,8 +28,9 @@ def test_env_lengths(env, episode_sample, episode_length):
         s, r, done, i = env.step(action)
 
     for key, data in i.items():
-        if episode_sample == 'full':
-            assert len(data) == env.state_space.data.shape[0]
+        import pdb; pdb.set_trace()
+        if sample_strat == 'full':
+            assert len(data) == env.state_space.num_samples
 
         else:
             assert len(data) == episode_length

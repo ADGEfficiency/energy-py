@@ -2,7 +2,7 @@ from collections import defaultdict
 
 import tensorflow as tf
 
-import energypy
+from energypy.common import make_memory
 
 
 class BaseAgent(object):
@@ -30,7 +30,7 @@ class BaseAgent(object):
         self.observation_space = env.observation_space
         self.action_space = env.action_space
 
-        self.memory = energypy.make_memory(
+        self.memory = make_memory(
             memory_id=memory_type,
             env=env,
             size=memory_length,

@@ -42,7 +42,7 @@ def test_discharge():
 
     rew, next_obs, d, i = env.step(-1.0)
 
-    charge = env.get_state_variable('C_charge_level [MWh]')
+    charge = env.get_state_variable('charge [MWh]')
 
     expected_charge = 4.0 - 1.0 / 12
 
@@ -59,7 +59,7 @@ def test_no_op():
 
     rew, next_obs, d, i = env.step(0)
 
-    charge = env.get_state_variable('C_charge_level [MWh]')
+    charge = env.get_state_variable('charge [MWh]')
 
     expected_charge = 2.0
 
