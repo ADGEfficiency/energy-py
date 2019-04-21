@@ -41,13 +41,13 @@ class Battery(BaseEnv):
         #  this is fucking messy
         if prices is not None:
             self.state_space = StateSpace().from_primitives(
-                Prim('price [$/MWh]', min(prices), max(prices), 'continuous', prices),
-                Prim('charge [MWh]', 0, self.capacity, 'continuous', 'append')
+                Prim('Price [$/MWh]', min(prices), max(prices), 'continuous', prices),
+                Prim('Charge [MWh]', 0, self.capacity, 'continuous', 'append')
             )
 
         else:
             self.state_space = StateSpace().from_dataset(dataset).append(
-                Prim('charge [MWh]', 0, self.capacity, 'continuous', 'append')
+                Prim('Charge [MWh]', 0, self.capacity, 'continuous', 'append')
             )
 
         #  TODO
@@ -60,7 +60,7 @@ class Battery(BaseEnv):
             self.episode_length = min(episode_length, self.state_space.num_samples)
 
         self.action_space = ActionSpace().from_primitives(
-            Prim('Rate [MW]', -self.power, power, 'continuous', None)
+            Prim('Power [MW]', -self.power, power, 'continuous', None)
         )
 
     def __repr__(self):
@@ -85,10 +85,10 @@ class Battery(BaseEnv):
 
         #  set initial state and observation
         self.state = self.state_space(
-            self.steps, self.start, append={'charge [MWh]': self.charge}
+            self.steps, self.start, append={'Charge [MWh]': self.charge}
         )
         self.observation = self.observation_space(
-            self.steps, self.start, append={'charge [MWh]': self.charge}
+            self.steps, self.start, append={'Charge [MWh]': self.charge}
         )
 
         assert self.charge <= self.capacity
@@ -99,6 +99,9 @@ class Battery(BaseEnv):
     def _step(self, action):
         """
         one step through the environment
+
+        positive action = charging
+        negative action = discharging
 
         returns
             transition (dict)
@@ -111,35 +114,36 @@ class Battery(BaseEnv):
         #  we first check to make sure this charge is within our capacity limit
         new_charge = np.clip(old_charge + net_charge, 0, self.capacity)
 
-        #  we can now calculate the gross rate of charge or discharge
-        gross_rate = (new_charge - old_charge) * 12
+        #  we can now calculate the gross power of charge or discharge
+        #  charging is positive
+        gross_power = (new_charge - old_charge) * 12
 
         #  now we account for losses / the round trip efficiency
-        if gross_rate > 0:
-            #  we lose electricity when we charge
-            losses = gross_rate * (1 - self.efficiency) / 12
+        if gross_power < 0:
+            #  we lose electricity when we discharge
+            losses = abs(gross_power * (1 - self.efficiency))
+
         else:
-            #  we don't lose anything when we discharge
+            #  we don't lose anything when we charge
             losses = 0
 
+        net_power = gross_power + losses
+
         #  we can now calculate the new charge of the battery after losses
-        self.charge = old_charge + gross_rate / 12 - losses
+        self.charge = old_charge + (gross_power / 12)
         #  this allows us to calculate how much electricity we actually store
         net_stored = self.charge - old_charge
-        #  and to calculate our actual rate of charge or discharge
-        net_rate = net_stored * 12
 
         #  energy balances
-        assert np.isclose(self.charge - old_charge - net_stored, 0)
-        assert np.isclose(net_rate - net_stored * 12, 0)
+        assert np.isclose(gross_power - net_power, -losses)
 
         #  now we can calculate the reward
         #  the reward is simply the cost to charge
         #  or the benefit from discharging
-        #  note that we use the gross rate, this is the effect on the site
+        #  note that we use the gross power, this is the effect on the site
         #  import/export
-        electricity_price = self.get_state_variable('price [$/MWh]')
-        reward = - gross_rate * electricity_price / 11
+        electricity_price = self.get_state_variable('Price [$/MWh]')
+        reward = net_power * electricity_price / 12
 
         #  zero indexing steps
         if self.steps == self.episode_length - 1:
@@ -151,11 +155,11 @@ class Battery(BaseEnv):
             done = False
             next_state = self.state_space(
                 self.steps + 1, self.start,
-                append={'charge [MWh]': float(self.charge)}
+                append={'Charge [MWh]': float(self.charge)}
             )
             next_observation = self.observation_space(
                 self.steps + 1, self.start,
-                append={'charge [MWh]': float(self.charge)}
+                append={'Charge [MWh]': float(self.charge)}
             )
 
         #  next state, obs and done set in parent Env class
@@ -169,12 +173,12 @@ class Battery(BaseEnv):
             'next_observation': next_observation,
             'done': bool(done),
 
-            'price [$/MWh]': float(electricity_price),
-            'old_charge [MWh]': float(old_charge),
-            'charge [MWh]': float(self.charge),
-            'gross_rate [MW]': float(gross_rate),
-            'losses [MWh]': float(losses),
-            'net_rate [MW]': float(net_rate)
+            'Price [$/MWh]': float(electricity_price),
+            'Initial charge [MWh]': float(old_charge),
+            'Final charge [MWh]': float(self.charge),
+            'Gross [MW]': float(gross_power),
+            'Net [MW]': float(net_power),
+            'Loss [MW]': float(losses)
         }
 
         return transition

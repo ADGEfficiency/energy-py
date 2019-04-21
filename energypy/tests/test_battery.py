@@ -1,5 +1,6 @@
 import hypothesis as hp
 import hypothesis.strategies as st
+import numpy as np
 import pytest
 
 import energypy
@@ -16,7 +17,7 @@ default_config = {
 @pytest.mark.parametrize(
     'action, initial_charge, expected_charge',
     [
-        (1.0, 0.0, 0.9 * 1.0 / 12)
+        (1.0, 0.0, 1.0 / 12)
     ]
 )
 def test_charge(action, initial_charge, expected_charge):
@@ -25,9 +26,7 @@ def test_charge(action, initial_charge, expected_charge):
 
     rew, next_obs, d, i = env.step(action)
 
-    charge = env.get_state_variable('charge [MWh]')
-
-    expected_charge = 0.9 * 1.0 / 12
+    charge = env.get_state_variable('Charge [MWh]')
 
     assert charge == expected_charge
 
@@ -42,11 +41,13 @@ def test_discharge():
 
     rew, next_obs, d, i = env.step(-1.0)
 
-    charge = env.get_state_variable('charge [MWh]')
-
+    charge = env.get_state_variable('Charge [MWh]')
     expected_charge = 4.0 - 1.0 / 12
-
     assert charge == expected_charge
+
+    losses = i['Loss [MW]'][-1]
+    expected_losses = 1.0 * (1 - 0.9)
+    np.testing.assert_allclose(losses, expected_losses)
 
 
 def test_no_op():
@@ -59,7 +60,7 @@ def test_no_op():
 
     rew, next_obs, d, i = env.step(0)
 
-    charge = env.get_state_variable('charge [MWh]')
+    charge = env.get_state_variable('Charge [MWh]')
 
     expected_charge = 2.0
 
