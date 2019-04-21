@@ -1,11 +1,10 @@
 """ state, observation and action spaces """
 
+from collections import namedtuple, OrderedDict
 from io import BytesIO
+from itertools import product
 from os.path import join
 import pkg_resources
-
-from collections import namedtuple, OrderedDict
-from itertools import product
 
 import numpy as np
 import pandas as pd
@@ -14,12 +13,13 @@ import energypy as ep
 from energypy.common.spaces import DiscreteSpace, ContinuousSpace
 
 
-PrimCfg = namedtuple(
+#  used in envs
+PrimitiveConfig = namedtuple(
     'primitive', ['name', 'low', 'high', 'type', 'data']
 )
 
 
-space_register = {
+primitive_register = {
     'discrete': DiscreteSpace,
     'continuous': ContinuousSpace
 }
@@ -66,13 +66,13 @@ class Space(OrderedDict):
 
     def from_primitives(self, *primitives):
         for p in primitives:
-            self[p.name] = space_register[p.type](p.name, p.low, p.high, data=p.data) 
+            self[p.name] = primitive_register[p.type](p.name, p.low, p.high, data=p.data) 
         self.num_samples = self.set_num_samples()
         return self
 
     def append(self, primitive):
         p = primitive 
-        self[p.name] = space_register[p.type](p.name, p.low, p.high, data=p.data) 
+        self[p.name] = primitive_register[p.type](p.name, p.low, p.high, data=p.data) 
         self.num_samples = self.set_num_samples()
         return self
 
@@ -158,7 +158,7 @@ class StateSpace(Space):
         for col in data.columns:
             d = np.array(data.loc[:, col]).reshape(-1)
 
-            self[col] = space_register['continuous'](
+            self[col] = primitive_register['continuous'](
                 col, np.min(d), np.max(d), d)
 
         self.num_samples = self.set_num_samples()
@@ -170,7 +170,7 @@ class StateSpace(Space):
         if dataset == 'example':
             data = pkg_resources.resource_string(
                 'energypy',
-                'example-dataset/{}.csv'.format(self.name)
+                'examples/{}.csv'.format(self.name)
             )
 
             return pd.read_csv(
@@ -179,9 +179,8 @@ class StateSpace(Space):
 
         else:
             return pd.read_csv(
-                join(dataset, self.name + '.csv'), index_col=-1, parse_dates=True
+                join(dataset, self.name + '.csv'), index_col=0, parse_dates=True
             )
-
 
 
 class ActionSpace(Space):
@@ -200,16 +199,4 @@ class ActionSpace(Space):
 
 class ObservationSpace():
     def __init__(self):
-        pass
-
-
-if __name__ == '__main__':
-
-    prices = 10 * np.random.rand(10)
-    batt = ep.make_env('battery', prices=prices, episode_length=20)
-
-    obs = batt.reset()
-    done = False
-
-    while not done:
-        obs, r, done, info = batt.step(batt.action_space.sample())
+        raise NotImplementedError

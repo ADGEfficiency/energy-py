@@ -2,7 +2,8 @@ from random import random
 
 import numpy as np
 
-from energypy.common.spaces import StateSpace, ActionSpace, PrimCfg
+from energypy.common.spaces import StateSpace, ActionSpace
+from energypy.common.spaces import PrimitiveConfig as Prim
 from energypy.envs import BaseEnv
 
 from collections import namedtuple
@@ -28,6 +29,7 @@ class Battery(BaseEnv):
             sample_strat='fixed',
 
             prices=None,
+            dataset='example',
             **kwargs
     ):
         self.power = float(power)
@@ -42,13 +44,13 @@ class Battery(BaseEnv):
         #  this is fucking messy
         if prices is not None:
             self.state_space = StateSpace().from_primitives(
-                PrimCfg('price [$/MWh]', min(prices), max(prices), 'continuous', prices),
-                PrimCfg('charge [MWh]', 0, self.capacity, 'continuous', 'append')
+                Prim('price [$/MWh]', min(prices), max(prices), 'continuous', prices),
+                Prim('charge [MWh]', 0, self.capacity, 'continuous', 'append')
             )
 
         else:
-            self.state_space = StateSpace().from_dataset('example').append(
-                PrimCfg('charge [MWh]', 0, self.capacity, 'continuous', 'append')
+            self.state_space = StateSpace().from_dataset(dataset).append(
+                Prim('charge [MWh]', 0, self.capacity, 'continuous', 'append')
             )
 
         #  TODO
@@ -61,7 +63,7 @@ class Battery(BaseEnv):
             self.episode_length = min(episode_length, self.state_space.num_samples)
 
         self.action_space = ActionSpace().from_primitives(
-            PrimCfg('Rate [MW]', -self.power, power, 'continuous', None)
+            Prim('Rate [MW]', -self.power, power, 'continuous', None)
         )
 
     def __repr__(self):

@@ -1,7 +1,7 @@
 expt:
-    name: test
+    name: example
 
-run1: &defaults
+battery: &defaults
     total_steps: 10000
 
     env:
@@ -11,7 +11,24 @@ run1: &defaults
     agent:
         agent_id: random
 
-run2:
+cartpole:
     <<: *defaults
+    total_steps: 400000
+    env:
+        env_id: cartpole-v0
+
     agent:
         agent_id: dqn
+        discount: 0.9
+        update_target_net: 10000
+        tau: 1.0
+        batch_size: 512
+        layers: 8, 4
+        learning_rate: 0.0001
+        learning_rate_decay: 1.0
+        epsilon_decay_fraction: 0.4
+        initial_epsilon: 1.0
+        final_epsilon: 0.01
+        memory_fraction: 1.0
+        memory_type: array
+        double_q: True

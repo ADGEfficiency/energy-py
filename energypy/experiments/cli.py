@@ -1,7 +1,8 @@
 import click
 import tensorflow as tf
 
-import energypy as ep
+from energypy.experiments.blocks import setup_expt, setup_run, perform_run, make_run_config
+from energypy.experiments.analysis import analyze_run, analyze_experiment
 
 
 @click.command()
@@ -10,12 +11,12 @@ import energypy as ep
 def cli(expt, run):
 
     with tf.Session() as sess:
-        cfg = ep.setup_expt(expt)
+        cfg = setup_expt(expt)
 
-        run_cfg, agent, env, runner = ep.setup_run(cfg, run, sess)
+        run_cfg, agent, env, runner = setup_run(cfg, run, sess)
 
-        ep.perform_run(runner, run_cfg, agent, env)
+        perform_run(runner, run_cfg, agent, env)
 
-        ep.analyze_run(run_cfg)
+        analyze_run(run_cfg)
 
-    ep.analyze_experiment(cfg)
+    analyze_experiment(cfg)

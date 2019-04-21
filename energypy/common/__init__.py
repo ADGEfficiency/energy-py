@@ -1,4 +1,4 @@
-# from energypy.common.utils import *
+from energypy.common.utils import *
 
 from energypy.common.memories import make_memory
 # from energypy.common.policies import policy_register

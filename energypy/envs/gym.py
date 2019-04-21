@@ -2,7 +2,8 @@ from collections import defaultdict
 
 import gym
 
-from energypy.common import DiscreteSpace, ContinuousSpace
+from energypy.common.spaces import ActionSpace
+from energypy.common.spaces import PrimitiveConfig as Prim
 
 
 class EnvWrapper(object):
@@ -24,6 +25,8 @@ class EnvWrapper(object):
         if seed:
             return self.env.seed(int(seed))
 
+        #  should just inherit from the gym envs - TODO
+        #  from gym.envs.classic_control import CartPoleEnv
 
 class CartPoleEnv(EnvWrapper):
 
@@ -33,8 +36,9 @@ class CartPoleEnv(EnvWrapper):
 
         self.observation_space = self.env.observation_space
 
-        self.action_space = GlobalSpace('action').from_spaces(
-            DiscreteSpace(2), 'push_l_or_r'
+        self.action_space = ActionSpace('action').from_primitives(
+            # DiscreteSpace(2), 'push_l_or_r'
+            Prim('left_or_right', 0, 1, 'discrete', None)
         )
 
     def step(self, action):
@@ -53,9 +57,10 @@ class PendulumEnv(EnvWrapper):
 
         self.observation_space = self.env.observation_space
 
-        self.action_space = GlobalSpace('action').from_spaces(
-            ContinuousSpace(low=-env.env.max_torque, high=env.env.max_torque),
-            'applied_torque'
+        self.action_space = ActionSpace('action').from_primitives(
+            # ContinuousSpace(low=-env.env.max_torque, high=env.env.max_torque),
+            # 'applied_torque'
+            Prim('torque', -env.env.max_torque, env.env.max_torque, 'continuous', None)
         )
 
 
@@ -67,8 +72,9 @@ class MountainCarEnv(EnvWrapper):
 
         self.observation_space = self.env.observation_space
 
-        self.action_space = GlobalSpace('action').from_spaces(
-            DiscreteSpace(2), 'push_l_or_r'
+        self.action_space = ActionSpace('action').from_primitives(
+            # DiscreteSpace(2), 'push_l_or_r'
+            Prim('left_or_right', 0, 1, 'discrete', None)
         )
 
     def step(self, action):

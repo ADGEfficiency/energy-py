@@ -5,11 +5,11 @@ import hypothesis.strategies as st
 import numpy as np
 import pytest
 
-from energypy.common.spaces import ActionSpace, PrimCfg
+from energypy.common.spaces import ActionSpace, PrimitiveConfig
 
 action = ActionSpace().from_primitives(
-    PrimCfg('action', 0, 100, 'continuous', None),
-    PrimCfg('action1', 0, 20, 'discrete', None)
+    PrimitiveConfig('action', 0, 100, 'continuous', None),
+    PrimitiveConfig('action1', 0, 20, 'discrete', None)
 )
 
 discrete = action.discretize(20)

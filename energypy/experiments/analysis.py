@@ -3,7 +3,15 @@ import json
 import pandas as pd
 from os.path import join
 
-from energypy import read_log, make_run_config
+from energypy.experiments.utils import read_log
+from energypy.experiments.blocks import make_run_config
+
+def read_results(cfg):
+    return {
+        'setup': read_log(join(cfg['run_dir'], 'run_setup.log')),
+        'rewards': read_log(join(cfg['run_dir'], 'results.log')),
+        'episode_1': read_log(join(cfg['run_dir'], 'episodes', 'ep_1.log'))
+    }
 
 
 def plot_results_log(run_cfg, ax):

@@ -13,7 +13,6 @@ from energypy import make_new_logger
 def read_log(log_file_path):
     with open(log_file_path) as f:
         logs = f.read().splitlines()
-
     return [json.loads(log) for log in logs]
 
 

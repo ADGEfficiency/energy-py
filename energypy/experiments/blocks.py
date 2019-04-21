@@ -1,21 +1,26 @@
-from os.path import expanduser, join
-
 import json
+from os import makedirs
+from os.path import expanduser, join
 from shutil import copyfile
+
 import numpy as np
 import yaml
 
-from energypy import make_new_logger, ensure_dir, dump_config, Runner
+from energypy import make_new_logger, make_env, make_agent
+from energypy.common import dump_config
+from energypy.experiments.utils import Runner
 
-import energypy
 
+def setup_expt(expt, ftype='yaml'):
 
-def setup_expt(expt):
-    cfg = yaml.load(expt)
+    if ftype == 'yaml':
+        cfg = yaml.load(expt)
+    else:
+        cfg = expt
 
     home = expanduser('~')
     expt_dir = '{}/energy-py-results/{}'.format(home, cfg['expt']['name'])
-    ensure_dir(expt_dir)
+    makedirs(expt_dir, exist_ok=True)
 
     expt_logger = make_new_logger('expt', expt_dir)
 
@@ -25,19 +30,20 @@ def setup_expt(expt):
 
     return cfg
 
+
 def make_run_config(expt_cfg, run):
     run_cfg = expt_cfg[run]
 
     run_dir = join(expt_cfg['expt']['expt_dir'], run)
-    ensure_dir(run_dir)
+    makedirs(run_dir, exist_ok=True)
     run_cfg['run_dir'] = run_dir
 
     ep_dir = join(run_dir, 'episodes')
-    ensure_dir(ep_dir)
+    makedirs(ep_dir, exist_ok=True)
     run_cfg['ep_dir'] = ep_dir
 
     tensorboard_dir = join(expt_cfg['expt']['expt_dir'], 'tensorboard', run)
-    ensure_dir(tensorboard_dir)
+    makedirs(tensorboard_dir, exist_ok=True)
     run_cfg['tensorboard_dir'] = tensorboard_dir
 
     return run_cfg
@@ -52,7 +58,7 @@ def setup_run(cfg, run, sess):
     dump_config(run_cfg, run_logger)
 
     env_config = run_cfg['env']
-    env = energypy.make_env(**env_config)
+    env = make_env(**env_config)
 
     if hasattr(env.observation_space, 'info') and hasattr(env.state_space, 'info'):
         run_logger.debug(json.dumps({'state_info': env.state_space.info}))
@@ -63,7 +69,7 @@ def setup_run(cfg, run, sess):
     agent_config['sess'] = sess
     agent_config['tensorboard_dir'] = run_cfg['tensorboard_dir']
 
-    agent = energypy.make_agent(**agent_config)
+    agent = make_agent(**agent_config)
 
     return run_cfg, agent, env, runner
 

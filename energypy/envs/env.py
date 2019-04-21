@@ -59,12 +59,15 @@ class BaseEnv(object):
             transition[k] = np.array(v).tolist()
             self.info[k].append(v)
 
+        t = transition
+        #  caused by to list
+        t['reward'] = float(t['reward'][0][0])
+        t['done'] = bool(t['done'])
+
         #  TODO
         if log:
             #  episode logger is set during experiment
             self.episode_logger.debug(json.dumps(transition))
-
-        t = transition
 
         return self.observation, t['reward'], t['done'], self.info
 

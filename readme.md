@@ -16,21 +16,21 @@ $ pip install --ignore-installed -r requirements.txt
 $ python setup.py install
 ```
 
-## Basic use
+## Running experiments
 
 The most common access point will be to run an experiment from a config file.  An experiment is run by passing a `yaml` config file along with the name of the run:
 
 ```bash
-$ energypy-experiment energypy/examples/example_config.yaml 
+$ energypy-experiment energypy/examples/example_config.yaml battery
 ```
 
 An example config file (`energypy/examples/example_config.yaml`):
 
 ```yaml
 expt:
-    name: test
+    name: example
 
-run1: &defaults
+battery: &defaults
     total_steps: 10000
 
     env:
@@ -39,11 +39,6 @@ run1: &defaults
 
     agent:
         agent_id: random
-
-run2:
-    <<: *defaults
-    agent:
-        agent_id: dqn
 ```
 
 Results (log files for each episode & experiment summaries) are placed into a folder in the users `$HOME`.  The progress of an experiment can be watched with TensorBoard by running a server looking at this results folder:

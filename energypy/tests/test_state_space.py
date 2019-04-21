@@ -3,7 +3,8 @@ import hypothesis.strategies as st
 import numpy as np
 import pytest
 
-from energypy.common.spaces import Space, StateSpace, PrimCfg
+from energypy.common.spaces import Space, StateSpace
+from energypy.common.spaces import PrimitiveConfig as PrimCfg
 
 #  test data lengths, discretized shape dims, sampling starts
 
