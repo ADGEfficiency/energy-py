@@ -60,9 +60,6 @@ class BaseEnv(object):
             self.info[k].append(v)
 
         t = transition
-        #  caused by to list
-        t['reward'] = float(t['reward'][0][0])
-        t['done'] = bool(t['done'])
 
         #  TODO
         if log:

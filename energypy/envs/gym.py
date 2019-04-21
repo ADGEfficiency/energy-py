@@ -37,8 +37,7 @@ class CartPoleEnv(EnvWrapper):
         self.observation_space = self.env.observation_space
 
         self.action_space = ActionSpace('action').from_primitives(
-            # DiscreteSpace(2), 'push_l_or_r'
-            Prim('left_or_right', 0, 1, 'discrete', None)
+            Prim('left_or_right', 0, 2, 'discrete', None)
         )
 
     def step(self, action):
@@ -58,8 +57,6 @@ class PendulumEnv(EnvWrapper):
         self.observation_space = self.env.observation_space
 
         self.action_space = ActionSpace('action').from_primitives(
-            # ContinuousSpace(low=-env.env.max_torque, high=env.env.max_torque),
-            # 'applied_torque'
             Prim('torque', -env.env.max_torque, env.env.max_torque, 'continuous', None)
         )
 
@@ -73,8 +70,7 @@ class MountainCarEnv(EnvWrapper):
         self.observation_space = self.env.observation_space
 
         self.action_space = ActionSpace('action').from_primitives(
-            # DiscreteSpace(2), 'push_l_or_r'
-            Prim('left_or_right', 0, 1, 'discrete', None)
+            Prim('left_or_right', 0, 2, 'discrete', None)
         )
 
     def step(self, action):

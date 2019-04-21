@@ -13,7 +13,7 @@ class Primitive:
 
 
 class ContinuousSpace(Primitive):
-    """ single dimension continuous space """
+    """ single dimension continuous space  - car accelerator """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -26,7 +26,9 @@ class ContinuousSpace(Primitive):
     def contains(self, x):
         cond = (x >= self.low) and (x <= self.high)
         if not cond:
-            raise ValueError
+            raise ValueError(
+                '{} not in space - min {} max {}'.format(x, self.low, self.high)
+            )
         return cond
 
     def discretize(self, num_discrete):
@@ -34,7 +36,7 @@ class ContinuousSpace(Primitive):
 
 
 class DiscreteSpace(Primitive):
-    """ single dimension discrete space """
+    """ single dimension discrete space - gears in car """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.low = int(self.low)

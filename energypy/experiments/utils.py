@@ -80,3 +80,5 @@ class Runner():
         }
 
         self.logger.info(json.dumps(log))
+
+        self.step += 1

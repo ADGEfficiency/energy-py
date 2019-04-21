@@ -6,8 +6,6 @@ from energypy.common.spaces import StateSpace, ActionSpace
 from energypy.common.spaces import PrimitiveConfig as Prim
 from energypy.envs import BaseEnv
 
-from collections import namedtuple
-
 
 class Battery(BaseEnv):
     """
@@ -25,6 +23,7 @@ class Battery(BaseEnv):
             capacity=4.0,
             efficiency=0.9,
             initial_charge=0.5,
+
             episode_length=2016,
             sample_strat='fixed',
 
@@ -36,9 +35,7 @@ class Battery(BaseEnv):
         self.capacity = float(capacity)
         self.efficiency = float(efficiency)
         self.initial_charge = initial_charge
-
         self.sample_strat = sample_strat
-
         super().__init__(**kwargs)
 
         #  this is fucking messy
@@ -163,21 +160,21 @@ class Battery(BaseEnv):
 
         #  next state, obs and done set in parent Env class
         transition = {
-            'step': self.steps,
+            'step': int(self.steps),
             'state': self.state,
             'observation': self.observation,
             'action': action,
-            'reward': reward,
+            'reward': float(reward),
             'next_state': next_state,
             'next_observation': next_observation,
-            'done': done,
+            'done': bool(done),
 
-            'electricity_price': electricity_price,
-            'old_charge': old_charge,
-            'charge': self.charge,
-            'gross_rate': gross_rate,
-            'losses': losses,
-            'net_rate': net_rate
+            'price [$/MWh]': float(electricity_price),
+            'old_charge [MWh]': float(old_charge),
+            'charge [MWh]': float(self.charge),
+            'gross_rate [MW]': float(gross_rate),
+            'losses [MWh]': float(losses),
+            'net_rate [MW]': float(net_rate)
         }
 
         return transition

@@ -10,8 +10,8 @@ import energypy
     'env, sample_strat, episode_length',
     (('battery', 'random', 32),
      ('battery', 'random', 64),
-     ('battery', 'fixed', 2016),
-     ('battery', 'fixed', 1024),
+     ('battery', 'fixed', 256),
+     ('battery', 'fixed', 128),
      ('battery', 'full', 0))
 )
 def test_env_lengths(env, sample_strat, episode_length):

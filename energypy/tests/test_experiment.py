@@ -69,7 +69,7 @@ def test_battery_random_expt(setup_and_teardown):
 
     ep1 = output['episode_1']
     all_prices = [float(tup[1]) for tup in dataset[1:]]
-    prices = [float(transition['electricity_price']) for transition in ep1]
+    prices = [float(transition['price [$/MWh]']) for transition in ep1]
     np.testing.assert_array_equal(all_prices, prices)
 
 

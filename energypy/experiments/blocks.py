@@ -111,8 +111,8 @@ def perform_episode(agent, env):
 
         observation = next_observation
 
-        #  only learn once memory is full
-        if len(agent.memory) > min(agent.memory.size, 10000):
+        #  only learn once we have 5000 samples
+        if len(agent.memory) > 5000:
             agent.learn()
 
     return step, rewards
