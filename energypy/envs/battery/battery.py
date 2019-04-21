@@ -55,7 +55,10 @@ class Battery(BaseEnv):
         self.observation_space = self.state_space
         assert self.state_space.num_samples == self.observation_space.num_samples
 
-        self.episode_length = min(episode_length, self.state_space.num_samples)
+        if sample_strat == 'full':
+            self.episode_length = self.state_space.num_samples
+        else:
+            self.episode_length = min(episode_length, self.state_space.num_samples)
 
         self.action_space = ActionSpace().from_primitives(
             PrimCfg('Rate [MW]', -self.power, power, 'continuous', None)
@@ -137,33 +140,35 @@ class Battery(BaseEnv):
         #  note that we use the gross rate, this is the effect on the site
         #  import/export
         electricity_price = self.get_state_variable('price [$/MWh]')
+        reward = - gross_rate * electricity_price / 11
 
-        self.reward = - gross_rate * electricity_price / 11
-
-        if self.steps == self.end:
-            self.done = True
+        #  zero indexing steps
+        if self.steps == self.episode_length - 1:
+            done = True
             next_state = np.zeros((1, *self.state_space.shape))
-            self.next_observation = np.zeros((1, *self.observation_space.shape))
+            next_observation = np.zeros((1, *self.observation_space.shape))
 
         else:
+            done = False
             next_state = self.state_space(
                 self.steps + 1, self.start,
                 append={'charge [MWh]': float(self.charge)}
             )
-            self.next_observation = self.observation_space(
+            next_observation = self.observation_space(
                 self.steps + 1, self.start,
                 append={'charge [MWh]': float(self.charge)}
             )
 
+        #  next state, obs and done set in parent Env class
         transition = {
             'step': self.steps,
             'state': self.state,
             'observation': self.observation,
             'action': action,
-            'reward': self.reward,
+            'reward': reward,
             'next_state': next_state,
-            'next_observation': self.next_observation,
-            'done': self.done,
+            'next_observation': next_observation,
+            'done': done,
 
             'electricity_price': electricity_price,
             'old_charge': old_charge,
@@ -172,9 +177,5 @@ class Battery(BaseEnv):
             'losses': losses,
             'net_rate': net_rate
         }
-
-        self.steps += 1
-        self.state = transition['next_state']
-        self.observation = transition['next_observation']
 
         return transition

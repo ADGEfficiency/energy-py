@@ -50,6 +50,11 @@ class BaseEnv(object):
         #  child class specific transition dynamics
         transition = self._step(action)
 
+        self.steps += 1
+        self.state = transition['next_state']
+        self.observation = transition['next_observation']
+
+        #  saving to info dict
         for k, v in transition.items():
             transition[k] = np.array(v).tolist()
             self.info[k].append(v)
@@ -59,7 +64,9 @@ class BaseEnv(object):
             #  episode logger is set during experiment
             self.episode_logger.debug(json.dumps(transition))
 
-        return self.observation, self.reward, self.done, self.info
+        t = transition
+
+        return self.observation, t['reward'], t['done'], self.info
 
     def get_state_variable(self, variable_name):
         """ get single element of the current state """

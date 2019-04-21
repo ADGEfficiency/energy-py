@@ -21,10 +21,10 @@ $ python setup.py install
 The most common access point will be to run an experiment from a config file.  An experiment is run by passing a `yaml` config file along with the name of the run:
 
 ```bash
-$ ep-experiment energypy/experiments/example_config.yaml run1
+$ energypy-experiment energypy/examples/example_config.yaml 
 ```
 
-An example config file (`energypy/experiments/example_config.yaml`):
+An example config file (`energypy/examples/example_config.yaml`):
 
 ```yaml
 expt:

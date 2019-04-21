@@ -80,8 +80,8 @@ class Space(OrderedDict):
         num_samples = []
         for name, space in self.items():
 
-            if space.data == 'append':
-                pass
+            if isinstance(space.data, str):
+                assert space.data == 'append'
 
             else:
                 num_samples.append(np.array(space.data).shape[0])
@@ -108,6 +108,8 @@ class StateSpace(Space):
         for name, space in self.items():
 
             if space.data == 'append':
+            # if isinstance(space.data, str):
+                assert space.data == 'append'
                 data.append(append[name])
 
             elif space.data is not None:
@@ -132,7 +134,7 @@ class StateSpace(Space):
         elif how == 'random':
 
             if self.num_samples == episode_length:
-                start = 0
+                return 0, episode_length
             else:
                 start = np.random.randint(
                     low=0, high=self.num_samples - episode_length
