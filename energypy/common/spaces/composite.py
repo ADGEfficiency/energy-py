@@ -149,15 +149,12 @@ class StateSpace(Space):
 
     def from_dataset(self, dataset):
 
-        #  but what about the appends!
-
-        #  pandas dataframe here
-        #  need both the column names and data
         data = self.load_dataset(dataset)
 
         for col in data.columns:
             d = np.array(data.loc[:, col]).reshape(-1)
 
+            #  TODO doing all as continuous spaces here!
             self[col] = primitive_register['continuous'](
                 col, np.min(d), np.max(d), d)
 
@@ -172,15 +169,10 @@ class StateSpace(Space):
                 'energypy',
                 'examples/{}.csv'.format(self.name)
             )
-
-            return pd.read_csv(
-                BytesIO(data), index_col=0, parse_dates=True
-            )
+            return pd.read_csv(BytesIO(data), index_col=0, parse_dates=True)
 
         else:
-            return pd.read_csv(
-                join(dataset, self.name + '.csv'), index_col=0, parse_dates=True
-            )
+            return pd.read_csv(join(dataset, self.name + '.csv'), index_col=0, parse_dates=True)
 
 
 class ActionSpace(Space):

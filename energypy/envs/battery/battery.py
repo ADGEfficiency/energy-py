@@ -115,35 +115,30 @@ class Battery(BaseEnv):
         new_charge = np.clip(old_charge + net_charge, 0, self.capacity)
 
         #  we can now calculate the gross power of charge or discharge
-        #  charging is positive
+        #  charging is positive, discharging negative
         gross_power = (new_charge - old_charge) * 12
 
-        #  now we account for losses / the round trip efficiency
+        #  account for losses / the round trip efficiency
+        #  we lose electricity when we discharge
         if gross_power < 0:
-            #  we lose electricity when we discharge
             losses = abs(gross_power * (1 - self.efficiency))
 
+        #  we don't lose anything when we charge
         else:
-            #  we don't lose anything when we charge
             losses = 0
 
         net_power = gross_power + losses
 
-        #  we can now calculate the new charge of the battery after losses
+        #  the new charge of the battery after losses
         self.charge = old_charge + (gross_power / 12)
-        #  this allows us to calculate how much electricity we actually store
-        net_stored = self.charge - old_charge
 
         #  energy balances
         assert np.isclose(gross_power - net_power, -losses)
 
-        #  now we can calculate the reward
-        #  the reward is simply the cost to charge
-        #  or the benefit from discharging
-        #  note that we use the gross power, this is the effect on the site
-        #  import/export
+        #  reward is the cost to charge / benefit to discharge
+        #  use net power as it accounts for losses
         electricity_price = self.get_state_variable('Price [$/MWh]')
-        reward = net_power * electricity_price / 12
+        reward = -net_power * electricity_price / 12
 
         #  zero indexing steps
         if self.steps == self.episode_length - 1:
@@ -162,8 +157,7 @@ class Battery(BaseEnv):
                 append={'Charge [MWh]': float(self.charge)}
             )
 
-        #  next state, obs and done set in parent Env class
-        transition = {
+        return {
             'step': int(self.steps),
             'state': self.state,
             'observation': self.observation,
@@ -180,5 +174,3 @@ class Battery(BaseEnv):
             'Net [MW]': float(net_power),
             'Loss [MW]': float(losses)
         }
-
-        return transition
