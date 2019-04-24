@@ -12,7 +12,7 @@ setup(
 
     packages=find_packages(exclude=['tests', 'tests.*']),
     package_dir={'energypy': 'energypy'},
-    package_data={'energypy': ['energypy/example/*.csv']},
+    package_data={'energypy': ['energypy/examples/*.csv']},
 
     setup_requires=['pytest-runner'],
     tests_require=['pytest', 'hypothesis'],
