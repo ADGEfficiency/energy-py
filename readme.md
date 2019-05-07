@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/ADGEfficiency/energy-py.svg?branch=master)](https://travis-ci.org/ADGEfficiency/energy-py)
 
-energypy is a framework for running reinforcement learning experiments on energy environments.  
+energypy is a framework for running reinforcement learning experiments on energy environments.
 
 energypy is built and maintained by Adam Green - [adam.green@adgefficiency.com](adam.green@adgefficiency.com).
 
@@ -18,7 +18,7 @@ $ python setup.py install
 
 ## Running experiments
 
-The most common access point will be to run an experiment from a config file.  An experiment is run by passing a `yaml` config file along with the name of the run:
+energy-py has a high level API to run a specific run of an experiment from a `yaml` config file:
 
 ```bash
 $ energypy-experiment energypy/examples/example_config.yaml battery
@@ -73,6 +73,8 @@ while not done:
 
 ## Library
 
+energy-py environments follow the design of OpenAI `gym`.  energy-py also wraps some classic `gym` environments such as CartPole, Pendulum and MountainCar.
+
 energy-py currently implements:
 
 - naive agents
@@ -83,7 +85,7 @@ energy-py currently implements:
 
 ## Further reading
 
-- [Introductory blog post](http://www.adgefficiency.com/energypy-reinforcement-learning-for-energy-systems/)
+- [Introductory blog post](http://www.adgefficiency.com/energy-py-reinforcement-learning-for-energy-systems/)
 - [DQN debugging](http://adgefficiency.com/dqn-debugging/)
 - [DDQN hyperparameter tuning](http://adgefficiency.com/dqn-tuning/)
 - [Jupyter notebook example of low level API - DQN and battery environment](https://github.com/ADGEfficiency/energypy/blob/master/notebooks/examples/DQN_battery_example.ipynb)
