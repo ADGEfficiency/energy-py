@@ -2,13 +2,11 @@ import numpy as np
 import tensorflow as tf
 
 from energypy.agents.agent import BaseAgent
+from energypy.common import make_network
 from energypy.common.policies import epsilon_greedy_policy, softmax_policy
-
 from energypy.common.np_utils import find_sub_array_in_2D_array as find_action
 from energypy.common.tf_utils import make_copy_ops, get_tf_params
 from energypy.common.utils import read_iterable_from_config
-
-from energypy.common import make_network
 
 
 class DQN(BaseAgent):

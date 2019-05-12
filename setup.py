@@ -11,7 +11,7 @@ setup(
     url='http://www.adgefficiency.com/',
 
     packages=find_packages(exclude=['tests', 'tests.*']),
-    package_dir={'energypy': 'energypy/energypy'},
+    # package_dir={'energypy': 'energypy/energypy'},
     package_data={'energypy': ['examples/*.csv']},
 
     setup_requires=['pytest-runner'],
