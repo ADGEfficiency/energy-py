@@ -57,6 +57,9 @@ class BaseMemory(object):
             'indexes': (1,)  #  does this do anything ? TODO
         }
 
+    def reset(self):
+        self._reset()
+
     def make_batch_dict(self, batch):
         """
         Takes a list of experiences and converts into a dictionary

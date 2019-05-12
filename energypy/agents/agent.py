@@ -55,7 +55,6 @@ class BaseAgent(object):
                 'learning': tf.summary.FileWriter(tensorboard_dir+'/learning')
             }
 
-        #  TODO
         self.filters = None
         self.kernels = None
         self.strides = None

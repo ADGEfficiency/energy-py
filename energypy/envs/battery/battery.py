@@ -11,6 +11,9 @@ class Battery(BaseEnv):
     """
     Electric battery operating in price arbitrage
 
+    action = charging is positive, discharging is negative
+    shape = (batch_size, 1)
+
     args
         power [MW]
         capacity [MWh]
@@ -22,7 +25,7 @@ class Battery(BaseEnv):
             power=2.0,
             capacity=4.0,
             efficiency=0.9,
-            initial_charge=0.5,
+            initial_charge=0.0,
 
             episode_length=2016,
             sample_strat='fixed',
@@ -50,7 +53,6 @@ class Battery(BaseEnv):
                 Prim('Charge [MWh]', 0, self.capacity, 'continuous', 'append')
             )
 
-        #  TODO
         self.observation_space = self.state_space
         assert self.state_space.num_samples == self.observation_space.num_samples
 
@@ -99,9 +101,8 @@ class Battery(BaseEnv):
     def _step(self, action):
         """
         one step through the environment
-
-        positive action = charging
-        negative action = discharging
+        action = charging is positive, discharging is negative [MW]
+        shape = (batch_size, 1)
 
         returns
             transition (dict)

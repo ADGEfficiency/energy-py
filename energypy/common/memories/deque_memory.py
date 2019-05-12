@@ -22,10 +22,13 @@ class DequeMemory(BaseMemory):
     ):
         super().__init__(env, size)
         self.type = 'deque'
-        self.experiences = deque(maxlen=self.size)
+        self.reset()
 
     def __repr__(self):
         return '<class DequeMemory size={}>'.format(self.size)
+
+    def _reset(self):
+        self.experiences = deque(maxlen=self.size)
 
     def __len__(self):
         return len(self.experiences)

@@ -20,7 +20,6 @@ class ArrayMemory(BaseMemory):
         self.type = 'array'
 
         empty = np.empty
-
         self.obs = empty((self.size, *self.shapes['observation']))
         self.acts = empty((self.size, *self.shapes['action']))
         self.rews = empty((self.size, *self.shapes['reward']))

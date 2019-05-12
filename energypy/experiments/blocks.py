@@ -12,7 +12,7 @@ from energypy.experiments.utils import Runner
 
 
 def setup_expt(expt, ftype='yaml'):
-
+    """ creates experiment config dict """
     if ftype == 'yaml':
         cfg = yaml.load(expt)
     else:
@@ -50,7 +50,6 @@ def make_run_config(expt_cfg, run):
 
 
 def setup_run(cfg, run, sess):
-
     run_cfg = make_run_config(cfg, run)
 
     run_logger = make_new_logger('run_setup', run_cfg['run_dir'])
@@ -75,9 +74,7 @@ def setup_run(cfg, run, sess):
 
 
 def perform_run(runner, run_cfg, agent, env):
-
     total_steps = run_cfg['total_steps']
-
     #  pretraining would go here
 
     step, episode = 0, 0
@@ -88,31 +85,28 @@ def perform_run(runner, run_cfg, agent, env):
             run_cfg['ep_dir']
         )
 
-        episode_steps, episode_rewards = perform_episode(agent, env)
-        runner.record_episode(episode_rewards)
-        step += episode_steps
+        info = perform_episode(agent, env)
+        runner.record_episode(info['rewards'])
+        step += info['steps']
 
 
 def perform_episode(agent, env):
     done = False
-    observation = env.reset()
     step = 0
     rewards = []
-
+    observation = env.reset()
     while not done:
         step += 1
-
         action = agent.act(observation)
-
         next_observation, reward, done, info = env.step(action)
-
         agent.remember(observation, action, reward, next_observation, done)
         rewards.append(reward)
-
         observation = next_observation
 
         #  only learn once we have 5000 samples
         if len(agent.memory) > 5000:
             agent.learn()
 
-    return step, rewards
+    info['steps'] = step
+
+    return info
