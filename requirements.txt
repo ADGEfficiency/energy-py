@@ -4,6 +4,6 @@ matplotlib
 numpy
 pandas
 scikit-learn
-tensorflow==1.13.1
+tensorflow==1.15.0
 pyyaml
 hypothesis
