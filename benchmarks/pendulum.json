@@ -1,0 +1,18 @@
+{
+    "initial-log-alpha": 0.0,
+    "gamma": 0.99,
+    "rho": 0.995,
+    "buffer-size": 100000,
+    "reward-scale": 5,
+    "lr": 3e-4,
+    "batch-size": 1024,
+    "n-episodes": 80,
+    "test-every": 20,
+    "n-tests": 5,
+    "size-scale": 3,
+    "run-name": "benchmark",
+    "env": {
+      "name": "pendulum",
+      "env_name": "pendulum"
+    }
+}

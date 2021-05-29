@@ -1,0 +1,17 @@
+{
+    "initial-log-alpha": 0.0,
+    "gamma": 0.99,
+    "rho": 0.995,
+    "buffer-size": 1000000,
+    "reward-scale": 5,
+    "lr": 3e-4,
+    "batch-size": 1024,
+    "n-episodes": 250,
+    "test-every": 20,
+    "n-tests": 5,
+    "size-scale": 6,
+    "env": {
+      "name": "battery",
+      "n_batteries": 2
+    }
+}
