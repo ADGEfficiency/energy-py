@@ -1,9 +1,9 @@
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras import layers
 from tensorflow.keras.layers import Flatten
 
 from energypy.agent.target import update_target_network
+from energypy.networks import dense, attention
 from energypy.utils import minimum_target
 
 
@@ -35,13 +35,16 @@ def make_qfunc(obs_shape, n_actions, name, size_scale=1):
 
     inputs = tf.concat([obs, act], axis=1)
 
-    net = layers.Dense(64*size_scale, activation='relu')(inputs)
-    net = layers.Dense(32*size_scale, activation='relu')(inputs)
-    q_value = layers.Dense(1, activation='linear')(net)
+    # if hyp.get('q-net') == 'attention':
+    # TODO
+    if False:
+        inputs, net = attention(obs_shape, 1, size_scale)
+    else:
+        inputs, net = dense(inputs, 1, size_scale)
 
     return keras.Model(
         inputs=[in_obs, in_act],
-        outputs=q_value,
+        outputs=net,
         name=name
     )
 

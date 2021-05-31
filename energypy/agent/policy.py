@@ -4,7 +4,7 @@ from tensorflow import keras
 from tensorflow.keras import layers
 import tensorflow_probability as tfp
 
-from energypy.networks import dense
+from energypy.networks import dense, attention
 from energypy.utils import minimum_target
 
 
@@ -62,6 +62,7 @@ def update(
     with tf.GradientTape() as tape:
         state_act, log_prob, _ = actor(batch['observation'])
         policy_target = minimum_target(batch['observation'], state_act, targets)
+
         loss = tf.reduce_mean(al * log_prob - policy_target)
 
     grads = tape.gradient(loss, actor.trainable_variables)
