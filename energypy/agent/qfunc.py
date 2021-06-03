@@ -38,9 +38,9 @@ def make_qfunc(obs_shape, n_actions, name, size_scale=1):
     # if hyp.get('q-net') == 'attention':
     # TODO
     if False:
-        inputs, net = attention(obs_shape, 1, size_scale)
+        _, net = attention(obs_shape, 1, size_scale)
     else:
-        inputs, net = dense(inputs, 1, size_scale)
+        _, net = dense(inputs, 1, size_scale)
 
     return keras.Model(
         inputs=[in_obs, in_act],

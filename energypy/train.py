@@ -1,7 +1,14 @@
 from energypy import utils, qfunc, policy, target, alpha
 
 
-def train(
+def train(*args, **kwargs):
+    if 'network' in kwargs.keys():
+        raise NotImplementedError()
+    else:
+        return train_one_head_network(*args, **kwargs)
+
+
+def train_one_head_network(
     batch,
     actor,
     onlines,
@@ -61,3 +68,31 @@ def train(
     counters['alpha-update-seconds'] += utils.now() - st
     counters['train-seconds'] += utils.now() - st
     counters['train-steps'] += 1
+
+
+def train_multi_head_network(
+    batch,
+    network,
+    log_alpha,
+    writer,
+    optimizers,
+    counters,
+    hyp
+):
+    st = utils.now()
+    #  train net
+
+
+
+    #  maybe do the actor fwd pass here...
+    st = utils.now()
+    alpha.update(
+        batch,
+        actor,
+        log_alpha,
+        hyp,
+        optimizers['alpha'],
+        counters,
+        writer
+    )
+    counters['alpha-update-seconds'] += utils.now() - st
