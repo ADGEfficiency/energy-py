@@ -12,7 +12,6 @@ def episode(
     actor,
     hyp,
     counters,
-    rewards,
     mode,
     logger=None
 ):
@@ -74,7 +73,6 @@ def run_episode(
         actor,
         hyp,
         counters,
-        rewards,
         mode,
         logger=logger,
     )

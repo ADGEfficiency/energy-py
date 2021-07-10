@@ -112,7 +112,7 @@ def print_counters(counters):
 
 class Writer:
     def __init__(self, name, counters, home):
-        path = home / 'tensorboard' / name
+        path = Path(home) / 'tensorboard' / name
         self.writer = tf.summary.create_file_writer(str(path))
         self.counters = counters
 

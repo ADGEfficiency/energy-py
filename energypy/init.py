@@ -95,5 +95,3 @@ def init_checkpoint(checkpoint_path):
         'transition_logger': transition_logger,
         'rewards': rewards
     }
-
-

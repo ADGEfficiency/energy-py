@@ -1,3 +1,10 @@
+"""
+
+dataset = AbstractDataset()
+
+"""
+
+
 from collections import OrderedDict, defaultdict
 import json
 
@@ -22,9 +29,12 @@ def load_episodes(path):
             return path
         else:
             #  list of paths
-            episodes = path
+            episodes = [Path(p) for p in path]
             print(f'loading {len(episodes)} from list')
-            eps = [pd.read_csv(p, index_col=0) for p in tqdm(episodes)]
+            csvs = [pd.read_csv(p, index_col=0) for p in tqdm(episodes) if p.suffix == '.csv']
+            parquets = [pd.read_parquet(p) for p in tqdm(episodes) if p.suffix == '.parquet']
+
+            eps = csvs + parquets
             print(f'loaded {len(episodes)} from list')
             return eps
 
@@ -46,29 +56,38 @@ def load_episodes(path):
 def round_nearest(x, divisor):
     return x - (x % divisor)
 
+from abc import ABC, abstractmethod
 
-class AbstractDataset:
+
+class AbstractDataset(ABC):
+    def get_data(self, cursor):
+        #  relies on self.dataset
+        return OrderedDict({k: d[cursor] for k, d in self.dataset.items()})
+
     def reset(self, mode=None):
-        raise NotImplementedError()
+        #  can dispatch based on mode, or just reset
+        #  should return first obs using get_data
+        return self.get_data(0)
 
     def setup_test(self):
+        #  called by energypy.main
+        #  not optional - even if dataset doesn't have the concept of test data
+        #  no test data -> setup_test should return True
+        return True
+
+    def reset_train(self):
+        #  optional - depends on how reset works
         raise NotImplementedError()
 
-    def get_data(self, cursor):
-        return OrderedDict({k: d[cursor] for k, d in self.dataset.items()})
+    def reset_test(self, mode=None):
+        #  optional - depends on how reset works
+        raise NotImplementedError()
 
 
 class RandomDataset(AbstractDataset):
     def __init__(self, n=1000, n_features=3, n_batteries=1, logger=None):
         self.dataset = self.make_random_dataset(n, n_features, n_batteries)
-        self.test_done = True
         self.reset()
-
-    def reset(self, mode=None):
-        pass
-
-    def setup_test(self):
-        pass
 
     def make_random_dataset(self, n, n_features, n_batteries):
         np.random.seed(42)
@@ -79,15 +98,21 @@ class RandomDataset(AbstractDataset):
 
 
 class NEMDataset(AbstractDataset):
-    def __init__(self, n_batteries, train_episodes=None, test_episodes=None, logger=None):
+    def __init__(
+        self,
+        n_batteries,
+        train_episodes=None,
+        test_episodes=None,
+        price_col='price [$/MWh]',
+        logger=None
+    ):
         self.n_batteries = n_batteries
-
-        #  TODO - use of the random key here is awkard
-        #  using it to get the random policy sampling to play nice
+        self.price_col = price_col
 
         train_episodes = load_episodes(train_episodes)
         self.episodes = {
             'train': train_episodes,
+            #  our random sampling done on train episodes
             'random': train_episodes,
             'test': load_episodes(test_episodes),
         }
@@ -100,6 +125,8 @@ class NEMDataset(AbstractDataset):
         episodes_after = len(self.episodes['test'])
         print(f'lost {episodes_before - episodes_after} test episodes due to even multiple')
 
+        #  test_done is a flag used to control which dataset we sample from
+        #  it's a bit hacky
         self.test_done = True
         self.reset()
 
@@ -109,13 +136,19 @@ class NEMDataset(AbstractDataset):
         else:
             return self.reset_train()
 
+    def setup_test(self):
+        #  called by energypy.main
+        self.test_done = False
+        self.test_episodes_idx = list(range(0, len(self.episodes['test'])))
+        return self.test_done
+
     def reset_train(self):
         episodes = random.sample(self.episodes['train'], self.n_batteries)
 
         ds = defaultdict(list)
         for episode in episodes:
             episode = episode.copy()
-            prices = episode.pop('price [$/MWh]')
+            prices = episode.pop(self.price_col)
             ds['prices'].append(prices.reset_index(drop=True).values.reshape(-1, 1, 1))
             ds['features'].append(episode.reset_index(drop=True).values.reshape(prices.shape[0], 1, -1))
 
@@ -126,12 +159,6 @@ class NEMDataset(AbstractDataset):
         }
         return self.get_data(0)
 
-    def setup_test(self):
-        #  called during main?
-        self.test_done = False
-        self.test_episodes_idx = list(range(0, len(self.episodes['test'])))
-        return self.test_done
-
     def reset_test(self):
         episodes = self.test_episodes_idx[:self.n_batteries]
         self.test_episodes_idx = self.test_episodes_idx[self.n_batteries:]
@@ -139,7 +166,7 @@ class NEMDataset(AbstractDataset):
         ds = defaultdict(list)
         for episode in episodes:
             episode = self.episodes['test'][episode].copy()
-            prices = episode.pop('price [$/MWh]')
+            prices = episode.pop(self.price_col)
             ds['prices'].append(prices.reset_index(drop=True))
             ds['features'].append(episode.reset_index(drop=True))
 

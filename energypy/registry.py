@@ -1,4 +1,4 @@
-from energypy.agent import random_policy
+from energypy.agent.random_policy import RandomPolicy, FixedPolicy
 from energypy.agent.memory import Buffer
 from energypy.datasets import *
 from energypy.envs.battery import Battery
@@ -10,7 +10,8 @@ registry = {
     'pendulum': GymWrapper,
     'battery': Battery,
     'random-dataset': RandomDataset,
-    'random-policy': random_policy.make,
+    'random-policy': RandomPolicy,
+    'fixed-policy': FixedPolicy,
     'nem-dataset': NEMDataset,
     'buffer': Buffer,
 }

@@ -22,6 +22,7 @@ def make(env, hyp):
 
 
 def save(buffer, path):
+    path = Path(path)
     print(f'saving buffer to {path}')
     path.parent.mkdir(exist_ok=True, parents=True)
     with path.open('wb') as fi:
