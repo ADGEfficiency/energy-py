@@ -1,5 +1,7 @@
 # energy-py
 
+[![Build Status](https://travis-ci.org/ADGEfficiency/energy-py.svg?branch=master)](https://travis-ci.org/ADGEfficiency/energy-py)
+
 energy-py is a framework for running reinforcement learning experiments on energy environments.
 
 The library is focused on electric battery storage, and offers a implementation of a many batteries operating in parallel.
