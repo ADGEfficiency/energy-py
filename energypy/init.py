@@ -69,29 +69,3 @@ def init_fresh(hyp):
         'transition_logger': transition_logger,
         'rewards': rewards
     }
-
-
-def init_checkpoint(checkpoint_path):
-    point = checkpoint.load_checkpoint(checkpoint_path)
-    hyp = point['hyp']
-    paths = utils.get_paths(hyp)
-    counters = point['counters']
-
-    writers = init_writers(counters, paths)
-
-    transition_logger = utils.make_logger('transitions.data', paths['run'])
-    c = point
-
-    rewards = point['rewards']
-    return {
-        'hyp': hyp,
-        'paths': paths,
-        'counters': counters,
-        'env': c['env'],
-        'buffer': c['buffer'],
-        'nets': c['nets'],
-        'writers': writers,
-        'optimizers': c['optimizers'],
-        'transition_logger': transition_logger,
-        'rewards': rewards
-    }
