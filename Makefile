@@ -1,7 +1,7 @@
 .PHONY: test pushs3
 
 setup:
-	pip install -r requirements.txt
+	pip install -rq requirements.txt
 	pip install .
 
 test:

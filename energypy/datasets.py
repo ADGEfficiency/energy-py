@@ -87,6 +87,7 @@ class AbstractDataset(ABC):
 class RandomDataset(AbstractDataset):
     def __init__(self, n=1000, n_features=3, n_batteries=1, logger=None):
         self.dataset = self.make_random_dataset(n, n_features, n_batteries)
+        self.test_done = True  #  no notion of test data for random data
         self.reset()
 
     def make_random_dataset(self, n, n_features, n_batteries):
