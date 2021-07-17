@@ -20,11 +20,17 @@ def save(
     episode,
     rewards,
     counters,
-    paths
-):
-    path = paths['run'] / 'checkpoints' / f'test-episode-{episode}'
-    path.mkdir(exist_ok=True, parents=True)
+    paths=None,
+    path=None
 
+):
+    if paths:
+        path = paths['run'] / 'checkpoints' / f'test-episode-{episode}'
+    else:
+        assert path is not None
+
+    path = Path(path)
+    path.mkdir(exist_ok=True, parents=True)
     for name, net in nets.items():
         if 'alpha' not in name:
             net.save_weights(path / f'{name}.h5')
@@ -42,16 +48,18 @@ def save(
 
     memory.save(buffer, path / 'buffer.pkl')
 
-    rewards = dict(rewards)
-    rewards['time'] = datetime.utcnow().isoformat()
-    json_util.save(
-        rewards,
-        path / 'rewards.json'
-    )
-    json_util.save(
-        dict(counters),
-        path / 'counters.json'
-    )
+    if rewards:
+        rewards = dict(rewards)
+        rewards['time'] = datetime.utcnow().isoformat()
+        json_util.save(
+            rewards,
+            path / 'rewards.json'
+        )
+    if counters:
+        json_util.save(
+            dict(counters),
+            path / 'counters.json'
+        )
     json_util.save(
         hyp,
         path / 'hyperparameters.json'
