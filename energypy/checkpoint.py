@@ -46,7 +46,8 @@ def save(
             with opt_path.open('wb') as fi:
                 pickle.dump(wts, fi)
 
-    memory.save(buffer, path / 'buffer.pkl')
+    if memory:
+        memory.save(buffer, path / 'buffer.pkl')
 
     if rewards:
         rewards = dict(rewards)
