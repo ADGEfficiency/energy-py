@@ -29,27 +29,24 @@ def load_episodes(path):
             return path
         else:
             #  list of paths
+            print(f'loading {len(episodes)} from list of paths')
             episodes = [Path(p) for p in path]
-            print(f'loading {len(episodes)} from list')
-            csvs = [pd.read_csv(p, index_col=0) for p in tqdm(episodes) if p.suffix == '.csv']
-            parquets = [pd.read_parquet(p) for p in tqdm(episodes) if p.suffix == '.parquet']
-
-            eps = csvs + parquets
-            print(f'loaded {len(episodes)} from list')
-            return eps
 
     #  pass in directory
     elif Path(path).is_dir() or isinstance(path, str):
         path = Path(path)
-        episodes = [p for p in path.iterdir() if p.suffix == '.csv']
+        episodes = [p for p in path.iterdir()]
+        print(f'loading {len(episodes)} from a directory {path}')
     else:
         path = Path(path)
         assert path.is_file() and path.suffix == '.csv'
         episodes = [path, ]
+        print(f'loading from a one file {path}')
 
-    print(f'loading {len(episodes)} from {path.name}')
-    eps = [pd.read_csv(p, index_col=0) for p in tqdm(episodes)]
-    print(f'loaded {len(episodes)} from {path.name}')
+    csvs = [pd.read_csv(p, index_col=0) for p in tqdm(episodes) if p.suffix == '.csv']
+    parquets = [pd.read_parquet(p) for p in tqdm(episodes) if p.suffix == '.parquet']
+    eps = csvs + parquets
+    print(f'loaded {len(episodes)}')
     return eps
 
 
