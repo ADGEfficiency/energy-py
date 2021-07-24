@@ -56,9 +56,10 @@ def test_random_policy_wrapper():
 
 def setup_dummy_qfunc():
     import numpy as np
+    hyp = {'network': {'name': 'dense', 'size_scale': 1}}
     obs = np.random.uniform(0, 1, 6).reshape(2, 3)
     act = np.random.uniform(0, 1, 4).reshape(2, 2)
-    return make_qfunc((3, ), (2, ), 'dummy'), obs, act
+    return make_qfunc((3, ), (2, ), 'dummy', hyp), obs, act
 
 
 def test_update_params():

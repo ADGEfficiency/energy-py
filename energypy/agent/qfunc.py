@@ -13,10 +13,10 @@ def make(env, hyp):
     obs_shape = env.observation_space.shape
     n_actions = env.action_space.shape
 
-    q1 = make_qfunc(obs_shape, n_actions, 'q1', size_scale)
-    q1_target = make_qfunc(obs_shape, n_actions, 'q1-target', size_scale)
-    q2 = make_qfunc(obs_shape, n_actions, 'q2', size_scale)
-    q2_target = make_qfunc(obs_shape, n_actions, 'q2-target', size_scale)
+    q1 = make_qfunc(obs_shape, n_actions, 'q1', hyp)
+    q1_target = make_qfunc(obs_shape, n_actions, 'q1-target', hyp)
+    q2 = make_qfunc(obs_shape, n_actions, 'q2', hyp)
+    q2_target = make_qfunc(obs_shape, n_actions, 'q2-target', hyp)
 
     update_target_network(online=q1, target=q1_target, rho=0.0)
     update_target_network(online=q2, target=q2_target, rho=0.0)

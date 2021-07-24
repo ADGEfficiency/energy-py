@@ -82,10 +82,3 @@ def update(
     )
 
     counters['policy-updates'] += 1
-
-
-if __name__ == '__main__':
-
-    from energypy.registry import make as ep_make
-    env = ep_make('battery')
-    pol = make(env, {'size-scale': 1})

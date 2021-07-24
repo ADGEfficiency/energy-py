@@ -7,7 +7,7 @@ from energypy import utils, memory, policy, qfunc, alpha, registry
 
 def init_nets(env, hyp):
     actor = policy.make(env, hyp)
-    onlines, targets = qfunc.make(env, size_scale=hyp['size-scale'])
+    onlines, targets = qfunc.make(env, hyp)
     target_entropy, log_alpha = alpha.make(env, initial_value=hyp['initial-log-alpha'])
     return {
         'actor': actor,
