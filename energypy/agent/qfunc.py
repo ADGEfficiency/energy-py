@@ -2,12 +2,13 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.layers import Flatten
 
+import energypy
 from energypy.agent.target import update_target_network
 from energypy.networks import dense, attention
 from energypy.utils import minimum_target
 
 
-def make(env, size_scale=1):
+def make(env, hyp):
     """makes the two online & two targets"""
     obs_shape = env.observation_space.shape
     n_actions = env.action_space.shape
@@ -24,7 +25,7 @@ def make(env, size_scale=1):
     return onlines, targets
 
 
-def make_qfunc(obs_shape, n_actions, name, size_scale=1):
+def make_qfunc(obs_shape, n_actions, name, hyp):
     """makes a single qfunc"""
 
     in_obs = keras.Input(shape=obs_shape)
@@ -34,13 +35,7 @@ def make_qfunc(obs_shape, n_actions, name, size_scale=1):
     act = Flatten()(in_act)
 
     inputs = tf.concat([obs, act], axis=1)
-
-    # if hyp.get('q-net') == 'attention':
-    # TODO
-    if False:
-        _, net = attention(obs_shape, 1, size_scale)
-    else:
-        _, net = dense(inputs, 1, size_scale)
+    _, net = energypy.make(**hyp['network'], inputs=inputs, outputs=1)
 
     return keras.Model(
         inputs=[in_obs, in_act],

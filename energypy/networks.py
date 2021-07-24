@@ -5,7 +5,7 @@ from tensorflow.keras import layers
 
 def dense(
     inputs,
-    output_nodes,
+    outputs,
     size_scale=1,
 ):
     if isinstance(inputs, tuple):
@@ -14,13 +14,13 @@ def dense(
     net = layers.Dense(64 * size_scale, activation="relu")(inputs)
     net = layers.Dense(32 * size_scale, activation="relu")(net)
     net = layers.Dense(32 * size_scale, activation="relu")(net)
-    outputs = layers.Dense(output_nodes, activation="linear")(net)
+    outputs = layers.Dense(outputs, activation="linear")(net)
     return inputs, outputs
 
 
 def attention(
     inputs,
-    output_nodes,
+    outputs,
     size_scale=1,
 ):
     if isinstance(inputs, tuple):
@@ -29,7 +29,7 @@ def attention(
     net = layers.MultiHeadAttention(num_heads=2, key_dim=32)(inputs, inputs)
     net = layers.MultiHeadAttention(num_heads=2, key_dim=32)(net, net)
     net = layers.Flatten()(net)
-    outputs = layers.Dense(output_nodes, activation="linear")(net)
+    outputs = layers.Dense(outputs, activation="linear")(net)
     return inputs, outputs
 
 if __name__ == '__main__':

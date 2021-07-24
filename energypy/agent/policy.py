@@ -4,6 +4,7 @@ from tensorflow import keras
 from tensorflow.keras import layers
 import tensorflow_probability as tfp
 
+import energypy
 from energypy.networks import dense, attention
 from energypy.utils import minimum_target
 
@@ -14,15 +15,10 @@ epsilon = 1e-6
 
 
 def make(env, hyp):
-    size_scale = int(hyp['size-scale'])
-
+    """make a policy"""
     obs_shape = env.reset().shape[1:]
     n_actions = np.zeros(env.action_space.shape).size
-
-    if hyp.get('policy-net') == 'attention':
-        inputs, net = attention(obs_shape, n_actions*2, size_scale)
-    else:
-        inputs, net = dense(obs_shape, n_actions*2, size_scale)
+    inputs, net = energypy.make(**hyp['network'], inputs=obs_shape, outputs=n_actions*2)
 
     mean, log_stdev = tf.split(net, 2, axis=1)
     log_stdev = tf.clip_by_value(log_stdev, log_stdev_low, log_stdev_high)
