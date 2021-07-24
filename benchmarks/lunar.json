@@ -9,10 +9,13 @@
     "n-episodes": 250,
     "test-every": 20,
     "n-tests": 5,
-    "size-scale": 6,
     "env": {
       "name": "lunar",
       "env_name": "lunar"
+    },
+    "network": {
+      "name": "dense",
+      "size_scale": 6
     },
     "run-name": "benchmark"
 }

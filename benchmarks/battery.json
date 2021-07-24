@@ -13,5 +13,10 @@
     "env": {
       "name": "battery",
       "n_batteries": 2
-    }
+    },
+    "network": {
+      "name": "dense",
+      "size_scale": 6
+    },
+    "run-name": "run-one"
 }

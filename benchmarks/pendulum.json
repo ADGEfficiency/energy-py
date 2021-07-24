@@ -9,10 +9,13 @@
     "n-episodes": 80,
     "test-every": 20,
     "n-tests": 5,
-    "size-scale": 3,
-    "run-name": "benchmark",
     "env": {
       "name": "pendulum",
       "env_name": "pendulum"
-    }
+    },
+    "network": {
+      "name": "dense",
+      "size_scale": 3
+    },
+    "run-name": "benchmark"
 }
