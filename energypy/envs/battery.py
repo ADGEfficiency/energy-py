@@ -7,7 +7,7 @@ from energypy.envs.base import AbstractEnv
 
 def battery_energy_balance(initial_charge, final_charge, import_energy, export_energy, losses):
     delta_charge = final_charge - initial_charge
-    balance = import_energy - (export_energy + losses + delta_charge)
+    balance = import_energy - (export_energy + delta_charge + losses)
     np.testing.assert_almost_equal(balance, 0)
 
 
@@ -176,7 +176,7 @@ class Battery(AbstractEnv):
         self.charge = initial_charge + delta_charge
 
         #  check battery is working correctly
-        battery_energy_balance(initial_charge, final_charge, import_energy, export_energy, losses)
+        battery_energy_balance(initial_charge, self.charge, import_energy, export_energy, losses)
 
         price = self.dataset.get_data(self.cursor)['prices'].reshape(self.n_batteries,  -1)
         price = np.array(price).reshape(self.n_batteries, 1)
@@ -195,7 +195,7 @@ class Battery(AbstractEnv):
             'net_power': net_energy * self.timestep,
             'losses_power': losses * self.timestep,
             'initial_charge': initial_charge,
-            'final_charge': final_charge
+            'final_charge': self.charge
         }
 
         return next_obs, reward, done, info
