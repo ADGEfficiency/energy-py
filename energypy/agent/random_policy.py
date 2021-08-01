@@ -20,7 +20,7 @@ class FixedPolicy():
     def __call__(self, observation=None):
         action = self.actions.popleft()
         action = np.array(action).reshape(-1, *self.env.action_space.shape)
-        return action, None, None
+        return action, None, action
 
 
 def make(env):

@@ -13,7 +13,8 @@ def episode(
     hyp,
     counters,
     mode,
-    logger=None
+    logger=None,
+    return_info=False
 ):
     obs = env.reset(mode=mode)
     done = False
@@ -23,13 +24,15 @@ def episode(
     #  create one list per parallel episode we are running
     episode_rewards = [list() for _ in range(obs.shape[0])]
 
+    infos = []
     while not done:
         act, _, deterministic_action = actor(obs)
 
         if mode == 'test':
             act = deterministic_action
 
-        next_obs, reward, done, _ = env.step(np.array(act))
+        next_obs, reward, done, info = env.step(np.array(act))
+        infos.append(info)
 
         for i, (o, a, r, no) in enumerate(zip(obs, act, reward, next_obs)):
             buffer.append(env.Transition(o, a, r/reward_scale, no, done))
@@ -48,11 +51,16 @@ def episode(
         #  shape = (n_batteries, episode_len)
         episode_rewards = np.squeeze(episode_rewards, axis=2)
         #  shape = (n_batteries, )
-        return episode_rewards.sum(axis=1)
+        episode_rewards = episode_rewards.sum(axis=1)
 
     else:
         assert episode_rewards.ndim == 2
-        return episode_rewards.sum(axis=1)
+        episode_rewards = episode_rewards.sum(axis=1)
+
+    if return_info:
+        return episode_rewards, infos
+    else:
+        return episode_rewards
 
 
 def run_episode(

@@ -12,17 +12,17 @@ def battery_energy_balance(initial_charge, final_charge, import_energy, export_e
 
 
 def calculate_losses(delta_charge, efficiency):
-    #  delta_charge = battery delta_charge charge
     delta_charge = np.array(delta_charge)
     efficiency = np.array(efficiency)
+
     #  account for losses / the round trip efficiency
     #  we lose electricity when we discharge
     losses = delta_charge * (1 - efficiency)
     losses = np.array(losses)
     losses[delta_charge > 0] = 0
 
-    if (np.isnan(losses)).any():
-        losses = np.zeros_like(losses)
+    # if (np.isnan(losses)).any():
+    #     losses = np.zeros_like(losses)
     return np.abs(losses)
 
 
@@ -76,10 +76,18 @@ class Battery(AbstractEnv):
     ):
         self.n_batteries = n_batteries
 
+        #  2 = half hourly, 6 = 5 min
+        self.timestep = 2
+
+        #  kW
         self.power = set_battery_config(power, n_batteries)
+        #  kWh
         self.capacity = set_battery_config(capacity, n_batteries)
+        #  %
         self.efficiency = set_battery_config(efficiency, n_batteries)
-        self.initial_charge = set_battery_config(initial_charge, n_batteries)
+        #  kWh
+        initial_charge = np.clip(initial_charge, 0, 1.0)
+        self.initial_charge = set_battery_config(float(initial_charge) * capacity, n_batteries)
 
         self.episode_length = int(episode_length)
 
@@ -117,7 +125,7 @@ class Battery(AbstractEnv):
         if isinstance(self.initial_charge, str) and self.initial_charge == "random":
             initial = np.random.uniform(0, self.capacity[0], self.n_batteries)
         else:
-            initial =  self.initial_charge
+            initial = self.initial_charge
         return initial.reshape(self.n_batteries, 1)
 
     def get_observation(self):
@@ -129,22 +137,22 @@ class Battery(AbstractEnv):
         self.test_done = self.dataset.setup_test()
 
     def step(self, action):
-        action = action.reshape(self.n_batteries, 1)
+        action_power = action.reshape(self.n_batteries, 1)
 
         #  expect a scaled action here
         #  -1 = discharge max, 1 = charge max
-        action = np.clip(action, -1, 1)
-        action = action * self.power
+        action_power = np.clip(action_power, -1, 1)
+        action_power = action_power * self.power
 
         #  convert from power to energy, kW -> kWh
-        action = action / 2
+        action_energy = action_power / self.timestep
 
         #  charge at the start of the interval, kWh
         initial_charge = self.charge
 
         #  charge at end of the interval
         #  clipped at battery capacity, kWh
-        final_charge = np.clip(initial_charge + action, 0, self.capacity)
+        final_charge = np.clip(initial_charge + action_energy, 0, self.capacity)
 
         #  accumulation in battery, kWh
         #  delta_charge can also be thought of as gross_power
@@ -183,18 +191,11 @@ class Battery(AbstractEnv):
             'cursor': self.cursor,
             'episode_length': self.episode_length,
             'done': done,
-            'charge': self.charge
+            'gross_power': delta_charge * self.timestep,
+            'net_power': net_energy * self.timestep,
+            'losses_power': losses * self.timestep,
+            'initial_charge': initial_charge,
+            'final_charge': final_charge
         }
 
         return next_obs, reward, done, info
-
-
-if __name__ == '__main__':
-
-    env = Battery()
-
-    obs = env.reset()
-
-    for _ in range(2):
-        act = env.action_space.sample()
-        next_obs, reward, done, info = env.step(act)
