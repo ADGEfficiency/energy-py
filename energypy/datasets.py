@@ -29,8 +29,8 @@ def load_episodes(path):
             return path
         else:
             #  list of paths
-            print(f'loading {len(episodes)} from list of paths')
             episodes = [Path(p) for p in path]
+            print(f'loading {len(episodes)} from list of paths')
 
     #  pass in directory
     elif Path(path).is_dir() or isinstance(path, str):
