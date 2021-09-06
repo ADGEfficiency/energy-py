@@ -33,20 +33,3 @@ def attention(
     outputs = layers.Dense(output_shape, activation="linear")(net)
     return [inputs, mask], outputs
 
-if __name__ == '__main__':
-    import numpy as np
-
-    n_features = 3
-    sequence_length = 2
-    n_samples = 2
-
-    #  B T dim
-    query = np.random.random((n_samples, n_features, sequence_length))
-
-    inp, out = attention((n_features, sequence_length), 1)
-
-    mdl = keras.Model(inputs=inp, outputs=out)
-
-    mask = np.random.random((n_samples, n_features, n_features)).astype(bool)
-
-    print(mdl([query, mask]))

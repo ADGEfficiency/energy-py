@@ -1,9 +1,4 @@
-"""
-
-dataset = AbstractDataset()
-
-"""
-
+from abc import ABC, abstractmethod
 
 from collections import OrderedDict, defaultdict
 import json
@@ -22,13 +17,13 @@ def make_perfect_forecast(prices, horizon):
 
 
 def load_episodes(path):
-    #  pass in list of filepaths
+    #  pass in list
     if isinstance(path, list):
+        #  of dataframes
         if isinstance(path[0], pd.DataFrame):
-            #  list of dataframes?
             return path
         else:
-            #  list of paths
+            #  of paths
             episodes = [Path(p) for p in path]
             print(f'loading {len(episodes)} from list of paths')
 
@@ -53,36 +48,70 @@ def load_episodes(path):
 def round_nearest(x, divisor):
     return x - (x % divisor)
 
-from abc import ABC, abstractmethod
+
+def trim_episodes(episodes, n_batteries):
+#  want test episodes to be a multiple of the number of batteries
+    episodes_before = len(episodes)
+    lim = round_nearest(len(episodes[:]), n_batteries)
+    episodes = episodes[:lim]
+    assert len(episodes) % n_batteries == 0
+    episodes_after = len(episodes)
+    print(f'lost {episodes_before - episodes_after} test episodes due to even multiple')
+    return episodes
+
+
+def load_attention_episodes(episodes):
+    """
+    attention-dataset/train/{features,mask}
+
+    we are given 'attention-dataset/train' -> load features + mask
+    """
+
+    #  pass in dict
+    if isinstance(episodes, dict):
+        assert 'features' in episodes.keys()
+        assert 'mask' in episodes.keys()
+        assert 'prices' in episodes.keys()
+        return episodes
+
 
 
 class AbstractDataset(ABC):
-    def get_data(self, cursor):
-        #  relies on self.dataset
-        return OrderedDict({k: d[cursor] for k, d in self.dataset.items()})
+    def __init__(self):
+        self.resets = {'test': self.reset_test, 'train': self.reset_train}
 
-    def reset(self, mode=None):
-        #  can dispatch based on mode, or just reset
-        #  should return first obs using get_data
-        return self.get_data(0)
+    def sample_observation(self, cursor):
+        """
+        returns dict
+            {prices: np.array, features: np.array}
+        """
+        return OrderedDict({k: d[cursor] for k, d in self.episode.items()})
+
+    def reset(self, mode):
+        """should return first observation of the current episode"""
+        return self.resets[mode]()
 
     def setup_test(self):
-        #  called by energypy.main
-        #  not optional - even if dataset doesn't have the concept of test data
-        #  no test data -> setup_test should return True
+        """
+        called by energypy.main
+        not optional - even if dataset doesn't have the concept of test data
+        no test data -> setup_test should return True
+
+        maybe could run this when we switch from train to test?
+        simpler to be explicit
+        """
         return True
 
-    def reset_train(self):
-        #  optional - depends on how reset works
+    def reset_test(self):
         raise NotImplementedError()
 
-    def reset_test(self, mode=None):
-        #  optional - depends on how reset works
+    def reset_train(self):
         raise NotImplementedError()
 
 
 class RandomDataset(AbstractDataset):
     def __init__(self, n=1000, n_features=3, n_batteries=1, logger=None):
+        super(RandomDataset, self).__init__()
         self.dataset = self.make_random_dataset(n, n_features, n_batteries)
         self.test_done = True  #  no notion of test data for random data
         self.reset()
@@ -104,6 +133,8 @@ class NEMDataset(AbstractDataset):
         price_col='price [$/MWh]',
         logger=None
     ):
+        super(NEMDataset, self).__init__()
+
         self.n_batteries = n_batteries
         self.price_col = price_col
 
@@ -115,30 +146,43 @@ class NEMDataset(AbstractDataset):
             'test': load_episodes(test_episodes),
         }
 
-        #  want test episodes to be a multiple of the number of batteries
-        episodes_before = len(self.episodes['test'])
-        lim = round_nearest(len(self.episodes['test'][:]), self.n_batteries)
-        self.episodes['test'] = self.episodes['test'][:lim]
-        assert len(self.episodes['test']) % self.n_batteries == 0
-        episodes_after = len(self.episodes['test'])
-        print(f'lost {episodes_before - episodes_after} test episodes due to even multiple')
+        self.episodes['test'] = trim_episodes(self.episodes['test'], self.n_batteries)
 
         #  test_done is a flag used to control which dataset we sample from
         #  it's a bit hacky
         self.test_done = True
         self.reset()
 
-    def reset(self, mode='train'):
-        if mode == 'test':
-            return self.reset_test()
-        else:
-            return self.reset_train()
-
     def setup_test(self):
-        #  called by energypy.main
         self.test_done = False
-        self.test_episodes_idx = list(range(0, len(self.episodes['test'])))
+        self.test_episodes_queue = list(range(0, len(self.episodes['test'])))
         return self.test_done
+
+    def reset_test(self):
+
+        #  sample the next n_batteries batteries
+        episodes = self.test_episodes_queue[:self.n_batteries]
+
+        #  remove the sample from the queue
+        self.test_episodes_queue = self.test_episodes_queue[self.n_batteries:]
+
+        #  iterate over episodes to pack them into one many battery episode
+        ds = defaultdict(list)
+        for episode_idx in episodes:
+            episode = self.episodes['test'][episode_idx].copy()
+            prices = episode.pop(self.price_col)
+            ds['prices'].append(prices.reset_index(drop=True))
+            ds['features'].append(episode.reset_index(drop=True))
+
+        self.episode = {
+            'prices': pd.concat(ds['prices'], axis=1).values,
+            'features': pd.concat(ds['features'], axis=1).values,
+        }
+
+        if len(self.test_episodes_idx) == 0:
+            self.test_done = True
+
+        return self.sample_observation(0)
 
     def reset_train(self):
         episodes = random.sample(self.episodes['train'], self.n_batteries)
@@ -150,38 +194,20 @@ class NEMDataset(AbstractDataset):
             ds['prices'].append(prices.reset_index(drop=True).values.reshape(-1, 1, 1))
             ds['features'].append(episode.reset_index(drop=True).values.reshape(prices.shape[0], 1, -1))
 
-        #  TODO could call this episode
-        self.dataset = {
+        self.episode = {
             'prices': np.concatenate(ds['prices'], axis=1),
             'features': np.concatenate(ds['features'], axis=1),
         }
-        return self.get_data(0)
-
-    def reset_test(self):
-        episodes = self.test_episodes_idx[:self.n_batteries]
-        self.test_episodes_idx = self.test_episodes_idx[self.n_batteries:]
-
-        ds = defaultdict(list)
-        for episode in episodes:
-            episode = self.episodes['test'][episode].copy()
-            prices = episode.pop(self.price_col)
-            ds['prices'].append(prices.reset_index(drop=True))
-            ds['features'].append(episode.reset_index(drop=True))
-
-        #  TODO could call this episode
-        self.dataset = {
-            'prices': pd.concat(ds['prices'], axis=1).values,
-            'features': pd.concat(ds['features'], axis=1).values,
-        }
-
-        if len(self.test_episodes_idx) == 0:
-            self.test_done = True
-
-        return self.get_data(0)
+        return self.sample_observation(0)
 
 
 
 class NEMDatasetAttention(AbstractDataset):
+    """
+    features = (batch, n_batteries, n_timesteps, n_features)
+    mask = (batch, 
+
+    """
     def __init__(
         self,
         n_batteries,
@@ -190,19 +216,70 @@ class NEMDatasetAttention(AbstractDataset):
         price_col='price [$/MWh]',
         logger=None
     ):
+        super(NEMDatasetAttention, self).__init__()
+
         self.n_batteries = n_batteries
         self.price_col = price_col
 
-        train_episodes, train_mask = load_attention_episodes(train_episodes)
-        test_episodes, test_mask = load_attention_episodes(train_episodes)
+        train_episodes = load_attention_episodes(train_episodes)
+        test_episodes = load_attention_episodes(train_episodes)
 
+        #  could be improved, but it's very clear
         self.episodes = {
-            'train': train_episodes,
-            'train-mask': train_mask,
+            'train-features': train_episodes['features'],
+            'train-mask': train_episodes['mask'],
 
-            'random': train_episodes,
-            'random-mask': train_mask,
+            'random-features': train_episodes['features'],
+            'random-mask': train_episodes['mask'],
 
-            'test': test_episodes,
-            'test': test_mask,
+            'test-features': trim_episodes(test_episodes['features'], self.n_batteries),
+            'test-mask': trim_episodes(test_episodes['mask'], self.n_batteries),
+            'test-prices': trim_episodes(test_episodes['prices'], self.n_batteries)
         }
+
+        assert len(self.episodes['train-features']) == len(self.episodes['train-mask'])
+        assert len(self.episodes['test-features']) == len(self.episodes['test-mask'])
+
+        #  start in train mode
+        self.test_done = True
+        self.reset('train')
+
+    def setup_test(self):
+        self.test_done = False
+        self.test_episodes_queue = list(range(0, len(self.episodes['test-features'])))
+        return self.test_done
+
+    def reset_test(self):
+
+        #  sample the next n_batteries batteries
+        episodes = self.test_episodes_queue[:self.n_batteries]
+
+        #  remove the sample from the queue
+        self.test_episodes_queue = self.test_episodes_queue[self.n_batteries:]
+
+        #  iterate over episodes to pack them into one many battery episode
+        ds = defaultdict(list)
+        for episode_idx in episodes:
+
+            #  hmmmmm
+            ds['features'].append(
+                np.expand_dims(self.episodes['test-features'][episode_idx], 1)
+            )
+            ds['mask'].append(self.episodes['test-mask'][episode_idx])
+            ds['prices'].append(self.episodes['test-prices'][episode_idx])
+
+        features = np.concatenate(ds['features'], axis=1)
+        breakpoint()
+
+        #  prices.reshape((-1, n_batteries, 1))
+        #  features.reshape((-1, n_batteries, sequence_length, n_features))
+        #  mask.reshape((-1, n_batteries, sequence_length, sequence_length))
+
+        # self.episode = {
+        #     'prices': 
+        #     'features': 
+        #     'mask': 
+        # }
+
+    def reset_train(self):
+        pass
