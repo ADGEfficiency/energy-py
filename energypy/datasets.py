@@ -110,7 +110,7 @@ class NEMDataset(AbstractDataset):
         train_episodes = load_episodes(train_episodes)
         self.episodes = {
             'train': train_episodes,
-            #  our random sampling done on train episodes
+            #  random sampling done on train episodes
             'random': train_episodes,
             'test': load_episodes(test_episodes),
         }
@@ -178,3 +178,31 @@ class NEMDataset(AbstractDataset):
             self.test_done = True
 
         return self.get_data(0)
+
+
+
+class NEMDatasetAttention(AbstractDataset):
+    def __init__(
+        self,
+        n_batteries,
+        train_episodes=None,
+        test_episodes=None,
+        price_col='price [$/MWh]',
+        logger=None
+    ):
+        self.n_batteries = n_batteries
+        self.price_col = price_col
+
+        train_episodes, train_mask = load_attention_episodes(train_episodes)
+        test_episodes, test_mask = load_attention_episodes(train_episodes)
+
+        self.episodes = {
+            'train': train_episodes,
+            'train-mask': train_mask,
+
+            'random': train_episodes,
+            'random-mask': train_mask,
+
+            'test': test_episodes,
+            'test': test_mask,
+        }

@@ -31,6 +31,8 @@ def set_battery_config(value, n_batteries):
         return value
     elif isinstance(value, list):
         return np.array(value).reshape(n_batteries, 1)
+    elif isinstance(value, np.ndarray):
+        return np.array(value).reshape(n_batteries, 1)
     else:
         return np.full((n_batteries, 1), value).reshape(n_batteries, 1)
 
@@ -87,7 +89,7 @@ class Battery(AbstractEnv):
         self.efficiency = set_battery_config(efficiency, n_batteries)
         #  kWh
         initial_charge = np.clip(initial_charge, 0, 1.0)
-        self.initial_charge = set_battery_config(float(initial_charge) * capacity, n_batteries)
+        self.initial_charge = set_battery_config(initial_charge * capacity, n_batteries)
 
         self.episode_length = int(episode_length)
 

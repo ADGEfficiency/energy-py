@@ -42,7 +42,7 @@ def test_one_battery_charging(cfg, actions, expected_charges):
     for action in actions:
         action = np.array(action).reshape(1, 1)
         next_obs, reward, done, info = env.step(action)
-        results['charge'].append(info['charge'])
+        results['charge'].append(info['final_charge'])
 
     assert done
     charges = np.squeeze(np.array(results['charge']))
@@ -93,7 +93,7 @@ def test_many_battery_step():
         action = np.array(action).reshape(len(test_cases), 1)
         next_obs, reward, done, info = env.step(action)
         print(env.charge, 'charge')
-        results['charge'].append(info['charge'])
+        results['charge'].append(info['final_charge'])
         #  1 for the charge variable added onto our 10 features
         assert next_obs.shape == (len(test_cases), 10+1)
 

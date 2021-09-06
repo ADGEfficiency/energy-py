@@ -123,6 +123,10 @@ def main(
             paths=paths
         )
 
+def make_run_name():
+    from datetime import datetime
+    return datetime.utcnow().strptime('%Y-%m-%dT%H:%M:%S')
+
 
 @click.command()
 @click.argument("experiment-json", nargs=1)
@@ -142,6 +146,9 @@ def cli(experiment_json, run_name, buffer, seed, checkpoint_path):
 
     if run_name:
         hyp['run-name'] = run_name
+
+    if 'run-name' not in hyp.keys():
+        hyp['run-name'] = make_run_name()
 
     print('params')
     print('------')
