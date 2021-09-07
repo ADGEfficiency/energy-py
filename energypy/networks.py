@@ -19,17 +19,20 @@ def dense(
 
 
 def attention(
-    input_shape,
-    output_shape,
+    inputs,
+    outputs,
     size_scale=1,
 ):
-    if isinstance(input_shape, tuple):
-        inputs = keras.Input(shape=input_shape)
-        mask = keras.Input(shape=(input_shape[0], input_shape[0]))
+    if isinstance(inputs, tuple):
+        mask = keras.Input(shape=(inputs[0], inputs[0]))
+        inputs = keras.Input(shape=inputs)
+    else:
+        #  inputs already tensor
+        mask = keras.Input(shape=(inputs.shape[1], inputs.shape[1]))
 
     net = layers.MultiHeadAttention(num_heads=2, key_dim=32)(inputs, inputs, attention_mask=mask)
     net = layers.MultiHeadAttention(num_heads=2, key_dim=32)(net, net)
     net = layers.Flatten()(net)
-    outputs = layers.Dense(output_shape, activation="linear")(net)
+    outputs = layers.Dense(outputs, activation="linear")(net)
     return [inputs, mask], outputs
 

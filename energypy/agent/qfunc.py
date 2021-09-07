@@ -31,14 +31,21 @@ def make_qfunc(obs_shape, n_actions, name, hyp):
     in_obs = keras.Input(shape=obs_shape)
     in_act = keras.Input(shape=n_actions)
 
-    obs = Flatten()(in_obs)
-    act = Flatten()(in_act)
+    if len(in_obs.shape) == 2:
+        obs = Flatten()(in_obs)
+        act = Flatten()(in_act)
+        inputs = tf.concat([obs, act], axis=1)
 
-    inputs = tf.concat([obs, act], axis=1)
-    _, net = energypy.make(**hyp['network'], inputs=inputs, outputs=1)
+    else:
+        assert len(in_obs.shape) == 3
+        act = tf.expand_dims(in_act, 2)
+        inputs = tf.concat([in_obs, act], axis=1)
+
+    inp_net, net = energypy.make(**hyp['network'], inputs=inputs, outputs=1)
+    mask = inp_net[1]
 
     return keras.Model(
-        inputs=[in_obs, in_act],
+        inputs=[in_obs, in_act, mask],
         outputs=net,
         name=name
     )
@@ -55,8 +62,10 @@ def update(
     counters,
     hyp
 ):
-    next_state_act, log_prob, _ = actor(batch['next_observation'])
-    next_state_target = minimum_target(batch['next_observation'], next_state_act, targets)
+    breakpoint()
+    next_obs = batch['next_observation']
+    next_state_act, log_prob, _ = actor(next_obs['features'], next_obs['mask'])
+    next_state_target = minimum_target(next_obs['features'], next_state_act, targets)
 
     al = tf.exp(log_alpha)
     ga = hyp['gamma']

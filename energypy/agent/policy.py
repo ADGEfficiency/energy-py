@@ -16,8 +16,9 @@ epsilon = 1e-6
 
 def make(env, hyp):
     """make a policy"""
-    obs_shape = env.reset().shape[1:]
+    obs_shape = env.observation_space.shape
     n_actions = np.zeros(env.action_space.shape).size
+
     inputs, net = energypy.make(**hyp['network'], inputs=obs_shape, outputs=n_actions*2)
 
     mean, log_stdev = tf.split(net, 2, axis=1)

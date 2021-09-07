@@ -132,8 +132,22 @@ class Battery(AbstractEnv):
 
     def get_observation(self):
         data = self.dataset.sample_observation(self.cursor)
-        features = data['features'].reshape(self.n_batteries, -1)
-        return np.concatenate([features, self.charge], axis=1)
+        features = data['features']
+
+        if len(features.shape) == 2:
+            features = data['features'].reshape(self.n_batteries, -1)
+            features = np.concatenate([features, self.charge], axis=1)
+        else:
+            assert len(features.shape) == 3
+            sh = features.shape
+            features = data['features'].reshape(sh[0], self.n_batteries, sh[1], sh[2])
+            chg = self.charge.reshape(sh[0], self.n_batteries, 1, 1)
+            features = np.concatenate([features, chg], axis=2)
+
+        return {
+            'features': features,
+            'mask': data['mask']
+        }
 
     def setup_test(self):
         self.test_done = self.dataset.setup_test()
