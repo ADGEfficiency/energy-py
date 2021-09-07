@@ -90,4 +90,42 @@ def test_attention_dataset():
     #  can also check ds.episode dict ?
 
 
-test_attention_dataset()
+
+
+def test_attention_dataset_load_arrays():
+    #  make dummy dataset
+    episode_len = 8
+    n_batteries = 3
+    sequence_length = 4
+    n_features = 5
+
+    dss = [
+        {
+            'features': np.random.random((episode_len, n_batteries, sequence_length, n_features)),
+            'mask': np.random.randint(0, 1, episode_len * n_batteries * sequence_length * sequence_length).reshape(episode_len, n_batteries, sequence_length, sequence_length),
+            'prices': np.random.random((episode_len, n_batteries, sequence_length, n_features))
+        },
+        {
+            'features': np.random.random((episode_len, n_batteries, sequence_length, n_features)),
+            'mask': np.random.randint(0, 1, episode_len * n_batteries * sequence_length * sequence_length).reshape(episode_len, n_batteries, sequence_length, sequence_length),
+            'prices': np.random.random((episode_len, n_batteries, sequence_length, n_features))
+        },
+        {
+            'features': np.random.random((episode_len, n_batteries, sequence_length, n_features)),
+            'mask': np.random.randint(0, 1, episode_len * n_batteries * sequence_length * sequence_length).reshape(episode_len, n_batteries, sequence_length, sequence_length),
+            'prices': np.random.random((episode_len, n_batteries, sequence_length, n_features))
+        }
+    ]
+
+    from pathlib import Path
+    path = Path('./temp/train')
+    for ds, date in zip(dss, ['2020-01-01', '2021-01-01', '2022-01-01']):
+        for name, data in ds.items():
+            (path / date).mkdir(exist_ok=True, parents=True)
+            np.save(path / date / name, data)
+
+    #  load
+    ds = NEMDatasetAttention(n_batteries, './temp/train')
+
+
+test_attention_dataset_load_arrays()

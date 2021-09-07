@@ -13,6 +13,7 @@ registry = {
     'random-policy': RandomPolicy,
     'fixed-policy': FixedPolicy,
     'nem-dataset': NEMDataset,
+    'nem-dataset-attention': NEMDatasetAttention,
     'buffer': Buffer,
     'attention': attention,
     'dense': dense,

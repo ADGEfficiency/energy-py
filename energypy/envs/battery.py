@@ -39,7 +39,7 @@ def set_battery_config(value, n_batteries):
 
 class BatteryObservationSpace:
     def __init__(self, dataset, additional_features):
-        shape = list(dataset.dataset['features'].shape[2:])
+        shape = list(dataset.episode['features'].shape[2:])
         shape[0] += additional_features
         self.shape = tuple(shape)
 
@@ -131,7 +131,7 @@ class Battery(AbstractEnv):
         return initial.reshape(self.n_batteries, 1)
 
     def get_observation(self):
-        data = self.dataset.get_data(self.cursor)
+        data = self.dataset.sample_observation(self.cursor)
         features = data['features'].reshape(self.n_batteries, -1)
         return np.concatenate([features, self.charge], axis=1)
 
@@ -180,7 +180,7 @@ class Battery(AbstractEnv):
         #  check battery is working correctly
         battery_energy_balance(initial_charge, self.charge, import_energy, export_energy, losses)
 
-        price = self.dataset.get_data(self.cursor)['prices'].reshape(self.n_batteries,  -1)
+        price = self.dataset.sample_observation(self.cursor)['prices'].reshape(self.n_batteries,  -1)
         price = np.array(price).reshape(self.n_batteries, 1)
         reward = export_energy * price - import_energy * price
 

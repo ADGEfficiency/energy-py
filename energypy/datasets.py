@@ -66,14 +66,39 @@ def load_attention_episodes(episodes):
 
     we are given 'attention-dataset/train' -> load features + mask
     """
-
+    #  is this wrong now????
     #  pass in dict
-    if isinstance(episodes, dict):
-        assert 'features' in episodes.keys()
-        assert 'mask' in episodes.keys()
-        assert 'prices' in episodes.keys()
+    # if isinstance(episodes, dict):
+    #     assert 'features' in episodes.keys()
+    #     assert 'mask' in episodes.keys()
+    #     assert 'prices' in episodes.keys()
+    #     return episodes
+
+    #  pass in list
+    #  don't support list of paths - jusht list of dict
+    if isinstance(episodes, list):
         return episodes
 
+    #  episodes is a path like 'attention-dataset/train'
+    #  automatically find the episode data like features, mask etc
+
+    #  this will find many dates
+    path = Path(episodes)
+    dates = [p for p in path.iterdir() if p.is_dir()]
+
+    #  list of dicts
+    #  eps = [{features: , mask: , prices}]
+    eps = []
+    for date in dates:
+        #  mode = mode of the data
+        ep = {}
+        for mode in [p for p in date.iterdir() if p.suffix == '.npy']:
+            ep[mode.stem] = np.load(mode)
+
+        ep['date'] = date.name
+        eps.append(ep)
+
+    return eps
 
 
 class AbstractDataset(ABC):
@@ -179,7 +204,7 @@ class NEMDataset(AbstractDataset):
             'features': pd.concat(ds['features'], axis=1).values,
         }
 
-        if len(self.test_episodes_idx) == 0:
+        if len(self.test_episodes_queue) == 0:
             self.test_done = True
 
         return self.sample_observation(0)
@@ -204,9 +229,9 @@ class NEMDataset(AbstractDataset):
 
 class NEMDatasetAttention(AbstractDataset):
     """
-    features = (batch, n_batteries, n_timesteps, n_features)
-    mask = (batch, 
-
+    features = (batch, n_batteries, sequence_length, n_features)
+    mask = (batch, n_batteries, sequence_length, sequence_length)
+    prices = (batch, 1)
     """
     def __init__(
         self,
@@ -222,23 +247,30 @@ class NEMDatasetAttention(AbstractDataset):
         self.price_col = price_col
 
         train_episodes = load_attention_episodes(train_episodes)
-        test_episodes = load_attention_episodes(train_episodes)
+
+        if test_episodes:
+            test_episodes = load_attention_episodes(test_episodes)
+        else:
+            test_episodes = train_episodes
 
         #  could be improved, but it's very clear
+        # self.episodes = {
+        #     'train-features': train_episodes['features'],
+        #     'train-mask': train_episodes['mask'],
+
+        #     'random-features': train_episodes['features'],
+        #     'random-mask': train_episodes['mask'],
+
+        #     'test-features': trim_episodes(test_episodes['features'], self.n_batteries),
+        #     'test-mask': trim_episodes(test_episodes['mask'], self.n_batteries),
+        #     'test-prices': trim_episodes(test_episodes['prices'], self.n_batteries)
+        # }
+
         self.episodes = {
-            'train-features': train_episodes['features'],
-            'train-mask': train_episodes['mask'],
-
-            'random-features': train_episodes['features'],
-            'random-mask': train_episodes['mask'],
-
-            'test-features': trim_episodes(test_episodes['features'], self.n_batteries),
-            'test-mask': trim_episodes(test_episodes['mask'], self.n_batteries),
-            'test-prices': trim_episodes(test_episodes['prices'], self.n_batteries)
+            'train': train_episodes,
+            'random': train_episodes,
+            'test': test_episodes,
         }
-
-        assert len(self.episodes['train-features']) == len(self.episodes['train-mask'])
-        assert len(self.episodes['test-features']) == len(self.episodes['test-mask'])
 
         #  start in train mode
         self.test_done = True
@@ -250,36 +282,40 @@ class NEMDatasetAttention(AbstractDataset):
         return self.test_done
 
     def reset_test(self):
-
-        #  sample the next n_batteries batteries
-        episodes = self.test_episodes_queue[:self.n_batteries]
+        #  sample the next n_batteries episodes
+        episodes_idxs = self.test_episodes_queue[:self.n_batteries]
 
         #  remove the sample from the queue
         self.test_episodes_queue = self.test_episodes_queue[self.n_batteries:]
 
         #  iterate over episodes to pack them into one many battery episode
         ds = defaultdict(list)
-        for episode_idx in episodes:
+        for episode_idx in episodes_idxs:
+            for var in ['features', 'mask', 'prices']:
+                ds[var].append(
+                    np.expand_dims(self.episodes[f'test-{var}'][episode_idx], 1)
+                )
 
-            #  hmmmmm
-            ds['features'].append(
-                np.expand_dims(self.episodes['test-features'][episode_idx], 1)
-            )
-            ds['mask'].append(self.episodes['test-mask'][episode_idx])
-            ds['prices'].append(self.episodes['test-prices'][episode_idx])
+        self.episode = {}
+        for var in ['features', 'mask', 'prices']:
+            self.episode[var] = np.concatenate(ds[var], axis=1)
 
-        features = np.concatenate(ds['features'], axis=1)
-        breakpoint()
-
-        #  prices.reshape((-1, n_batteries, 1))
-        #  features.reshape((-1, n_batteries, sequence_length, n_features))
-        #  mask.reshape((-1, n_batteries, sequence_length, sequence_length))
-
-        # self.episode = {
-        #     'prices': 
-        #     'features': 
-        #     'mask': 
-        # }
+        self.test_done = len(self.test_episodes_queue) == 0
+        return self.sample_observation(0)
 
     def reset_train(self):
-        pass
+        #  sample the next n_batteries episodes
+        episodes_idxs = random.sample(range(len(self.episodes['train'])), self.n_batteries)
+
+        #  iterate over episodes to pack them into one many battery episode
+        ds = defaultdict(list)
+        for episode_idx in episodes_idxs:
+            episode = self.episodes['train'][episode_idx]
+            for var in ['features', 'mask', 'prices']:
+                ds[var].append(np.expand_dims(episode[var], 1))
+
+        self.episode = {}
+        for var in ['features', 'mask', 'prices']:
+            self.episode[var] = np.concatenate(ds[var], axis=1)
+
+        return self.sample_observation(0)
