@@ -5,7 +5,9 @@ from energypy import registry
 from energypy.envs.base import AbstractEnv
 
 
-def battery_energy_balance(initial_charge, final_charge, import_energy, export_energy, losses):
+def battery_energy_balance(
+    initial_charge, final_charge, import_energy, export_energy, losses
+):
     delta_charge = final_charge - initial_charge
     balance = import_energy - (export_energy + delta_charge + losses)
     np.testing.assert_almost_equal(balance, 0)
@@ -39,7 +41,7 @@ def set_battery_config(value, n_batteries):
 
 class BatteryObservationSpace:
     def __init__(self, dataset, additional_features):
-        shape = list(dataset.episode['features'].shape[2:])
+        shape = list(dataset.episode["features"].shape[2:])
         shape[-1] += additional_features
         self.shape = tuple(shape)
 
@@ -50,7 +52,7 @@ class BatteryObservationSpace:
 class BatteryActionSpace:
     def __init__(self, n_batteries=2):
         self.n_batteries = n_batteries
-        self.shape = (1, )
+        self.shape = (1,)
 
         self.low = -1
         self.high = 1
@@ -68,6 +70,7 @@ class Battery(AbstractEnv):
     """
     data = (n_battery, timesteps, features)
     """
+
     def __init__(
         self,
         n_batteries=2,
@@ -76,8 +79,8 @@ class Battery(AbstractEnv):
         efficiency=0.9,
         initial_charge=0.0,
         episode_length=288,
-        dataset={'name': 'random-dataset'},
-        logger=None
+        dataset={"name": "random-dataset"},
+        logger=None,
     ):
         self.n_batteries = n_batteries
 
@@ -98,34 +101,35 @@ class Battery(AbstractEnv):
 
         if isinstance(dataset, dict):
             self.dataset = registry.make(
-                **dataset,
-                logger=logger,
-                n_batteries=n_batteries
+                **dataset, logger=logger, n_batteries=n_batteries
             )
         else:
             assert dataset.n_batteries == self.n_batteries
             self.dataset = dataset
 
-        self.observation_space = BatteryObservationSpace(self.dataset, additional_features=1)
+        self.reset("train")
+
+        self.observation_space = BatteryObservationSpace(
+            self.dataset, additional_features=1
+        )
         self.action_space = BatteryActionSpace(n_batteries)
 
         mask_shape = self.observation_space.get_mask_shape()
 
         self.elements = (
-            ('observation', self.observation_space.shape, 'float32'),
-            ('action', self.action_space.shape, 'float32'),
-            ('reward', (1, ), 'float32'),
-            ('next_observation', self.observation_space.shape, 'float32'),
-            ('done', (1, ), 'bool'),
-
+            ("observation", self.observation_space.shape, "float32"),
+            ("action", self.action_space.shape, "float32"),
+            ("reward", (1,), "float32"),
+            ("next_observation", self.observation_space.shape, "float32"),
+            ("done", (1,), "bool"),
             #  attention specific - TODO toggle these out for non attention
-            ('observation_mask', mask_shape, 'float32'),
-            ('next_observation_mask', mask_shape, 'float32'),
+            ("observation_mask", mask_shape, "float32"),
+            ("next_observation_mask", mask_shape, "float32"),
         )
 
-        self.Transition = namedtuple('Transition', [el[0] for el in self.elements])
+        self.Transition = namedtuple("Transition", [el[0] for el in self.elements])
 
-    def reset(self, mode='train'):
+    def reset(self, mode="train"):
         self.cursor = 0
         self.charge = self.get_initial_charge()
 
@@ -144,14 +148,14 @@ class Battery(AbstractEnv):
     def get_observation(self):
         """one timestep"""
         data = self.dataset.sample_observation(self.cursor)
-        features = data['features']
+        features = data["features"]
 
         #  adding the charge onto the observation
         #  different depending on attention or not
 
         if len(features.shape) == 2:
             #  (n_batteries, n_features)
-            features = data['features'].reshape(self.n_batteries, -1)
+            features = data["features"].reshape(self.n_batteries, -1)
             features = np.concatenate([features, self.charge], axis=1)
         else:
             #  (n_batteries, sequence_length, n_features)
@@ -161,7 +165,9 @@ class Battery(AbstractEnv):
 
             #  (batch, n_batteries, sequence_length, n_features)
             sequence_length = sh[1]
-            features = data['features'].reshape(self.n_batteries, sequence_length, sh[2])
+            features = data["features"].reshape(
+                self.n_batteries, sequence_length, sh[2]
+            )
 
             #  TODO
             #  we only have charge for one timestep (but many batteries)
@@ -175,9 +181,11 @@ class Battery(AbstractEnv):
             features = np.concatenate([features, chg], axis=2)
 
             #  (batch, n_batteries, sequence_length, sequence_length)
-            mask = data['mask'].reshape(self.n_batteries, sequence_length, sequence_length)
+            mask = data["mask"].reshape(
+                self.n_batteries, sequence_length, sequence_length
+            )
 
-        return {'features': features, 'mask': mask}
+        return {"features": features, "mask": mask}
 
     def setup_test(self):
         self.test_done = self.dataset.setup_test()
@@ -222,9 +230,13 @@ class Battery(AbstractEnv):
         self.charge = initial_charge + delta_charge
 
         #  check battery is working correctly
-        battery_energy_balance(initial_charge, self.charge, import_energy, export_energy, losses)
+        battery_energy_balance(
+            initial_charge, self.charge, import_energy, export_energy, losses
+        )
 
-        price = self.dataset.sample_observation(self.cursor)['prices'].reshape(self.n_batteries,  -1)
+        price = self.dataset.sample_observation(self.cursor)["prices"].reshape(
+            self.n_batteries, -1
+        )
         price = np.array(price).reshape(self.n_batteries, 1)
         reward = export_energy * price - import_energy * price
 
@@ -234,14 +246,14 @@ class Battery(AbstractEnv):
         next_obs = self.get_observation()
 
         info = {
-            'cursor': self.cursor,
-            'episode_length': self.episode_length,
-            'done': done,
-            'gross_power': delta_charge * self.timestep,
-            'net_power': net_energy * self.timestep,
-            'losses_power': losses * self.timestep,
-            'initial_charge': initial_charge,
-            'final_charge': self.charge
+            "cursor": self.cursor,
+            "episode_length": self.episode_length,
+            "done": done,
+            "gross_power": delta_charge * self.timestep,
+            "net_power": net_energy * self.timestep,
+            "losses_power": losses * self.timestep,
+            "initial_charge": initial_charge,
+            "final_charge": self.charge,
         }
 
         return next_obs, reward, done, info

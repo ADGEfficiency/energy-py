@@ -46,6 +46,7 @@ def make_qfunc(obs_shape, n_actions, name, hyp):
         #  these will be concated together
         input_shape=[obs_head, in_act],
         outputs=1,
+        neurons=(32, 16),
     )
 
     # if len(in_obs.shape) == 2:
