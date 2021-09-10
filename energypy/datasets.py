@@ -112,8 +112,8 @@ class AbstractDataset(ABC):
         """
         return OrderedDict({k: d[cursor] for k, d in self.episode.items()})
 
-    def reset(self, mode):
-        """should return first observation of the current episode"""
+    def reset(self, mode='train'):
+        """returns first observation of the current episode"""
         return self.resets[mode]()
 
     def setup_test(self):
@@ -139,7 +139,7 @@ class RandomDataset(AbstractDataset):
         super(RandomDataset, self).__init__()
         self.dataset = self.make_random_dataset(n, n_features, n_batteries)
         self.test_done = True  #  no notion of test data for random data
-        self.reset()
+        self.n_batteries = n_batteries
 
     def make_random_dataset(self, n, n_features, n_batteries):
         np.random.seed(42)
@@ -176,7 +176,6 @@ class NEMDataset(AbstractDataset):
         #  test_done is a flag used to control which dataset we sample from
         #  it's a bit hacky
         self.test_done = True
-        self.reset()
 
     def setup_test(self):
         self.test_done = False
@@ -274,7 +273,6 @@ class NEMDatasetAttention(AbstractDataset):
 
         #  start in train mode
         self.test_done = True
-        self.reset('train')
 
     def setup_test(self):
         self.test_done = False

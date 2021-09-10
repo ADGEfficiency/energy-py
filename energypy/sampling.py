@@ -13,7 +13,6 @@ def episode(
     hyp,
     counters,
     mode,
-    logger=None,
     return_info=False
 ):
     obs = env.reset(mode=mode)
@@ -22,26 +21,42 @@ def episode(
     reward_scale = hyp['reward-scale']
 
     #  create one list per parallel episode we are running
-    episode_rewards = [list() for _ in range(obs.shape[0])]
+    #  first dimension is the number of batteries
+    #  which we use as the batch dimension when we are sampling actions from the agent
+    episode_rewards = [list() for _ in range(obs['features'].shape[0])]
 
     infos = []
     while not done:
-        act, _, deterministic_action = actor(obs)
+        #  obs is a dict {'features':, 'mask':}
+        act, _, deterministic_action = actor(**obs)
 
         if mode == 'test':
             act = deterministic_action
 
+        #  next_obs is a dict {'next_obs', 'reward', 'done', 'next_obs_mask'}
         next_obs, reward, done, info = env.step(np.array(act))
         infos.append(info)
 
-        for i, (o, a, r, no) in enumerate(zip(obs, act, reward, next_obs)):
-            buffer.append(env.Transition(o, a, r/reward_scale, no, done))
+        #  want to save one observation per battery - buffer has no concept of batteries
+        #  bit messy as I'm assuming the structure of the Transition tuple
+        for i, (o, a, r, no, om, nom) in enumerate(zip(
+            obs['features'],
+            act,
+            reward,
+            next_obs['features'],
+            obs['mask'],
+            next_obs['mask'],
+        )):
+            buffer.append({
+                'observation':o,
+                'action': a,
+                'reward': r/reward_scale,
+                'next_observation': no,
+                'done': done,
+                'observation_mask': om,
+                'next_observation_mask': nom
+            })
             episode_rewards[i].append(r)
-
-        if logger:
-            logger.debug(
-                f'{obs}, {act}, {reward}, {next_obs}, {done}, {mode}'
-            )
 
         counters['env-steps'] += 1
         obs = next_obs

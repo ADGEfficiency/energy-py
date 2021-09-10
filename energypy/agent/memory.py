@@ -37,7 +37,11 @@ def load(path):
 
 
 class Buffer():
+    """
+    Buffer has no concept of n_batteries - experience is all stored on a 'one battery' level
+    """
     def __init__(self, elements, size=64):
+        self.elements = elements
         self.data = {
             el: np.zeros((size, *shape), dtype=dtype)
             for el, shape, dtype in elements
@@ -62,9 +66,15 @@ class Buffer():
             self._cursor = value
 
     def append(self, data):
-        for name, el in zip(data._fields, data):
+        # for name, el in zip(data._fields, data):
+        #     sh = self.data[name][0].shape
+        #     self.data[name][self.cursor, :] = np.array(el).reshape(sh)
+        # self.cursor = self.cursor + 1
+
+        for name, data in data.items():
             sh = self.data[name][0].shape
-            self.data[name][self.cursor, :] = np.array(el).reshape(sh)
+            self.data[name][self.cursor, :] = np.array(data).reshape(sh)
+
         self.cursor = self.cursor + 1
 
     def sample(self, num):

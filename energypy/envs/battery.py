@@ -40,8 +40,11 @@ def set_battery_config(value, n_batteries):
 class BatteryObservationSpace:
     def __init__(self, dataset, additional_features):
         shape = list(dataset.episode['features'].shape[2:])
-        shape[0] += additional_features
+        shape[-1] += additional_features
         self.shape = tuple(shape)
+
+    def get_mask_shape(self):
+        return (self.shape[0], self.shape[0])
 
 
 class BatteryActionSpace:
@@ -100,18 +103,26 @@ class Battery(AbstractEnv):
                 n_batteries=n_batteries
             )
         else:
+            assert dataset.n_batteries == self.n_batteries
             self.dataset = dataset
 
         self.observation_space = BatteryObservationSpace(self.dataset, additional_features=1)
         self.action_space = BatteryActionSpace(n_batteries)
+
+        mask_shape = self.observation_space.get_mask_shape()
 
         self.elements = (
             ('observation', self.observation_space.shape, 'float32'),
             ('action', self.action_space.shape, 'float32'),
             ('reward', (1, ), 'float32'),
             ('next_observation', self.observation_space.shape, 'float32'),
-            ('done', (1, ), 'bool')
+            ('done', (1, ), 'bool'),
+
+            #  attention specific - TODO toggle these out for non attention
+            ('observation_mask', mask_shape, 'float32'),
+            ('next_observation_mask', mask_shape, 'float32'),
         )
+
         self.Transition = namedtuple('Transition', [el[0] for el in self.elements])
 
     def reset(self, mode='train'):
@@ -131,23 +142,42 @@ class Battery(AbstractEnv):
         return initial.reshape(self.n_batteries, 1)
 
     def get_observation(self):
+        """one timestep"""
         data = self.dataset.sample_observation(self.cursor)
         features = data['features']
 
+        #  adding the charge onto the observation
+        #  different depending on attention or not
+
         if len(features.shape) == 2:
+            #  (n_batteries, n_features)
             features = data['features'].reshape(self.n_batteries, -1)
             features = np.concatenate([features, self.charge], axis=1)
         else:
+            #  (n_batteries, sequence_length, n_features)
             assert len(features.shape) == 3
             sh = features.shape
-            features = data['features'].reshape(sh[0], self.n_batteries, sh[1], sh[2])
-            chg = self.charge.reshape(sh[0], self.n_batteries, 1, 1)
+            assert sh[0] == self.n_batteries
+
+            #  (batch, n_batteries, sequence_length, n_features)
+            sequence_length = sh[1]
+            features = data['features'].reshape(self.n_batteries, sequence_length, sh[2])
+
+            #  TODO
+            #  we only have charge for one timestep (but many batteries)
+            #  but our features are across many timesteps
+            #  solution here is to tile charge - in reality this should go into a different
+            #  part of the network (multihead network)
+
+            chg = self.charge.reshape(self.n_batteries, 1, 1)
+            chg = np.repeat(chg, sequence_length, axis=1)
+            #  concat along the features axis
             features = np.concatenate([features, chg], axis=2)
 
-        return {
-            'features': features,
-            'mask': data['mask']
-        }
+            #  (batch, n_batteries, sequence_length, sequence_length)
+            mask = data['mask'].reshape(self.n_batteries, sequence_length, sequence_length)
+
+        return {'features': features, 'mask': mask}
 
     def setup_test(self):
         self.test_done = self.dataset.setup_test()
