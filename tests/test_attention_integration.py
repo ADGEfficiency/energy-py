@@ -1,7 +1,12 @@
-import energypy
+from collections import defaultdict
 
-from energypy.datasets import AbstractDataset
 import numpy as np
+
+import energypy
+from energypy.datasets import AbstractDataset
+from energypy.init import init_fresh
+from energypy.train import train_one_head_network
+from energypy.sampling import episode
 
 
 class RandomDatasetAttention(AbstractDataset):
@@ -45,10 +50,7 @@ env = energypy.make(
     "battery", n_batteries=n_batteries, dataset=dataset, episode_length=episode_length
 )
 
-from energypy.sampling import episode
-
 #  run an episode with random policy
-from collections import defaultdict
 
 actor = energypy.make("random-policy", env=env)
 buffer = energypy.make("buffer", elements=env.elements, size=5)
@@ -65,9 +67,6 @@ rewards, infos = episode(
 #  check last row not filled etc
 
 #  try to test with proper agent, train w agent
-
-from energypy.train import train_one_head_network
-from energypy.init import init_fresh
 
 hyp = {
     "run-name": "integration",
@@ -101,7 +100,7 @@ train_one_head_network(
     [expt["nets"]["online-1"], expt["nets"]["online-2"]],
     [expt["nets"]["target-1"], expt["nets"]["target-2"]],
     expt["nets"]["alpha"],
-    expt["writers"],
+    expt["writers"]["train"],
     expt["optimizers"],
     expt["counters"],
     hyp,

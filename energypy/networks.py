@@ -1,6 +1,7 @@
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+from tensorflow.keras.layers import Flatten
 
 
 def dense(
@@ -12,9 +13,17 @@ def dense(
         input_shape = keras.Input(shape=input_shape)
 
     if isinstance(input_shape, list):
-        input_shape = tf.concat(input_shape, axis=1)
+        # in_act = input_shape[1]
+        # act = tf.expand_dims(in_act, 2)
 
-    net = layers.Dense(64 * size_scale, activation="relu")(input_shape)
+        in_obs = input_shape[0]
+        in_act = input_shape[1]
+        obs = Flatten()(in_obs)
+        act = Flatten()(in_act)
+        inputs = tf.concat([obs, act], axis=1)
+
+    net = layers.Dense(64 * size_scale, activation="relu")(inputs)
+    net = Flatten()(net)
     net = layers.Dense(32 * size_scale, activation="relu")(net)
     net = layers.Dense(32 * size_scale, activation="relu")(net)
     outputs = layers.Dense(outputs, activation="linear")(net)

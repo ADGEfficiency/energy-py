@@ -43,6 +43,7 @@ def make_qfunc(obs_shape, n_actions, name, hyp):
     _, net = energypy.make(
         name="dense",
         size_scale=hyp["network"]["size_scale"],
+        #  these will be concated together
         input_shape=[obs_head, in_act],
         outputs=1,
     )
@@ -67,12 +68,12 @@ def update(
     batch, actor, onlines, targets, log_alpha, writer, optimizers, counters, hyp
 ):
     next_state_act, log_prob, _ = actor(
-        batch["next_observation"], batch["next_observation_mask"]
+        (batch["next_observation"], batch["next_observation_mask"])
     )
     next_state_target = minimum_target(
         batch["next_observation"],
-        batch["next_observation_mask"],
         next_state_act,
+        batch["next_observation_mask"],
         targets,
     )
 
@@ -86,7 +87,9 @@ def update(
 
     for onl, optimizer in zip(onlines, optimizers):
         with tf.GradientTape() as tape:
-            q_value = onl([batch["observation"], batch["action"]])
+            q_value = onl(
+                [batch["observation"], batch["action"], batch["observation_mask"]]
+            )
             loss = tf.keras.losses.MSE(q_value, target)
 
         grads = tape.gradient(loss, onl.trainable_variables)
