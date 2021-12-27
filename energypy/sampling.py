@@ -83,7 +83,6 @@ def run_episode(env, buffer, actor, hyp, writers, counters, rewards, mode, logge
         hyp,
         counters,
         mode,
-        logger=logger,
     )
 
     for episode_reward in episode_rewards:
