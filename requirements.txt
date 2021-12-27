@@ -2,7 +2,7 @@ tensorflow==2.5.0
 tensorflow-estimator==2.5.0
 tensorflow-probability==0.13.0
 pytest
-#box2d-py==2.3.8
+box2d-py==2.3.8
 click
 imageio
 gym==0.18.0

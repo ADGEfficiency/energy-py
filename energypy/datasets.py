@@ -16,35 +16,6 @@ def make_perfect_forecast(prices, horizon):
     return forecast[:-(horizon-1), :]
 
 
-def load_episodes(path):
-    #  pass in list
-    if isinstance(path, list):
-        #  of dataframes
-        if isinstance(path[0], pd.DataFrame):
-            return path
-        else:
-            #  of paths
-            episodes = [Path(p) for p in path]
-            print(f'loading {len(episodes)} from list of paths')
-
-    #  pass in directory
-    elif Path(path).is_dir() or isinstance(path, str):
-        path = Path(path)
-        episodes = [p for p in path.iterdir()]
-        print(f'loading {len(episodes)} from a directory {path}')
-    else:
-        path = Path(path)
-        assert path.is_file() and path.suffix == '.csv'
-        episodes = [path, ]
-        print(f'loading from a one file {path}')
-
-    csvs = [pd.read_csv(p, index_col=0) for p in tqdm(episodes) if p.suffix == '.csv']
-    parquets = [pd.read_parquet(p) for p in tqdm(episodes) if p.suffix == '.parquet']
-    eps = csvs + parquets
-    print(f'loaded {len(episodes)}')
-    return eps
-
-
 def round_nearest(x, divisor):
     return x - (x % divisor)
 
@@ -58,47 +29,6 @@ def trim_episodes(episodes, n_batteries):
     episodes_after = len(episodes)
     print(f'lost {episodes_before - episodes_after} test episodes due to even multiple')
     return episodes
-
-
-def load_attention_episodes(episodes):
-    """
-    attention-dataset/train/{features,mask}
-
-    we are given 'attention-dataset/train' -> load features + mask
-    """
-    #  is this wrong now????
-    #  pass in dict
-    # if isinstance(episodes, dict):
-    #     assert 'features' in episodes.keys()
-    #     assert 'mask' in episodes.keys()
-    #     assert 'prices' in episodes.keys()
-    #     return episodes
-
-    #  pass in list
-    #  don't support list of paths - jusht list of dict
-    if isinstance(episodes, list):
-        return episodes
-
-    #  episodes is a path like 'attention-dataset/train'
-    #  automatically find the episode data like features, mask etc
-
-    #  this will find many dates
-    path = Path(episodes)
-    dates = [p for p in path.iterdir() if p.is_dir()]
-
-    #  list of dicts
-    #  eps = [{features: , mask: , prices}]
-    eps = []
-    for date in dates:
-        #  mode = mode of the data
-        ep = {}
-        for mode in [p for p in date.iterdir() if p.suffix == '.npy']:
-            ep[mode.stem] = np.load(mode)
-
-        ep['date'] = date.name
-        eps.append(ep)
-
-    return eps
 
 
 class AbstractDataset(ABC):
@@ -224,6 +154,34 @@ class NEMDataset(AbstractDataset):
         }
         return self.sample_observation(0)
 
+    def load_episodes(self, path):
+        #  pass in list
+        if isinstance(path, list):
+            #  of dataframes
+            if isinstance(path[0], pd.DataFrame):
+                return path
+            else:
+                #  of paths
+                episodes = [Path(p) for p in path]
+                print(f'loading {len(episodes)} from list of paths')
+
+        #  pass in directory
+        elif Path(path).is_dir() or isinstance(path, str):
+            path = Path(path)
+            episodes = [p for p in path.iterdir()]
+            print(f'loading {len(episodes)} from a directory {path}')
+        else:
+            path = Path(path)
+            assert path.is_file() and path.suffix == '.csv'
+            episodes = [path, ]
+            print(f'loading from a one file {path}')
+
+        csvs = [pd.read_csv(p, index_col=0) for p in tqdm(episodes) if p.suffix == '.csv']
+        parquets = [pd.read_parquet(p) for p in tqdm(episodes) if p.suffix == '.parquet']
+        eps = csvs + parquets
+        print(f'loaded {len(episodes)}')
+        return eps
+
 
 
 class NEMDatasetAttention(AbstractDataset):
@@ -245,25 +203,12 @@ class NEMDatasetAttention(AbstractDataset):
         self.n_batteries = n_batteries
         self.price_col = price_col
 
-        train_episodes = load_attention_episodes(train_episodes)
+        train_episodes = self.load_episodes(train_episodes)
 
         if test_episodes:
-            test_episodes = load_attention_episodes(test_episodes)
+            test_episodes = self.load_episodes(test_episodes)
         else:
             test_episodes = train_episodes
-
-        #  could be improved, but it's very clear
-        # self.episodes = {
-        #     'train-features': train_episodes['features'],
-        #     'train-mask': train_episodes['mask'],
-
-        #     'random-features': train_episodes['features'],
-        #     'random-mask': train_episodes['mask'],
-
-        #     'test-features': trim_episodes(test_episodes['features'], self.n_batteries),
-        #     'test-mask': trim_episodes(test_episodes['mask'], self.n_batteries),
-        #     'test-prices': trim_episodes(test_episodes['prices'], self.n_batteries)
-        # }
 
         self.episodes = {
             'train': train_episodes,
@@ -276,7 +221,7 @@ class NEMDatasetAttention(AbstractDataset):
 
     def setup_test(self):
         self.test_done = False
-        self.test_episodes_queue = list(range(0, len(self.episodes['test-features'])))
+        self.test_episodes_queue = list(range(0, len(self.episodes['test'])))
         return self.test_done
 
     def reset_test(self):
@@ -291,7 +236,7 @@ class NEMDatasetAttention(AbstractDataset):
         for episode_idx in episodes_idxs:
             for var in ['features', 'mask', 'prices']:
                 ds[var].append(
-                    np.expand_dims(self.episodes[f'test-{var}'][episode_idx], 1)
+                    np.expand_dims(self.episodes[f'test'][episode_idx][var], 1)
                 )
 
         self.episode = {}
@@ -317,3 +262,28 @@ class NEMDatasetAttention(AbstractDataset):
             self.episode[var] = np.concatenate(ds[var], axis=1)
 
         return self.sample_observation(0)
+
+    def load_episodes(self, episodes):
+        """
+        ./data/attention/{test,train}/{features,prices,mask}/%Y-%m-%d.npy
+        """
+        #  pass in list of dicts
+        #  don't support list of paths - jusht list of dict
+        if isinstance(episodes, list):
+            if isinstance(episodes[0], dict):
+                return episodes
+
+        #  episodes is a path like .data/attention/train
+
+        episodes = Path(episodes)
+
+        out = []
+        for ep in [p.name for p in (episodes / 'features').iterdir()]:
+            pkg = {}
+            for el in ['features', 'mask', 'prices']:
+                pkg[el] = np.load(episodes / el / ep)
+
+            out.append(pkg)
+        return out
+
+
