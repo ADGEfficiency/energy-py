@@ -51,15 +51,23 @@ def update(
     writer,
     optimizer,
     counters,
+    hyp
 ):
     al = tf.exp(log_alpha)
     with tf.GradientTape() as tape:
-        state_act, log_prob, _ = actor(
-            (batch["observation"], batch["observation_mask"])
-        )
-        policy_target = minimum_target(
-            batch["observation"], state_act, batch["observation_mask"], targets
-        )
+
+        if hyp['network']['name'] == 'dense':
+            state_act, log_prob, _ = actor(batch["observation"])
+            policy_target = minimum_target(
+                (batch["observation"], state_act), targets
+            )
+        if hyp['network']['name'] == 'attention':
+            state_act, log_prob, _ = actor(
+                (batch["observation"], batch["observation_mask"])
+            )
+            policy_target = minimum_target(
+                (batch["observation"], state_act, batch["observation_mask"]), targets
+            )
 
         loss = tf.reduce_mean(al * log_prob - policy_target)
 

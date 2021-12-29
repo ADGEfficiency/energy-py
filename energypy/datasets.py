@@ -93,12 +93,12 @@ class NEMDataset(AbstractDataset):
         self.n_batteries = n_batteries
         self.price_col = price_col
 
-        train_episodes = load_episodes(train_episodes)
+        train_episodes = self.load_episodes(train_episodes)
         self.episodes = {
             'train': train_episodes,
             #  random sampling done on train episodes
             'random': train_episodes,
-            'test': load_episodes(test_episodes),
+            'test': self.load_episodes(test_episodes),
         }
 
         self.episodes['test'] = trim_episodes(self.episodes['test'], self.n_batteries)
@@ -144,43 +144,68 @@ class NEMDataset(AbstractDataset):
         ds = defaultdict(list)
         for episode in episodes:
             episode = episode.copy()
-            prices = episode.pop(self.price_col)
-            ds['prices'].append(prices.reset_index(drop=True).values.reshape(-1, 1, 1))
-            ds['features'].append(episode.reset_index(drop=True).values.reshape(prices.shape[0], 1, -1))
+
+            #  batch, n_batteries=1, 1
+            ds['prices'].append(episode['prices'].reshape(-1, 1, 1))
+            #  batch, n_batteries=1, n_features
+            ds['features'].append(episode['features'].reshape(episode['features'].shape[0], 1, -1))
 
         self.episode = {
             'prices': np.concatenate(ds['prices'], axis=1),
             'features': np.concatenate(ds['features'], axis=1),
         }
+        assert len(self.episode['prices']) == len(self.episode['features'])
+        assert self.episode['prices'].ndim == 3
+        assert self.episode['features'].ndim == 3
+
         return self.sample_observation(0)
 
-    def load_episodes(self, path):
-        #  pass in list
-        if isinstance(path, list):
-            #  of dataframes
-            if isinstance(path[0], pd.DataFrame):
-                return path
-            else:
-                #  of paths
-                episodes = [Path(p) for p in path]
-                print(f'loading {len(episodes)} from list of paths')
+    def load_episodes(self, episodes):
+        #  pass in list of dicts
+        #  don't support list of paths - jusht list of dict
+        if isinstance(episodes, list):
+            if isinstance(episodes[0], dict):
+                return episodes
 
-        #  pass in directory
-        elif Path(path).is_dir() or isinstance(path, str):
-            path = Path(path)
-            episodes = [p for p in path.iterdir()]
-            print(f'loading {len(episodes)} from a directory {path}')
-        else:
-            path = Path(path)
-            assert path.is_file() and path.suffix == '.csv'
-            episodes = [path, ]
-            print(f'loading from a one file {path}')
+        #  episodes is a path like .data/attention/train
 
-        csvs = [pd.read_csv(p, index_col=0) for p in tqdm(episodes) if p.suffix == '.csv']
-        parquets = [pd.read_parquet(p) for p in tqdm(episodes) if p.suffix == '.parquet']
-        eps = csvs + parquets
-        print(f'loaded {len(episodes)}')
-        return eps
+        episodes = Path(episodes)
+        out = []
+        for ep in [p.name for p in (episodes / 'features').iterdir()]:
+            pkg = {}
+            for el in ['features', 'prices']:
+                pkg[el] = np.load(episodes / el / ep)
+
+            out.append(pkg)
+        return out
+
+
+        # #  pass in list
+        # if isinstance(path, list):
+        #     #  of dataframes
+        #     if isinstance(path[0], pd.DataFrame):
+        #         return path
+        #     else:
+        #         #  of paths
+        #         episodes = [Path(p) for p in path]
+        #         print(f'loading {len(episodes)} from list of paths')
+
+        # #  pass in directory
+        # elif Path(path).is_dir() or isinstance(path, str):
+        #     path = Path(path)
+        #     episodes = [p for p in path.iterdir()]
+        #     print(f'loading {len(episodes)} from a directory {path}')
+        # else:
+        #     path = Path(path)
+        #     assert path.is_file() and path.suffix == '.csv'
+        #     episodes = [path, ]
+        #     print(f'loading from a one file {path}')
+
+        # csvs = [pd.read_csv(p, index_col=0) for p in tqdm(episodes) if p.suffix == '.csv']
+        # parquets = [pd.read_parquet(p) for p in tqdm(episodes) if p.suffix == '.parquet']
+        # eps = csvs + parquets
+        # print(f'loaded {len(episodes)}')
+        # return eps
 
 
 
@@ -276,7 +301,6 @@ class NEMDatasetAttention(AbstractDataset):
         #  episodes is a path like .data/attention/train
 
         episodes = Path(episodes)
-
         out = []
         for ep in [p.name for p in (episodes / 'features').iterdir()]:
             pkg = {}

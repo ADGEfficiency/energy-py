@@ -26,8 +26,9 @@ def last_100_episode_rewards(rewards):
     return sum(last) / len(last)
 
 
-def minimum_target(state, action, mask, targets):
-    return tf.reduce_min([t([state, action, mask]) for t in targets], axis=0)
+# def minimum_target(state, action, mask, targets):
+def minimum_target(net_inputs, targets):
+    return tf.reduce_min([t(net_inputs) for t in targets], axis=0)
 
 
 def get_latest_run(experiment):

@@ -45,7 +45,7 @@ class BatteryObservationSpace:
         shape[-1] += additional_features
         self.shape = tuple(shape)
 
-    def get_mask_shape(self):
+    def get_mask_shape(self, network=None):
         return (self.shape[0], self.shape[0])
 
 
@@ -153,10 +153,13 @@ class Battery(AbstractEnv):
         #  adding the charge onto the observation
         #  different depending on attention or not
 
-        if len(features.shape) == 2:
+        if features.ndim == 2:
             #  (n_batteries, n_features)
             features = data["features"].reshape(self.n_batteries, -1)
             features = np.concatenate([features, self.charge], axis=1)
+            #  we dont use this
+            mask = np.ones((self.n_batteries, features.shape[1], features.shape[1]))
+
         else:
             #  (n_batteries, sequence_length, n_features)
             assert len(features.shape) == 3

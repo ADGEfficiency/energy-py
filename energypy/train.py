@@ -33,7 +33,7 @@ def train_one_head_network(
 
     st = utils.now()
     policy.update(
-        batch, actor, onlines, targets, log_alpha, writer, optimizers["actor"], counters
+        batch, actor, onlines, targets, log_alpha, writer, optimizers["actor"], counters, hyp
     )
     counters["pol-func-update-seconds"] += utils.now() - st
 
@@ -42,7 +42,7 @@ def train_one_head_network(
     counters["target-update-seconds"] += utils.now() - st
 
     st = utils.now()
-    alpha.update(batch, actor, log_alpha, hyp, optimizers["alpha"], counters, writer)
+    alpha.update(batch, actor, log_alpha, hyp, optimizers["alpha"], counters, writer, hyp)
     counters["alpha-update-seconds"] += utils.now() - st
     counters["train-seconds"] += utils.now() - st
     counters["train-steps"] += 1

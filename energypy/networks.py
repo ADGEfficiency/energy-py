@@ -6,13 +6,9 @@ from tensorflow.keras.layers import Flatten
 
 def dense(input_shape, outputs, size_scale=1, neurons=(64, 32)):
     if isinstance(input_shape, tuple):
-        input_shape = keras.Input(shape=input_shape)
-        #  think this will break?
+        inputs = keras.Input(shape=input_shape)
 
     if isinstance(input_shape, list):
-        # in_act = input_shape[1]
-        # act = tf.expand_dims(in_act, 2)
-
         in_obs = input_shape[0]
         in_act = input_shape[1]
         obs = Flatten()(in_obs)
@@ -24,7 +20,7 @@ def dense(input_shape, outputs, size_scale=1, neurons=(64, 32)):
         net = layers.Dense(n * size_scale, activation="relu")(net)
 
     outputs = layers.Dense(outputs, activation="linear")(net)
-    return input_shape, outputs
+    return inputs, outputs
 
 
 def attention(

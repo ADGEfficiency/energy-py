@@ -13,7 +13,11 @@ def make(env, initial_value):
 
 def update(batch, actor, log_alpha, hyp, optimizer, counters, writer):
     target_entropy = hyp["target-entropy"]
-    _, log_prob, _ = actor((batch["observation"], batch["observation_mask"]))
+
+    if hyp['network']['name'] == 'dense':
+        _, log_prob, _ = actor((batch["observation"]))
+    if hyp['network']['name'] == 'attention':
+        _, log_prob, _ = actor((batch["observation"], batch["observation_mask"]))
 
     with tf.GradientTape() as tape:
         loss = -1.0 * tf.reduce_mean((tf.exp(log_alpha) * (log_prob + target_entropy)))

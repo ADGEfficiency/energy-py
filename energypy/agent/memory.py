@@ -66,11 +66,6 @@ class Buffer():
             self._cursor = value
 
     def append(self, data):
-        # for name, el in zip(data._fields, data):
-        #     sh = self.data[name][0].shape
-        #     self.data[name][self.cursor, :] = np.array(el).reshape(sh)
-        # self.cursor = self.cursor + 1
-
         for name, data in data.items():
             sh = self.data[name][0].shape
             self.data[name][self.cursor, :] = np.array(data).reshape(sh)

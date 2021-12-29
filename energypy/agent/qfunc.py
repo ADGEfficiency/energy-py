@@ -27,56 +27,82 @@ def make(env, hyp):
 
 def make_qfunc(obs_shape, n_actions, name, hyp):
     """makes a single qfunc"""
-    # if not mask_shape:
-    #     raise NotImplementedError()
 
-    # in_obs = keras.Input(shape=obs_shape)
-    # in_mask = keras.Input(shape=mask_shape)
+    if hyp['network']['name'] == 'dense':
 
-    #  observation head (with mask) - obs_head is a dense layer
-    (in_obs, in_mask), obs_head = energypy.make(
-        **hyp["network"], input_shape=obs_shape, outputs=32
-    )
+        #  observation head - obs_head is a dense layer
+        in_obs, obs_head = energypy.make(
+            **hyp["network"], input_shape=obs_shape, outputs=32
+        )
 
-    #  action connects into obs_head output, then through dense net to output
-    in_act = keras.Input(shape=n_actions)
-    _, net = energypy.make(
-        name="dense",
-        size_scale=hyp["network"]["size_scale"],
-        #  these will be concated together
-        input_shape=[obs_head, in_act],
-        outputs=1,
-        neurons=(32, 16),
-    )
+        #  action connects into obs_head output, then through dense net to output
+        in_act = keras.Input(shape=n_actions)
+        _, net = energypy.make(
+            name="dense",
+            size_scale=hyp["network"]["size_scale"],
+            #  these will be concated together
+            input_shape=[obs_head, in_act],
+            outputs=1,
+            neurons=(32, 16),
+        )
+        return keras.Model(inputs=[in_obs, in_act], outputs=net, name=name)
 
-    # if len(in_obs.shape) == 2:
-    #     obs = Flatten()(in_obs)
-    #     act = Flatten()(in_act)
-    #     inputs = tf.concat([obs, act], axis=1)
+    if hyp['network']['name'] == 'attention':
 
-    # else:
-    #     assert len(in_obs.shape) == 3
-    #     act = tf.expand_dims(in_act, 2)
-    #     inputs = tf.concat([in_obs, act], axis=1)
+        #  observation head (with mask) - obs_head is a dense layer
+        (in_obs, in_mask), obs_head = energypy.make(
+            **hyp["network"], input_shape=obs_shape, outputs=32
+        )
 
-    # inp_net, net = energypy.make(**hyp["network"], inputs=inputs, outputs=1)
-    # mask = inp_net[1]
+        #  action connects into obs_head output, then through dense net to output
+        in_act = keras.Input(shape=n_actions)
+        _, net = energypy.make(
+            name="dense",
+            size_scale=hyp["network"]["size_scale"],
+            #  these will be concated together
+            input_shape=[obs_head, in_act],
+            outputs=1,
+            neurons=(32, 16),
+        )
 
-    return keras.Model(inputs=[in_obs, in_act, in_mask], outputs=net, name=name)
+        # if len(in_obs.shape) == 2:
+        #     obs = Flatten()(in_obs)
+        #     act = Flatten()(in_act)
+        #     inputs = tf.concat([obs, act], axis=1)
+
+        # else:
+        #     assert len(in_obs.shape) == 3
+        #     act = tf.expand_dims(in_act, 2)
+        #     inputs = tf.concat([in_obs, act], axis=1)
+
+        # inp_net, net = energypy.make(**hyp["network"], inputs=inputs, outputs=1)
+        # mask = inp_net[1]
+
+        return keras.Model(inputs=[in_obs, in_act, in_mask], outputs=net, name=name)
 
 
 def update(
     batch, actor, onlines, targets, log_alpha, writer, optimizers, counters, hyp
 ):
-    next_state_act, log_prob, _ = actor(
-        (batch["next_observation"], batch["next_observation_mask"])
-    )
-    next_state_target = minimum_target(
-        batch["next_observation"],
-        next_state_act,
-        batch["next_observation_mask"],
-        targets,
-    )
+    if hyp['network']['name'] == 'dense':
+        next_state_act, log_prob, _ = actor(batch["next_observation"])
+        next_state_target = minimum_target(
+            (batch["next_observation"],
+            next_state_act),
+            targets=targets,
+        )
+
+    if hyp['network']['name'] == 'attention':
+        next_state_act, log_prob, _ = actor(
+            (batch["next_observation"], batch["next_observation_mask"])
+        )
+
+        next_state_target = minimum_target(
+            (batch["next_observation"],
+            next_state_act,
+            batch["next_observation_mask"]),
+            targets=targets,
+        )
 
     al = tf.exp(log_alpha)
     ga = hyp["gamma"]
@@ -88,9 +114,14 @@ def update(
 
     for onl, optimizer in zip(onlines, optimizers):
         with tf.GradientTape() as tape:
-            q_value = onl(
-                [batch["observation"], batch["action"], batch["observation_mask"]]
-            )
+            if hyp['network']['name'] == 'dense':
+                q_value = onl(
+                    [batch["observation"], batch["action"]]
+                )
+            if hyp['network']['name'] == 'attention':
+                q_value = onl(
+                    [batch["observation"], batch["action"], batch["observation_mask"]]
+                )
             loss = tf.keras.losses.MSE(q_value, target)
 
         grads = tape.gradient(loss, onl.trainable_variables)
