@@ -42,7 +42,7 @@ def train_one_head_network(
     counters["target-update-seconds"] += utils.now() - st
 
     st = utils.now()
-    alpha.update(batch, actor, log_alpha, hyp, optimizers["alpha"], counters, writer, hyp)
+    alpha.update(batch, actor, log_alpha, hyp, optimizers["alpha"], counters, writer)
     counters["alpha-update-seconds"] += utils.now() - st
     counters["train-seconds"] += utils.now() - st
     counters["train-steps"] += 1

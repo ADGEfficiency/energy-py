@@ -124,13 +124,19 @@ class NEMDataset(AbstractDataset):
         ds = defaultdict(list)
         for episode_idx in episodes:
             episode = self.episodes['test'][episode_idx].copy()
-            prices = episode.pop(self.price_col)
-            ds['prices'].append(prices.reset_index(drop=True))
-            ds['features'].append(episode.reset_index(drop=True))
+            prices = episode[self.price_col]
+            ds['prices'].append(prices.reshape(prices.shape[0], self.n_batteries, 1))
+
+            features = episode['features']
+            ds['features'].append(features.reshape(
+                features.shape[0],
+                self.n_batteries,
+                *features.shape[1:]
+            ))
 
         self.episode = {
-            'prices': pd.concat(ds['prices'], axis=1).values,
-            'features': pd.concat(ds['features'], axis=1).values,
+            'prices': np.concatenate(ds['prices'], axis=1),
+            'features': np.concatenate(ds['features'], axis=1),
         }
 
         if len(self.test_episodes_queue) == 0:
@@ -141,14 +147,19 @@ class NEMDataset(AbstractDataset):
     def reset_train(self):
         episodes = random.sample(self.episodes['train'], self.n_batteries)
 
+        #  iterate over episodes to pack them into one many battery episode
         ds = defaultdict(list)
         for episode in episodes:
-            episode = episode.copy()
+            prices = episode[self.price_col]
+            ds['prices'].append(prices.reshape(prices.shape[0], self.n_batteries, 1))
 
-            #  batch, n_batteries=1, 1
-            ds['prices'].append(episode['prices'].reshape(-1, 1, 1))
-            #  batch, n_batteries=1, n_features
-            ds['features'].append(episode['features'].reshape(episode['features'].shape[0], 1, -1))
+            features = episode['features']
+            ds['features'].append(features.reshape(
+                features.shape[0],
+                self.n_batteries,
+                *features.shape[1:]
+            ))
+
 
         self.episode = {
             'prices': np.concatenate(ds['prices'], axis=1),

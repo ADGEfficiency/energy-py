@@ -20,7 +20,11 @@ def episode(env, buffer, actor, hyp, counters, mode, return_info=False):
     infos = []
     while not done:
         #  obs is a dict {'features':, 'mask':}
-        act, _, deterministic_action = actor((obs["features"], obs["mask"]))
+
+        if hyp['network']['name'] == 'dense':
+            act, _, deterministic_action = actor((obs["features"]))
+        if hyp['network']['name'] == 'attention':
+            act, _, deterministic_action = actor((obs["features"], obs["mask"]))
 
         if mode == "test":
             act = deterministic_action
