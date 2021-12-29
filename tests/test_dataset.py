@@ -90,8 +90,6 @@ def test_attention_dataset():
     #  can also check ds.episode dict ?
 
 
-
-
 def test_attention_dataset_load_arrays():
     #  make dummy dataset
     episode_len = 8

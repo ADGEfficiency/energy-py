@@ -42,11 +42,11 @@ class Buffer():
     """
     def __init__(self, elements, size=64):
         self.elements = elements
+        self.size = int(size)
         self.data = {
-            el: np.zeros((size, *shape), dtype=dtype)
+            el: np.zeros((self.size, *shape), dtype=dtype)
             for el, shape, dtype in elements
         }
-        self.size = size
         self.cursor = 0
         self.full = False
 

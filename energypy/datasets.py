@@ -125,12 +125,12 @@ class NEMDataset(AbstractDataset):
         for episode_idx in episodes:
             episode = self.episodes['test'][episode_idx].copy()
             prices = episode[self.price_col]
-            ds['prices'].append(prices.reshape(prices.shape[0], self.n_batteries, 1))
+            ds['prices'].append(prices.reshape(prices.shape[0], 1, 1))
 
             features = episode['features']
             ds['features'].append(features.reshape(
                 features.shape[0],
-                self.n_batteries,
+                1,
                 *features.shape[1:]
             ))
 
@@ -151,15 +151,14 @@ class NEMDataset(AbstractDataset):
         ds = defaultdict(list)
         for episode in episodes:
             prices = episode[self.price_col]
-            ds['prices'].append(prices.reshape(prices.shape[0], self.n_batteries, 1))
+            ds['prices'].append(prices.reshape(prices.shape[0], 1, 1))
 
             features = episode['features']
             ds['features'].append(features.reshape(
                 features.shape[0],
-                self.n_batteries,
+                1,
                 *features.shape[1:]
             ))
-
 
         self.episode = {
             'prices': np.concatenate(ds['prices'], axis=1),
