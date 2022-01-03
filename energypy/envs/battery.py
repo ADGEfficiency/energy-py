@@ -93,9 +93,13 @@ class Battery(AbstractEnv):
         self.capacity = set_battery_config(capacity, n_batteries)
         #  %
         self.efficiency = set_battery_config(efficiency, n_batteries)
-        #  kWh
-        initial_charge = np.clip(initial_charge, 0, 1.0)
-        self.initial_charge = set_battery_config(initial_charge * capacity, n_batteries)
+
+        if isinstance(initial_charge, str) and initial_charge == "random":
+            self.initial_charge = initial_charge
+        else:
+            #  kWh
+            initial_charge = np.clip(initial_charge, 0, 1.0)
+            self.initial_charge = set_battery_config(initial_charge * capacity, n_batteries)
 
         self.episode_length = int(episode_length)
 
@@ -164,8 +168,11 @@ class Battery(AbstractEnv):
             #  (n_batteries, sequence_length, n_features)
             assert len(features.shape) == 3
             sh = features.shape
-            assert sh[0] == self.n_batteries
 
+            if sh[0] != self.n_batteries:
+                breakpoint()
+
+            assert sh[0] == self.n_batteries
             #  (batch, n_batteries, sequence_length, n_features)
             sequence_length = sh[1]
             features = data["features"].reshape(

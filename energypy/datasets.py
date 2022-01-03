@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 
 from collections import OrderedDict, defaultdict
+
+
 import json
 
 from pathlib import Path
@@ -190,35 +192,6 @@ class NEMDataset(AbstractDataset):
         return out
 
 
-        # #  pass in list
-        # if isinstance(path, list):
-        #     #  of dataframes
-        #     if isinstance(path[0], pd.DataFrame):
-        #         return path
-        #     else:
-        #         #  of paths
-        #         episodes = [Path(p) for p in path]
-        #         print(f'loading {len(episodes)} from list of paths')
-
-        # #  pass in directory
-        # elif Path(path).is_dir() or isinstance(path, str):
-        #     path = Path(path)
-        #     episodes = [p for p in path.iterdir()]
-        #     print(f'loading {len(episodes)} from a directory {path}')
-        # else:
-        #     path = Path(path)
-        #     assert path.is_file() and path.suffix == '.csv'
-        #     episodes = [path, ]
-        #     print(f'loading from a one file {path}')
-
-        # csvs = [pd.read_csv(p, index_col=0) for p in tqdm(episodes) if p.suffix == '.csv']
-        # parquets = [pd.read_parquet(p) for p in tqdm(episodes) if p.suffix == '.parquet']
-        # eps = csvs + parquets
-        # print(f'loaded {len(episodes)}')
-        # return eps
-
-
-
 class NEMDatasetAttention(AbstractDataset):
     """
     features = (batch, n_batteries, sequence_length, n_features)
@@ -251,6 +224,7 @@ class NEMDatasetAttention(AbstractDataset):
             'test': test_episodes,
         }
 
+        self.episodes['test'] = trim_episodes(self.episodes['test'], self.n_batteries)
         #  start in train mode
         self.test_done = True
 
@@ -277,6 +251,8 @@ class NEMDatasetAttention(AbstractDataset):
         self.episode = {}
         for var in ['features', 'mask', 'prices']:
             self.episode[var] = np.concatenate(ds[var], axis=1)
+
+        assert self.episode['features'].shape[1] == self.n_batteries
 
         self.test_done = len(self.test_episodes_queue) == 0
         return self.sample_observation(0)
@@ -319,5 +295,3 @@ class NEMDatasetAttention(AbstractDataset):
 
             out.append(pkg)
         return out
-
-

@@ -40,14 +40,20 @@ class Buffer():
     """
     Buffer has no concept of n_batteries - experience is all stored on a 'one battery' level
     """
-    def __init__(self, elements, size=64):
+    def __init__(
+        self,
+        elements,
+        size=64,
+        cursor_min=0
+    ):
         self.elements = elements
         self.size = int(size)
         self.data = {
             el: np.zeros((self.size, *shape), dtype=dtype)
             for el, shape, dtype in elements
         }
-        self.cursor = 0
+        self.cursor = cursor_min
+        self.cursor_min = cursor_min
         self.full = False
 
     def __len__(self):
@@ -60,7 +66,7 @@ class Buffer():
     @cursor.setter
     def cursor(self, value):
         if value == self.size:
-            self._cursor = 0
+            self._cursor = self.cursor_min
             self.full = True
         else:
             self._cursor = value
