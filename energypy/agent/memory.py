@@ -29,6 +29,7 @@ def save(buffer, path):
         'elements': buffer.elements,
         'size': buffer.size,
         'cursor_min': buffer.cursor_min,
+        'full': buffer.full,
     }
     (path / 'meta.json').write_text(json.dumps(meta))
 
@@ -55,7 +56,8 @@ class Buffer():
         self,
         elements,
         size=64,
-        cursor_min=0
+        cursor_min=0,
+        full=False
     ):
         self.elements = elements
         self.size = int(size)
@@ -65,7 +67,7 @@ class Buffer():
         }
         self.cursor = cursor_min
         self.cursor_min = cursor_min
-        self.full = False
+        self.full = full
 
     def __len__(self):
         return len(self.data['observation'])

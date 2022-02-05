@@ -19,16 +19,18 @@ def test_save_to_numpy_and_meta():
     buf = Buffer(elements, size=4, cursor_min=2)
 
     ds = defaultdict(list)
-    for _ in range(2):
+    for _ in range(4):
         o, a = sample()
         buf.append({'o': o, 'a': a})
         ds['o'].append(o)
         ds['a'].append(a)
 
+    assert buf.full
     save(buf, './tmp/buffer-test')
 
     #  nbuf = new buffer
     nbuf = load('./tmp/buffer-test')
     assert len(nbuf.elements) == 2
     assert nbuf.cursor_min == 2
+    assert nbuf.full
     shutil.rmtree('./tmp/buffer-test')
