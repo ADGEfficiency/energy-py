@@ -55,39 +55,37 @@ def test_make_perfect_forecast():
 
 
 def test_attention_dataset():
+
     episode_len = 32
     sequence_length = 4
     n_features = 5
+    n_samples = 4
 
-    #  three episodes
-    features = [
-        np.random.random((episode_len, sequence_length, n_features)),
-        np.random.random((episode_len, sequence_length, n_features)),
-        np.random.random((episode_len, sequence_length, n_features)),
-    ]
-    masks = [
-        np.random.random((episode_len, sequence_length, sequence_length)),
-        np.random.random((episode_len, sequence_length, sequence_length)),
-        np.random.random((episode_len, sequence_length, sequence_length)),
-    ]
-
-    prices = [np.random.random((episode_len, 1)) for _ in range(3)]
+    data = []
+    for rw in range(n_samples):
+        data.append({
+            'features': np.random.random((episode_len, sequence_length, n_features)),
+            'mask': np.random.random((episode_len, sequence_length, sequence_length)),
+            'prices': np.random.random((episode_len, 1))
+        })
 
     ds = NEMDatasetAttention(
-        n_batteries=3,
-        train_episodes={'features': features, 'mask': masks, 'prices': prices}
+        n_batteries=2,
+        train_episodes=data,
+        test_episodes=data
     )
 
-    #  bit of a smell
+    #  not fine here
     ds.setup_test()
+    #  not fine here
     obs = ds.reset('test')
 
     #  check the first feature is correct
-    features0 = ds.sample_observation(0)
-    assert features0 == features[0]
-    assert features0.shape == (1, n_batteries, sequence_length, n_features)
+    f0 = ds.sample_observation(0)['features'][0]
 
-    #  can also check ds.episode dict ?
+    f0check = data[0]['features'][0]
+    assert f0.shape == (sequence_length, n_features)
+    np.testing.assert_array_equal(f0, f0check)
 
 
 def test_attention_dataset_load_arrays():
@@ -119,11 +117,8 @@ def test_attention_dataset_load_arrays():
     path = Path('./temp/train')
     for ds, date in zip(dss, ['2020-01-01', '2021-01-01', '2022-01-01']):
         for name, data in ds.items():
-            (path / date).mkdir(exist_ok=True, parents=True)
-            np.save(path / date / name, data)
+            (path / name).mkdir(exist_ok=True, parents=True)
+            np.save(path / name / date, data)
 
     #  load
     ds = NEMDatasetAttention(n_batteries, './temp/train')
-
-
-test_attention_dataset_load_arrays()

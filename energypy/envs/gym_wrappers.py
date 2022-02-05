@@ -1,5 +1,6 @@
 from collections import namedtuple
 
+import numpy as np
 import gym
 
 from energypy.envs.base import AbstractEnv
@@ -25,7 +26,9 @@ class GymWrapper(AbstractEnv):
             ('action', self.env.action_space.shape, 'float32'),
             ('reward', (1, ), 'float32'),
             ('next_observation', self.env.observation_space.shape, 'float32'),
-            ('done', (1, ), 'bool')
+            ('done', (1, ), 'bool'),
+            ('observation_mask', self.env.observation_space.shape, 'float32'),
+            ('next_observation_mask', self.env.observation_space.shape, 'float32'),
         )
         self.Transition = namedtuple('Transition', [el[0] for el in self.elements])
         self.observation_space = self.env.observation_space
@@ -42,7 +45,13 @@ class GymWrapper(AbstractEnv):
         if 'lunar' in self.env_id.lower():
             unscaled_action = unscaled_action.reshape(-1)
         next_obs, reward, done, _ = self.env.step(unscaled_action)
-        return next_obs.reshape(1, *self.env.observation_space.shape), reward, done, {}
+        return {
+            "features": next_obs.reshape(1, *self.env.observation_space.shape),
+            "mask": np.ones((1, *self.env.observation_space.shape))
+        }, reward, done, {}
 
     def reset(self, mode=None):
-        return self.env.reset().reshape(1, *self.env.observation_space.shape)
+        return {
+            "features": self.env.reset().reshape(1, *self.env.observation_space.shape),
+            "mask": np.ones((1, *self.env.observation_space.shape))
+        }

@@ -80,6 +80,10 @@ class RandomDataset(AbstractDataset):
         features = np.random.uniform(0, 100, n*n_features*n_batteries).reshape(n, n_batteries, n_features)
         return {'prices': prices, 'features': features}
 
+    def reset(self, mode='train'):
+        self.episode = self.dataset
+        return self.sample_observation(0)
+
 
 class NEMDataset(AbstractDataset):
     def __init__(
@@ -223,14 +227,15 @@ class NEMDatasetAttention(AbstractDataset):
             'random': train_episodes,
             'test': test_episodes,
         }
-
+        print(f'loaded {len(self.episodes["test"])}')
         self.episodes['test'] = trim_episodes(self.episodes['test'], self.n_batteries)
-        #  start in train mode
+        print(f'{len(self.episodes["test"])} after trim')
         self.test_done = True
 
     def setup_test(self):
         self.test_done = False
         self.test_episodes_queue = list(range(0, len(self.episodes['test'])))
+        #  HERE TEST EP EMPTY
         return self.test_done
 
     def reset_test(self):
@@ -239,6 +244,8 @@ class NEMDatasetAttention(AbstractDataset):
 
         #  remove the sample from the queue
         self.test_episodes_queue = self.test_episodes_queue[self.n_batteries:]
+
+        #  HERE TEST EP EMPTY
 
         #  iterate over episodes to pack them into one many battery episode
         ds = defaultdict(list)

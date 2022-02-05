@@ -21,6 +21,7 @@ def test_buffer():
 
     data = ((0, (1, 1)), (1, (2, 2)), (2, (3, 3)))
     data = [tup(*d) for d in data]
+    data = [d._asdict() for d in data]
 
     for _ in range(2):
         for d in data:
@@ -30,7 +31,7 @@ def test_buffer():
 
     for a, b in zip(batch['A'], batch['B']):
         check = data[int(a)]
-        np.testing.assert_array_equal(b, check[1])
+        np.testing.assert_array_equal(b, check['B'])
 
     np.testing.assert_array_equal(buff.data['A'], np.array([1, 2, 2, 0]).reshape(4, 1))
     np.testing.assert_array_equal(buff.data['B'], np.array(((2, 2), (3, 3), (3, 3), (1, 1))).reshape(4, 2))
@@ -40,10 +41,10 @@ def test_buffer():
 def test_pendulum_wrapper():
     env = GymWrapper('pendulum')
     res = env.reset()
-    assert res.shape == (1, 3)
+    assert res['features'].shape == (1, 3)
     act = env.action_space.sample().reshape(1, 1)
     next_obs, rew, done, _ = env.step(act)
-    assert next_obs.shape == (1, 3)
+    assert next_obs['features'].shape == (1, 3)
 
 
 def test_random_policy_wrapper():

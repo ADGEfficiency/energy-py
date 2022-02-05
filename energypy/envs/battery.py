@@ -81,6 +81,7 @@ class Battery(AbstractEnv):
         episode_length=288,
         dataset={"name": "random-dataset"},
         logger=None,
+        first_reset='train'
     ):
         self.n_batteries = n_batteries
 
@@ -111,7 +112,7 @@ class Battery(AbstractEnv):
             assert dataset.n_batteries == self.n_batteries
             self.dataset = dataset
 
-        self.reset("train")
+        self.reset(first_reset)
 
         self.observation_space = BatteryObservationSpace(
             self.dataset, additional_features=1

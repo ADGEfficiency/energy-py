@@ -12,6 +12,10 @@ def episode(env, buffer, actor, hyp, counters, mode, return_info=False):
 
     reward_scale = hyp["reward-scale"]
 
+    #  hack for gym envs
+    if isinstance(obs, np.ndarray):
+        obs = {"features": obs}
+
     #  create one list per parallel episode we are running
     #  first dimension is the number of batteries
     #  which we use as the batch dimension when we are sampling actions from the agent
