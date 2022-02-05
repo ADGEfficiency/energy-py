@@ -2,7 +2,7 @@ import numpy as np
 
 from energypy import random_policy
 
-from tqdm import tqdm
+from rich.progress import Progress
 from energypy import utils
 
 
@@ -172,25 +172,28 @@ def sample_test(
         n_test_eps = hyp["n-tests"]
 
     print(f" testing on {n_test_eps} episodes")
-    pbar = tqdm(total=n_test_eps)
-    while not test_done:
 
-        test_rewards = run_episode(
-            env,
-            buffer,
-            actor,
-            hyp,
-            writers,
-            counters,
-            rewards,
-            mode="test",
-            logger=logger,
-        )
-        test_results.extend(test_rewards)
-        test_done = env.test_done
-        pbar.update(len(test_results))
+    with Progress() as progress:
+        task = progress.add_task("Running test episode...", total=total)
 
-    pbar.close()
+        while not test_done:
+
+            test_rewards = run_episode(
+                env,
+                buffer,
+                actor,
+                hyp,
+                writers,
+                counters,
+                rewards,
+                mode="test",
+                logger=logger,
+            )
+            test_results.extend(test_rewards)
+            test_done = env.test_done
+
+            progress.update(task, advance=len(test_results))
+
     utils.stats("test", "test-episodes", counters, test_rewards)
     return test_results
 
