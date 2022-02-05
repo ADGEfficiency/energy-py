@@ -14,7 +14,8 @@ def train_one_head_network(
     writer,
     optimizers,
     counters,
-    hyp
+    hyp,
+    **kwargs
 ):
     st = utils.now()
     qfunc.update(
@@ -24,44 +25,24 @@ def train_one_head_network(
         targets,
         log_alpha,
         writer,
-        [optimizers['online-1'], optimizers['online-2']],
+        [optimizers["online-1"], optimizers["online-2"]],
         counters,
-        hyp
+        hyp,
     )
-    counters['q-func-update-seconds'] += utils.now() - st
+    counters["q-func-update-seconds"] += utils.now() - st
 
     st = utils.now()
     policy.update(
-        batch,
-        actor,
-        onlines,
-        targets,
-        log_alpha,
-        writer,
-        optimizers['actor'],
-        counters
+        batch, actor, onlines, targets, log_alpha, writer, optimizers["actor"], counters, hyp
     )
-    counters['pol-func-update-seconds'] += utils.now() - st
+    counters["pol-func-update-seconds"] += utils.now() - st
 
     st = utils.now()
-    target.update(
-        onlines,
-        targets,
-        hyp,
-        counters
-    )
-    counters['target-update-seconds'] += utils.now() - st
+    target.update(onlines, targets, hyp, counters)
+    counters["target-update-seconds"] += utils.now() - st
 
     st = utils.now()
-    alpha.update(
-        batch,
-        actor,
-        log_alpha,
-        hyp,
-        optimizers['alpha'],
-        counters,
-        writer
-    )
-    counters['alpha-update-seconds'] += utils.now() - st
-    counters['train-seconds'] += utils.now() - st
-    counters['train-steps'] += 1
+    alpha.update(batch, actor, log_alpha, hyp, optimizers["alpha"], counters, writer)
+    counters["alpha-update-seconds"] += utils.now() - st
+    counters["train-seconds"] += utils.now() - st
+    counters["train-steps"] += 1

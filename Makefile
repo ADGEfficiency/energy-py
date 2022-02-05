@@ -1,10 +1,10 @@
 .PHONY: test pushs3
 
 setup:
-	pip install -rq requirements.txt
+	pip install -q -r requirements.txt
 	pip install .
 
-test:
+test: setup
 	pytest tests -m "not pybox2d" --tb=line --disable-pytest-warnings
 
 test-with-pybox2d:
@@ -27,3 +27,8 @@ pulls3-dataset:
 pulls3-nem:
 	aws --no-sign-request --region ap-southeast-2 s3 cp s3://energy-py/public/nem.zip nem.zip
 	unzip nem.zip; mv nem-data ~
+
+setup-pybox2d-macos:
+	brew install swig
+	git clone https://github.com/pybox2d/pybox2d
+	cd pybox2d_dev; python setup.py build; python setup.py install

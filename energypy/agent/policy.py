@@ -4,6 +4,7 @@ from tensorflow import keras
 from tensorflow.keras import layers
 import tensorflow_probability as tfp
 
+import energypy
 from energypy.networks import dense, attention
 from energypy.utils import minimum_target
 
@@ -14,15 +15,13 @@ epsilon = 1e-6
 
 
 def make(env, hyp):
-    size_scale = int(hyp['size-scale'])
-
-    obs_shape = env.reset().shape[1:]
+    """make a policy"""
+    obs_shape = env.observation_space.shape
     n_actions = np.zeros(env.action_space.shape).size
 
-    if hyp.get('policy-net') == 'attention':
-        inputs, net = attention(obs_shape, n_actions*2, size_scale)
-    else:
-        inputs, net = dense(obs_shape, n_actions*2, size_scale)
+    inputs, net = energypy.make(
+        **hyp["network"], input_shape=obs_shape, outputs=n_actions * 2
+    )
 
     mean, log_stdev = tf.split(net, 2, axis=1)
     log_stdev = tf.clip_by_value(log_stdev, log_stdev_low, log_stdev_high)
@@ -37,15 +36,10 @@ def make(env, hyp):
     action = tf.tanh(action)
     deterministic_action = tf.tanh(mean)
     log_prob = tf.reduce_sum(
-        log_prob - tf.math.log(1 - action ** 2 + epsilon),
-        axis=1,
-        keepdims=True
+        log_prob - tf.math.log(1 - action ** 2 + epsilon), axis=1, keepdims=True
     )
 
-    return keras.Model(
-        inputs=inputs,
-        outputs=[action, log_prob, deterministic_action]
-    )
+    return keras.Model(inputs=inputs, outputs=[action, log_prob, deterministic_action])
 
 
 def update(
@@ -57,11 +51,23 @@ def update(
     writer,
     optimizer,
     counters,
+    hyp
 ):
     al = tf.exp(log_alpha)
     with tf.GradientTape() as tape:
-        state_act, log_prob, _ = actor(batch['observation'])
-        policy_target = minimum_target(batch['observation'], state_act, targets)
+
+        if hyp['network']['name'] == 'dense':
+            state_act, log_prob, _ = actor(batch["observation"])
+            policy_target = minimum_target(
+                (batch["observation"], state_act), targets
+            )
+        if hyp['network']['name'] == 'attention':
+            state_act, log_prob, _ = actor(
+                (batch["observation"], batch["observation_mask"])
+            )
+            policy_target = minimum_target(
+                (batch["observation"], state_act, batch["observation_mask"]), targets
+            )
 
         loss = tf.reduce_mean(al * log_prob - policy_target)
 
@@ -69,27 +75,8 @@ def update(
     grads, _ = tf.clip_by_global_norm(grads, 5.0)
     optimizer.apply_gradients(zip(grads, actor.trainable_variables))
 
-    writer.scalar(
-        tf.reduce_mean(policy_target),
-        'policy-target',
-        'policy-updates'
-    )
-    writer.scalar(
-        tf.reduce_mean(loss),
-        'policy-loss',
-        'policy-updates'
-    )
-    writer.scalar(
-        tf.reduce_mean(log_prob),
-        'policy-log-prob',
-        'policy-updates'
-    )
+    writer.scalar(tf.reduce_mean(policy_target), "policy-target", "policy-updates")
+    writer.scalar(tf.reduce_mean(loss), "policy-loss", "policy-updates")
+    writer.scalar(tf.reduce_mean(log_prob), "policy-log-prob", "policy-updates")
 
-    counters['policy-updates'] += 1
-
-
-if __name__ == '__main__':
-
-    from energypy.registry import make as ep_make
-    env = ep_make('battery')
-    pol = make(env, {'size-scale': 1})
+    counters["policy-updates"] += 1

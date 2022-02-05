@@ -14,19 +14,19 @@ from energypy.registry import make
 test_cases = (
     #  full charge for three steps
     (
-        {'initial_charge': 0.0, 'power': 2.0, 'capacity': 100, 'episode_length': 3},
+        {'initial_charge': 0.0, 'power': 2.0, 'capacity': 100, 'episode_length': 3, 'first_reset': 'train'},
         [1.0, 1.0, 1.0],
         [2.0/2, 4.0/2, 6.0/2]
     ),
     #  full, half then full charge for three steps
     (
-        {'initial_charge': 0.0, 'power': 2.0, 'capacity': 100, 'episode_length': 3},
+        {'initial_charge': 0.0, 'power': 2.0, 'capacity': 100, 'episode_length': 3, 'first_reset': 'train'},
         [1.0, 0.5, 1.0],
         [2.0/2, 3.0/2, 5.0/2]
     ),
     (
     #   discharge, charge, discharge
-        {'initial_charge': 0.0, 'power': 2.0, 'capacity': 100, 'episode_length': 3},
+        {'initial_charge': 0.0, 'power': 2.0, 'capacity': 100, 'episode_length': 3, 'first_reset': 'train'},
         [-1.0, 1.0, -1.0],
         [0.0, 2.0/2, 0.0]
     )
@@ -42,7 +42,7 @@ def test_one_battery_charging(cfg, actions, expected_charges):
     for action in actions:
         action = np.array(action).reshape(1, 1)
         next_obs, reward, done, info = env.step(action)
-        results['charge'].append(info['charge'])
+        results['charge'].append(info['final_charge'])
 
     assert done
     charges = np.squeeze(np.array(results['charge']))
@@ -93,9 +93,9 @@ def test_many_battery_step():
         action = np.array(action).reshape(len(test_cases), 1)
         next_obs, reward, done, info = env.step(action)
         print(env.charge, 'charge')
-        results['charge'].append(info['charge'])
+        results['charge'].append(info['final_charge'])
         #  1 for the charge variable added onto our 10 features
-        assert next_obs.shape == (len(test_cases), 10+1)
+        assert next_obs['features'].shape == (len(test_cases), 10+1)
 
     assert done.all()
     np.testing.assert_array_almost_equal(

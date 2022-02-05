@@ -15,10 +15,13 @@ hyp = {
     'n-episodes': 1,
     'test-every': 1,
     'n-tests': 1,
-    'size-scale': 1,
     'env': {
       'name': 'pendulum',
       'env_name': 'pendulum'
+    },
+    "network": {
+      "name": "dense",
+      "size_scale": 1
     },
     'run-name': 'test-system',
     'buffer': 'new'

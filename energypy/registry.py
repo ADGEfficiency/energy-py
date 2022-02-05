@@ -3,7 +3,7 @@ from energypy.agent.memory import Buffer
 from energypy.datasets import *
 from energypy.envs.battery import Battery
 from energypy.envs.gym_wrappers import GymWrapper
-
+from energypy.networks import dense, attention
 
 registry = {
     'lunar': GymWrapper,
@@ -12,8 +12,11 @@ registry = {
     'random-dataset': RandomDataset,
     'random-policy': RandomPolicy,
     'fixed-policy': FixedPolicy,
-    'nem-dataset': NEMDataset,
+    'nem-dataset-dense': NEMDataset,
+    'nem-dataset-attention': NEMDatasetAttention,
     'buffer': Buffer,
+    'attention': attention,
+    'dense': dense,
 }
 
 
