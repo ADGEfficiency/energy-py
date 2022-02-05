@@ -48,7 +48,7 @@ def save(
 
     if memory:
         # memory.save(buffer, path / 'buffer.pkl')
-        pass
+        memory.save(buffer, path / 'buffer')
 
     if rewards:
         rewards = dict(rewards)
@@ -106,7 +106,7 @@ def load_checkpoint(path, full=True):
     if full:
         #  catch a wierd error when we load old buffers
         try:
-            buffer = memory.load(path / 'buffer.pkl')
+            buffer = memory.load(path / 'buffer')
         except ModuleNotFoundError:
             print('failed to load buffer due to ModuleNotFoundError')
             buffer = None

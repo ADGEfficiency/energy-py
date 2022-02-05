@@ -80,3 +80,4 @@ def update(
     writer.scalar(tf.reduce_mean(log_prob), "policy-log-prob", "policy-updates")
 
     counters["policy-updates"] += 1
+    return loss

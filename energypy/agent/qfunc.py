@@ -134,3 +134,4 @@ def update(
         )
 
     counters["qfunc-updates"] += 1
+    return loss

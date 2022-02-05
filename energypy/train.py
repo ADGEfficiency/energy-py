@@ -18,7 +18,7 @@ def train_one_head_network(
     **kwargs
 ):
     st = utils.now()
-    qfunc.update(
+    qloss = qfunc.update(
         batch,
         actor,
         onlines,
@@ -32,7 +32,7 @@ def train_one_head_network(
     counters["q-func-update-seconds"] += utils.now() - st
 
     st = utils.now()
-    policy.update(
+    ploss = policy.update(
         batch, actor, onlines, targets, log_alpha, writer, optimizers["actor"], counters, hyp
     )
     counters["pol-func-update-seconds"] += utils.now() - st
@@ -46,3 +46,6 @@ def train_one_head_network(
     counters["alpha-update-seconds"] += utils.now() - st
     counters["train-seconds"] += utils.now() - st
     counters["train-steps"] += 1
+
+    return {'qfunc-loss': qloss, 'policy-loss': ploss}
+
