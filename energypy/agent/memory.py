@@ -1,6 +1,6 @@
+import json
 from pathlib import Path
-import pickle
-
+import joblib
 import numpy as np
 
 
@@ -24,21 +24,32 @@ def make(env, hyp):
 def save(buffer, path):
     path = Path(path)
     print(f'saving buffer to {path}')
-    path.parent.mkdir(exist_ok=True, parents=True)
-    with path.open('wb') as fi:
-        pickle.dump(buffer, fi)
+    path.mkdir(exist_ok=True, parents=True)
+    meta = {
+        'elements': buffer.elements,
+        'size': buffer.size,
+        'cursor_min': buffer.cursor_min,
+    }
+    (path / 'meta.json').write_text(json.dumps(meta))
+
+    for name, data in buffer.data.items():
+        np.save(path / f"{name}.npy", data)
 
 
 def load(path):
     path = Path(path)
     print(f'loading buffer from {path}')
-    with path.open('rb') as fi:
-        return pickle.load(fi)
+    meta = json.loads((path / 'meta.json').read_text())
+    buf = Buffer(**meta)
+    for name in buf.data.keys():
+        buf.data[name] = np.load(path / f"{name}.npy")
+    return buf
 
 
 class Buffer():
     """
-    Buffer has no concept of n_batteries - experience is all stored on a 'one battery' level
+    Buffer has no concept of n_batteries
+    - each sample of experience is all stored on a 'one battery' level
     """
     def __init__(
         self,

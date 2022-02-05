@@ -29,7 +29,7 @@ $ make test
 ```
 
 
-## Running experiments
+## Running Experiments
 
 `energypy` has a high level API to run a specific run of an experiment from a `JSON` config file.
 
