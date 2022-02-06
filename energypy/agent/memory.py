@@ -22,7 +22,7 @@ def make(env, hyp):
 
 def save(buffer, path):
     path = Path(path)
-    print(f'saving buffer to {path}')
+    print(f' saving buffer to {path}')
     path.mkdir(exist_ok=True, parents=True)
     meta = {
         'elements': buffer.elements,
@@ -38,7 +38,7 @@ def save(buffer, path):
 
 def load(path):
     path = Path(path)
-    print(f'loading buffer from {path}')
+    print(f' loading buffer from {path}')
     meta = json.loads((path / 'meta.json').read_text())
     buf = Buffer(**meta)
     for name in buf.data.keys():

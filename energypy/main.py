@@ -7,7 +7,7 @@ import time
 import click
 import numpy as np
 import tensorflow as tf
-from rich.progress import tracker
+from rich.progress import track
 
 from energypy import alpha, checkpoint, json_util, init
 from energypy import alpha, memory, policy, qfunc, random_policy, target, utils
@@ -87,7 +87,7 @@ def main(
         train_steps = len(train_rewards) * hyp.get('episode_length', 48)
 
         print(f'training \n step {counters["train-steps"]:6.0f}, {train_steps} steps')
-        for _ in tracker(range(train_steps)):
+        for _ in track(range(train_steps), description="Training..."):
             train(
                 buffer.sample(hyp['batch-size']),
                 nets['actor'],

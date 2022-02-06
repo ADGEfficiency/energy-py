@@ -166,7 +166,6 @@ def sample_test(
     test_done = False
     try:
         n_test_eps = len(env.dataset.episodes["test"])
-
     #  TODO - env without dataset
     except AttributeError:
         n_test_eps = hyp["n-tests"]
@@ -174,7 +173,7 @@ def sample_test(
     print(f" testing on {n_test_eps} episodes")
 
     with Progress() as progress:
-        task = progress.add_task("Running test episode...", total=total)
+        task = progress.add_task("Running test episode...", total=n_test_eps)
 
         while not test_done:
 

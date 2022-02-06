@@ -112,7 +112,7 @@ def stats(name, counter, counters, value):
 
 def print_counters(counters):
     print(
-        f'train: {counters["train-seconds"]} sec, sample: {counters["sample-seconds"]} sec'
+        f'train: {counters["train-seconds"]:2.1f} sec, sample: {counters["sample-seconds"]:2.1f} sec'
     )
 
 

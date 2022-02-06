@@ -46,8 +46,7 @@ def save(
             with opt_path.open('wb') as fi:
                 pickle.dump(wts, fi)
 
-    if memory:
-        # memory.save(buffer, path / 'buffer.pkl')
+    if buffer:
         memory.save(buffer, path / 'buffer')
 
     if rewards:
