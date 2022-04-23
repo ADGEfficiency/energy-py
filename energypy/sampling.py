@@ -2,6 +2,7 @@ import numpy as np
 
 from energypy import random_policy
 
+from rich import print
 from rich.progress import Progress
 from energypy import utils
 
@@ -83,7 +84,16 @@ def episode(env, buffer, actor, hyp, counters, mode, return_info=False):
         return episode_rewards
 
 
-def run_episode(env, buffer, actor, hyp, writers, counters, rewards, mode, logger=None):
+def run_episode(
+    env,
+    buffer,
+    actor,
+    hyp,
+    writers,
+    counters,
+    rewards,
+    mode,
+):
     st = utils.now()
     episode_rewards = episode(
         env,
@@ -94,6 +104,7 @@ def run_episode(env, buffer, actor, hyp, writers, counters, rewards, mode, logge
         mode,
     )
 
+    #  this should be a func
     for episode_reward in episode_rewards:
         episode_reward = float(episode_reward)
 
@@ -135,7 +146,6 @@ def sample_random(
     writers,
     counters,
     rewards,
-    logger,
 ):
     mode = "random"
     print(f" filling buffer with {buffer.size} samples")
@@ -143,7 +153,14 @@ def sample_random(
 
     while not buffer.full:
         run_episode(
-            env, buffer, policy, hyp, writers, counters, rewards, mode, logger=logger
+            env,
+            buffer,
+            policy,
+            hyp,
+            writers,
+            counters,
+            rewards,
+            mode,
         )
 
     assert len(buffer) == buffer.size
@@ -159,18 +176,18 @@ def sample_test(
     writers,
     counters,
     rewards,
-    logger,
 ):
     env.setup_test()
 
     test_results = []
     test_done = False
+
     try:
         n_test_eps = len(env.dataset.episodes["test"])
-    #  TODO - env without dataset
+
+    #  env without dataset - we fall back on hyperparameters
     except AttributeError:
         n_test_eps = hyp["n-tests"]
-
     print(f" testing on {n_test_eps} episodes")
 
     with Progress() as progress:
@@ -187,7 +204,6 @@ def sample_test(
                 counters,
                 rewards,
                 mode="test",
-                logger=logger,
             )
             test_results.extend(test_rewards)
             test_done = env.test_done
@@ -206,10 +222,9 @@ def sample_train(
     writers,
     counters,
     rewards,
-    logger,
 ):
     episode_rewards = run_episode(
-        env, buffer, actor, hyp, writers, counters, rewards, mode="train", logger=logger
+        env, buffer, actor, hyp, writers, counters, rewards, mode="train"
     )
     utils.stats("train", "train-episodes", counters, episode_rewards)
     return episode_rewards

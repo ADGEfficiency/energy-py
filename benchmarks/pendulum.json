@@ -15,7 +15,7 @@
     },
     "network": {
       "name": "dense",
-      "size_scale": 3
+      "scale": 3
     },
     "run-name": "benchmark"
 }

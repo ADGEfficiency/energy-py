@@ -1,4 +1,4 @@
-from energypy import utils, qfunc, policy, target, alpha
+from energypy import utils, qfunc, actor, target, alpha
 
 
 def train(*args, **kwargs):

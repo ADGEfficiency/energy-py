@@ -1,15 +1,15 @@
 from collections import defaultdict
 import tensorflow as tf
 
-from energypy import utils, memory, policy, qfunc, alpha, registry
+from energypy import utils, memory, actor, qfunc, alpha, registry
 
 
 def init_nets(env, hyp):
-    actor = policy.make(env, hyp)
+    act = actor.make(env, hyp)
     onlines, targets = qfunc.make(env, hyp)
     target_entropy, log_alpha = alpha.make(env, initial_value=hyp["initial-log-alpha"])
     return {
-        "actor": actor,
+        "actor": act,
         "online-1": onlines[0],
         "online-2": onlines[1],
         "target-1": targets[0],
@@ -43,9 +43,8 @@ def init_optimizers(hyp):
 def init_fresh(hyp):
     counters = defaultdict(int)
     paths = utils.get_paths(hyp)
-    transition_logger = utils.make_logger("transitions.data", paths["run"])
 
-    env = registry.make(**hyp["env"], logger=transition_logger)
+    env = registry.make(**hyp["env"])
     buffer = memory.make(env, hyp)
 
     nets = init_nets(env, hyp)
@@ -65,6 +64,5 @@ def init_fresh(hyp):
         "nets": nets,
         "writers": writers,
         "optimizers": optimizers,
-        "transition_logger": transition_logger,
         "rewards": rewards,
     }

@@ -18,7 +18,7 @@ def inverse_scale(action, low, high):
 
 
 class GymWrapper(AbstractEnv):
-    def __init__(self, env_name, logger=None):
+    def __init__(self, env_name):
         self.env_id = env_ids[env_name]
         self.env = gym.make(self.env_id)
         self.elements = (

@@ -1,3 +1,13 @@
+## 24-04-2022
+
+leave for now
+- rewards, writers and counters are all very similar
+- pydantic type for hyp
+
+run_episode with nets['actor']
+
+---
+
 # energy-py
 
 [![Build Status](https://travis-ci.org/ADGEfficiency/energy-py.svg?branch=master)](https://travis-ci.org/ADGEfficiency/energy-py)

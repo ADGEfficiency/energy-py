@@ -1,13 +1,14 @@
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
-from tensorflow.keras.layers import Flatten
 
-
-def dense(input_shape, outputs, size_scale=1, neurons=(64, 32)):
+def dense(
+    input_shape,
+    outputs,
+    size_scale=1,
+    neurons=(64, 32)
+):
     if isinstance(input_shape, tuple):
         inputs = keras.Input(shape=input_shape)
 
+    #  here creating from Inputs that already exist
     if isinstance(input_shape, list):
         in_obs = input_shape[0]
         in_act = input_shape[1]

@@ -1,4 +1,5 @@
 from collections import defaultdict
+from datetime import datetime
 import random
 from random import choice
 from time import sleep
@@ -8,9 +9,10 @@ import click
 import numpy as np
 import tensorflow as tf
 from rich.progress import track
+from rich import print
 
 from energypy import alpha, checkpoint, json_util, init
-from energypy import alpha, memory, policy, qfunc, random_policy, target, utils
+# from energypy import alpha, memory, actor, qfunc, random_policy, target, utils
 from energypy.sampling import sample_random, sample_test, sample_train
 from energypy.train import train
 
@@ -24,7 +26,6 @@ def main(
     nets,
     writers,
     optimizers,
-    transition_logger,
     rewards
 ):
     if 'seed' not in hyp.keys():
@@ -34,6 +35,7 @@ def main(
 
     json_util.save(hyp, paths['run'] / 'hyperparameters.json')
 
+    #  need tensorflow here - to run tensorboard
     if not buffer.full:
         sample_random(
             env,
@@ -42,7 +44,6 @@ def main(
             writers,
             counters,
             rewards,
-            transition_logger,
         )
         memory.save(buffer, paths['run'] / 'random.pkl')
         memory.save(buffer, paths['experiment'] / 'random.pkl')
@@ -58,7 +59,6 @@ def main(
                 writers,
                 counters,
                 rewards,
-                transition_logger
             )
 
             #  this is very slow - setting buffer=None
@@ -81,7 +81,6 @@ def main(
             writers,
             counters,
             rewards,
-            transition_logger
         )
 
         train_steps = len(train_rewards) * hyp.get('episode_length', 48)
@@ -110,7 +109,6 @@ def main(
             writers,
             counters,
             rewards,
-            transition_logger
         )
 
         checkpoint.save(
@@ -125,7 +123,6 @@ def main(
         )
 
 def make_run_name():
-    from datetime import datetime
     return datetime.utcnow().strptime('%Y-%m-%dT%H:%M:%S')
 
 
@@ -137,10 +134,8 @@ def make_run_name():
 @click.option("-c", "--checkpoint_path", nargs=1, default=None)
 def cli(experiment_json, run_name, buffer, seed, checkpoint_path):
 
-    print('cli')
-    print('------')
+    print('cli\n------')
     print(experiment_json, run_name, buffer)
-    print('')
 
     hyp = json_util.load(experiment_json)
     hyp['buffer'] = buffer
@@ -151,21 +146,19 @@ def cli(experiment_json, run_name, buffer, seed, checkpoint_path):
     if 'run-name' not in hyp.keys():
         hyp['run-name'] = make_run_name()
 
-    print('params')
-    print('------')
+    print('\nparams\n------')
     print(hyp)
-    print('')
     sleep(2)
 
     if checkpoint_path:
-        print(f'checkpointing from {checkpoint_path}')
-        print('')
-        main(**init.init_checkpoint(checkpoint_path))
+        print(f'\restarting from checkpoint: {checkpoint_path}')
+        expt = init.init_checkpoint(checkpoint_path)
 
     else:
-        print(f'starting so fresh, so clean')
-        print('')
-        main(**init.init_fresh(hyp))
+        print(f'\nstarting so fresh, so clean')
+        expt = init.init_fresh(hyp)
+
+    main(**expt)
 
 
 if __name__ == '__main__':
