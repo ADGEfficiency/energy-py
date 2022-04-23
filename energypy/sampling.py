@@ -27,6 +27,7 @@ def episode(env, buffer, actor, hyp, counters, mode, return_info=False):
 
         if hyp['network']['name'] == 'dense':
             act, _, deterministic_action = actor((obs["features"]))
+
         if hyp['network']['name'] == 'attention':
             act, _, deterministic_action = actor((obs["features"], obs["mask"]))
 

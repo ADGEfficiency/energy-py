@@ -8,7 +8,7 @@ from energypy.envs.base import AbstractEnv
 
 #  key=name, value=id
 env_ids = {
-    'pendulum': 'Pendulum-v0',
+    'pendulum': 'Pendulum-v1',
     'lunar': 'LunarLanderContinuous-v2'
 }
 
