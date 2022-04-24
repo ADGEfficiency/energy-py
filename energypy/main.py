@@ -11,8 +11,7 @@ import tensorflow as tf
 from rich.progress import track
 from rich import print
 
-from energypy import alpha, checkpoint, json_util, init
-# from energypy import alpha, memory, actor, qfunc, random_policy, target, utils
+from energypy import alpha, checkpoint, json_util, init, utils, memory
 from energypy.sampling import sample_random, sample_test, sample_train
 from energypy.train import train
 
@@ -32,7 +31,6 @@ def main(
         hyp['seed'] = choice(range(int(1e4)))
 
     utils.set_seeds(hyp['seed'])
-
     json_util.save(hyp, paths['run'] / 'hyperparameters.json')
 
     #  need tensorflow here - to run tensorboard

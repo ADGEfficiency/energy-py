@@ -16,7 +16,7 @@ registry = {
     'nem-dataset-attention': NEMDatasetAttention,
     'buffer': Buffer,
     'attention': attention,
-    'dense': dense,
+    # 'dense': Dense,
 }
 
 

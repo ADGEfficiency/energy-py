@@ -1,12 +1,13 @@
+from math import prod
+
 import numpy as np
+from torch import nn
+from torch.distributions import Normal
+import torch
 
 import energypy
-from energypy.networks import dense, attention
 from energypy.utils import minimum_target
 
-import torch
-from torch import nn
-from math import prod
 
 #  clip as per stable baselines
 log_stdev_low, log_stdev_high = -20, 2
@@ -21,9 +22,7 @@ class DensePolicy(nn.Module):
         scale: int = 1,
     ):
         super(DensePolicy, self).__init__()
-
         n_inputs = prod(input_shape)
-
         self.flatten = nn.Flatten()
         self.net = nn.Sequential(
             nn.Linear(n_inputs, 32 * scale),
@@ -34,13 +33,13 @@ class DensePolicy(nn.Module):
         )
 
     def forward(self, x):
+        x = torch.from_numpy(x)
         x = self.flatten(x)
         dense = self.net(x)
         mean, log_stdev = torch.split(dense, 1, 1)
         log_stdev = torch.clamp(log_stdev, min=log_stdev_low, max=log_stdev_high)
         stdev = torch.exp(log_stdev)
 
-        from torch.distributions import Normal
         normal = Normal(mean, stdev)
 
         #  unsquashed
@@ -58,22 +57,15 @@ class DensePolicy(nn.Module):
 
 
 
-def make(env, hyp):
-    """make a policy"""
+def make(env, hyp, device='cpu'):
+    """makes a Dense policy - always"""
     obs_shape = env.observation_space.shape
     n_actions = np.zeros(env.action_space.shape).size
-
-    #  TODO
-    # net = energypy.make(
-    #     **hyp["network"],
-    #     input_shape=obs_shape,
-    #     n_outputs=n_actions * 2
-    # )
-    net = DensePolicy(
+    return DensePolicy(
         input_shape=obs_shape,
         n_outputs=n_actions * 2
-    )
-    return net
+    ).to(device)
+
 
 def update(
     batch,

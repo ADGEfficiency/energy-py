@@ -27,7 +27,11 @@ def episode(env, buffer, actor, hyp, counters, mode, return_info=False):
         #  obs is a dict {'features':, 'mask':}
 
         if hyp['network']['name'] == 'dense':
-            act, _, deterministic_action = actor((obs["features"]))
+
+            #  think I need to make obs a tensor here
+            act, _, deterministic_action = actor(obs["features"])
+
+            #  sometime returning np, sometimes returning a torch tensor
 
         if hyp['network']['name'] == 'attention':
             act, _, deterministic_action = actor((obs["features"], obs["mask"]))
@@ -36,7 +40,7 @@ def episode(env, buffer, actor, hyp, counters, mode, return_info=False):
             act = deterministic_action
 
         #  next_obs is a dict {'next_obs', 'reward', 'done', 'next_obs_mask'}
-        next_obs, reward, done, info = env.step(np.array(act))
+        next_obs, reward, done, info = env.step(act)
         infos.append(info)
 
         #  want to save one observation per battery - buffer has no concept of batteries

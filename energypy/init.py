@@ -2,11 +2,22 @@ from collections import defaultdict
 import tensorflow as tf
 
 from energypy import utils, memory, actor, qfunc, alpha, registry
+import torch
 
 
 def init_nets(env, hyp):
     act = actor.make(env, hyp)
+
+    #  turn into test
+    # x = torch.from_numpy(env.observation_space.sample().reshape(1, -1))
+    # act(x)
+
     onlines, targets = qfunc.make(env, hyp)
+    #  turn into test
+    # obs = torch.from_numpy(env.observation_space.sample().reshape(1, -1))
+    # act = torch.from_numpy(env.action_space.sample().reshape(1, -1))
+    # onlines[0](obs, act)
+
     target_entropy, log_alpha = alpha.make(env, initial_value=hyp["initial-log-alpha"])
     return {
         "actor": act,

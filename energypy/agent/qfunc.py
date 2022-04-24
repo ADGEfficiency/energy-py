@@ -1,25 +1,68 @@
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras.layers import Flatten
+from math import prod
+
+import numpy as np
+from torch import nn
+from torch.distributions import Normal
+import torch
 
 import energypy
-from energypy.agent.target import update_target_network
-from energypy.networks import dense, attention
 from energypy.utils import minimum_target
+from energypy.agent.target import update_target_network
+
+
+class DenseQFunc(nn.Module):
+    def __init__(
+        self,
+        input_shape: tuple,
+        n_outputs: int,
+        scale: int = 1,
+    ):
+        super(DenseQFunc, self).__init__()
+        n_inputs = prod(input_shape)
+        self.flatten = nn.Flatten()
+        self.net = nn.Sequential(
+            nn.Linear(n_inputs, 32 * scale),
+            nn.ReLU(),
+            nn.Linear(32 * scale, 64 * scale),
+            nn.ReLU(),
+            nn.Linear(64 * scale, n_outputs),
+        )
+
+    def forward(self, obs, act):
+        obs = torch.from_numpy(obs)
+        act = torch.from_numpy(act)
+        obs_act = torch.cat(
+            [self.flatten(obs), self.flatten(act)],
+            axis=1
+        )
+        dense = self.net(obs_act)
+        return dense
+
+
+def update_target_network(online, target, rho):
+    for on, ta in zip(online.parameters(), target.parameters()):
+        ta.data.copy_(rho * ta.data + on.data * (1.0 - rho))
 
 
 def make(env, hyp):
     """makes the two online & two targets"""
-    obs_shape = env.observation_space.shape
-    n_actions = env.action_space.shape
 
-    q1 = make_qfunc(obs_shape, n_actions, "q1", hyp)
-    q1_target = make_qfunc(obs_shape, n_actions, "q1-target", hyp)
-    q2 = make_qfunc(obs_shape, n_actions, "q2", hyp)
-    q2_target = make_qfunc(obs_shape, n_actions, "q2-target", hyp)
+    n_actions = sum(env.action_space.shape)
+
+    #  figure out the correct shap
+    obs = env.observation_space.sample()
+    act = env.action_space.sample()
+    obs_act = np.concatenate([obs, act])
+
+    q1 = DenseQFunc(obs_act.shape, n_actions)
+    q1_target = DenseQFunc(obs_act.shape, n_actions)
+
+    q2 = DenseQFunc(obs_act.shape, n_actions)
+    q2_target = DenseQFunc(obs_act.shape, n_actions)
 
     update_target_network(online=q1, target=q1_target, rho=0.0)
     update_target_network(online=q2, target=q2_target, rho=0.0)
+
     onlines = [q1, q2]
     targets = [q1_target, q2_target]
     return onlines, targets
