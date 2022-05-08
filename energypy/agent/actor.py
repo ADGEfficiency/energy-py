@@ -32,7 +32,7 @@ class DensePolicy(nn.Module):
             nn.Linear(64 * scale, n_outputs),
         )
 
-    def forward(self, x):
+    def forward(self, x, mask):
         x = torch.from_numpy(x)
         x = self.flatten(x)
         dense = self.net(x)

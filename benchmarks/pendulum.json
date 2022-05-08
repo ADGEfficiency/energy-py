@@ -2,7 +2,7 @@
     "initial-log-alpha": 0.0,
     "gamma": 0.99,
     "rho": 0.995,
-    "buffer-size": 100000,
+    "buffer-size": 10000,
     "reward-scale": 5,
     "lr": 3e-4,
     "batch-size": 1024,

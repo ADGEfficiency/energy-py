@@ -58,6 +58,7 @@ def main(
                 counters,
                 rewards,
             )
+            breakpoint()
 
             #  this is very slow - setting buffer=None
             checkpoint.save(

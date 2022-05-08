@@ -34,8 +34,9 @@ class GymWrapper(AbstractEnv):
         self.observation_space = self.env.observation_space
         self.action_space = self.env.action_space
 
-    def setup_test(self):
-        self.test_done = True
+    def setup_test(self, n_test_eps):
+        self.test_done = False
+        self.n_test_eps = n_test_eps
 
     def step(self, action):
         #  expect a scaled action here
@@ -50,7 +51,12 @@ class GymWrapper(AbstractEnv):
             "mask": np.ones((1, *self.env.observation_space.shape))
         }, reward, done, {}
 
-    def reset(self, mode=None):
+    def reset(self, mode='train'):
+        if mode == 'test':
+            self.n_test_eps -= 1
+            if self.n_test_eps == 0:
+                self.test_done = True
+
         return {
             "features": self.env.reset().reshape(1, *self.env.observation_space.shape),
             "mask": np.ones((1, *self.env.observation_space.shape))

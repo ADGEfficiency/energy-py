@@ -26,15 +26,15 @@ def episode(env, buffer, actor, hyp, counters, mode, return_info=False):
     while not done:
         #  obs is a dict {'features':, 'mask':}
 
-        if hyp['network']['name'] == 'dense':
+        #  think I need to make obs a tensor here
+        #  sometime returning np, sometimes returning a torch tensor
+        #  I guess I really need my Actor to wrap around pytorch net
+        act, _, deterministic_action = actor(obs["features"], obs["mask"])
 
-            #  think I need to make obs a tensor here
-            act, _, deterministic_action = actor(obs["features"])
-
-            #  sometime returning np, sometimes returning a torch tensor
-
-        if hyp['network']['name'] == 'attention':
-            act, _, deterministic_action = actor((obs["features"], obs["mask"]))
+        #  hack because our pytorch
+        if not isinstance(act, np.ndarray):
+            act = act.detach().numpy()
+            deterministic_action = deterministic_action.detach().numpy()
 
         if mode == "test":
             act = deterministic_action
@@ -181,24 +181,26 @@ def sample_test(
     counters,
     rewards,
 ):
-    env.setup_test()
+    env.setup_test(hyp['n-tests'])
+
+    n_test_eps = env.n_test_eps
+
+    #  this will need updating for the battery env stuff
+    # try:
+    #     n_test_eps = len(env.dataset.episodes["test"])
+
+    # #  env without dataset - we fall back on hyperparameters
+    # except AttributeError:
+    #     n_test_eps = hyp["n-tests"]
+
+    print(f" testing on {n_test_eps} episodes")
 
     test_results = []
     test_done = False
-
-    try:
-        n_test_eps = len(env.dataset.episodes["test"])
-
-    #  env without dataset - we fall back on hyperparameters
-    except AttributeError:
-        n_test_eps = hyp["n-tests"]
-    print(f" testing on {n_test_eps} episodes")
-
     with Progress() as progress:
         task = progress.add_task("Running test episode...", total=n_test_eps)
 
         while not test_done:
-
             test_rewards = run_episode(
                 env,
                 buffer,
@@ -211,7 +213,6 @@ def sample_test(
             )
             test_results.extend(test_rewards)
             test_done = env.test_done
-
             progress.update(task, advance=len(test_results))
 
     utils.stats("test", "test-episodes", counters, test_rewards)
