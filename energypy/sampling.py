@@ -182,8 +182,8 @@ def sample_test(
     rewards,
 ):
     env.setup_test(hyp['n-tests'])
-
     n_test_eps = env.n_test_eps
+    print(f" testing on {n_test_eps} episodes")
 
     #  this will need updating for the battery env stuff
     # try:
@@ -193,10 +193,8 @@ def sample_test(
     # except AttributeError:
     #     n_test_eps = hyp["n-tests"]
 
-    print(f" testing on {n_test_eps} episodes")
-
     test_results = []
-    test_done = False
+    test_done = env.test_done
     with Progress() as progress:
         task = progress.add_task("Running test episode...", total=n_test_eps)
 

@@ -40,8 +40,24 @@ class DenseQFunc(nn.Module):
 
 
 def update_target_network(online, target, rho):
-    for on, ta in zip(online.parameters(), target.parameters()):
+    for on, ta in zip(online.net.parameters(), target.net.parameters()):
         ta.data.copy_(rho * ta.data + on.data * (1.0 - rho))
+
+class QFunc:
+    def __init__(
+        self,
+        input_shape: tuple,
+        n_outputs: int,
+        scale: int = 1,
+        device='cpu'
+    ):
+        self.net = DenseQFunc(input_shape, n_outputs, scale).to(device)
+
+    def __call__(self, *args, **kwargs):
+        return self.net(*args, **kwargs)
+
+    def save_weights(self, path):
+        torch.save(self.net.state_dict(), path.with_suffix('.pth'))
 
 
 def make(env, hyp):
@@ -54,11 +70,11 @@ def make(env, hyp):
     act = env.action_space.sample()
     obs_act = np.concatenate([obs, act])
 
-    q1 = DenseQFunc(obs_act.shape, n_actions)
-    q1_target = DenseQFunc(obs_act.shape, n_actions)
+    q1 = QFunc(obs_act.shape, n_actions)
+    q1_target = QFunc(obs_act.shape, n_actions)
 
-    q2 = DenseQFunc(obs_act.shape, n_actions)
-    q2_target = DenseQFunc(obs_act.shape, n_actions)
+    q2 = QFunc(obs_act.shape, n_actions)
+    q2_target = QFunc(obs_act.shape, n_actions)
 
     update_target_network(online=q1, target=q1_target, rho=0.0)
     update_target_network(online=q2, target=q2_target, rho=0.0)
@@ -68,60 +84,60 @@ def make(env, hyp):
     return onlines, targets
 
 
-def make_qfunc(obs_shape, n_actions, name, hyp):
-    """makes a single qfunc"""
+# def make_qfunc(obs_shape, n_actions, name, hyp):
+#     """makes a single qfunc"""
 
-    if hyp['network']['name'] == 'dense':
+#     if hyp['network']['name'] == 'dense':
 
-        #  observation head - obs_head is a dense layer
-        in_obs, obs_head = energypy.make(
-            **hyp["network"], input_shape=obs_shape, outputs=32
-        )
+#         #  observation head - obs_head is a dense layer
+#         in_obs, obs_head = energypy.make(
+#             **hyp["network"], input_shape=obs_shape, outputs=32
+#         )
 
-        #  action connects into obs_head output, then through dense net to output
-        in_act = keras.Input(shape=n_actions)
-        _, net = energypy.make(
-            name="dense",
-            size_scale=hyp["network"]["size_scale"],
-            #  these will be concated together
-            input_shape=[obs_head, in_act],
-            outputs=1,
-            neurons=(32, 16),
-        )
-        return keras.Model(inputs=[in_obs, in_act], outputs=net, name=name)
+#         #  action connects into obs_head output, then through dense net to output
+#         in_act = keras.Input(shape=n_actions)
+#         _, net = energypy.make(
+#             name="dense",
+#             size_scale=hyp["network"]["size_scale"],
+#             #  these will be concated together
+#             input_shape=[obs_head, in_act],
+#             outputs=1,
+#             neurons=(32, 16),
+#         )
+#         return keras.Model(inputs=[in_obs, in_act], outputs=net, name=name)
 
-    if hyp['network']['name'] == 'attention':
+#     if hyp['network']['name'] == 'attention':
 
-        #  observation head (with mask) - obs_head is a dense layer
-        (in_obs, in_mask), obs_head = energypy.make(
-            **hyp["network"], input_shape=obs_shape, outputs=32
-        )
+#         #  observation head (with mask) - obs_head is a dense layer
+#         (in_obs, in_mask), obs_head = energypy.make(
+#             **hyp["network"], input_shape=obs_shape, outputs=32
+#         )
 
-        #  action connects into obs_head output, then through dense net to output
-        in_act = keras.Input(shape=n_actions)
-        _, net = energypy.make(
-            name="dense",
-            size_scale=hyp["network"]["size_scale"],
-            #  these will be concated together
-            input_shape=[obs_head, in_act],
-            outputs=1,
-            neurons=(32, 16),
-        )
+#         #  action connects into obs_head output, then through dense net to output
+#         in_act = keras.Input(shape=n_actions)
+#         _, net = energypy.make(
+#             name="dense",
+#             size_scale=hyp["network"]["size_scale"],
+#             #  these will be concated together
+#             input_shape=[obs_head, in_act],
+#             outputs=1,
+#             neurons=(32, 16),
+#         )
 
-        # if len(in_obs.shape) == 2:
-        #     obs = Flatten()(in_obs)
-        #     act = Flatten()(in_act)
-        #     inputs = tf.concat([obs, act], axis=1)
+#         # if len(in_obs.shape) == 2:
+#         #     obs = Flatten()(in_obs)
+#         #     act = Flatten()(in_act)
+#         #     inputs = tf.concat([obs, act], axis=1)
 
-        # else:
-        #     assert len(in_obs.shape) == 3
-        #     act = tf.expand_dims(in_act, 2)
-        #     inputs = tf.concat([in_obs, act], axis=1)
+#         # else:
+#         #     assert len(in_obs.shape) == 3
+#         #     act = tf.expand_dims(in_act, 2)
+#         #     inputs = tf.concat([in_obs, act], axis=1)
 
-        # inp_net, net = energypy.make(**hyp["network"], inputs=inputs, outputs=1)
-        # mask = inp_net[1]
+#         # inp_net, net = energypy.make(**hyp["network"], inputs=inputs, outputs=1)
+#         # mask = inp_net[1]
 
-        return keras.Model(inputs=[in_obs, in_act, in_mask], outputs=net, name=name)
+#         return keras.Model(inputs=[in_obs, in_act, in_mask], outputs=net, name=name)
 
 
 def update(

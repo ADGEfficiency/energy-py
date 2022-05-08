@@ -56,15 +56,32 @@ class DensePolicy(nn.Module):
         return action, log_prob, deterministic_action
 
 
+class Actor:
+    def __init__(
+        self,
+        input_shape: tuple,
+        n_outputs: int,
+        scale: int = 1,
+        device='cpu'
+    ):
+        self.net = DensePolicy(input_shape, n_outputs, scale).to(device)
+
+    def __call__(self, *args, **kwargs):
+        return self.net(*args, **kwargs)
+
+    def save_weights(self, path):
+        torch.save(self.net.state_dict(), path.with_suffix('.pth'))
+
 
 def make(env, hyp, device='cpu'):
-    """makes a Dense policy - always"""
+    """makes an Actor - always with DensePolicy"""
     obs_shape = env.observation_space.shape
     n_actions = np.zeros(env.action_space.shape).size
-    return DensePolicy(
+    return Actor(
         input_shape=obs_shape,
-        n_outputs=n_actions * 2
-    ).to(device)
+        n_outputs=n_actions * 2,
+        device=device
+    )
 
 
 def update(
