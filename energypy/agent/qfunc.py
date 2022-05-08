@@ -28,9 +28,9 @@ class DenseQFunc(nn.Module):
             nn.Linear(64 * scale, n_outputs),
         )
 
-    def forward(self, obs, act):
+    def forward(self, obs, act, mask=None):
         obs = torch.from_numpy(obs)
-        act = torch.from_numpy(act)
+        # act = torch.from_numpy(act)
         obs_act = torch.cat(
             [self.flatten(obs), self.flatten(act)],
             axis=1
@@ -53,8 +53,12 @@ class QFunc:
     ):
         self.net = DenseQFunc(input_shape, n_outputs, scale).to(device)
 
-    def __call__(self, *args, **kwargs):
-        return self.net(*args, **kwargs)
+    def __call__(self, *args, return_numpy=True, **kwargs):
+        tensor = self.net(*args, **kwargs)
+        if return_numpy:
+            return tensor.detach().numpy()
+        else:
+            return tensor
 
     def save_weights(self, path):
         torch.save(self.net.state_dict(), path.with_suffix('.pth'))
@@ -62,7 +66,6 @@ class QFunc:
 
 def make(env, hyp):
     """makes the two online & two targets"""
-
     n_actions = sum(env.action_space.shape)
 
     #  figure out the correct shap
@@ -144,7 +147,7 @@ def update(
     batch, actor, onlines, targets, log_alpha, writer, optimizers, counters, hyp
 ):
     if hyp['network']['name'] == 'dense':
-        next_state_act, log_prob, _ = actor(batch["next_observation"])
+        next_state_act, log_prob, _ = actor(batch["next_observation"], return_numpy=False)
         next_state_target = minimum_target(
             (batch["next_observation"],
             next_state_act),
@@ -163,25 +166,29 @@ def update(
             targets=targets,
         )
 
-    al = tf.exp(log_alpha)
+    al = torch.exp(log_alpha)
     ga = hyp["gamma"]
+
+    batch['reward'] = torch.from_numpy(batch['reward'])
+    batch['done'] = torch.from_numpy(batch['done'].astype(np.int))
+
     target = batch["reward"] + ga * (1 - batch["done"]) * (
         next_state_target - al * log_prob
     )
 
-    writer.scalar(tf.reduce_mean(target), "qfunc-target", "qfunc-updates")
+    writer.scalar(torch.mean(target).detach().numpy(), "qfunc-target", "qfunc-updates")
 
     for onl, optimizer in zip(onlines, optimizers):
-        with tf.GradientTape() as tape:
-            if hyp['network']['name'] == 'dense':
-                q_value = onl(
-                    [batch["observation"], batch["action"]]
-                )
-            if hyp['network']['name'] == 'attention':
-                q_value = onl(
-                    [batch["observation"], batch["action"], batch["observation_mask"]]
-                )
-            loss = tf.keras.losses.MSE(q_value, target)
+        q_value = onl(
+            batch["observation"], batch["action"], batch["observation_mask"]
+        )
+        loss = nn.MSELoss()
+        error = loss(q_value, target)
+        error.backward()
+
+        # where to clip gradients TODO
+
+
 
         grads = tape.gradient(loss, onl.trainable_variables)
         grads, _ = tf.clip_by_global_norm(grads, 5.0)

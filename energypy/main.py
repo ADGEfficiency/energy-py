@@ -58,9 +58,8 @@ def main(
                 counters,
                 rewards,
             )
-            breakpoint()
 
-            #  this is very slow - setting buffer=None
+            #  this is very slow - setting buffer=None will speed it up a lot
             checkpoint.save(
                 hyp,
                 nets,

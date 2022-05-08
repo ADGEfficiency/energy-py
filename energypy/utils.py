@@ -1,3 +1,4 @@
+import torch
 import json
 import logging
 import os
@@ -26,9 +27,12 @@ def last_100_episode_rewards(rewards):
     return sum(last) / len(last)
 
 
+#  I guess this is for attention?
 # def minimum_target(state, action, mask, targets):
+
+#  TODO unit test this - I've changed it to get it working - not tested (easy to test tho)
 def minimum_target(net_inputs, targets):
-    return tf.reduce_min([t(net_inputs) for t in targets], axis=0)
+    return torch.min(*[t(return_numpy=False, *net_inputs) for t in targets])
 
 
 def get_latest_run(experiment):

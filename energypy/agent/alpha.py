@@ -1,14 +1,26 @@
 import numpy as np
 import tensorflow as tf
+import torch
 
+
+# def make(env, initial_value):
+#     target_entropy = -np.product(env.action_space.shape)
+
+#     log_alpha = tf.Variable(
+#         initial_value, trainable=True, name="log-alpha", dtype="float32"
+#     )
+#     return target_entropy, log_alpha
 
 def make(env, initial_value):
     target_entropy = -np.product(env.action_space.shape)
-
-    log_alpha = tf.Variable(
-        initial_value, trainable=True, name="log-alpha", dtype="float32"
+    log_alpha = torch.tensor(
+        initial_value,
+        requires_grad=True,
+        dtype=torch.float32
     )
     return target_entropy, log_alpha
+
+# x.backward(torch.tensor(12.4)) - for training later - https://stackoverflow.com/questions/59800247/pytorch-equivalent-of-tf-variable
 
 
 def update(batch, actor, log_alpha, hyp, optimizer, counters, writer):

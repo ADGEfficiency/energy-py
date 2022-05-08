@@ -32,7 +32,7 @@ class DensePolicy(nn.Module):
             nn.Linear(64 * scale, n_outputs),
         )
 
-    def forward(self, x, mask):
+    def forward(self, x, mask=None):
         x = torch.from_numpy(x)
         x = self.flatten(x)
         dense = self.net(x)
@@ -66,8 +66,12 @@ class Actor:
     ):
         self.net = DensePolicy(input_shape, n_outputs, scale).to(device)
 
-    def __call__(self, *args, **kwargs):
-        return self.net(*args, **kwargs)
+    def __call__(self, *args, return_numpy=True, **kwargs):
+        tensors = self.net(*args, **kwargs)
+        if return_numpy:
+            return [tensor.detach().numpy() for tensor in tensors]
+        else:
+            return tensors
 
     def save_weights(self, path):
         torch.save(self.net.state_dict(), path.with_suffix('.pth'))

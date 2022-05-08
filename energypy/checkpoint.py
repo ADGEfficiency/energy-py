@@ -36,7 +36,7 @@ def save(
             net.save_weights(path / f'{name}.h5')
 
     #  save alpha!
-    log_alpha = nets['alpha'].numpy()
+    log_alpha = nets['alpha'].detach().numpy()
     np.save(path / 'alpha.npy', log_alpha)
 
     for name, optimizer in optimizers.items():
