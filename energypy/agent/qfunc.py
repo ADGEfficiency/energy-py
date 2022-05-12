@@ -29,8 +29,13 @@ class DenseQFunc(nn.Module):
         )
 
     def forward(self, obs, act, mask=None):
-        obs = torch.from_numpy(obs)
-        # act = torch.from_numpy(act)
+
+        if isinstance(obs, np.ndarray):
+            obs = torch.from_numpy(obs)
+
+        if isinstance(act, np.ndarray):
+            act = torch.from_numpy(act)
+
         obs_act = torch.cat(
             [self.flatten(obs), self.flatten(act)],
             axis=1
@@ -43,15 +48,20 @@ def update_target_network(online, target, rho):
     for on, ta in zip(online.net.parameters(), target.net.parameters()):
         ta.data.copy_(rho * ta.data + on.data * (1.0 - rho))
 
+
 class QFunc:
     def __init__(
         self,
+        name,
         input_shape: tuple,
         n_outputs: int,
         scale: int = 1,
-        device='cpu'
+        device='cpu',
     ):
+        self.name = name
         self.net = DenseQFunc(input_shape, n_outputs, scale).to(device)
+        self.optimizer = torch.optim.SGD(self.net.parameters(), lr=1e-3)
+        self.loss = nn.MSELoss()
 
     def __call__(self, *args, return_numpy=True, **kwargs):
         tensor = self.net(*args, **kwargs)
@@ -73,11 +83,11 @@ def make(env, hyp):
     act = env.action_space.sample()
     obs_act = np.concatenate([obs, act])
 
-    q1 = QFunc(obs_act.shape, n_actions)
-    q1_target = QFunc(obs_act.shape, n_actions)
+    q1 = QFunc('online-1', obs_act.shape, n_actions)
+    q1_target = QFunc('target-1', obs_act.shape, n_actions)
 
-    q2 = QFunc(obs_act.shape, n_actions)
-    q2_target = QFunc(obs_act.shape, n_actions)
+    q2 = QFunc('online-2', obs_act.shape, n_actions)
+    q2_target = QFunc('target-2', obs_act.shape, n_actions)
 
     update_target_network(online=q1, target=q1_target, rho=0.0)
     update_target_network(online=q2, target=q2_target, rho=0.0)
@@ -144,10 +154,12 @@ def make(env, hyp):
 
 
 def update(
-    batch, actor, onlines, targets, log_alpha, writer, optimizers, counters, hyp
+    batch, policy, onlines, targets, log_alpha, writer, optimizers, counters, hyp
 ):
+
+    #  i think we can get rid of this and just always pass masks
     if hyp['network']['name'] == 'dense':
-        next_state_act, log_prob, _ = actor(batch["next_observation"], return_numpy=False)
+        next_state_act, log_prob, _ = policy(batch["next_observation"], return_numpy=False)
         next_state_target = minimum_target(
             (batch["next_observation"],
             next_state_act),
@@ -155,7 +167,7 @@ def update(
         )
 
     if hyp['network']['name'] == 'attention':
-        next_state_act, log_prob, _ = actor(
+        next_state_act, log_prob, _ = policy(
             (batch["next_observation"], batch["next_observation_mask"])
         )
 
@@ -170,34 +182,43 @@ def update(
     ga = hyp["gamma"]
 
     batch['reward'] = torch.from_numpy(batch['reward'])
-    batch['done'] = torch.from_numpy(batch['done'].astype(np.int))
+    batch['done'] = torch.from_numpy(batch['done'].astype(np.int32))
 
+    #  these are all torch tensors now
     target = batch["reward"] + ga * (1 - batch["done"]) * (
         next_state_target - al * log_prob
     )
-
     writer.scalar(torch.mean(target).detach().numpy(), "qfunc-target", "qfunc-updates")
 
-    for onl, optimizer in zip(onlines, optimizers):
+    total_loss = 0
+    for onl in onlines:
+        print(f"training {onl.name} q func")
+        onl.optimizer.zero_grad()
+
         q_value = onl(
-            batch["observation"], batch["action"], batch["observation_mask"]
+            batch["observation"], batch["action"], batch["observation_mask"], return_numpy=False
         )
-        loss = nn.MSELoss()
-        error = loss(q_value, target)
-        error.backward()
+        loss = onl.loss(q_value, target)
+        total_loss += loss
 
-        # where to clip gradients TODO
+        # where to clip gradients TODO ???
+        print(f"{onl.name} loss: {loss}")
 
-
-
-        grads = tape.gradient(loss, onl.trainable_variables)
-        grads, _ = tf.clip_by_global_norm(grads, 5.0)
-        optimizer.apply_gradients(zip(grads, onl.trainable_variables))
-
-        writer.scalar(tf.reduce_mean(loss), f"online-{onl.name}-loss", "qfunc-updates")
+        writer.scalar(loss.detach().numpy(), f"online-{onl.name}-loss", "qfunc-updates")
         writer.scalar(
-            tf.reduce_mean(q_value), f"online-{onl.name}-value", "qfunc-updates"
+            q_value.detach().numpy().mean(), f"online-{onl.name}-value", "qfunc-updates"
         )
+
+    #  https://www.pythonfixing.com/2021/12/fixed-calling-backward-function-for-two.html
+
+    #  i have NO IDEA if this is correct
+    #  the summing of losses together is a bit :/
+    #  I'm hoping that pytorch is clever enough to only put each portion of the loss onto
+    #  the correct qfunc!
+
+    total_loss.backward()
+    [onl.optimizer.step() for onl in onlines]
 
     counters["qfunc-updates"] += 1
-    return loss
+
+    return total_loss

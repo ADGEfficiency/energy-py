@@ -65,6 +65,8 @@ class Actor:
         device='cpu'
     ):
         self.net = DensePolicy(input_shape, n_outputs, scale).to(device)
+        self.optimizer = torch.optim.SGD(self.net.parameters(), lr=1e-3)
+        self.loss = nn.MSELoss()
 
     def __call__(self, *args, return_numpy=True, **kwargs):
         tensors = self.net(*args, **kwargs)
@@ -90,7 +92,7 @@ def make(env, hyp, device='cpu'):
 
 def update(
     batch,
-    actor,
+    policy,
     onlines,
     targets,
     log_alpha,
@@ -99,38 +101,25 @@ def update(
     counters,
     hyp
 ):
-    al = tf.exp(log_alpha)
-    with tf.GradientTape() as tape:
+    al = torch.exp(log_alpha)
 
-        if hyp['network']['name'] == 'dense':
-            state_act, log_prob, _ = actor(batch["observation"])
-            policy_target = minimum_target(
-                (batch["observation"], state_act), targets
-            )
-        if hyp['network']['name'] == 'attention':
-            state_act, log_prob, _ = actor(
-                (batch["observation"], batch["observation_mask"])
-            )
-            policy_target = minimum_target(
-                (batch["observation"], state_act, batch["observation_mask"]), targets
-            )
+    state_act, log_prob, _ = policy(
+        batch["observation"], batch["observation_mask"], return_numpy=False
+    )
+    policy_target = minimum_target(
+        (batch["observation"], state_act, batch["observation_mask"]), targets
+    )
+    loss = torch.mean(al * log_prob - policy_target)
 
-        loss = tf.reduce_mean(al * log_prob - policy_target)
+    #  we backproppin' boppin'
+    policy.optimizer.zero_grad()
+    loss.backward()
+    policy.optimizer.step()
 
-    grads = tape.gradient(loss, actor.trainable_variables)
-    grads, _ = tf.clip_by_global_norm(grads, 5.0)
-    optimizer.apply_gradients(zip(grads, actor.trainable_variables))
-
-    writer.scalar(tf.reduce_mean(policy_target), "policy-target", "policy-updates")
-    writer.scalar(tf.reduce_mean(loss), "policy-loss", "policy-updates")
-    writer.scalar(tf.reduce_mean(log_prob), "policy-log-prob", "policy-updates")
+    #  should handle this in writer.scalar method
+    writer.scalar(torch.mean(policy_target).detach().numpy(), "policy-target", "policy-updates")
+    writer.scalar(loss.detach().numpy(), "policy-loss", "policy-updates")
+    writer.scalar(torch.mean(log_prob).detach().numpy(), "policy-log-prob", "policy-updates")
 
     counters["policy-updates"] += 1
     return loss
-
-
-if __name__ == '__main__':
-    #  here just experimenting
-    x = env.observation_space.sample().reshape(1, -1)
-    x = torch.from_numpy(x).to('cpu')
-    net.forward(x)
