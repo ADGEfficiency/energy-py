@@ -11,11 +11,11 @@ from energypy.envs.gym_wrappers import GymWrapper
 
 def test_buffer():
     elements = (
-        ('A', (1,), 'int32'),
-        ('B', (2,), 'float32'),
+        ("A", (1,), "int32"),
+        ("B", (2,), "float32"),
     )
 
-    tup = namedtuple('tup', ('A', 'B'))
+    tup = namedtuple("tup", ("A", "B"))
 
     buff = Buffer(elements, size=4)
 
@@ -29,38 +29,40 @@ def test_buffer():
 
     batch = buff.sample(2)
 
-    for a, b in zip(batch['A'], batch['B']):
+    for a, b in zip(batch["A"], batch["B"]):
         check = data[int(a)]
-        np.testing.assert_array_equal(b, check['B'])
+        np.testing.assert_array_equal(b, check["B"])
 
-    np.testing.assert_array_equal(buff.data['A'], np.array([1, 2, 2, 0]).reshape(4, 1))
-    np.testing.assert_array_equal(buff.data['B'], np.array(((2, 2), (3, 3), (3, 3), (1, 1))).reshape(4, 2))
-
+    np.testing.assert_array_equal(buff.data["A"], np.array([1, 2, 2, 0]).reshape(4, 1))
+    np.testing.assert_array_equal(
+        buff.data["B"], np.array(((2, 2), (3, 3), (3, 3), (1, 1))).reshape(4, 2)
+    )
 
 
 def test_pendulum_wrapper():
-    env = GymWrapper('pendulum')
+    env = GymWrapper("pendulum")
     res = env.reset()
-    assert res['features'].shape == (1, 3)
+    assert res["features"].shape == (1, 3)
     act = env.action_space.sample().reshape(1, 1)
     next_obs, rew, done, _ = env.step(act)
-    assert next_obs['features'].shape == (1, 3)
+    assert next_obs["features"].shape == (1, 3)
 
 
 def test_random_policy_wrapper():
-    env = GymWrapper('pendulum')
+    env = GymWrapper("pendulum")
     pol = make_random_policy(env)
     obs = env.reset()
-    sample, _ , _ = pol(obs)
+    sample, _, _ = pol(obs)
     assert sample.shape == (1, 1)
 
 
 def setup_dummy_qfunc():
     import numpy as np
-    hyp = {'network': {'name': 'dense', 'size_scale': 1}}
+
+    hyp = {"network": {"name": "dense", "size_scale": 1}}
     obs = np.random.uniform(0, 1, 6).reshape(2, 3)
     act = np.random.uniform(0, 1, 4).reshape(2, 2)
-    return make_qfunc((3, ), (2, ), 'dummy', hyp), obs, act
+    return make_qfunc((3,), (2,), "dummy", hyp), obs, act
 
 
 def test_update_params():

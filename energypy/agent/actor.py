@@ -56,7 +56,7 @@ class DensePolicy(nn.Module):
         return action, log_prob, deterministic_action
 
 
-class Actor:
+class Actor(energypy.agent.Base):
     def __init__(
         self,
         input_shape: tuple,
@@ -67,16 +67,6 @@ class Actor:
         self.net = DensePolicy(input_shape, n_outputs, scale).to(device)
         self.optimizer = torch.optim.SGD(self.net.parameters(), lr=1e-3)
         self.loss = nn.MSELoss()
-
-    def __call__(self, *args, return_numpy=True, **kwargs):
-        tensors = self.net(*args, **kwargs)
-        if return_numpy:
-            return [tensor.detach().numpy() for tensor in tensors]
-        else:
-            return tensors
-
-    def save_weights(self, path):
-        torch.save(self.net.state_dict(), path.with_suffix('.pth'))
 
 
 def make(env, hyp, device='cpu'):

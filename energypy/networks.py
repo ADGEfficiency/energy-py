@@ -1,10 +1,4 @@
-
-def dense(
-    input_shape,
-    outputs,
-    size_scale=1,
-    neurons=(64, 32)
-):
+def dense(input_shape, outputs, size_scale=1, neurons=(64, 32)):
     if isinstance(input_shape, tuple):
         inputs = keras.Input(shape=input_shape)
 

@@ -18,15 +18,15 @@ def init_nets(env, hyp):
     # act = torch.from_numpy(env.action_space.sample().reshape(1, -1))
     # onlines[0](obs, act)
 
-    target_entropy, log_alpha = alpha.make(env, initial_value=hyp["initial-log-alpha"])
+    al = alpha.make(env, hyp)
     return {
         "actor": act,
         "online-1": onlines[0],
         "online-2": onlines[1],
         "target-1": targets[0],
         "target-2": targets[1],
-        "target_entropy": float(target_entropy),
-        "alpha": log_alpha,
+        "target_entropy": float(al.target_entropy.detach().numpy()),
+        "alpha": al,
     }
 
 
@@ -41,13 +41,13 @@ def init_writers(counters, paths):
 
 def init_optimizers(hyp):
     lr = hyp["lr"]
-    lr_alpha = hyp.get("lr-alpha", lr)
+    # lr_alpha = hyp.get("lr-alpha", lr)
 
     return {
         "online-1": tf.keras.optimizers.Adam(learning_rate=lr),
         "online-2": tf.keras.optimizers.Adam(learning_rate=lr),
         "actor": tf.keras.optimizers.Adam(learning_rate=lr),
-        "alpha": tf.keras.optimizers.Adam(learning_rate=lr_alpha),
+        "alpha": None,
     }
 
 
