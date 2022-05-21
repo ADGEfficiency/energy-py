@@ -71,12 +71,13 @@ class Actor(energypy.agent.Base):
 
 def make(env, hyp, device='cpu'):
     """makes an Actor - always with DensePolicy"""
-    obs_shape = env.observation_space.shape
-    n_actions = np.zeros(env.action_space.shape).size
+    obs_shape = env.elements_helper['observation']
+    n_actions = np.zeros(env.elements_helper['action']).size
     return Actor(
         input_shape=obs_shape,
         n_outputs=n_actions * 2,
-        device=device
+        device=device,
+        scale=hyp['network']['scale']
     )
 
 
@@ -91,7 +92,7 @@ def update(
     counters,
     hyp
 ):
-    al = torch.exp(log_alpha)
+    al = torch.exp(torch.tensor(log_alpha(return_numpy=True)))
 
     state_act, log_prob, _ = policy(
         batch["observation"], batch["observation_mask"], return_numpy=False

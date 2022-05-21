@@ -44,9 +44,7 @@ class BatteryObservationSpace:
         shape = list(dataset.episode["features"].shape[2:])
         shape[-1] += additional_features
         self.shape = tuple(shape)
-
-    def get_mask_shape(self, network=None):
-        return (self.shape[0], self.shape[0])
+        self.mask_shape = (self.shape[0], self.shape[0])
 
 
 class BatteryActionSpace:
@@ -68,6 +66,8 @@ class BatteryActionSpace:
 
 class Battery(AbstractEnv):
     """
+    Can run many batteries in parallel
+
     data = (n_battery, timesteps, features)
     """
 

@@ -49,7 +49,7 @@ def update_target_network(online, target, rho):
         ta.data.copy_(rho * ta.data + on.data * (1.0 - rho))
 
 
-class QFunc:
+class QFunc(energypy.agent.Base):
     def __init__(
         self,
         name,
@@ -63,31 +63,27 @@ class QFunc:
         self.optimizer = torch.optim.SGD(self.net.parameters(), lr=1e-3)
         self.loss = nn.MSELoss()
 
-    def __call__(self, *args, return_numpy=True, **kwargs):
-        tensor = self.net(*args, **kwargs)
-        if return_numpy:
-            return tensor.detach().numpy()
-        else:
-            return tensor
-
-    def save_weights(self, path):
-        torch.save(self.net.state_dict(), path.with_suffix('.pth'))
-
 
 def make(env, hyp):
     """makes the two online & two targets"""
     n_actions = sum(env.action_space.shape)
 
-    #  figure out the correct shap
-    obs = env.observation_space.sample()
-    act = env.action_space.sample()
-    obs_act = np.concatenate([obs, act])
+    scale = hyp['network']['scale']
 
-    q1 = QFunc('online-1', obs_act.shape, n_actions)
-    q1_target = QFunc('target-1', obs_act.shape, n_actions)
+    #  figure out the correct shape
+    # obs = env.observation_space.sample()
+    # act = env.action_space.sample()
+    obs_shape = env.elements_helper['observation']
+    n_actions = env.elements_helper['action']
 
-    q2 = QFunc('online-2', obs_act.shape, n_actions)
-    q2_target = QFunc('target-2', obs_act.shape, n_actions)
+    obs_act_shape = np.array(obs_shape) + np.array(n_actions)
+    obs_act_shape = tuple(obs_act_shape)
+
+    q1 = QFunc('online-1', obs_act_shape, *n_actions, scale=scale)
+    q1_target = QFunc('target-1', obs_act_shape, *n_actions, scale=scale)
+
+    q2 = QFunc('online-2', obs_act_shape, *n_actions, scale=scale)
+    q2_target = QFunc('target-2', obs_act_shape, *n_actions, scale=scale)
 
     update_target_network(online=q1, target=q1_target, rho=0.0)
     update_target_network(online=q2, target=q2_target, rho=0.0)
@@ -178,7 +174,7 @@ def update(
             targets=targets,
         )
 
-    al = torch.exp(log_alpha)
+    al = torch.exp(torch.tensor(log_alpha(return_numpy=True)))
     ga = hyp["gamma"]
 
     batch['reward'] = torch.from_numpy(batch['reward'])
@@ -192,7 +188,8 @@ def update(
 
     total_loss = 0
     for onl in onlines:
-        print(f"training {onl.name} q func")
+        #  TODO
+        # print(f"training {onl.name} q func")
         onl.optimizer.zero_grad()
 
         q_value = onl(
@@ -202,7 +199,9 @@ def update(
         total_loss += loss
 
         # where to clip gradients TODO ???
-        print(f"{onl.name} loss: {loss}")
+
+        #  TODO log?
+        # print(f"{onl.name} loss: {loss}")
 
         writer.scalar(loss.detach().numpy(), f"online-{onl.name}-loss", "qfunc-updates")
         writer.scalar(

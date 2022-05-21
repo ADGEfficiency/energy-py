@@ -9,22 +9,18 @@ from energypy import utils
 
 def episode(env, buffer, actor, hyp, counters, mode, return_info=False):
     obs = env.reset(mode=mode)
-    done = False
-
-    reward_scale = hyp["reward-scale"]
-
-    #  hack for gym envs
-    if isinstance(obs, np.ndarray):
-        obs = {"features": obs}
+    done = np.zeros(obs['features'].shape[0]).astype(bool).reshape(-1, 1)
 
     #  create one list per parallel episode we are running
     #  first dimension is the number of batteries
     #  which we use as the batch dimension when we are sampling actions from the agent
     episode_rewards = [list() for _ in range(obs["features"].shape[0])]
 
+    def check_if_done(done: np.array) -> bool:
+        return all(x for x in done)
+
     infos = []
-    while not done:
-        #  obs is a dict {'features':, 'mask':}
+    while not check_if_done(done):
 
         #  think I need to make obs a tensor here
         #  sometime returning np, sometimes returning a torch tensor
@@ -39,17 +35,19 @@ def episode(env, buffer, actor, hyp, counters, mode, return_info=False):
         if mode == "test":
             act = deterministic_action
 
-        #  next_obs is a dict {'next_obs', 'reward', 'done', 'next_obs_mask'}
         next_obs, reward, done, info = env.step(act)
         infos.append(info)
 
         #  want to save one observation per battery - buffer has no concept of batteries
         #  bit messy as I'm assuming the structure of the Transition tuple
-        for i, (o, a, r, no, om, nom) in enumerate(
+
+        #  iterating over the n_parallel dimension of the experience
+        for i, (o, a, r, do, no, om, nom) in enumerate(
             zip(
                 obs["features"],
                 act,
                 reward,
+                done,
                 next_obs["features"],
                 obs["mask"],
                 next_obs["mask"],
@@ -59,9 +57,9 @@ def episode(env, buffer, actor, hyp, counters, mode, return_info=False):
                 {
                     "observation": o,
                     "action": a,
-                    "reward": r / reward_scale,
+                    "reward": r / hyp["reward-scale"],
                     "next_observation": no,
-                    "done": done,
+                    "done": do,
                     "observation_mask": om,
                     "next_observation_mask": nom,
                 }

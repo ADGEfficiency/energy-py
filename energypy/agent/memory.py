@@ -84,11 +84,15 @@ class Buffer():
             self._cursor = value
 
     def append(self, data):
-        for name, data in data.items():
-            sh = self.data[name][0].shape
-            self.data[name][self.cursor, :] = np.array(data).reshape(sh)
+        try:
+            for name, data in data.items():
+                sh = self.data[name][0].shape
+                self.data[name][self.cursor, :] = np.array(data).reshape(sh)
 
-        self.cursor = self.cursor + 1
+            self.cursor = self.cursor + 1
+        except Exception as err:
+            breakpoint()
+            raise err
 
     def sample(self, num):
         if not self.full:

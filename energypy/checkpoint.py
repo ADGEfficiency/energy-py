@@ -23,19 +23,15 @@ def save(
     path = Path(path)
     path.mkdir(exist_ok=True, parents=True)
     for name, net in nets.items():
-        if "alpha" not in name:
-            net.save_weights(path / f"{name}.h5")
+        net.save(
+            path / f"{name}",
+            path / f"{name}-optimizer",
+        )
 
-    #  save alpha!
-    log_alpha = nets["alpha"].detach().numpy()
+    #  save alpha separately - it's just one parameter :)
+    #  we do save the optimizer later
+    log_alpha = nets["alpha"].net.log_alpha.detach().numpy()
     np.save(path / "alpha.npy", log_alpha)
-
-    for name, optimizer in optimizers.items():
-        wts = optimizer.get_weights()
-        if wts:
-            opt_path = path / f"{name}.pkl"
-            with opt_path.open("wb") as fi:
-                pickle.dump(wts, fi)
 
     if buffer:
         memory.save(buffer, path / "buffer")
