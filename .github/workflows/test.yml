@@ -11,13 +11,13 @@ jobs:
   test-setup:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Source Code
+      - name: checkout source code
         uses: actions/checkout@v2
 
-      - name: Setup Python
+      - name: setup python
         uses: actions/setup-python@v2
         with:
           python-version: 3.8.12
 
-      - name: Run Tests
+      - name: run tests
         run: make setup

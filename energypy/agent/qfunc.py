@@ -152,27 +152,18 @@ def make(env, hyp):
 def update(
     batch, policy, onlines, targets, log_alpha, writer, optimizers, counters, hyp
 ):
+    next_state_act, log_prob, _ = policy(
+        batch["next_observation"], batch["next_observation_mask"], return_numpy=True
+    )
+    next_state_act = torch.tensor(next_state_act)
+    log_prob = torch.tensor(log_prob)
 
-    #  i think we can get rid of this and just always pass masks
-    if hyp['network']['name'] == 'dense':
-        next_state_act, log_prob, _ = policy(batch["next_observation"], return_numpy=False)
-        next_state_target = minimum_target(
-            (batch["next_observation"],
-            next_state_act),
-            targets=targets,
-        )
-
-    if hyp['network']['name'] == 'attention':
-        next_state_act, log_prob, _ = policy(
-            (batch["next_observation"], batch["next_observation_mask"])
-        )
-
-        next_state_target = minimum_target(
-            (batch["next_observation"],
-            next_state_act,
-            batch["next_observation_mask"]),
-            targets=targets,
-        )
+    next_state_target = minimum_target(
+        (batch["next_observation"],
+        next_state_act,
+        batch["next_observation_mask"]),
+        targets=targets,
+    )
 
     al = torch.exp(torch.tensor(log_alpha(return_numpy=True)))
     ga = hyp["gamma"]
@@ -180,7 +171,7 @@ def update(
     batch['reward'] = torch.from_numpy(batch['reward'])
     batch['done'] = torch.from_numpy(batch['done'].astype(np.int32))
 
-    #  these are all torch tensors now
+    #  all torch tensors
     target = batch["reward"] + ga * (1 - batch["done"]) * (
         next_state_target - al * log_prob
     )
@@ -188,8 +179,6 @@ def update(
 
     total_loss = 0
     for onl in onlines:
-        #  TODO
-        # print(f"training {onl.name} q func")
         onl.optimizer.zero_grad()
 
         q_value = onl(
@@ -199,10 +188,6 @@ def update(
         total_loss += loss
 
         # where to clip gradients TODO ???
-
-        #  TODO log?
-        # print(f"{onl.name} loss: {loss}")
-
         writer.scalar(loss.detach().numpy(), f"online-{onl.name}-loss", "qfunc-updates")
         writer.scalar(
             q_value.detach().numpy().mean(), f"online-{onl.name}-value", "qfunc-updates"
@@ -214,6 +199,9 @@ def update(
     #  the summing of losses together is a bit :/
     #  I'm hoping that pytorch is clever enough to only put each portion of the loss onto
     #  the correct qfunc!
+
+    #  I think summing losses = wrong
+    #  suggest writing two funcs and calling separately....
 
     total_loss.backward()
     [onl.optimizer.step() for onl in onlines]
