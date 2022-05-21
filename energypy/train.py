@@ -1,4 +1,4 @@
-from energypy import utils, qfunc, policy, target, alpha
+from energypy import utils, qfunc, actor, target, alpha
 
 
 def train(*args, **kwargs):
@@ -7,7 +7,7 @@ def train(*args, **kwargs):
 
 def train_one_head_network(
     batch,
-    actor,
+    policy,
     onlines,
     targets,
     log_alpha,
@@ -18,9 +18,9 @@ def train_one_head_network(
     **kwargs
 ):
     st = utils.now()
-    qfunc.update(
+    qloss = qfunc.update(
         batch,
-        actor,
+        policy,
         onlines,
         targets,
         log_alpha,
@@ -32,8 +32,16 @@ def train_one_head_network(
     counters["q-func-update-seconds"] += utils.now() - st
 
     st = utils.now()
-    policy.update(
-        batch, actor, onlines, targets, log_alpha, writer, optimizers["actor"], counters, hyp
+    ploss = actor.update(
+        batch,
+        policy,
+        onlines,
+        targets,
+        log_alpha,
+        writer,
+        optimizers["actor"],
+        counters,
+        hyp,
     )
     counters["pol-func-update-seconds"] += utils.now() - st
 
@@ -42,7 +50,9 @@ def train_one_head_network(
     counters["target-update-seconds"] += utils.now() - st
 
     st = utils.now()
-    alpha.update(batch, actor, log_alpha, hyp, optimizers["alpha"], counters, writer)
+    alpha.update(batch, policy, log_alpha, hyp, optimizers["alpha"], counters, writer)
     counters["alpha-update-seconds"] += utils.now() - st
     counters["train-seconds"] += utils.now() - st
     counters["train-steps"] += 1
+
+    return {"qfunc-loss": qloss, "policy-loss": ploss}

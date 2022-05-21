@@ -1,6 +1,5 @@
+import json
 from pathlib import Path
-import pickle
-
 import numpy as np
 
 
@@ -23,28 +22,41 @@ def make(env, hyp):
 
 def save(buffer, path):
     path = Path(path)
-    print(f'saving buffer to {path}')
-    path.parent.mkdir(exist_ok=True, parents=True)
-    with path.open('wb') as fi:
-        pickle.dump(buffer, fi)
+    print(f' saving buffer to {path}')
+    path.mkdir(exist_ok=True, parents=True)
+    meta = {
+        'elements': buffer.elements,
+        'size': buffer.size,
+        'cursor_min': buffer.cursor_min,
+        'full': buffer.full,
+    }
+    (path / 'meta.json').write_text(json.dumps(meta))
+
+    for name, data in buffer.data.items():
+        np.save(path / f"{name}.npy", data)
 
 
 def load(path):
     path = Path(path)
-    print(f'loading buffer from {path}')
-    with path.open('rb') as fi:
-        return pickle.load(fi)
+    print(f' loading buffer from {path}')
+    meta = json.loads((path / 'meta.json').read_text())
+    buf = Buffer(**meta)
+    for name in buf.data.keys():
+        buf.data[name] = np.load(path / f"{name}.npy")
+    return buf
 
 
 class Buffer():
     """
-    Buffer has no concept of n_batteries - experience is all stored on a 'one battery' level
+    Buffer has no concept of n_batteries
+    - each sample of experience is all stored on a 'one battery' level
     """
     def __init__(
         self,
         elements,
         size=64,
-        cursor_min=0
+        cursor_min=0,
+        full=False
     ):
         self.elements = elements
         self.size = int(size)
@@ -54,7 +66,7 @@ class Buffer():
         }
         self.cursor = cursor_min
         self.cursor_min = cursor_min
-        self.full = False
+        self.full = full
 
     def __len__(self):
         return len(self.data['observation'])
@@ -72,11 +84,15 @@ class Buffer():
             self._cursor = value
 
     def append(self, data):
-        for name, data in data.items():
-            sh = self.data[name][0].shape
-            self.data[name][self.cursor, :] = np.array(data).reshape(sh)
+        try:
+            for name, data in data.items():
+                sh = self.data[name][0].shape
+                self.data[name][self.cursor, :] = np.array(data).reshape(sh)
 
-        self.cursor = self.cursor + 1
+            self.cursor = self.cursor + 1
+        except Exception as err:
+            breakpoint()
+            raise err
 
     def sample(self, num):
         if not self.full:

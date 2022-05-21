@@ -1,11 +1,11 @@
 .PHONY: test pushs3
 
 setup:
-	pip install -q -r requirements.txt
-	pip install .
+	pip install poetry==1.1.13 -q
+	poetry install -q
 
 test: setup
-	pytest tests -m "not pybox2d" --tb=line --disable-pytest-warnings
+	pytest tests -m "not pybox2d" --tb=line --disable-pytest-warnings -s
 
 test-with-pybox2d:
 	pytest tests --tb=line --disable-pytest-warnings

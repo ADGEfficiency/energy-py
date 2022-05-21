@@ -1,21 +1,32 @@
 from collections import defaultdict
 import tensorflow as tf
 
-from energypy import utils, memory, policy, qfunc, alpha, registry
+from energypy import utils, memory, actor, qfunc, alpha, registry
+import torch
 
 
 def init_nets(env, hyp):
-    actor = policy.make(env, hyp)
+    act = actor.make(env, hyp)
+
+    #  turn into test
+    # x = torch.from_numpy(env.observation_space.sample().reshape(1, -1))
+    # act(x)
+
     onlines, targets = qfunc.make(env, hyp)
-    target_entropy, log_alpha = alpha.make(env, initial_value=hyp["initial-log-alpha"])
+    #  turn into test
+    # obs = torch.from_numpy(env.observation_space.sample().reshape(1, -1))
+    # act = torch.from_numpy(env.action_space.sample().reshape(1, -1))
+    # onlines[0](obs, act)
+
+    al = alpha.make(env, hyp)
     return {
-        "actor": actor,
+        "actor": act,
         "online-1": onlines[0],
         "online-2": onlines[1],
         "target-1": targets[0],
         "target-2": targets[1],
-        "target_entropy": float(target_entropy),
-        "alpha": log_alpha,
+        "target_entropy": float(al.target_entropy.detach().numpy()),
+        "alpha": al,
     }
 
 
@@ -30,22 +41,21 @@ def init_writers(counters, paths):
 
 def init_optimizers(hyp):
     lr = hyp["lr"]
-    lr_alpha = hyp.get("lr-alpha", lr)
+    # lr_alpha = hyp.get("lr-alpha", lr)
 
     return {
         "online-1": tf.keras.optimizers.Adam(learning_rate=lr),
         "online-2": tf.keras.optimizers.Adam(learning_rate=lr),
         "actor": tf.keras.optimizers.Adam(learning_rate=lr),
-        "alpha": tf.keras.optimizers.Adam(learning_rate=lr_alpha),
+        "alpha": None,
     }
 
 
 def init_fresh(hyp):
     counters = defaultdict(int)
     paths = utils.get_paths(hyp)
-    transition_logger = utils.make_logger("transitions.data", paths["run"])
 
-    env = registry.make(**hyp["env"], logger=transition_logger)
+    env = registry.make(**hyp["env"])
     buffer = memory.make(env, hyp)
 
     nets = init_nets(env, hyp)
@@ -65,6 +75,5 @@ def init_fresh(hyp):
         "nets": nets,
         "writers": writers,
         "optimizers": optimizers,
-        "transition_logger": transition_logger,
         "rewards": rewards,
     }

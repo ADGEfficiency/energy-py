@@ -58,12 +58,7 @@ rewards, infos = episode(
     env,
     buffer,
     actor,
-    {
-        "reward-scale": 1,
-        "network": {
-            "name": "attention"
-        }
-    },
+    {"reward-scale": 1, "network": {"name": "attention"}},
     counters=defaultdict(int),
     mode="train",
     return_info=True,

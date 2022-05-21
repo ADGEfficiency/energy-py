@@ -23,6 +23,7 @@ from tensorflow.keras import layers
 
 from energypy.networks import attention
 
+
 def test_attention():
     """
     just check we can run it
@@ -31,16 +32,13 @@ def test_attention():
     sequence_length = 2
     n_features = 3
 
-    query = np.random.random(
-        (n_samples, sequence_length, n_features)
-    )
-    mask = np.random.random(
-        (n_samples, sequence_length, sequence_length)
-    ).astype(bool)
+    query = np.random.random((n_samples, sequence_length, n_features))
+    mask = np.random.random((n_samples, sequence_length, sequence_length)).astype(bool)
     inp, out = attention((sequence_length, n_features), 1)
     mdl = keras.Model(inputs=inp, outputs=out)
 
     #  (2, 1)
     print(mdl([query, mask]).shape)
+
 
 test_attention()
