@@ -1,4 +1,4 @@
-tensorflow==2.5.0
+tensorflow==2.11.1
 tensorflow-estimator==2.5.0
 tensorflow-probability==0.13.0
 pytest
