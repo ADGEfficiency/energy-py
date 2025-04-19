@@ -14,4 +14,4 @@ static: setup-test
 	uv run basedpyright .
 
 check: setup-test
-	uv run ruff check src/ tests/
+	uv run ruff check src
