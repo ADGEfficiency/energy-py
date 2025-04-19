@@ -38,4 +38,4 @@ jobs:
         with:
           python-version: '3.11'
       - name: static checks
-        run: make static
+        run: make static STATIC_LEVEL=error

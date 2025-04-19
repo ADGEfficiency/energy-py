@@ -10,8 +10,9 @@ test: setup-test
 	uv run poc/cartpole-ppo.py
 	uv run poc/battery.py
 
+STATIC_LEVEL=warning # error or warning
 static: setup-test
-	uv run basedpyright src --level error
+	uv run basedpyright src --level $(STATIC_LEVEL)
 
 check: setup-test
 	uv run ruff check src
