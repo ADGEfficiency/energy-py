@@ -6,15 +6,18 @@ on:
   pull_request:
     branches: ["main"]
 
+common-steps: &common-steps
+  - uses: actions/checkout@v4
+  - name: python
+    uses: actions/setup-python@v5
+    with:
+      python-version: '3.11'
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+      - <<: *common-steps
       - name: test
         run: make test
 
@@ -28,5 +31,14 @@ jobs:
           python-version: '3.11'
       - name: check
         run: make check
+
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - name: static checks
         run: make static -o setup
