@@ -1,15 +1,16 @@
 setup:
-	pip install uv
+	pip install uv==0.6.3
 	uv venv
 	uv sync
 
-test: setup
+setup-test: test
 	uv sync --group test
+
+test: setup-test
 	uv run poc/cartpole-ppo.py
 
-static:
-	uv sync --group test
+static: setup-test
 	pyright .
 
-check: setup
+check: setup-test
 	ruff check src/ tests/
