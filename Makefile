@@ -11,7 +11,7 @@ test: setup-test
 	uv run poc/battery.py
 
 static: setup-test
-	uv run basedpyright src
+	uv run basedpyright src poc
 
 check: setup-test
-	uv run ruff check src
+	uv run ruff check src poc

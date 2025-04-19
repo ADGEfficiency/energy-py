@@ -24,7 +24,6 @@ test = [
 ]
 
 [tool.basedpyright]
-include = ["src"]
 exclude = ["**/node_modules",
     "**/__pycache__",
     "src/experimental",
