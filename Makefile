@@ -8,6 +8,7 @@ setup-test: setup
 
 test: setup-test
 	uv run poc/cartpole-ppo.py
+	uv run poc/battery.py
 
 static: setup-test
 	uv run pyright .
