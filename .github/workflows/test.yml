@@ -6,18 +6,15 @@ on:
   pull_request:
     branches: ["main"]
 
-common-steps: &common-steps
-  - uses: actions/checkout@v4
-  - name: python
-    uses: actions/setup-python@v5
-    with:
-      python-version: '3.11'
-
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - <<: *common-steps
+      - uses: actions/checkout@v4
+      - name: python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - name: test
         run: make test
 
