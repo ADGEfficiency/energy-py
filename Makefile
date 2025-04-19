@@ -3,7 +3,7 @@ setup:
 	uv venv
 	uv sync
 
-setup-test: test
+setup-test: setup
 	uv sync --group test
 
 test: setup-test
