@@ -1,7 +1,13 @@
 from stable_baselines3.common.evaluation import evaluate_policy
 
 
-def main(env, eval_env, model, name):
+def main(
+    # TODO - static typing
+    env,
+    eval_env,
+    model,
+    name,
+):
     # 3. Train the model
     model.learn(total_timesteps=50000)
 
