@@ -1,14 +1,14 @@
 setup:
 	pip install uv
 	uv venv
-	uv sync --group test
+	uv sync
 
 test: setup
 	uv sync --group test
 	uv run poc/cartpole-ppo.py
 
 static:
-	npm install -i basedpyright
+	uv sync --group test
 	pyright .
 
 check: setup

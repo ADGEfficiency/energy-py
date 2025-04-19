@@ -18,5 +18,7 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 test = [
+    "basedpyright>=1.28.5",
     "pytest>=8.3.5",
+    "ruff>=0.11.6",
 ]
