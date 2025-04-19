@@ -1,6 +1,7 @@
 setup:
-	uv pip install -e .
 	pip install uv
+	uv venv
+	uv pip install -e .
 
 test: setup
 	uv sync --group test
