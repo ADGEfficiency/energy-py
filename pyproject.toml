@@ -1,7 +1,7 @@
 [project]
 name = "energypy"
 version = "0.1.0"
-description = "Add your description here"
+description = "Reinforcement learning for energy systems."
 readme = "README.md"
 authors = [
     { name = "Adam Green", email = "adam.green@adgefficiency.com" }
