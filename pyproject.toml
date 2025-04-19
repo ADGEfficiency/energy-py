@@ -1,0 +1,22 @@
+[project]
+name = "energypy"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Adam Green", email = "adam.green@adgefficiency.com" }
+]
+requires-python = ">=3.11.10"
+dependencies = [
+    "gymnasium[all]>=1.1.1",
+    "stable-baselines3>=2.6.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+test = [
+    "pytest>=8.3.5",
+]
