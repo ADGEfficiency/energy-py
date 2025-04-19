@@ -63,6 +63,7 @@ def main(
         model, eval_env, n_eval_episodes=10, deterministic=True
     )
     print(f"Mean reward: {mean_reward:.2f} +/- {std_reward:.2f}")
+    return {"mean_reward": mean_reward, "std_reward": std_reward}
 
     # # 9. Record a video of the trained agent using SB3's built-in recorder
     # from stable_baselines3.common.vec_env import VecVideoRecorder, DummyVecEnv

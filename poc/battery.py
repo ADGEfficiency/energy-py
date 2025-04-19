@@ -148,7 +148,7 @@ from energypy.runner import main
 
 from stable_baselines3 import PPO
 
-main(
+result = main(
     env=env,
     eval_env=env,
     model=PPO(
@@ -165,3 +165,4 @@ main(
     ),
     name="cartpole",
 )
+breakpoint()  # fmt: skip
