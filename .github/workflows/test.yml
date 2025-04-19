@@ -2,31 +2,31 @@ name: test
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-    - name: Run tests
-      run: make test
+      - uses: actions/checkout@v4
+      - name: python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: test
+        run: make test
 
   check:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-    - name: Run checks
-      run: make check
-    - name: Run static
-      run: make static -o setup
+      - uses: actions/checkout@v4
+      - name: python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: check
+        run: make check
+      - name: static checks
+        run: make static -o setup
