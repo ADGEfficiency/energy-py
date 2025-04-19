@@ -165,4 +165,4 @@ result = main(
     ),
     name="cartpole",
 )
-breakpoint()  # fmt: skip
+assert result["mean_reward"] > 4.0
