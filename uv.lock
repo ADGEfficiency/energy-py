@@ -219,7 +219,7 @@ wheels = [
 ]
 
 [[package]]
-name = "energypylinear"
+name = "energypy"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

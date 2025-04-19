@@ -27,11 +27,11 @@ class BatteryEnv(gym.Env):
         self.index: int = 0
         self.initial_state_of_charge_mwh: float = initial_state_of_charge_mwh
         self.n_lags: int = 20
-        assert self.episode_length <= len(self.electricity_prices)
+        assert self.episode_length + self.n_lags <= len(self.electricity_prices)
 
         # lagged prices and current state of charge
         self.observation_space: gym.spaces.Space = gym.spaces.Box(
-            low=0, high=1000, shape=(len(electricity_prices) + 1,), dtype=float
+            low=0, high=1000, shape=(self.n_lags + 1,), dtype=float
         )
 
         # one action - choose charge / discharge MW for the next interval
@@ -42,7 +42,8 @@ class BatteryEnv(gym.Env):
     def reset(self, seed: int | None = None, options: dict | None = None) -> tuple:
         super().reset(seed=seed)
         self.index = random.randint(
-            0, len(self.electricity_prices) - self.episode_length
+            self.n_lags,
+            len(self.electricity_prices) - self.episode_length - self.n_lags,
         )
         self.state_of_charge_mwh = self.initial_state_of_charge_mwh
         return self._get_obs(), self._get_info()
@@ -97,16 +98,31 @@ gym.register(
 
 # TODO - make into a test
 print(gym.pprint_registry())
-env = gym.make(env_id, electricity_prices=np.random.uniform(-1000, 1000, 2**8))
+env = gym.make(env_id, electricity_prices=np.random.uniform(-1000, 1000, 10000))
 env = gym.wrappers.NormalizeReward(env)
 print(env.reset())
 for _ in range(20):
     o, r, d, t, i = env.step(10)
     print(r)
 
+from energypy.runner import main
 
-class BatteryVectorEnv(gym.vector.VectorEnv):
-    pass
+from stable_baselines3 import PPO
 
-
-# add that to docs folders
+main(
+    env=env,
+    eval_env=env,
+    model=PPO(
+        policy="MlpPolicy",
+        env=env,
+        learning_rate=0.0003,
+        n_steps=2048,
+        batch_size=64,
+        n_epochs=10,
+        gamma=0.99,
+        gae_lambda=0.95,
+        clip_range=0.2,
+        verbose=1,
+    ),
+    name="cartpole",
+)
