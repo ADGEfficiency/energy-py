@@ -1,13 +1,9 @@
-import gymnasium as gym
-import typing
-import numpy as np
-import random
-
 import collections
+import random
+import typing
 
-
-class ExperimentResult:
-    pass
+import gymnasium as gym
+import numpy as np
 
 
 def battery_energy_balance(
@@ -127,45 +123,3 @@ class BatteryEnv(gym.Env[np.ndarray, np.ndarray]):
         self.state_of_charge_mwh = float(interval_final_state_of_charge_mwh)
         self.info["state_of_charge_mwh"].append(self.state_of_charge_mwh)
         return self._get_obs(), reward, terminated, False, self._get_info()
-
-
-env_id = "energypy/battery"
-gym.register(
-    id=env_id,
-    entry_point=BatteryEnv,
-)
-
-# TODO - make into a test
-print(gym.pprint_registry())
-import polars as pl
-
-data = pl.read_parquet("data/final.parquet")
-env = gym.make(env_id, electricity_prices=data["DollarsPerMegawattHour"])
-env = gym.wrappers.NormalizeReward(env)
-# print(env.reset())
-# for _ in range(20):
-#     o, r, d, t, i = env.step(10)
-#     print(r)
-
-from energypy.runner import main
-
-from stable_baselines3 import PPO
-
-result = main(
-    env=env,
-    eval_env=env,
-    model=PPO(
-        policy="MlpPolicy",
-        env=env,
-        learning_rate=0.0003,
-        n_steps=2048,
-        batch_size=64,
-        n_epochs=10,
-        gamma=0.99,
-        gae_lambda=0.95,
-        clip_range=0.2,
-        verbose=1,
-    ),
-    name="cartpole",
-)
-assert result["mean_reward"] > 4.0

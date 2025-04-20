@@ -7,8 +7,7 @@ setup-test: setup
 	uv sync --group test
 
 test: setup-test
-	uv run poc/cartpole-ppo.py
-	uv run poc/battery.py
+	uv run examples/battery.py
 
 static: setup-test
 	uv run basedpyright src poc

@@ -18,6 +18,7 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
+    "isort>=6.0.1",
     "mlflow>=2.21.3",
     "polars>=1.27.1",
 ]
