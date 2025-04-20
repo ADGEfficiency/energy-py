@@ -1,13 +1,17 @@
 from stable_baselines3.common.evaluation import evaluate_policy
 
 
+from typing import Any, Dict
+import numpy as np
+from gymnasium import Env
+from stable_baselines3.common.base_class import BaseAlgorithm
+
 def main(
-    # TODO - static typing
-    env,
-    eval_env,
-    model,
-    name,
-):
+    env: Env[Any, Any],
+    eval_env: Env[Any, Any],
+    model: BaseAlgorithm,
+    name: str,
+) -> Dict[str, float]:
     # 3. Train the model
     model.learn(total_timesteps=50000)
 
@@ -63,7 +67,10 @@ def main(
         model, eval_env, n_eval_episodes=10, deterministic=True
     )
     print(f"Mean reward: {mean_reward:.2f} +/- {std_reward:.2f}")
-    return {"mean_reward": mean_reward, "std_reward": std_reward}
+    # Ensure we return floats
+    mean_reward_float = float(mean_reward) if isinstance(mean_reward, (int, float, np.number)) else 0.0
+    std_reward_float = float(std_reward) if isinstance(std_reward, (int, float, np.number)) else 0.0
+    return {"mean_reward": mean_reward_float, "std_reward": std_reward_float}
 
     # # 9. Record a video of the trained agent using SB3's built-in recorder
     # from stable_baselines3.common.vec_env import VecVideoRecorder, DummyVecEnv

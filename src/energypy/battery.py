@@ -40,7 +40,9 @@ class BatteryEnv(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
 
         self.info: dict[str, list[float]] = collections.defaultdict(list)
 
-    def reset(self, *, seed: int | None = None, options: dict[str, typing.Any] | None = None) -> tuple[NDArray[np.float64], dict[str, list[float]]]:
+    def reset(
+        self, *, seed: int | None = None, options: dict[str, typing.Any] | None = None
+    ) -> tuple[NDArray[np.float64], dict[str, list[float]]]:
         super().reset(seed=seed, options=options)
         self.index = random.randint(
             self.n_lags + self.episode_length + self.n_horizons,
@@ -69,7 +71,9 @@ class BatteryEnv(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
         # TODO - some info for experiment analysis (usually)
         return self.info
 
-    def step(self, action: NDArray[np.float64]) -> tuple[NDArray[np.float64], float, bool, bool, dict[str, list[float]]]:
+    def step(
+        self, action: NDArray[np.float64]
+    ) -> tuple[NDArray[np.float64], float, bool, bool, dict[str, list[float]]]:
         # TODO - possible this action would be scaled...
         # can i use a wrapper?
 

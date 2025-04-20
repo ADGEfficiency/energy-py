@@ -10,8 +10,9 @@ test: setup-test
 	uv run examples/dataset.py
 	uv run examples/battery.py
 
+SRC_DIRS=src examples
 static: setup-test
-	uv run basedpyright src --level error
+	uv run basedpyright $(SRC_DIRS) --level error
 
 check: setup-test
-	uv run ruff check src poc
+	uv run ruff check $(SRC_DIRS)

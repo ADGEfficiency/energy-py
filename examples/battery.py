@@ -2,13 +2,12 @@ import gymnasium as gym
 import polars as pl
 from stable_baselines3 import PPO
 
-from energypy.battery import BatteryEnv
 from energypy.runner import main
 
 env_id = "energypy/battery"
 gym.register(
     id=env_id,
-    entry_point=BatteryEnv,
+    entry_point="energypy.battery:BatteryEnv",
 )
 # print(gym.pprint_registry())
 
@@ -35,4 +34,4 @@ result = main(
     ),
     name="cartpole",
 )
-assert result["mean_reward"] > 4.0
+assert isinstance(result["mean_reward"], float) and result["mean_reward"] > 4.0
