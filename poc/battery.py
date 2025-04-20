@@ -137,7 +137,10 @@ gym.register(
 
 # TODO - make into a test
 print(gym.pprint_registry())
-env = gym.make(env_id, electricity_prices=np.random.uniform(-1000, 1000, 10000))
+import polars as pl
+
+data = pl.read_parquet("data/final.parquet")
+env = gym.make(env_id, electricity_prices=data["DollarsPerMegawattHour"])
 env = gym.wrappers.NormalizeReward(env)
 # print(env.reset())
 # for _ in range(20):

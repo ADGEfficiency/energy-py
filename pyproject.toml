@@ -17,6 +17,10 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [dependency-groups]
+dev = [
+    "mlflow>=2.21.3",
+    "polars>=1.27.1",
+]
 test = [
     "basedpyright>=1.28.5",
     "pytest>=8.3.5",
