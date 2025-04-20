@@ -9,7 +9,7 @@ authors = [
 requires-python = ">=3.11.10"
 dependencies = [
     "gymnasium[all]>=1.1.1",
-    "stable-baselines3>=2.6.0",
+    "stable-baselines3[extra]>=2.6.0",
 ]
 
 [build-system]

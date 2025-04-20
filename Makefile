@@ -7,10 +7,11 @@ setup-test: setup
 	uv sync --group test
 
 test: setup-test
+	uv run examples/dataset.py
 	uv run examples/battery.py
 
 static: setup-test
-	uv run basedpyright src poc
+	uv run basedpyright src poc --level error
 
 check: setup-test
 	uv run ruff check src poc
