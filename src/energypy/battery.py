@@ -32,7 +32,7 @@ class BatteryEnv(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
 
         # lagged prices and current state of charge
         self.observation_space: gym.spaces.Space[NDArray[np.float64]] = gym.spaces.Box(
-            low=0, high=1000, shape=(self.n_lags + self.n_horizons + 1,)
+            low=-1000, high=1000, shape=(self.n_lags + self.n_horizons + 1,)
         )
 
         # one action - choose charge / discharge MW for the next interval
@@ -64,7 +64,7 @@ class BatteryEnv(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
                 self.index - self.n_lags : self.index + self.n_horizons
             ]
         ) + [self.state_of_charge_mwh]
-        obs = np.array(obs, dtype=float)
+        obs = np.array(obs, dtype=np.float64)
         return obs
 
     def _get_info(self) -> dict[str, list[float]]:
