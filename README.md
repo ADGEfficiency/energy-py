@@ -8,10 +8,11 @@ A framework for reinforcement learning experiments with energy environments.
 
 - Battery storage environments for energy arbitrage
 - PPO implementation for training RL agents
-- Integration with Gymnasium for custom environments
+- Integration with [Gymnasium](https://gymnasium.farama.org/) for custom environments
+- Integration with [Stable Baselines3](https://stable-baselines3.readthedocs.io/) for access to state-of-the-art RL algorithms
 - Historical electricity price data for realistic training scenarios
 
-## Installation
+## Setup
 
 ```bash
 make setup
@@ -30,22 +31,19 @@ make check
 make static
 ```
 
-## Usage Examples
+## Usage
 
 Train a PPO agent on the battery storage environment:
 
 ```python
-from energypy import battery, runner
+import energypy
 
-# Create environment
-env = battery.Battery()
-
-# Train agent using PPO
-results = runner.train(env, algorithm="PPO")
+env = energypy.Battery()
+results = energypy.train(env, "PPO", name="battery")
 ```
 
-For more examples, see the `examples/` directory.
+Experiment logs to Tensorboard:
 
-## License
-
-MIT
+```shell-session
+$ tensorboard --logdir ./data/tensorboard/
+```

@@ -6,11 +6,12 @@ import numpy as np
 from gymnasium import Env
 from stable_baselines3.common.base_class import BaseAlgorithm
 
+
 def main(
     env: Env[Any, Any],
     eval_env: Env[Any, Any],
     model: BaseAlgorithm,
-    name: str,
+    name: str = "battery",
 ) -> Dict[str, float]:
     # 3. Train the model
     model.learn(total_timesteps=50000)
@@ -68,8 +69,12 @@ def main(
     )
     print(f"Mean reward: {mean_reward:.2f} +/- {std_reward:.2f}")
     # Ensure we return floats
-    mean_reward_float = float(mean_reward) if isinstance(mean_reward, (int, float, np.number)) else 0.0
-    std_reward_float = float(std_reward) if isinstance(std_reward, (int, float, np.number)) else 0.0
+    mean_reward_float = (
+        float(mean_reward) if isinstance(mean_reward, (int, float, np.number)) else 0.0
+    )
+    std_reward_float = (
+        float(std_reward) if isinstance(std_reward, (int, float, np.number)) else 0.0
+    )
     return {"mean_reward": mean_reward_float, "std_reward": std_reward_float}
 
     # # 9. Record a video of the trained agent using SB3's built-in recorder

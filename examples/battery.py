@@ -9,7 +9,6 @@ gym.register(
     id=env_id,
     entry_point="energypy.battery:BatteryEnv",
 )
-# print(gym.pprint_registry())
 
 # TODO - download data if not already there
 data = pl.read_parquet("data/final.parquet")
