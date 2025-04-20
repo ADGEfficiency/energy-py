@@ -11,7 +11,7 @@ test: setup-test
 	uv run examples/battery.py
 
 static: setup-test
-	uv run basedpyright src poc --level error
+	uv run basedpyright src --level error
 
 check: setup-test
 	uv run ruff check src poc

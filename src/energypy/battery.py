@@ -4,9 +4,10 @@ import typing
 
 import gymnasium as gym
 import numpy as np
+from numpy.typing import NDArray
 
 
-class BatteryEnv(gym.Env[np.ndarray, np.ndarray]):
+class BatteryEnv(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
     def __init__(
         self,
         electricity_prices: typing.Sequence[float],
@@ -25,20 +26,22 @@ class BatteryEnv(gym.Env[np.ndarray, np.ndarray]):
         self.initial_state_of_charge_mwh: float = initial_state_of_charge_mwh
         self.n_lags: int = 0
         self.n_horizons: int = 48
+        self.episode_step: int = 0
+        self.state_of_charge_mwh: float = initial_state_of_charge_mwh
         assert self.episode_length + self.n_lags <= len(self.electricity_prices)
 
         # lagged prices and current state of charge
-        self.observation_space: gym.spaces.Space[np.ndarray] = gym.spaces.Box(
+        self.observation_space: gym.spaces.Space[NDArray[np.float64]] = gym.spaces.Box(
             low=0, high=1000, shape=(self.n_lags + self.n_horizons + 1,)
         )
 
         # one action - choose charge / discharge MW for the next interval
         self.action_space = gym.spaces.Box(low=-power_mw, high=power_mw)
 
-        self.info = collections.defaultdict(list)
+        self.info: dict[str, list[float]] = collections.defaultdict(list)
 
-    def reset(self, seed: int | None = None, options: dict | None = None) -> tuple:
-        super().reset(seed=seed)
+    def reset(self, *, seed: int | None = None, options: dict[str, typing.Any] | None = None) -> tuple[NDArray[np.float64], dict[str, list[float]]]:
+        super().reset(seed=seed, options=options)
         self.index = random.randint(
             self.n_lags + self.episode_length + self.n_horizons,
             len(self.electricity_prices)
@@ -51,7 +54,7 @@ class BatteryEnv(gym.Env[np.ndarray, np.ndarray]):
         # print(f"reset: {self.index=}")
         return self._get_obs(), self._get_info()
 
-    def _get_obs(self):
+    def _get_obs(self) -> NDArray[np.float64]:
         # TODO - use internal state counter, price data
         # prices with charges stacked on the end
         obs = list(
@@ -62,11 +65,11 @@ class BatteryEnv(gym.Env[np.ndarray, np.ndarray]):
         obs = np.array(obs, dtype=float)
         return obs
 
-    def _get_info(self):
+    def _get_info(self) -> dict[str, list[float]]:
         # TODO - some info for experiment analysis (usually)
         return self.info
 
-    def step(self, action: float) -> tuple:
+    def step(self, action: NDArray[np.float64]) -> tuple[NDArray[np.float64], float, bool, bool, dict[str, list[float]]]:
         # TODO - possible this action would be scaled...
         # can i use a wrapper?
 
@@ -87,22 +90,23 @@ class BatteryEnv(gym.Env[np.ndarray, np.ndarray]):
 
         self.energy_balance(
             initial_charge=initial_charge_mwh,
-            final_charge=final_charge_mwh,
-            import_energy=import_energy_mwh,
-            export_energy=export_energy_mwh,
+            final_charge=float(final_charge_mwh),
+            import_energy=float(import_energy_mwh),
+            export_energy=float(export_energy_mwh),
             losses=losses,
         )
 
         # TODO import & export prices
-        reward = self.electricity_prices[self.index] * battery_power_mw
+        reward = float(self.electricity_prices[self.index] * battery_power_mw)
         terminated = self.episode_step + 1 == self.episode_length
+        truncated = False
 
         # print(terminated, self.index, self.episode_length)
         self.index += 1
         self.episode_step += 1
         self.state_of_charge_mwh = float(final_charge_mwh)
         self.info["state_of_charge_mwh"].append(self.state_of_charge_mwh)
-        return self._get_obs(), reward, terminated, False, self._get_info()
+        return self._get_obs(), reward, terminated, truncated, self._get_info()
 
     def energy_balance(
         self,
