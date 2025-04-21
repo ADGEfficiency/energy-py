@@ -1,12 +1,69 @@
 """Tools for running reinforcement learning experiments with energypy."""
 
 from typing import Any
+
 import numpy as np
+import pydantic
 from gymnasium import Env
+from stable_baselines3 import PPO
 from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.evaluation import evaluate_policy
 
-import pydantic
+import energypy
+
+
+def _get_default_battery():
+    return energypy.Battery(electricity_prices=np.random.uniform(-100, 100, 48 * 10))
+
+
+def _get_default_agent():
+    env = _get_default_battery()
+    return PPO(
+        policy="MlpPolicy",
+        env=env,
+        learning_rate=0.0003,
+        n_steps=2048,
+        batch_size=64,
+        n_epochs=2,
+        gamma=0.99,
+        gae_lambda=0.95,
+        clip_range=0.2,
+        verbose=1,
+        tensorboard_log="./data/tensorboard",
+    )
+
+
+class ExperimentConfig(pydantic.BaseModel):
+    env_tr: Env[Any, Any] = pydantic.Field(default_factory=_get_default_battery)
+    env_te: Env[Any, Any] | None = None
+    agent: BaseAlgorithm = pydantic.Field(default_factory=lambda: _get_default_agent())
+    name: str = "battery"
+    num_episodes: int = 5
+    model_config: pydantic.ConfigDict = pydantic.ConfigDict(
+        arbitrary_types_allowed=True, extra="forbid"
+    )
+
+    @pydantic.model_validator(mode="before")
+    def set_env_te(cls, v, values):
+        if isinstance(v["env_tr"], dict):
+            import gymnasium as gym
+
+            env = gym.make(**v["env_tr"])
+            v["env_tr"] = env
+
+        if v["env_te"] is None:
+            v["env_te"] = v["env_tr"]
+
+        # TODO - more init of env_te if not None
+
+        if isinstance(v["agent"], dict):
+            import stable_baselines3
+
+            Agent = getattr(stable_baselines3, v["agent"]["id"])
+            del v["agent"]["id"]
+            v["agent"] = Agent(**v["agent"], env=v["env_tr"])
+
+        return v
 
 
 class ExperimentResult(pydantic.BaseModel):
@@ -16,8 +73,53 @@ class ExperimentResult(pydantic.BaseModel):
     std_reward_te: float
 
 
-def run_episode(env, model) -> dict:
-    """Interact with the environment using the trained model and display results."""
+def run_experiment(
+    cfg: ExperimentConfig | None = None, **kwargs: int
+) -> ExperimentResult:
+    # TODO - test all these
+    # TODO - tests using the config
+    """
+    run_experiment(Config(options=1))
+    run_experiment(cfg=Config(options=1))
+    run_experiment(options=1)
+    """
+    if cfg is None:
+        cfg = ExperimentConfig(**kwargs)
+
+    assert isinstance(cfg, ExperimentConfig)
+
+    cfg.agent.learn(total_timesteps=50000)
+
+    model_path = f"models/{cfg.name}"
+    cfg.agent.save(model_path)
+    # TODO
+    # agent = PPO.load(model_path)
+
+    results_tr: list[dict] = []
+    for episode in range(cfg.num_episodes):
+        results = run_episode(cfg.env_tr, cfg.agent)
+        print(
+            f"Episode {episode + 1} completed with total reward: {results['total_reward']}, steps: {results['n_steps']}"
+        )
+        print("=" * 50)
+        results_tr.append(results)
+
+    mean_reward_te, std_reward_te = evaluate_policy(
+        cfg.agent, cfg.env_te, n_eval_episodes=10, deterministic=True
+    )
+
+    result = ExperimentResult(
+        mean_reward_tr=float(np.mean([r["total_reward"] for r in results_tr])),
+        std_reward_tr=float(np.std([r["total_reward"] for r in results_tr])),
+        mean_reward_te=float(mean_reward_te),
+        std_reward_te=float(std_reward_te),
+    )
+    print(result)
+    return result
+
+
+def run_episode(env, agent) -> dict:
+    """Interact with the environment using the trained agent and display results."""
     obs, _ = env.reset()
     done = False
     total_reward = 0
@@ -25,9 +127,9 @@ def run_episode(env, model) -> dict:
 
     infos = []
     while not done:
-        # Act: Get the action from the model
+        # Act: Get the action from the agent
         # TODO - should deterministic only be when in test mode?
-        action, _states = model.predict(obs, deterministic=True)
+        action, _states = agent.predict(obs, deterministic=True)
 
         # Step: Execute the action in the environment
         next_obs, reward, terminated, truncated, info = env.step(action)
@@ -49,59 +151,5 @@ def run_episode(env, model) -> dict:
         obs = next_obs
         step_counter += 1
 
+    # TODO - EpisodeResult
     return {"total_reward": total_reward, "n_steps": step_counter, "infos": infos}
-
-
-class ExperimentConfig(pydantic.BaseModel):
-    env: Env[Any, Any]
-    eval_env: Env[Any, Any]
-    model: BaseAlgorithm
-    name: str = "battery"
-    num_episodes: int = 5
-
-    model_config = pydantic.ConfigDict(arbitrary_types_allowed=True)
-
-
-def run_experiment(
-    cfg: ExperimentConfig | None = None, **kwargs: int
-) -> ExperimentResult:
-    # TODO - test all these
-    # TODO - tests using the config
-    """
-    run_experiment(Config(options=1))
-    run_experiment(cfg=Config(options=1))
-    run_experiment(options=1)
-    """
-    if cfg is None:
-        cfg = ExperimentConfig(**kwargs)
-
-    assert isinstance(cfg, ExperimentConfig)
-
-    cfg.model.learn(total_timesteps=50000)
-
-    model_path = f"models/{cfg.name}"
-    cfg.model.save(model_path)
-    # TODO
-    # model = PPO.load(model_path)
-
-    results_tr: list[dict] = []
-    for episode in range(cfg.num_episodes):
-        results = run_episode(cfg.env, cfg.model).dict()
-        print(
-            f"Episode {episode + 1} completed with total reward: {results['total_reward']}, steps: {results['n_steps']}"
-        )
-        print("=" * 50)
-        results_tr.append(results)
-
-    mean_reward_te, std_reward_te = evaluate_policy(
-        cfg.model, cfg.eval_env, n_eval_episodes=10, deterministic=True
-    )
-
-    result = ExperimentResult(
-        mean_reward_tr=float(np.mean([r["total_reward"] for r in results_tr])),
-        std_reward_tr=float(np.std([r["total_reward"] for r in results_tr])),
-        mean_reward_te=float(mean_reward_te),
-        std_reward_te=float(std_reward_te),
-    )
-    print(result)
-    return result

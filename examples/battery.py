@@ -8,7 +8,7 @@ import energypy
 env_id = "energypy/battery"
 gym.register(
     id=env_id,
-    entry_point="energypy.battery:BatteryEnv",
+    entry_point="energypy:Battery",
 )
 
 # TODO - download data if not already there

@@ -7,10 +7,12 @@ import numpy as np
 from numpy.typing import NDArray
 
 
-class BatteryEnv(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
+class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
     def __init__(
         self,
-        electricity_prices: typing.Sequence[float],
+        electricity_prices: typing.Sequence[float] = np.random.uniform(
+            -100, 100, 48 * 10
+        ),
         power_mw=2.0,
         capacity_mwh=4.0,
         efficiency_pct=0.9,
