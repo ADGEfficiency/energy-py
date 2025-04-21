@@ -14,5 +14,6 @@ SRC_DIRS=src examples
 static: setup-test
 	uv run basedpyright $(SRC_DIRS) --level error
 
+RUFF_ARGS=
 check: setup-test
-	uv run ruff check $(SRC_DIRS)
+	uv run ruff check $(SRC_DIRS) $(RUFF_ARGS)
