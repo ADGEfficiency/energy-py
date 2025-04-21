@@ -10,7 +10,6 @@ from gymnasium import Env
 from stable_baselines3 import PPO
 from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.evaluation import evaluate_policy
-import torch
 from torch.utils.tensorboard import SummaryWriter
 
 import energypy
@@ -128,10 +127,10 @@ def run_experiment(
     
     # Log to tensorboard if a writer is provided
     if writer is not None:
-        writer.add_scalar(f"Reward/train", mean_reward_tr, experiment_index)
-        writer.add_scalar(f"Reward/test", mean_reward_te, experiment_index)
-        writer.add_scalar(f"Reward_std/train", std_reward_tr, experiment_index)
-        writer.add_scalar(f"Reward_std/test", std_reward_te, experiment_index)
+        writer.add_scalar("Reward/train", mean_reward_tr, experiment_index)
+        writer.add_scalar("Reward/test", mean_reward_te, experiment_index)
+        writer.add_scalar("Reward_std/train", std_reward_tr, experiment_index)
+        writer.add_scalar("Reward_std/test", std_reward_te, experiment_index)
     
     print(result)
     return result
