@@ -5,6 +5,8 @@ from typing import Any
 import numpy as np
 import pydantic
 from gymnasium import Env
+import gymnasium as gym
+import stable_baselines3
 from stable_baselines3 import PPO
 from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.evaluation import evaluate_policy
@@ -46,8 +48,6 @@ class ExperimentConfig(pydantic.BaseModel):
     @pydantic.model_validator(mode="before")
     def set_env_te(cls, v, values):
         if isinstance(v["env_tr"], dict):
-            import gymnasium as gym
-
             env = gym.make(**v["env_tr"])
             v["env_tr"] = env
 
@@ -57,8 +57,6 @@ class ExperimentConfig(pydantic.BaseModel):
         # TODO - more init of env_te if not None
 
         if isinstance(v["agent"], dict):
-            import stable_baselines3
-
             Agent = getattr(stable_baselines3, v["agent"]["id"])
             del v["agent"]["id"]
             v["agent"] = Agent(**v["agent"], env=v["env_tr"])
