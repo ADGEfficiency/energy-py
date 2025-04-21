@@ -11,8 +11,9 @@ class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
     def __init__(
         self,
         electricity_prices: typing.Sequence[float] = np.random.uniform(
-            -100, 100, 48 * 10
+            -100.0, 100, 48 * 10
         ),
+        features: typing.Sequence[float] = np.random.uniform(-100.0, 100, (48 * 10, 4)),
         power_mw=2.0,
         capacity_mwh=4.0,
         efficiency_pct=0.9,
@@ -112,6 +113,7 @@ class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
         self.episode_step += 1
         self.state_of_charge_mwh = float(final_charge_mwh)
         self.info["state_of_charge_mwh"].append(self.state_of_charge_mwh)
+        self.info["battery_power_mw"].append(battery_power_mw)
         return self._get_obs(), reward, terminated, truncated, self._get_info()
 
     def energy_balance(

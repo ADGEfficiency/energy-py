@@ -3,7 +3,7 @@
 import gymnasium as gym
 
 from energypy.battery import Battery
-from energypy.experiment import run_experiment
+from energypy.experiment import run_experiment, run_experiments
 
 gym.register(
     id="energypy/battery",
@@ -12,4 +12,5 @@ gym.register(
 __all__ = [
     "Battery",
     "run_experiment",
+    "run_experiments",
 ]

@@ -1,6 +1,6 @@
 """Tools for running reinforcement learning experiments with energypy."""
 
-from typing import Any
+from typing import Any, Sequence
 
 import gymnasium as gym
 import numpy as np
@@ -10,12 +10,14 @@ from gymnasium import Env
 from stable_baselines3 import PPO
 from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.evaluation import evaluate_policy
+import torch
+from torch.utils.tensorboard import SummaryWriter
 
 import energypy
 
 
 def _get_default_battery():
-    return energypy.Battery(electricity_prices=np.random.uniform(-100, 100, 48 * 10))
+    return energypy.Battery(electricity_prices=np.random.uniform(-100.0, 100, 48 * 10))
 
 
 def _get_default_agent():
@@ -74,15 +76,11 @@ class ExperimentResult(pydantic.BaseModel):
 
 
 def run_experiment(
-    cfg: ExperimentConfig | None = None, **kwargs: str | int
+    cfg: ExperimentConfig | None = None, 
+    writer: SummaryWriter | None = None,
+    experiment_index: int = 0,
+    **kwargs: str | int
 ) -> ExperimentResult:
-    # TODO - test all these
-    # TODO - tests using the config
-    """
-    run_experiment(Config(options=1))
-    run_experiment(cfg=Config(options=1))
-    run_experiment(options=1)
-    """
     if cfg is None:
         cfg = ExperimentConfig(**kwargs)
 
@@ -90,17 +88,35 @@ def run_experiment(
 
     cfg.agent.learn(total_timesteps=cfg.n_learning_steps)
 
-    model_path = f"models/{cfg.name}"
-    cfg.agent.save(model_path)
     # TODO
+    # model_path = f"models/{cfg.name}"
+    # cfg.agent.save(model_path)
     # agent = PPO.load(model_path)
 
+    class Callback:
+        import collections
+
+        state = collections.defaultdict(list)
+
+        def __call__(self, locals, globals):
+            self.state["state_of_charge_mwh"].append(
+                locals["info"]["state_of_charge_mwh"]
+            )
+
+    cb = Callback()
     mean_reward_tr, std_reward_tr = evaluate_policy(
-        cfg.agent, cfg.env_tr, n_eval_episodes=cfg.n_eval_episodes, deterministic=True
+        cfg.agent,
+        cfg.env_tr,
+        n_eval_episodes=cfg.n_eval_episodes,
+        deterministic=True,
+        callback=cb,
     )
 
     mean_reward_te, std_reward_te = evaluate_policy(
-        cfg.agent, cfg.env_te, n_eval_episodes=cfg.n_eval_episodes, deterministic=True
+        cfg.agent,
+        cfg.env_te,
+        n_eval_episodes=cfg.n_eval_episodes,
+        deterministic=True,
     )
 
     result = ExperimentResult(
@@ -109,42 +125,37 @@ def run_experiment(
         mean_reward_te=float(mean_reward_te),
         std_reward_te=float(std_reward_te),
     )
+    
+    # Log to tensorboard if a writer is provided
+    if writer is not None:
+        writer.add_scalar(f"Reward/train", mean_reward_tr, experiment_index)
+        writer.add_scalar(f"Reward/test", mean_reward_te, experiment_index)
+        writer.add_scalar(f"Reward_std/train", std_reward_tr, experiment_index)
+        writer.add_scalar(f"Reward_std/test", std_reward_te, experiment_index)
+    
     print(result)
     return result
 
 
-def run_episode(env, agent) -> dict:
-    """Interact with the environment using the trained agent and display results."""
-    obs, _ = env.reset()
-    done = False
-    total_reward = 0
-    step_counter = 0
-
-    infos = []
-    while not done:
-        # Act: Get the action from the agent
-        # TODO - should deterministic only be when in test mode?
-        action, _states = agent.predict(obs, deterministic=True)
-
-        # Step: Execute the action in the environment
-        next_obs, reward, terminated, truncated, info = env.step(action)
-        infos.append(info)
-        done = terminated or truncated
-
-        # Observe reward
-        total_reward += reward
-
-        # TODO - debug logging
-        # print(f"Episode {episode + 1}, Step {step_counter + 1}")
-        # print(f"  Observation: {obs}")
-        # print(f"  Action: {action}")
-        # print(f"  Reward: {reward}")
-        # print(f"  Done: {done}")
-        # print("---")
-
-        # Update observation
-        obs = next_obs
-        step_counter += 1
-
-    # TODO - EpisodeResult
-    return {"total_reward": total_reward, "n_steps": step_counter, "infos": infos}
+def run_experiments(
+    configs: Sequence[ExperimentConfig], 
+    log_dir: str = "./data/tensorboard/experiments"
+) -> list[ExperimentResult]:
+    """Run multiple experiments and log results to tensorboard.
+    
+    Args:
+        configs: Sequence of experiment configurations
+        log_dir: Directory for tensorboard logs
+        
+    Returns:
+        List of experiment results
+    """
+    writer = SummaryWriter(log_dir=log_dir)
+    results = []
+    
+    for i, cfg in enumerate(configs):
+        result = run_experiment(cfg=cfg, writer=writer, experiment_index=i)
+        results.append(result)
+    
+    writer.close()
+    return results
