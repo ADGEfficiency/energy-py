@@ -1,6 +1,6 @@
 """Tools for running reinforcement learning experiments with energypy."""
 
-from typing import Any, Dict
+from typing import Any
 import numpy as np
 from gymnasium import Env
 from stable_baselines3.common.base_class import BaseAlgorithm
