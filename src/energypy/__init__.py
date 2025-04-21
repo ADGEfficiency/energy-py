@@ -1,9 +1,9 @@
-# from energypy.battery import BatteryEnv, register_env
+"""Reinforcement learning experiments with energy environments with energypy."""
 
-# __all__ = ["BatteryEnv", "register_env"]
+from energypy.battery import BatteryEnv
+from energypy.experiment import run_experiment
 
-# register_env()
-
-
-def hello() -> str:
-    return "Hello from energypylinear!"
+__all__ = [
+    "BatteryEnv",
+    "run_experiment",
+]

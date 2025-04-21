@@ -3,7 +3,7 @@ import polars as pl
 import numpy as np
 from stable_baselines3 import PPO
 
-from energypy.runner import main
+import energypy
 
 env_id = "energypy/battery"
 gym.register(
@@ -18,7 +18,7 @@ prices = np.random.uniform(-1000, 1000, 2048 * 10)
 env = gym.make(env_id, electricity_prices=prices)
 env = gym.wrappers.NormalizeReward(env)
 
-result = main(
+result = energypy.run_experiment(
     env=env,
     eval_env=env,
     model=PPO(
@@ -35,5 +35,5 @@ result = main(
         tensorboard_log="./data/tensorboard",
     ),
     name="cartpole",
-)
-assert isinstance(result["mean_reward"], float) and result["mean_reward"] > 4.0
+).dict()
+assert isinstance(result["mean_reward_te"], float) and result["mean_reward_te"] > 4.0

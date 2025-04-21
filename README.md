@@ -6,10 +6,9 @@ A framework for reinforcement learning experiments with energy environments.
 
 ## Features
 
-- Battery storage environments for energy arbitrage
-- PPO implementation for training RL agents
-- Integration with [Gymnasium](https://gymnasium.farama.org/) for custom environments
-- Integration with [Stable Baselines3](https://stable-baselines3.readthedocs.io/) for access to state-of-the-art RL algorithms
+- Electric battery storage environment for energy arbitrage
+- Integration with [Gymnasium](https://gymnasium.farama.org/) as a custom Gymnasium environment
+- Integration with [Stable Baselines  -> list[dict]3](https://stable-baselines3.readthedocs.io/) for reinforcement learning agents
 - Historical electricity price data for realistic training scenarios
 
 ## Setup
@@ -29,6 +28,12 @@ make check
 
 # Verify type annotations
 make static
+```
+
+## Example
+
+```shell-session
+$ make example
 ```
 
 ## Usage

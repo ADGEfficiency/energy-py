@@ -402,6 +402,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "gymnasium", extra = ["all"] },
+    { name = "pydantic" },
     { name = "stable-baselines3", extra = ["extra"] },
 ]
 
@@ -420,6 +421,7 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "gymnasium", extras = ["all"], specifier = ">=1.1.1" },
+    { name = "pydantic", specifier = ">=2.11.3" },
     { name = "stable-baselines3", extras = ["extra"], specifier = ">=2.6.0" },
 ]
 
