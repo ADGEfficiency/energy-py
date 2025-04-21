@@ -1,5 +1,4 @@
 import gymnasium as gym
-import polars as pl
 import numpy as np
 from stable_baselines3 import PPO
 
@@ -11,17 +10,13 @@ gym.register(
     entry_point="energypy:Battery",
 )
 
-# TODO - download data if not already there
-data = pl.read_parquet("data/final.parquet")
-prices = data["DollarsPerMegawattHour"]
 prices = np.random.uniform(-1000, 1000, 2048 * 10)
 env = gym.make(env_id, electricity_prices=prices)
 env = gym.wrappers.NormalizeReward(env)
 
 result = energypy.run_experiment(
-    env=env,
-    eval_env=env,
-    model=PPO(
+    env_tr=env,
+    agent=PPO(
         policy="MlpPolicy",
         env=env,
         learning_rate=0.0003,

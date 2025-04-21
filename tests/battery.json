@@ -1,0 +1,10 @@
+{
+  "env": {
+    "name": "battery",
+    "n_batteries": 2
+  },
+  "agent": {
+    "name": "PPO"
+  },
+  "name": "battery"
+}

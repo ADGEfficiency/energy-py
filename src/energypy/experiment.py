@@ -2,11 +2,11 @@
 
 from typing import Any
 
+import gymnasium as gym
 import numpy as np
 import pydantic
-from gymnasium import Env
-import gymnasium as gym
 import stable_baselines3
+from gymnasium import Env
 from stable_baselines3 import PPO
 from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.evaluation import evaluate_policy
@@ -40,13 +40,15 @@ class ExperimentConfig(pydantic.BaseModel):
     env_te: Env[Any, Any] | None = None
     agent: BaseAlgorithm = pydantic.Field(default_factory=lambda: _get_default_agent())
     name: str = "battery"
-    num_episodes: int = 5
+    num_episodes: int = 10
+    n_learning_steps: int = 50000
+    n_eval_episodes: int = 10
     model_config: pydantic.ConfigDict = pydantic.ConfigDict(
         arbitrary_types_allowed=True, extra="forbid"
     )
 
     @pydantic.model_validator(mode="before")
-    def set_env_te(cls, v, values):
+    def validate_all_the_things(cls, v, values):
         if isinstance(v["env_tr"], dict):
             env = gym.make(**v["env_tr"])
             v["env_tr"] = env
@@ -72,7 +74,7 @@ class ExperimentResult(pydantic.BaseModel):
 
 
 def run_experiment(
-    cfg: ExperimentConfig | None = None, **kwargs: int
+    cfg: ExperimentConfig | None = None, **kwargs: str | int
 ) -> ExperimentResult:
     # TODO - test all these
     # TODO - tests using the config
@@ -86,29 +88,24 @@ def run_experiment(
 
     assert isinstance(cfg, ExperimentConfig)
 
-    cfg.agent.learn(total_timesteps=50000)
+    cfg.agent.learn(total_timesteps=cfg.n_learning_steps)
 
     model_path = f"models/{cfg.name}"
     cfg.agent.save(model_path)
     # TODO
     # agent = PPO.load(model_path)
 
-    results_tr: list[dict] = []
-    for episode in range(cfg.num_episodes):
-        results = run_episode(cfg.env_tr, cfg.agent)
-        print(
-            f"Episode {episode + 1} completed with total reward: {results['total_reward']}, steps: {results['n_steps']}"
-        )
-        print("=" * 50)
-        results_tr.append(results)
+    mean_reward_tr, std_reward_tr = evaluate_policy(
+        cfg.agent, cfg.env_tr, n_eval_episodes=cfg.n_eval_episodes, deterministic=True
+    )
 
     mean_reward_te, std_reward_te = evaluate_policy(
-        cfg.agent, cfg.env_te, n_eval_episodes=10, deterministic=True
+        cfg.agent, cfg.env_te, n_eval_episodes=cfg.n_eval_episodes, deterministic=True
     )
 
     result = ExperimentResult(
-        mean_reward_tr=float(np.mean([r["total_reward"] for r in results_tr])),
-        std_reward_tr=float(np.std([r["total_reward"] for r in results_tr])),
+        mean_reward_tr=float(mean_reward_tr),
+        std_reward_tr=float(std_reward_tr),
         mean_reward_te=float(mean_reward_te),
         std_reward_te=float(std_reward_te),
     )
