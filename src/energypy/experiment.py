@@ -12,14 +12,14 @@ from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.evaluation import evaluate_policy
 from torch.utils.tensorboard import SummaryWriter
 
-import energypy
+from energypy.battery import Battery
 
 
-def _get_default_battery():
-    return energypy.Battery(electricity_prices=np.random.uniform(-100.0, 100, 48 * 10))
+def _get_default_battery() -> "Battery":
+    return Battery(electricity_prices=np.random.uniform(-100.0, 100, 48 * 10))
 
 
-def _get_default_agent():
+def _get_default_agent() -> PPO:
     return PPO(
         policy="MlpPolicy",
         env=_get_default_battery(),
@@ -68,7 +68,7 @@ class ExperimentConfig(pydantic.BaseModel):
     def validate_all_the_things_again(self):
         if self.env_te is None:
             self.env_te = self.env_tr
-        return
+        return self
 
 
 class Checkpoint(pydantic.BaseModel):
