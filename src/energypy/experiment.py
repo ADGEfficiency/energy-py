@@ -15,7 +15,7 @@ from torch.utils.tensorboard import SummaryWriter
 from energypy.battery import Battery
 
 
-def _get_default_battery() -> "Battery":
+def _get_default_battery() -> Battery:
     return Battery(electricity_prices=np.random.uniform(-100.0, 100, 48 * 10))
 
 
@@ -52,10 +52,9 @@ class ExperimentConfig(pydantic.BaseModel):
             env = gym.make(**v["env_tr"])
             v["env_tr"] = env
 
-        if (v.get("env_te") is None) and v.get("env_tr" != None):
-            v["env_te"] = v["env_tr"]
-
-        # TODO - more init of env_te if not None
+        if isinstance(v.get("env_te"), dict):
+            env = gym.make(**v["env_te"])
+            v["env_te"] = env
 
         if isinstance(v.get("agent"), dict):
             Agent = getattr(stable_baselines3, v["agent"]["id"])
