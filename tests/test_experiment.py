@@ -7,9 +7,12 @@ def test_run_experiments() -> None:
             env_tr={"id": "energypy/battery"},
             env_te=None,
             agent={"id": "PPO", "policy": "MlpPolicy"},
+            n_learning_steps=10,
         ),
-        ExperimentConfig(),
-        ExperimentConfig(n_learning_steps=20),
+        ExperimentConfig(
+            n_learning_steps=10,
+        ),
+        ExperimentConfig(n_learning_steps=10),
     ]
-    results = run_experiments(configs, log_dir="./data/tensorboard/test_experiments")
-    assert len(results) == 2
+    results = run_experiments(configs, log_dir=None)
+    assert len(results) == len(configs)

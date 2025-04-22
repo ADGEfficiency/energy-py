@@ -1,3 +1,5 @@
+import uuid
+
 import gymnasium as gym
 import numpy as np
 import polars as pl
@@ -35,10 +37,7 @@ prices_te = prices.slice(split_idx, data.shape[0])
 features_tr = features.slice(0, split_idx)
 features_te = features.slice(split_idx, data.shape[0])
 
-import uuid
-
 expt_guid = uuid.uuid4()
-
 configs = []
 for noise in [0, 1, 10, 100, 1000]:
     run_guid = uuid.uuid4()

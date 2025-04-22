@@ -54,7 +54,7 @@ class ExperimentConfig(pydantic.BaseModel):
             env = gym.make(**v["env_tr"])
             v["env_tr"] = env
 
-        if (v.get("env_te") is None) and v.get("env_tr" is not None):
+        if (v.get("env_te") is None) and v.get("env_tr" != None):
             v["env_te"] = v["env_tr"]
 
         # TODO - more init of env_te if not None
@@ -154,7 +154,6 @@ def _evaluate_agent(
 def run_experiment(
     cfg: ExperimentConfig | None = None,
     writer: SummaryWriter | None = None,
-    experiment_index: int = 0,
     **kwargs: str | int,
 ) -> ExperimentResult:
     if cfg is None:
@@ -175,6 +174,7 @@ def run_experiment(
     cb = Callback()
 
     # Evaluate agent before training
+    print("eval")
     checkpoint = _evaluate_agent(
         agent=cfg.agent,
         env_tr=cfg.env_tr,
@@ -189,8 +189,10 @@ def run_experiment(
     result = ExperimentResult(checkpoints=[checkpoint])
 
     # Train the agent
+    print("train")
     cfg.agent.learn(total_timesteps=cfg.n_learning_steps)
 
+    print("eval")
     # Evaluate after training
     final_checkpoint = _evaluate_agent(
         agent=cfg.agent,
@@ -214,7 +216,8 @@ def run_experiment(
 
 
 def run_experiments(
-    configs: Sequence[ExperimentConfig], log_dir: str = "./data/tensorboard/experiments"
+    configs: Sequence[ExperimentConfig],
+    log_dir: str | None = "./data/tensorboard/experiments",
 ) -> list[ExperimentResult]:
     """Run multiple experiments and log results to tensorboard.
 
@@ -229,7 +232,8 @@ def run_experiments(
     results = []
 
     for i, cfg in enumerate(configs):
-        result = run_experiment(cfg=cfg, writer=writer, experiment_index=i)
+        print(cfg)
+        result = run_experiment(cfg=cfg, writer=writer)
         results.append(result)
 
     writer.close()
