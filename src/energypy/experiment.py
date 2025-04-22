@@ -1,6 +1,6 @@
 """Tools for running reinforcement learning experiments with energypy."""
 
-from typing import Any, Sequence, TypeVar
+from typing import Any, Sequence
 
 import gymnasium as gym
 import numpy as np
@@ -160,7 +160,7 @@ def _evaluate_agent(
 def run_experiment(
     cfg: ExperimentConfig | None = None,
     writer: SummaryWriter | None = None,
-    **kwargs: Env[Any, Any] | BaseAlgorithm | int | str,
+    **kwargs: Any,
 ) -> ExperimentResult:
     if cfg is None:
         cfg = ExperimentConfig(**kwargs)
@@ -250,4 +250,3 @@ def run_experiments(
 
     writer.close()
     return results
-

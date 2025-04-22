@@ -14,10 +14,7 @@ prices = np.random.uniform(-1000, 1000, 2048 * 10)
 env = gym.make(env_id, electricity_prices=prices)
 env = gym.wrappers.NormalizeReward(env)
 
-# Create an instance of ExperimentConfig directly
-from energypy.experiment import ExperimentConfig
-
-config = ExperimentConfig(
+config = energypy.ExperimentConfig(
     env_tr=env,
     agent=PPO(
         policy="MlpPolicy",

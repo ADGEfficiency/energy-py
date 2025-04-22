@@ -2,19 +2,17 @@
 
 import gymnasium as gym
 
-# Fix import cycle by using relative imports
-from .battery import Battery
+from energypy.battery import Battery
+from energypy.experiment import ExperimentConfig, run_experiment, run_experiments
 
 gym.register(
     id="energypy/battery",
     entry_point="energypy:Battery",
 )
 
-# Import after gym registration to prevent circular dependency
-from .experiment import run_experiment, run_experiments
-
 __all__ = [
     "Battery",
+    "ExperimentConfig",
     "run_experiment",
     "run_experiments",
 ]
