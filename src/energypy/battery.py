@@ -6,14 +6,14 @@ import gymnasium as gym
 import numpy as np
 from numpy.typing import NDArray
 
+NumericSequence = NDArray[np.float64] | typing.Sequence[float]
+
 
 class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
     def __init__(
         self,
-        electricity_prices: typing.Sequence[float] = np.random.uniform(
-            -100.0, 100, 48 * 10
-        ),
-        features: typing.Sequence[float] = np.random.uniform(-100.0, 100, (48 * 10, 4)),
+        electricity_prices: NumericSequence = np.random.uniform(-100.0, 100, 48 * 10),
+        features: NumericSequence = np.random.uniform(-100.0, 100, (48 * 10, 4)),
         power_mw=2.0,
         capacity_mwh=4.0,
         efficiency_pct=0.9,
@@ -23,7 +23,9 @@ class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
         self.power_mw = power_mw
         self.capacity_mwh = capacity_mwh
         self.efficiency_pct: float = efficiency_pct
-        self.electricity_prices: typing.Sequence[float] = electricity_prices
+        self.electricity_prices: NumericSequence = electricity_prices
+        # TODO - USE FEATURES!!!
+
         self.episode_length: int = episode_length
         self.index: int = 0
         self.initial_state_of_charge_mwh: float = initial_state_of_charge_mwh
