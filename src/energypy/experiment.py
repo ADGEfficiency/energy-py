@@ -54,7 +54,7 @@ class ExperimentConfig(pydantic.BaseModel):
             env = gym.make(**v["env_tr"])
             v["env_tr"] = env
 
-        if v["env_te"] is None:
+        if v.get("env_te") is None:
             v["env_te"] = v["env_tr"]
 
         # TODO - more init of env_te if not None
@@ -75,10 +75,10 @@ class ExperimentResult(pydantic.BaseModel):
 
 
 def run_experiment(
-    cfg: ExperimentConfig | None = None, 
+    cfg: ExperimentConfig | None = None,
     writer: SummaryWriter | None = None,
     experiment_index: int = 0,
-    **kwargs: str | int
+    **kwargs: str | int,
 ) -> ExperimentResult:
     if cfg is None:
         cfg = ExperimentConfig(**kwargs)
@@ -124,37 +124,36 @@ def run_experiment(
         mean_reward_te=float(mean_reward_te),
         std_reward_te=float(std_reward_te),
     )
-    
+
     # Log to tensorboard if a writer is provided
     if writer is not None:
         writer.add_scalar("Reward/train", mean_reward_tr, experiment_index)
         writer.add_scalar("Reward/test", mean_reward_te, experiment_index)
         writer.add_scalar("Reward_std/train", std_reward_tr, experiment_index)
         writer.add_scalar("Reward_std/test", std_reward_te, experiment_index)
-    
+
     print(result)
     return result
 
 
 def run_experiments(
-    configs: Sequence[ExperimentConfig], 
-    log_dir: str = "./data/tensorboard/experiments"
+    configs: Sequence[ExperimentConfig], log_dir: str = "./data/tensorboard/experiments"
 ) -> list[ExperimentResult]:
     """Run multiple experiments and log results to tensorboard.
-    
+
     Args:
         configs: Sequence of experiment configurations
         log_dir: Directory for tensorboard logs
-        
+
     Returns:
         List of experiment results
     """
     writer = SummaryWriter(log_dir=log_dir)
     results = []
-    
+
     for i, cfg in enumerate(configs):
         result = run_experiment(cfg=cfg, writer=writer, experiment_index=i)
         results.append(result)
-    
+
     writer.close()
     return results
