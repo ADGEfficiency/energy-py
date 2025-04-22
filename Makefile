@@ -14,7 +14,7 @@ setup-test: setup
 	uv sync --group test
 
 test: setup-test
-	uv run pytest tests --tb=short -p no:warnings --disable-warnings --cov=src --cov-report=term-missing --cov-report=xml:coverage.xml --cov-report=html:htmlcov
+	uv run pytest tests --tb=short -p no:warnings --disable-warnings --cov=src --cov-report=term-missing --cov-report=html:htmlcov --cov-fail-under=100
 
 test-examples: setup-test
 	uv run examples/dataset.py

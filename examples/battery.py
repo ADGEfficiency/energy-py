@@ -32,5 +32,6 @@ config = energypy.ExperimentConfig(
     name="cartpole",
 )
 
-result = energypy.run_experiment(cfg=config).dict()
-assert isinstance(result["mean_reward_te"], float) and result["mean_reward_te"] > 4.0
+result = energypy.run_experiment(cfg=config)
+cp = result.checkpoints[-1]
+assert isinstance(cp.mean_reward_te, float) and (cp.mean_reward_te > 4.0)
