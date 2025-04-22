@@ -35,8 +35,13 @@ prices_te = prices.slice(split_idx, data.shape[0])
 features_tr = features.slice(0, split_idx)
 features_te = features.slice(split_idx, data.shape[0])
 
+import uuid
+
+expt_guid = uuid.uuid4()
+
 configs = []
 for noise in [0, 1, 10, 100, 1000]:
+    run_guid = uuid.uuid4()
     env_tr = gym.wrappers.NormalizeReward(
         gym.make(env_id, electricity_prices=prices_tr, features=features)
     )
@@ -61,8 +66,8 @@ for noise in [0, 1, 10, 100, 1000]:
             gamma=0.99,
             gae_lambda=0.95,
             clip_range=0.2,
-            verbose=0,
-            # Reduce verbosity for multiple runstensorboard_log="./data/tensorboard"
+            verbose=1,
+            tensorboard_log=f"./data/tensorboard/battery_arbitrage_experiments/{expt_guid}/run/{run_guid}",
         ),
         name=f"battery_noise_{noise}",
         n_learning_steps=50000,  # Short training for demonstration
@@ -72,7 +77,7 @@ for noise in [0, 1, 10, 100, 1000]:
 
 # Run all experiments and log to tensorboard
 results = energypy.run_experiments(
-    configs, log_dir="./data/tensorboard/battery_arbitrage_experiments"
+    configs, log_dir=f"./data/tensorboard/battery_arbitrage_experiments/{expt_guid}"
 )
 
 # Print the best performing configuration on test data

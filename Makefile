@@ -3,6 +3,13 @@ setup:
 	uv venv
 	uv sync
 
+clean:
+	rm -rf ./data/tensorboard/
+
+TB_DIR=./data/tensorboard/
+monitor:
+	uv run tensorboard --logdir $(TB_DIR) --bind_all
+
 setup-test: setup
 	uv sync --group test
 
