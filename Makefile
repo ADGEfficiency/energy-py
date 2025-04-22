@@ -14,6 +14,9 @@ setup-test: setup
 	uv sync --group test
 
 test: setup-test
+	uv run pytest tests --tb=short -p no:warnings --disable-warnings
+
+test-examples: setup-test
 	uv run examples/dataset.py
 	uv run examples/battery.py
 

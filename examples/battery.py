@@ -14,7 +14,10 @@ prices = np.random.uniform(-1000, 1000, 2048 * 10)
 env = gym.make(env_id, electricity_prices=prices)
 env = gym.wrappers.NormalizeReward(env)
 
-result = energypy.run_experiment(
+# Create an instance of ExperimentConfig directly
+from energypy.experiment import ExperimentConfig
+
+config = ExperimentConfig(
     env_tr=env,
     agent=PPO(
         policy="MlpPolicy",
@@ -30,5 +33,7 @@ result = energypy.run_experiment(
         tensorboard_log="./data/tensorboard",
     ),
     name="cartpole",
-).dict()
+)
+
+result = energypy.run_experiment(cfg=config).dict()
 assert isinstance(result["mean_reward_te"], float) and result["mean_reward_te"] > 4.0

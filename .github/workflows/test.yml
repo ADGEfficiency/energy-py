@@ -17,6 +17,8 @@ jobs:
           python-version: '3.11'
       - name: test
         run: make test
+      - name: test examples
+        run: make test-examples -o setup-test
 
   check:
     runs-on: ubuntu-latest

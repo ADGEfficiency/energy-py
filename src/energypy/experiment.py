@@ -1,6 +1,6 @@
 """Tools for running reinforcement learning experiments with energypy."""
 
-from typing import Any, Sequence
+from typing import Any, Sequence, TypeVar
 
 import gymnasium as gym
 import numpy as np
@@ -12,11 +12,17 @@ from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.evaluation import evaluate_policy
 from torch.utils.tensorboard import SummaryWriter
 
-import energypy
+
+# Fix circular import by using a function to import when needed
+def get_battery():
+    from .battery import Battery
+
+    return Battery
 
 
 def _get_default_battery():
-    return energypy.Battery(electricity_prices=np.random.uniform(-100.0, 100, 48 * 10))
+    Battery = get_battery()
+    return Battery(electricity_prices=np.random.uniform(-100.0, 100, 48 * 10))
 
 
 def _get_default_agent():
@@ -44,12 +50,11 @@ class ExperimentConfig(pydantic.BaseModel):
     num_episodes: int = 10
     n_learning_steps: int = 50000
     n_eval_episodes: int = 10
-    model_config: pydantic.ConfigDict = pydantic.ConfigDict(
-        arbitrary_types_allowed=True, extra="forbid"
-    )
+
+    model_config = pydantic.ConfigDict(arbitrary_types_allowed=True, extra="forbid")
 
     @pydantic.model_validator(mode="before")
-    def validate_all_the_things(cls, v, values):
+    def validate_all_the_things(cls, v):
         if isinstance(v.get("env_tr"), dict):
             env = gym.make(**v["env_tr"])
             v["env_tr"] = env
@@ -67,7 +72,7 @@ class ExperimentConfig(pydantic.BaseModel):
         return v
 
     @pydantic.model_validator(mode="after")
-    def validate_all_the_things_again(cls, v, values):
+    def validate_all_the_things_again(cls, v):
         if v.env_te is None:
             v.env_te = v.env_tr
         return v
@@ -125,12 +130,13 @@ def _evaluate_agent(
         deterministic=deterministic,
     )
 
+    # Convert all values to Python floats to avoid type issues
     checkpoint = Checkpoint(
         learning_steps=learning_steps,
-        mean_reward_tr=float(mean_reward_tr),
-        std_reward_tr=float(std_reward_tr),
-        mean_reward_te=float(mean_reward_te),
-        std_reward_te=float(std_reward_te),
+        mean_reward_tr=float(np.asarray(mean_reward_tr).item()),
+        std_reward_tr=float(np.asarray(std_reward_tr).item()),
+        mean_reward_te=float(np.asarray(mean_reward_te).item()),
+        std_reward_te=float(np.asarray(std_reward_te).item()),
     )
 
     # Log to tensorboard if a writer is provided
@@ -154,7 +160,7 @@ def _evaluate_agent(
 def run_experiment(
     cfg: ExperimentConfig | None = None,
     writer: SummaryWriter | None = None,
-    **kwargs: str | int,
+    **kwargs: Env[Any, Any] | BaseAlgorithm | int | str,
 ) -> ExperimentResult:
     if cfg is None:
         cfg = ExperimentConfig(**kwargs)
@@ -175,10 +181,13 @@ def run_experiment(
 
     # Evaluate agent before training
     print("eval")
+    # Make sure env_te exists
+    eval_env_te = cfg.env_tr if cfg.env_te is None else cfg.env_te
+
     checkpoint = _evaluate_agent(
         agent=cfg.agent,
         env_tr=cfg.env_tr,
-        env_te=cfg.env_te,
+        env_te=eval_env_te,
         n_eval_episodes=cfg.n_eval_episodes,
         learning_steps=0,
         deterministic=True,
@@ -194,10 +203,13 @@ def run_experiment(
 
     print("eval")
     # Evaluate after training
+    # Make sure env_te exists
+    eval_env_te = cfg.env_tr if cfg.env_te is None else cfg.env_te
+
     final_checkpoint = _evaluate_agent(
         agent=cfg.agent,
         env_tr=cfg.env_tr,
-        env_te=cfg.env_te,
+        env_te=eval_env_te,
         n_eval_episodes=cfg.n_eval_episodes,
         learning_steps=cfg.n_learning_steps,
         deterministic=True,
@@ -238,3 +250,4 @@ def run_experiments(
 
     writer.close()
     return results
+

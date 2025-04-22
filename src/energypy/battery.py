@@ -115,7 +115,7 @@ class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
         self.episode_step += 1
         self.state_of_charge_mwh = float(final_charge_mwh)
         self.info["state_of_charge_mwh"].append(self.state_of_charge_mwh)
-        self.info["battery_power_mw"].append(battery_power_mw)
+        self.info["battery_power_mw"].append(float(battery_power_mw))
         return self._get_obs(), reward, terminated, truncated, self._get_info()
 
     def energy_balance(
