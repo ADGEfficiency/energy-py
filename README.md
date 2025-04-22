@@ -15,31 +15,18 @@ A framework for running reinforcement learning experiments on energy environment
 
 ## Setup
 
-```bash
-make setup
-```
-
-## Development
-
-```bash
-# Run tests
-make test
-
-# Check code style and linting
-make check
-
-# Verify type annotations
-make static
+```shell-session
+$ make setup
 ```
 
 ## Examples
 
 ```shell-session
-$ python examples/battery.py
+$ uv run examples/battery.py
 ```
 
 Or run a more extensive experiment with real electricity price data:
 
 ```shell-session
-$ python examples/battery_arbitrage_experiments.py
+$ uv run examples/battery_arbitrage_experiments.py
 ```
