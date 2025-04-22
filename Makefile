@@ -19,6 +19,7 @@ test: setup-test
 test-examples: setup-test
 	uv run examples/dataset.py
 	uv run examples/battery.py
+	uv run examples/battery_arbitrage_experiments.py
 
 SRC_DIRS=src examples
 static: setup-test

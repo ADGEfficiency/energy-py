@@ -27,4 +27,3 @@ def test_run_experiment_from_kwargs() -> None:
         agent={"id": "PPO", "policy": "MlpPolicy"},
         n_learning_steps=10,
     )
-    _ = run_experiment()
