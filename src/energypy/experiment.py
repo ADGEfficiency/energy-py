@@ -50,28 +50,105 @@ class ExperimentConfig(pydantic.BaseModel):
 
     @pydantic.model_validator(mode="before")
     def validate_all_the_things(cls, v, values):
-        if isinstance(v["env_tr"], dict):
+        if isinstance(v.get("env_tr"), dict):
             env = gym.make(**v["env_tr"])
             v["env_tr"] = env
 
-        if v.get("env_te") is None:
+        if (v.get("env_te") is None) and v.get("env_tr" is not None):
             v["env_te"] = v["env_tr"]
 
         # TODO - more init of env_te if not None
 
-        if isinstance(v["agent"], dict):
+        if isinstance(v.get("agent"), dict):
             Agent = getattr(stable_baselines3, v["agent"]["id"])
             del v["agent"]["id"]
             v["agent"] = Agent(**v["agent"], env=v["env_tr"])
 
         return v
 
+    @pydantic.model_validator(mode="after")
+    def validate_all_the_things_again(cls, v, values):
+        if v.env_te is None:
+            v.env_te = v.env_tr
+        return v
 
-class ExperimentResult(pydantic.BaseModel):
+
+class Checkpoint(pydantic.BaseModel):
+    learning_steps: int
     mean_reward_tr: float
     mean_reward_te: float
     std_reward_tr: float
     std_reward_te: float
+
+
+class ExperimentResult(pydantic.BaseModel):
+    checkpoints: list[Checkpoint] = []
+
+
+def _evaluate_agent(
+    agent: BaseAlgorithm,
+    env_tr: Env[Any, Any],
+    env_te: Env[Any, Any],
+    n_eval_episodes: int,
+    learning_steps: int = 0,
+    deterministic: bool = True,
+    callback: Any = None,
+    writer: SummaryWriter | None = None,
+) -> Checkpoint:
+    """Evaluate an agent on training and test environments.
+
+    Args:
+        agent: The agent to evaluate
+        env_tr: Training environment
+        env_te: Test environment
+        n_eval_episodes: Number of episodes to evaluate for
+        learning_steps: Current learning steps completed
+        deterministic: Whether to use deterministic actions
+        callback: Optional callback for collecting additional information
+        writer: Optional SummaryWriter for tensorboard logging
+
+    Returns:
+        Checkpoint with evaluation results
+    """
+    mean_reward_tr, std_reward_tr = evaluate_policy(
+        agent,
+        env_tr,
+        n_eval_episodes=n_eval_episodes,
+        deterministic=deterministic,
+        callback=callback,
+    )
+
+    mean_reward_te, std_reward_te = evaluate_policy(
+        agent,
+        env_te,
+        n_eval_episodes=n_eval_episodes,
+        deterministic=deterministic,
+    )
+
+    checkpoint = Checkpoint(
+        learning_steps=learning_steps,
+        mean_reward_tr=float(mean_reward_tr),
+        std_reward_tr=float(std_reward_tr),
+        mean_reward_te=float(mean_reward_te),
+        std_reward_te=float(std_reward_te),
+    )
+
+    # Log to tensorboard if a writer is provided
+    if writer is not None:
+        writer.add_scalar(
+            "Reward/train", checkpoint.mean_reward_tr, checkpoint.learning_steps
+        )
+        writer.add_scalar(
+            "Reward/test", checkpoint.mean_reward_te, checkpoint.learning_steps
+        )
+        writer.add_scalar(
+            "Reward_std/train", checkpoint.std_reward_tr, checkpoint.learning_steps
+        )
+        writer.add_scalar(
+            "Reward_std/test", checkpoint.std_reward_te, checkpoint.learning_steps
+        )
+
+    return checkpoint
 
 
 def run_experiment(
@@ -85,13 +162,6 @@ def run_experiment(
 
     assert isinstance(cfg, ExperimentConfig)
 
-    cfg.agent.learn(total_timesteps=cfg.n_learning_steps)
-
-    # TODO
-    # model_path = f"models/{cfg.name}"
-    # cfg.agent.save(model_path)
-    # agent = PPO.load(model_path)
-
     class Callback:
         import collections
 
@@ -103,36 +173,43 @@ def run_experiment(
             )
 
     cb = Callback()
-    mean_reward_tr, std_reward_tr = evaluate_policy(
-        cfg.agent,
-        cfg.env_tr,
+
+    # Evaluate agent before training
+    checkpoint = _evaluate_agent(
+        agent=cfg.agent,
+        env_tr=cfg.env_tr,
+        env_te=cfg.env_te,
         n_eval_episodes=cfg.n_eval_episodes,
+        learning_steps=0,
         deterministic=True,
         callback=cb,
+        writer=writer,
     )
 
-    mean_reward_te, std_reward_te = evaluate_policy(
-        cfg.agent,
-        cfg.env_te,
+    result = ExperimentResult(checkpoints=[checkpoint])
+
+    # Train the agent
+    cfg.agent.learn(total_timesteps=cfg.n_learning_steps)
+
+    # Evaluate after training
+    final_checkpoint = _evaluate_agent(
+        agent=cfg.agent,
+        env_tr=cfg.env_tr,
+        env_te=cfg.env_te,
         n_eval_episodes=cfg.n_eval_episodes,
+        learning_steps=cfg.n_learning_steps,
         deterministic=True,
+        callback=cb,
+        writer=writer,
     )
 
-    result = ExperimentResult(
-        mean_reward_tr=float(mean_reward_tr),
-        std_reward_tr=float(std_reward_tr),
-        mean_reward_te=float(mean_reward_te),
-        std_reward_te=float(std_reward_te),
-    )
+    # Add final checkpoint to results
+    result.checkpoints.append(final_checkpoint)
 
-    # Log to tensorboard if a writer is provided
-    if writer is not None:
-        writer.add_scalar("Reward/train", mean_reward_tr, experiment_index)
-        writer.add_scalar("Reward/test", mean_reward_te, experiment_index)
-        writer.add_scalar("Reward_std/train", std_reward_tr, experiment_index)
-        writer.add_scalar("Reward_std/test", std_reward_te, experiment_index)
+    # Save the model
+    model_path = f"models/{cfg.name}"
+    cfg.agent.save(model_path)
 
-    print(result)
     return result
 
 

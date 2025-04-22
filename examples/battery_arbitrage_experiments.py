@@ -70,7 +70,7 @@ for noise in [0, 1, 10, 100, 1000]:
             tensorboard_log=f"./data/tensorboard/battery_arbitrage_experiments/{expt_guid}/run/{run_guid}",
         ),
         name=f"battery_noise_{noise}",
-        n_learning_steps=50000,  # Short training for demonstration
+        n_learning_steps=5000,  # Short training for demonstration
         n_eval_episodes=25,
     )
     configs.append(config)
@@ -81,9 +81,9 @@ results = energypy.run_experiments(
 )
 
 # Print the best performing configuration on test data
-best_idx = np.argmax([r.mean_reward_te for r in results])
+best_idx = np.argmax([r.checkpoints[-1].mean_reward_te for r in results])
 best_config = configs[best_idx]
-best_result = results[best_idx]
+best_result = results[best_idx].checkpoints[-1]
 
 print(f"Best configuration: {best_config.name}")
 print(f"Learning rate: {best_config.agent.learning_rate}")
