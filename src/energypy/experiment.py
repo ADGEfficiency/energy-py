@@ -12,24 +12,17 @@ from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.evaluation import evaluate_policy
 from torch.utils.tensorboard import SummaryWriter
 
-
-# Fix circular import by using a function to import when needed
-def get_battery():
-    from .battery import Battery
-
-    return Battery
+import energypy
 
 
 def _get_default_battery():
-    Battery = get_battery()
-    return Battery(electricity_prices=np.random.uniform(-100.0, 100, 48 * 10))
+    return energypy.Battery(electricity_prices=np.random.uniform(-100.0, 100, 48 * 10))
 
 
 def _get_default_agent():
-    env = _get_default_battery()
     return PPO(
         policy="MlpPolicy",
-        env=env,
+        env=_get_default_battery(),
         learning_rate=0.0003,
         n_steps=2048,
         batch_size=64,
@@ -72,10 +65,10 @@ class ExperimentConfig(pydantic.BaseModel):
         return v
 
     @pydantic.model_validator(mode="after")
-    def validate_all_the_things_again(cls, v):
-        if v.env_te is None:
-            v.env_te = v.env_tr
-        return v
+    def validate_all_the_things_again(self):
+        if self.env_te is None:
+            self.env_te = self.env_tr
+        return
 
 
 class Checkpoint(pydantic.BaseModel):
