@@ -156,4 +156,3 @@ def test_episode_reset() -> None:
     obs, info = battery.reset()
     assert battery.state_of_charge_mwh == battery.initial_state_of_charge_mwh
     assert battery.episode_step == 0
-

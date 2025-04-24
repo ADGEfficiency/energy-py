@@ -2,6 +2,7 @@ from energypy.experiment import ExperimentConfig, run_experiment, run_experiment
 
 
 def test_run_experiments() -> None:
+    """Test running multiple experiments with different configurations."""
     configs = [
         ExperimentConfig(
             env_tr={"id": "energypy/battery"},
@@ -21,6 +22,7 @@ def test_run_experiments() -> None:
 
 
 def test_run_experiment_from_kwargs() -> None:
+    """Test running a single experiment using keyword arguments instead of ExperimentConfig."""
     _ = run_experiment(
         env_tr={"id": "energypy/battery"},
         env_te=None,
