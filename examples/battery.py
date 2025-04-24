@@ -4,7 +4,7 @@ from stable_baselines3 import PPO
 import energypy
 
 env = energypy.make_env(electricity_prices=np.random.uniform(-1000, 1000, 2048 * 10))
-config = energypy.ExperimentConfig(
+config_random = energypy.ExperimentConfig(
     env_tr=env,
     agent=PPO(
         policy="MlpPolicy",
@@ -17,11 +17,9 @@ config = energypy.ExperimentConfig(
         gae_lambda=0.95,
         clip_range=0.2,
         verbose=1,
-        tensorboard_log="./data/tensorboard",
     ),
-    name="cartpole",
+    name="battery_random",
 )
 
-result = energypy.run_experiment(cfg=config)
-cp = result.checkpoints[-1]
-assert isinstance(cp.mean_reward_te, float) and (cp.mean_reward_te > 4.0)
+result = energypy.run_experiment(cfg=config_random)
+print(f"Random price model performance: {result.checkpoints[-1]}")

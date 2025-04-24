@@ -1,3 +1,4 @@
+import pathlib
 import uuid
 
 import gymnasium as gym
@@ -6,7 +7,7 @@ import polars as pl
 from stable_baselines3 import PPO
 
 import energypy
-from energypy.experiment import ExperimentConfig
+from examples.dataset import load_electricity_prices
 
 env_id = "energypy/battery"
 gym.register(
@@ -14,22 +15,22 @@ gym.register(
     entry_point="energypy:Battery",
 )
 
-# TODO - download data if not already there
-data = pl.read_parquet("data/final.parquet")
-data = data.select(
-    "datetime",
-    pl.col("DollarsPerMegawattHour").alias("price"),
-    pl.col("PointOfConnection").alias("point_of_connection"),
+# Load data (will download if not available)
+print("Loading electricity price data...")
+data = load_electricity_prices(
+    data_dir=pathlib.Path("data"), download_if_missing=True, verbose=True
 )
 
 prices = data["price"]
 
+# Create features with lagged prices
 features = prices.clone().to_frame()
 features = features.with_columns(
     [pl.col("price").shift(n).alias(f"lag-{n}") for n in range(48)]
 )
 features = features.drop_nulls()
 
+# Split data into training and testing sets
 split_idx = int(data.shape[0] // 2)
 prices_tr = prices.slice(0, split_idx)
 prices_te = prices.slice(split_idx, data.shape[0])
@@ -47,7 +48,7 @@ for noise in [0, 1, 10, 100, 1000]:
         features=prices_te * np.random.normal(0, noise, size=prices_te.shape[0]),
     )
 
-    config = ExperimentConfig(
+    config = energypy.ExperimentConfig(
         env_tr=env_tr,
         env_te=env_te,
         agent=PPO(

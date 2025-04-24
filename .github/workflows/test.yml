@@ -17,8 +17,17 @@ jobs:
           python-version: '3.11'
       - name: test
         run: make test
+
+  test-examples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - name: test examples
-        run: make test-examples -o setup-test
+        run: make test-examples
 
   check:
     runs-on: ubuntu-latest
