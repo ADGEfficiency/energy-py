@@ -30,3 +30,9 @@ Or run a more extensive experiment with real electricity price data:
 ```shell-session
 $ uv run examples/battery_arbitrage_experiments.py
 ```
+
+## Test
+
+```shell-session
+$ make test
+```
