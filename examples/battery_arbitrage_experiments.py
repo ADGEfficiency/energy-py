@@ -41,15 +41,10 @@ expt_guid = uuid.uuid4()
 configs = []
 for noise in [0, 1, 10, 100, 1000]:
     run_guid = uuid.uuid4()
-    env_tr = gym.wrappers.NormalizeReward(
-        gym.make(env_id, electricity_prices=prices_tr, features=features)
-    )
-    env_te = gym.wrappers.NormalizeReward(
-        gym.make(
-            env_id,
-            electricity_prices=prices_te,
-            features=prices_te * np.random.normal(0, noise, size=prices_te.shape[0]),
-        )
+    env_tr = energypy.make_env(electricity_prices=prices_tr, features=features)
+    env_te = energypy.make_env(
+        electricity_prices=prices_te,
+        features=prices_te * np.random.normal(0, noise, size=prices_te.shape[0]),
     )
 
     config = ExperimentConfig(

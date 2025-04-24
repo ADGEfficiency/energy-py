@@ -1,17 +1,9 @@
-import gymnasium as gym
 import numpy as np
 from stable_baselines3 import PPO
 
 import energypy
 
-env_id = "energypy/battery"
-gym.register(
-    id=env_id,
-    entry_point="energypy:Battery",
-)
-env = gym.wrappers.NormalizeReward(
-    gym.make(env_id, electricity_prices=np.random.uniform(-1000, 1000, 2048 * 10))
-)
+env = energypy.make_env(electricity_prices=np.random.uniform(-1000, 1000, 2048 * 10))
 config = energypy.ExperimentConfig(
     env_tr=env,
     agent=PPO(
