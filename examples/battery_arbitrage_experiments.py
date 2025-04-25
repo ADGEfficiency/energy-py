@@ -4,10 +4,10 @@ import uuid
 import gymnasium as gym
 import numpy as np
 import polars as pl
+from dataset import load_electricity_prices
 from stable_baselines3 import PPO
 
 import energypy
-from examples.dataset import load_electricity_prices
 
 env_id = "energypy/battery"
 gym.register(
