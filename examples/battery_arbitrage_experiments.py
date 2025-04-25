@@ -9,28 +9,16 @@ from stable_baselines3 import PPO
 
 import energypy
 
-env_id = "energypy/battery"
-gym.register(
-    id=env_id,
-    entry_point="energypy:Battery",
-)
-
-# Load data (will download if not available)
-print("Loading electricity price data...")
 data = load_electricity_prices(
     data_dir=pathlib.Path("data"), download_if_missing=True, verbose=True
 )
-
 prices = data["price"]
-
-# Create features with lagged prices
 features = prices.clone().to_frame()
 features = features.with_columns(
     [pl.col("price").shift(n).alias(f"lag-{n}") for n in range(48)]
 )
 features = features.drop_nulls()
 
-# Split data into training and testing sets
 split_idx = int(data.shape[0] // 2)
 prices_tr = prices.slice(0, split_idx)
 prices_te = prices.slice(split_idx, data.shape[0])
@@ -70,12 +58,10 @@ for noise in [0, 1, 10, 100, 1000]:
     )
     configs.append(config)
 
-# Run all experiments and log to tensorboard
 results = energypy.run_experiments(
     configs, log_dir=f"./data/tensorboard/battery_arbitrage_experiments/{expt_guid}"
 )
 
-# Print the best performing configuration on test data
 best_idx = np.argmax([r.checkpoints[-1].mean_reward_te for r in results])
 best_config = configs[best_idx]
 best_result = results[best_idx].checkpoints[-1]

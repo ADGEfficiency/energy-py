@@ -12,7 +12,9 @@ gym.register(
 
 
 def make_env(electricity_prices, features=None):
-    env = gym.make("energypy/battery", electricity_prices=electricity_prices, features=features)
+    env = gym.make(
+        "energypy/battery", electricity_prices=electricity_prices, features=features
+    )
     env = gym.wrappers.NormalizeReward(env)
     return env
 
