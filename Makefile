@@ -1,34 +1,31 @@
-.PHONY: test pushs3
-
 setup:
-	pip install -q -r requirements.txt
-	pip install .
+	curl -LsSf https://astral.sh/uv/0.6.3/install.sh | sh
+	uv venv
+	uv sync
 
-test: setup
-	pytest tests -m "not pybox2d" --tb=line --disable-pytest-warnings
+clean:
+	rm -rf ./data/tensorboard/
 
-test-with-pybox2d:
-	pytest tests --tb=line --disable-pytest-warnings
-
-tensorboard:
-	tensorboard --logdir experiments
-
+TB_DIR=./data/tensorboard/
 monitor:
-	jupyter lab
+	uv run tensorboard --logdir $(TB_DIR) --bind_all
 
-pulls3:
-	make pulls3-dataset
-	make pulls3-nem
+setup-test: setup
+	uv sync --group test
 
-pulls3-dataset:
-	aws --no-sign-request --region ap-southeast-2 s3 cp s3://energy-py/public/dataset.zip dataset.zip
-	unzip dataset.zip
+test: setup-test
+	# TODO - test coverage up to 100 %
+	uv run pytest tests --tb=short -p no:warnings --disable-warnings --cov=src --cov-report=term-missing --cov-report=html:htmlcov --cov-fail-under=50
 
-pulls3-nem:
-	aws --no-sign-request --region ap-southeast-2 s3 cp s3://energy-py/public/nem.zip nem.zip
-	unzip nem.zip; mv nem-data ~
+test-examples: setup-test
+	uv run examples/battery.py
+	uv run examples/battery_arbitrage_experiments.py
 
-setup-pybox2d-macos:
-	brew install swig
-	git clone https://github.com/pybox2d/pybox2d
-	cd pybox2d_dev; python setup.py build; python setup.py install
+# TODO - include the tests dir
+SRC_DIRS=src examples
+static: setup-test
+	uv run basedpyright $(SRC_DIRS) --level error
+
+RUFF_ARGS=
+check: setup-test
+	uv run ruff check $(SRC_DIRS) $(RUFF_ARGS)

@@ -2,22 +2,51 @@ name: test
 
 on:
   push:
-    branches: [main, dev]
-
+    branches: ["main"]
   pull_request:
-    branches: [main, dev]
+    branches: ["main"]
 
 jobs:
-  test-setup:
+  test-src:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Source Code
-        uses: actions/checkout@v2
-
-      - name: Setup Python
-        uses: actions/setup-python@v2
+      - uses: actions/checkout@v4
+      - name: python
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.8.10
-
-      - name: Run Tests
+          python-version: '3.11'
+      - name: test
         run: make test
+
+  test-examples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: test examples
+        run: make test-examples
+
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: check
+        run: make check
+
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: static checks
+        run: make static

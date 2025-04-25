@@ -1,0 +1,41 @@
+[project]
+name = "energypy"
+version = "0.1.0"
+description = "Reinforcement learning for energy systems."
+readme = "README.md"
+authors = [
+    { name = "Adam Green", email = "adam.green@adgefficiency.com" }
+]
+requires-python = ">=3.11.10"
+dependencies = [
+    "gymnasium[all]>=1.1.1",
+    "pydantic>=2.11.3",
+    "stable-baselines3[extra]>=2.6.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "isort>=6.0.1",
+    "mlflow>=2.21.3",
+    "polars>=1.27.1",
+]
+test = [
+    "basedpyright>=1.28.5",
+    "coverage>=7.8.0",
+    "pytest>=8.3.5",
+    "pytest-cov>=6.1.1",
+    "ruff>=0.11.6",
+]
+
+[tool.basedpyright]
+exclude = ["**/node_modules",
+    "**/__pycache__",
+    "src/experimental",
+    "src/typestubs"
+]
+typeCheckingMode = "recommended"
+failOnWarnings = false
