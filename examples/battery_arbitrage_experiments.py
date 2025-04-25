@@ -1,13 +1,12 @@
 import pathlib
 import uuid
 
-import gymnasium as gym
 import numpy as np
 import polars as pl
-from dataset import load_electricity_prices
 from stable_baselines3 import PPO
 
 import energypy
+from energypy.dataset import load_electricity_prices
 
 data = load_electricity_prices(
     data_dir=pathlib.Path("data"), download_if_missing=True, verbose=True
