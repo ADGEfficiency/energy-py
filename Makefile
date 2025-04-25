@@ -20,6 +20,7 @@ test-examples: setup-test
 	uv run examples/battery.py
 	uv run examples/battery_arbitrage_experiments.py
 
+# TODO - include the tests dir
 SRC_DIRS=src examples
 static: setup-test
 	uv run basedpyright $(SRC_DIRS) --level error

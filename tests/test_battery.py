@@ -124,7 +124,6 @@ def test_reward_calculation() -> None:
 
     # Use observation after reset to get current price index
     obs, _ = battery.reset()
-    current_index = battery.index
 
     # Charge 1 MWh at 100 $/MWh - should result in -100 reward
     action = np.array([1.0])
