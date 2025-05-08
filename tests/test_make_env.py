@@ -14,7 +14,7 @@ def test_make_env() -> None:
     assert isinstance(env, gym.wrappers.NormalizeReward)
 
     # Test with features
-    features = {"feature1": np.array([1.0, 2.0]), "feature2": np.array([3.0, 4.0])}
+    features = np.random.uniform(-100.0, 100, (100, 4))
     env_with_features = energypy.make_env(
         electricity_prices=electricity_prices, features=features
     )

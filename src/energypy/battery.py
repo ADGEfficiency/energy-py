@@ -6,9 +6,11 @@ import gymnasium as gym
 import numpy as np
 from numpy.typing import NDArray
 
+
 # Define a Protocol for objects that have a shape attribute
 class HasShape(typing.Protocol):
     shape: typing.Any
+
 
 # Use Union with explicit types to ensure proper type checking
 NumericSequence = typing.Union[NDArray[np.float64], typing.Sequence[float]]
@@ -18,27 +20,23 @@ class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
     def __init__(
         self,
         electricity_prices: NumericSequence = np.random.uniform(-100.0, 100, 48 * 10),
-        features: NumericSequence = np.random.uniform(-100.0, 100, (48 * 10, 4)),
-        power_mw=2.0,
-        capacity_mwh=4.0,
-        efficiency_pct=0.9,
+        features: NDArray[np.float64] = np.random.uniform(-100.0, 100, (48 * 10, 4)),
+        power_mw: float = 2.0,
+        capacity_mwh: float = 4.0,
+        efficiency_pct: float = 0.9,
         initial_state_of_charge_mwh: float = 0.0,
         episode_length: int = 48,
     ):
         self.power_mw = power_mw
         self.capacity_mwh = capacity_mwh
-        self.efficiency_pct: float = efficiency_pct
-        self.electricity_prices: NumericSequence = electricity_prices
-        self.features: NumericSequence = features
-        
-        # Determine feature dimensions
-        if isinstance(features, np.ndarray) and len(features.shape) > 1:
-            # For numpy arrays
-            assert len(self.electricity_prices) == features.shape[0], "Features and prices must have same length"
-            self.n_features = features.shape[1]
-        else:
-            # Default if features is not provided as expected
-            self.n_features = 0
+        self.efficiency_pct = efficiency_pct
+        self.electricity_prices = electricity_prices
+        self.features = features
+
+        assert len(self.electricity_prices) == features.shape[0], (
+            "Features and prices must have same length"
+        )
+        self.n_features = features.shape[1]
 
         self.episode_length: int = episode_length
         self.index: int = 0
@@ -55,7 +53,9 @@ class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
         )
 
         # one action - choose charge / discharge MW for the next interval
-        self.action_space = gym.spaces.Box(low=-power_mw, high=power_mw, shape=(1,), dtype=np.float32)
+        self.action_space = gym.spaces.Box(
+            low=-power_mw, high=power_mw, shape=(1,), dtype=np.float32
+        )
 
         self.info: dict[str, list[float]] = collections.defaultdict(list)
 
@@ -77,17 +77,7 @@ class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
 
     def _get_obs(self) -> NDArray[np.float64]:
         # Get features for the current time step
-        feature_obs = []
-        if self.n_features > 0:
-            # Check if features is a 2D array (with shape attribute)
-            if isinstance(self.features, np.ndarray) and len(self.features.shape) > 1:
-                # Convert array to list of float values
-                feature_vals = self.features[self.index]
-                feature_obs = [float(val) for val in feature_vals]
-            else:
-                # Fallback if features is not structured as expected
-                feature_obs = [0.0] * self.n_features
-        
+        feature_obs = self.features[self.index].tolist()
         # Add state of charge to observation
         obs = feature_obs + [self.state_of_charge_mwh]
         return np.array(obs, dtype=np.float64)
