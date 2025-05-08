@@ -14,9 +14,14 @@ data = load_electricity_prices(
 prices = data["price"]
 features = prices.clone().to_frame()
 features = features.with_columns(
-    [pl.col("price").shift(n).alias(f"lag-{n}") for n in range(48)]
+    [pl.col("price").shift(n).alias(f"lag-{n}") for n in range(12)]
 )
 features = features.drop_nulls()
+
+limit_idx = min(data.shape[0], 6 * 30 * 48)
+data = data.slice(0, limit_idx)
+prices = prices.slice(0, limit_idx)
+features = features.slice(0, limit_idx)
 
 split_idx = int(data.shape[0] // 2)
 prices_tr = prices.slice(0, split_idx)
@@ -27,7 +32,7 @@ features_te = features.slice(split_idx, data.shape[0])
 
 expt_guid = uuid.uuid4()
 configs = []
-for noise in [0, 1, 10, 100, 1000]:
+for noise in [0, 10, 1000]:
     run_guid = uuid.uuid4()
     env_tr = energypy.make_env(electricity_prices=prices_tr, features=features)
     env_te = energypy.make_env(
@@ -42,18 +47,19 @@ for noise in [0, 1, 10, 100, 1000]:
             policy="MlpPolicy",
             env=env_tr,
             learning_rate=0.0003,
-            n_steps=2048,
+            n_steps=1024,
             batch_size=64,
             n_epochs=2,
             gamma=0.99,
             gae_lambda=0.95,
             clip_range=0.2,
+            policy_kwargs=dict(net_arch=[64, 64]),
             verbose=1,
             tensorboard_log=f"./data/tensorboard/battery_arbitrage_experiments/{expt_guid}/run/{run_guid}",
         ),
         name=f"battery_noise_{noise}",
-        n_learning_steps=5000,  # Short training for demonstration
-        n_eval_episodes=25,
+        n_learning_steps=2000,
+        n_eval_episodes=10,
     )
     configs.append(config)
 
