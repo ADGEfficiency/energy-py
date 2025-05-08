@@ -6,7 +6,12 @@ import gymnasium as gym
 import numpy as np
 from numpy.typing import NDArray
 
-NumericSequence = NDArray[np.float64] | typing.Sequence[float]
+# Define a Protocol for objects that have a shape attribute
+class HasShape(typing.Protocol):
+    shape: typing.Any
+
+# Use Union with explicit types to ensure proper type checking
+NumericSequence = typing.Union[NDArray[np.float64], typing.Sequence[float]]
 
 
 class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
@@ -27,8 +32,8 @@ class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
         self.features: NumericSequence = features
         
         # Determine feature dimensions
-        if hasattr(features, 'shape') and len(features.shape) > 1:
-            # For numpy arrays and similar
+        if isinstance(features, np.ndarray) and len(features.shape) > 1:
+            # For numpy arrays
             assert len(self.electricity_prices) == features.shape[0], "Features and prices must have same length"
             self.n_features = features.shape[1]
         else:
@@ -45,8 +50,8 @@ class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
         assert self.episode_length + self.n_lags <= len(self.electricity_prices)
 
         # Observation space includes features and current state of charge
-        self.observation_space: gym.spaces.Space[NDArray[np.float32]] = gym.spaces.Box(
-            low=-1000, high=1000, shape=(self.n_features + 1,), dtype=np.float32
+        self.observation_space: gym.spaces.Space[NDArray[np.float64]] = gym.spaces.Box(
+            low=-1000, high=1000, shape=(self.n_features + 1,), dtype=np.float64
         )
 
         # one action - choose charge / discharge MW for the next interval
@@ -75,15 +80,17 @@ class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
         feature_obs = []
         if self.n_features > 0:
             # Check if features is a 2D array (with shape attribute)
-            if hasattr(self.features, 'shape') and len(self.features.shape) > 1:
-                feature_obs = list(self.features[self.index])
+            if isinstance(self.features, np.ndarray) and len(self.features.shape) > 1:
+                # Convert array to list of float values
+                feature_vals = self.features[self.index]
+                feature_obs = [float(val) for val in feature_vals]
             else:
                 # Fallback if features is not structured as expected
                 feature_obs = [0.0] * self.n_features
         
         # Add state of charge to observation
         obs = feature_obs + [self.state_of_charge_mwh]
-        return np.array(obs, dtype=np.float32)
+        return np.array(obs, dtype=np.float64)
 
     def _get_info(self) -> dict[str, list[float]]:
         # Include current price and feature values in info
