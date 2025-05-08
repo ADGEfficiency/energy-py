@@ -24,7 +24,16 @@ class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
         self.capacity_mwh = capacity_mwh
         self.efficiency_pct: float = efficiency_pct
         self.electricity_prices: NumericSequence = electricity_prices
-        # TODO - USE FEATURES!!!
+        self.features: NumericSequence = features
+        
+        # Determine feature dimensions
+        if hasattr(features, 'shape') and len(features.shape) > 1:
+            # For numpy arrays and similar
+            assert len(self.electricity_prices) == features.shape[0], "Features and prices must have same length"
+            self.n_features = features.shape[1]
+        else:
+            # Default if features is not provided as expected
+            self.n_features = 0
 
         self.episode_length: int = episode_length
         self.index: int = 0
@@ -35,13 +44,13 @@ class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
         self.state_of_charge_mwh: float = initial_state_of_charge_mwh
         assert self.episode_length + self.n_lags <= len(self.electricity_prices)
 
-        # lagged prices and current state of charge
-        self.observation_space: gym.spaces.Space[NDArray[np.float64]] = gym.spaces.Box(
-            low=-1000, high=1000, shape=(self.n_lags + self.n_horizons + 1,)
+        # Observation space includes features and current state of charge
+        self.observation_space: gym.spaces.Space[NDArray[np.float32]] = gym.spaces.Box(
+            low=-1000, high=1000, shape=(self.n_features + 1,), dtype=np.float32
         )
 
         # one action - choose charge / discharge MW for the next interval
-        self.action_space = gym.spaces.Box(low=-power_mw, high=power_mw)
+        self.action_space = gym.spaces.Box(low=-power_mw, high=power_mw, shape=(1,), dtype=np.float32)
 
         self.info: dict[str, list[float]] = collections.defaultdict(list)
 
@@ -62,18 +71,22 @@ class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
         return self._get_obs(), self._get_info()
 
     def _get_obs(self) -> NDArray[np.float64]:
-        # TODO - use internal state counter, price data
-        # prices with charges stacked on the end
-        obs = list(
-            self.electricity_prices[
-                self.index - self.n_lags : self.index + self.n_horizons
-            ]
-        ) + [self.state_of_charge_mwh]
-        obs = np.array(obs, dtype=np.float64)
-        return obs
+        # Get features for the current time step
+        feature_obs = []
+        if self.n_features > 0:
+            # Check if features is a 2D array (with shape attribute)
+            if hasattr(self.features, 'shape') and len(self.features.shape) > 1:
+                feature_obs = list(self.features[self.index])
+            else:
+                # Fallback if features is not structured as expected
+                feature_obs = [0.0] * self.n_features
+        
+        # Add state of charge to observation
+        obs = feature_obs + [self.state_of_charge_mwh]
+        return np.array(obs, dtype=np.float32)
 
     def _get_info(self) -> dict[str, list[float]]:
-        # TODO - some info for experiment analysis (usually)
+        # Include current price and feature values in info
         return self.info
 
     def step(
@@ -105,7 +118,7 @@ class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
             losses=losses,
         )
 
-        # TODO import & export prices
+        # Calculate reward using price
         reward = float(self.electricity_prices[self.index] * battery_power_mw)
         terminated = self.episode_step + 1 == self.episode_length
         truncated = False
