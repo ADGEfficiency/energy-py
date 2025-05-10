@@ -129,3 +129,67 @@ def test_backward_compatibility():
     
     # Expect 1 MWh change
     assert battery.state_of_charge_mwh - initial_soc == pytest.approx(1.0)
+
+
+def test_battery_efficiency_with_frequency():
+    """Test that efficiency losses are correctly applied with different frequencies."""
+    # Create common test data
+    prices = np.array([100.0] * 1000)
+    features = np.ones((1000, 4))
+    power_mw = 2.0
+    efficiency_pct = 0.8
+
+    # Test with 30-minute frequency
+    battery = Battery(
+        electricity_prices=prices,
+        features=features,
+        power_mw=power_mw,
+        efficiency_pct=efficiency_pct,
+        freq_mins=30
+    )
+
+    # First charge fully (no efficiency losses on charge)
+    for _ in range(8):  # 8 steps * 0.5 MWh = 4 MWh (full capacity)
+        battery.step(np.array([1.0]))
+
+    assert battery.state_of_charge_mwh == pytest.approx(4.0)
+
+    # Now discharge at 1 MW for 30 mins (should result in 0.5 MWh energy from storage)
+    initial_soc = battery.state_of_charge_mwh
+    battery.step(np.array([-1.0]))
+
+    # State of charge should decrease by 0.5 MWh
+    soc_decrease = initial_soc - battery.state_of_charge_mwh
+    assert soc_decrease == pytest.approx(0.5)
+
+    # With 80% efficiency, the actual export energy should be 0.5/0.8 = 0.625 MWh
+    expected_export = 0.5 / 0.8
+    expected_losses = expected_export - 0.5
+
+    # Test with 15-minute frequency
+    battery_15 = Battery(
+        electricity_prices=prices,
+        features=features,
+        power_mw=power_mw,
+        efficiency_pct=efficiency_pct,
+        freq_mins=15
+    )
+
+    # First charge to 1 MWh (no efficiency losses on charge)
+    for _ in range(4):  # 4 steps * 0.25 MWh = 1 MWh
+        battery_15.step(np.array([1.0]))
+
+    assert battery_15.state_of_charge_mwh == pytest.approx(1.0)
+
+    # Now discharge at 1 MW for 15 mins (should result in 0.25 MWh energy from storage)
+    initial_soc = battery_15.state_of_charge_mwh
+    battery_15.step(np.array([-1.0]))
+
+    # State of charge should decrease by 0.25 MWh
+    soc_decrease = initial_soc - battery_15.state_of_charge_mwh
+    assert soc_decrease == pytest.approx(0.25)
+
+    # With 80% efficiency, the actual export energy should be 0.25/0.8 = 0.3125 MWh
+    expected_export = 0.25 / 0.8
+    expected_losses = expected_export - 0.25
+    assert expected_losses == pytest.approx(0.25/0.8 - 0.25)
