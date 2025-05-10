@@ -1,7 +1,10 @@
 """Reinforcement learning experiments with energy environments with energypy."""
 
+from typing import Any, cast
+
 import gymnasium as gym
 import numpy as np
+from gymnasium import Env
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv
 
@@ -14,7 +17,7 @@ gym.register(
 )
 
 
-def make_env(electricity_prices, features=None):
+def make_env(electricity_prices, features=None, freq_mins=60):
     """
     Create a battery environment with electricity prices and optional features.
 
@@ -22,6 +25,7 @@ def make_env(electricity_prices, features=None):
         electricity_prices: A sequence of electricity prices
         features: Optional features array with same length as prices.
                  If None, uses electricity_prices reshaped as features.
+        freq_mins: The number of minutes each step represents (default: 60 for hourly)
 
     Returns:
         A normalized battery environment
@@ -33,18 +37,17 @@ def make_env(electricity_prices, features=None):
         features = prices_array.reshape(-1, 1)
 
     env = gym.make(
-        "energypy/battery", electricity_prices=electricity_prices, features=features
+        "energypy/battery",
+        electricity_prices=electricity_prices,
+        features=features,
+        freq_mins=freq_mins,
     )
     env = gym.wrappers.NormalizeReward(env)
     env = Monitor(env, filename="./data/data.log")
-    # Type annotation to help the type checker understand this is a valid wrapper
-    from typing import Any, cast
 
-    from gymnasium import Env
-
-    # Create a function to return the environment
     def env_fn():
         return cast(Env[Any, Any], env)
+
     vec_env = DummyVecEnv([env_fn])
     return vec_env
 
