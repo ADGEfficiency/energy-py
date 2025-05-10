@@ -149,7 +149,7 @@ class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
         )
 
         # Calculate reward using price
-        reward = float(self.electricity_prices[self.index] * battery_power_mw)
+        reward = float(self.electricity_prices[self.index] * export_energy_mwh)
         terminated = self.episode_step + 1 == self.episode_length
         truncated = False
 
@@ -189,4 +189,3 @@ class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
         assert final_charge <= self.capacity_mwh, (
             f"battery-capacity-constraint: {final_charge=}, {self.capacity_mwh=}"
         )
-
