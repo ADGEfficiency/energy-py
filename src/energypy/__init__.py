@@ -2,7 +2,6 @@
 
 import gymnasium as gym
 import numpy as np
-import stable_baselines3
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv
 
@@ -39,11 +38,13 @@ def make_env(electricity_prices, features=None):
     env = gym.wrappers.NormalizeReward(env)
     env = Monitor(env, filename="./data/data.log")
     # Type annotation to help the type checker understand this is a valid wrapper
-    from gymnasium import Env
     from typing import Any, cast
 
-    # Cast the inner environment to help with type checking
-    env_fn = lambda: cast(Env[Any, Any], env)
+    from gymnasium import Env
+
+    # Create a function to return the environment
+    def env_fn():
+        return cast(Env[Any, Any], env)
     vec_env = DummyVecEnv([env_fn])
     return vec_env
 

@@ -1,6 +1,6 @@
 """Tools for running reinforcement learning experiments with energypy."""
 
-from typing import Any, Sequence, TypeVar, Union
+from typing import Any, Sequence, Union
 
 import gymnasium as gym
 import numpy as np
