@@ -1,6 +1,6 @@
 """Tools for running reinforcement learning experiments with energypy."""
 
-from typing import Any, Sequence
+from typing import Any, Sequence, Union
 
 import gymnasium as gym
 import numpy as np
@@ -10,9 +10,13 @@ from gymnasium import Env
 from stable_baselines3 import PPO
 from stable_baselines3.common.base_class import BaseAlgorithm
 from stable_baselines3.common.evaluation import evaluate_policy
+from stable_baselines3.common.vec_env import VecEnv
 from torch.utils.tensorboard import SummaryWriter
 
 from energypy.battery import Battery
+
+# Define a type that can be either a Gymnasium Env or a Stable-Baselines VecEnv
+EnvType = Union[Env[Any, Any], VecEnv]
 
 
 def _get_default_battery() -> Battery:
@@ -36,8 +40,8 @@ def _get_default_agent() -> PPO:
 
 
 class ExperimentConfig(pydantic.BaseModel):
-    env_tr: Env[Any, Any] = pydantic.Field(default_factory=_get_default_battery)
-    env_te: Env[Any, Any] | None = None
+    env_tr: EnvType = pydantic.Field(default_factory=_get_default_battery)
+    env_te: EnvType | None = None
     agent: BaseAlgorithm = pydantic.Field(default_factory=lambda: _get_default_agent())
     name: str = "battery"
     num_episodes: int = 10
@@ -84,8 +88,8 @@ class ExperimentResult(pydantic.BaseModel):
 
 def _evaluate_agent(
     agent: BaseAlgorithm,
-    env_tr: Env[Any, Any],
-    env_te: Env[Any, Any],
+    env_tr: EnvType,
+    env_te: EnvType,
     n_eval_episodes: int,
     learning_steps: int = 0,
     deterministic: bool = True,
@@ -172,7 +176,7 @@ def run_experiment(
     cb = Callback()
 
     # Evaluate agent before training
-    print("eval")
+    # print("eval")
     # Make sure env_te exists
     eval_env_te = cfg.env_tr if cfg.env_te is None else cfg.env_te
 
@@ -190,10 +194,10 @@ def run_experiment(
     result = ExperimentResult(checkpoints=[checkpoint])
 
     # Train the agent
-    print("train")
+    # print("train")
     cfg.agent.learn(total_timesteps=cfg.n_learning_steps)
 
-    print("eval")
+    # print("eval")
     # Evaluate after training
     # Make sure env_te exists
     eval_env_te = cfg.env_tr if cfg.env_te is None else cfg.env_te
@@ -236,8 +240,9 @@ def run_experiments(
     results = []
 
     for i, cfg in enumerate(configs):
-        print(cfg)
+        print(cfg.name)
         result = run_experiment(cfg=cfg, writer=writer)
+        print(result.checkpoints[-1])
         results.append(result)
 
     writer.close()

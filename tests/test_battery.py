@@ -7,7 +7,10 @@ from energypy.battery import Battery
 def test_battery_power_constraints() -> None:
     """Test that the battery respects power constraints."""
     power_mw = 2.0
-    battery = Battery(power_mw=power_mw)
+    # Create matching length arrays for prices and features
+    prices = np.random.uniform(-100.0, 100, 1000)
+    features = np.random.uniform(-100.0, 100, (1000, 4))
+    battery = Battery(electricity_prices=prices, features=features, power_mw=power_mw)
 
     # Test charge power constraint
     action = np.array([3.0])  # Exceeds power_mw
@@ -24,7 +27,12 @@ def test_battery_capacity_constraints() -> None:
     """Test that the battery respects capacity constraints."""
     power_mw = 2.0
     capacity_mwh = 4.0
+    # Create matching length arrays for prices and features
+    prices = np.random.uniform(-100.0, 100, 1000)
+    features = np.random.uniform(-100.0, 100, (1000, 4))
     battery = Battery(
+        electricity_prices=prices,
+        features=features,
         power_mw=power_mw,
         capacity_mwh=capacity_mwh,
         initial_state_of_charge_mwh=0.0,
@@ -49,7 +57,12 @@ def test_battery_capacity_constraints() -> None:
 
 def test_energy_balance() -> None:
     """Test that energy balance is maintained across charge/discharge cycles."""
+    # Create matching length arrays for prices and features
+    prices = np.random.uniform(-100.0, 100, 1000)
+    features = np.random.uniform(-100.0, 100, (1000, 4))
     battery = Battery(
+        electricity_prices=prices,
+        features=features,
         power_mw=2.0,
         capacity_mwh=4.0,
         initial_state_of_charge_mwh=0.0,
@@ -83,8 +96,13 @@ def test_efficiency_implementation() -> None:
     power_mw = 1.0
     capacity_mwh = 10.0
     efficiency_pct = 0.8
+    # Create matching length arrays for prices and features
+    prices = np.random.uniform(-100.0, 100, 1000)
+    features = np.random.uniform(-100.0, 100, (1000, 4))
 
     battery = Battery(
+        electricity_prices=prices,
+        features=features,
         power_mw=power_mw,
         capacity_mwh=capacity_mwh,
         efficiency_pct=efficiency_pct,
@@ -114,9 +132,12 @@ def test_reward_calculation() -> None:
     price = 100.0
     # Create longer price array to prevent random index error
     prices = [price] * 1000
+    # Create matching features array
+    features = np.ones((1000, 4))
 
     battery = Battery(
         electricity_prices=prices,
+        features=features,
         power_mw=2.0,
         capacity_mwh=4.0,
         episode_length=10,  # Shorter episode length for testing
@@ -142,7 +163,12 @@ def test_reward_calculation() -> None:
 
 def test_episode_reset() -> None:
     """Test that the environment resets properly for new episodes."""
+    # Create matching length arrays for prices and features
+    prices = np.random.uniform(-100.0, 100, 1000)
+    features = np.random.uniform(-100.0, 100, (1000, 4))
     battery = Battery(
+        electricity_prices=prices,
+        features=features,
         initial_state_of_charge_mwh=2.0,
         episode_length=10,
     )
@@ -155,3 +181,36 @@ def test_episode_reset() -> None:
     obs, info = battery.reset()
     assert battery.state_of_charge_mwh == battery.initial_state_of_charge_mwh
     assert battery.episode_step == 0
+
+
+def test_observation_with_features() -> None:
+    """Test that observations correctly include both prices and features."""
+    # Create test prices and features
+    prices = np.array([100.0] * 1000)
+    features = np.ones((1000, 4))  # 4 feature dimensions
+    
+    battery = Battery(
+        electricity_prices=prices,
+        features=features,
+        power_mw=2.0,
+        capacity_mwh=4.0,
+        episode_length=10,
+    )
+    
+    # Reset to get initial observation
+    obs, _ = battery.reset()
+    
+    # Check observation shape: should be features + state_of_charge
+    expected_shape = features.shape[1] + 1
+    assert obs.shape == (expected_shape,)
+    
+    # Take a step and check observation again
+    next_obs, _, _, _, _ = battery.step(np.array([1.0]))
+    assert next_obs.shape == (expected_shape,)
+    
+    # Verify features are included in observation
+    feature_part = next_obs[:-1]  # All except the last element (battery charge)
+    assert np.array_equal(feature_part, features[battery.index])
+    
+    # Verify battery charge is the last element
+    assert next_obs[-1] == battery.state_of_charge_mwh

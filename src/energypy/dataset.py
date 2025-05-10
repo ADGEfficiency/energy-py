@@ -29,8 +29,6 @@ def download_electricity_prices(
 
     # If the final file already exists, return its path
     if final_file.exists():
-        if verbose:
-            print(f"Found existing data at {final_file}")
         return final_file
 
     # Generate dates and URLs
@@ -93,15 +91,13 @@ def download_electricity_prices(
 
 def load_electricity_prices(
     data_dir: pathlib.Path = pathlib.Path("data"),
-    download_if_missing: bool = True,
-    verbose: bool = False,
+    verbose: bool = True,
 ) -> pl.DataFrame:
     """
     Load electricity price data, downloading if necessary.
 
     Args:
         data_dir: Directory where data is stored
-        download_if_missing: Whether to download data if not found
         verbose: Whether to print progress information
 
     Returns:
@@ -110,14 +106,8 @@ def load_electricity_prices(
     final_file = data_dir / "final.parquet"
 
     if not final_file.exists():
-        if download_if_missing:
-            if verbose:
-                print("Data file not found. Downloading...")
-            download_electricity_prices(data_dir=data_dir, verbose=verbose)
-        else:
-            raise FileNotFoundError(
-                f"Data file not found at {final_file} and download_if_missing=False"
-            )
+        print("Data file not found. Downloading...")
+        download_electricity_prices(data_dir=data_dir, verbose=verbose)
 
     data = pl.read_parquet(final_file)
     data = data.select(
