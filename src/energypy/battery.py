@@ -171,23 +171,18 @@ class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
         export_energy: float,
         losses: float,
     ) -> None:
-        # For energy balance:
-        # When charging: import = delta_charge (no losses)
-        # When discharging: delta_charge (negative) + export + losses = 0
         delta_charge = final_charge - initial_charge
-
-        if delta_charge > 0:  # Charging
-            # import_energy = delta_charge
-            balance = import_energy - delta_charge
-        else:  # Discharging or no change
-            # export_energy + losses = -delta_charge
-            balance = export_energy + losses + delta_charge
+        balance = export_energy + losses + delta_charge - import_energy
 
         # print(
         #     f"battery_energy_balance: {initial_charge=}, {final_charge=}, {import_energy=}, {export_energy=}, {losses=}, {balance=}"
         # )
         np.testing.assert_allclose(balance, 0, atol=0.00001)
 
-        assert final_charge <= self.capacity_mwh, (
-            f"battery-capacity-constraint: {final_charge=}, {self.capacity_mwh=}"
-        )
+        for charge in [initial_charge, final_charge]:
+            assert charge <= self.capacity_mwh, (
+                f"battery-capacity-constraint-upper: {charge=}, {self.capacity_mwh=}"
+            )
+            assert charge >= 0, (
+                f"battery-capacity-constraint-lower: {charge=}, {self.capacity_mwh=}"
+            )
