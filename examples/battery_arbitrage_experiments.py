@@ -65,7 +65,7 @@ for noise_var in noise:
             gae_lambda=0.95,
             clip_range=0.2,
             policy_kwargs=dict(net_arch=[64, 64]),
-            verbose=1,
+            verbose=0,
             tensorboard_log=f"./data/tensorboard/battery_arbitrage_experiments/{expt_guid}/run/{run_guid}",
         ),
         name=f"battery_noise_{noise_var}",

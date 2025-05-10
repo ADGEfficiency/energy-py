@@ -29,8 +29,6 @@ def download_electricity_prices(
 
     # If the final file already exists, return its path
     if final_file.exists():
-        if verbose:
-            print(f"Found existing data at {final_file}")
         return final_file
 
     # Generate dates and URLs
