@@ -40,7 +40,7 @@ def make_env(electricity_prices, features=None, freq_mins=60):
         "energypy/battery",
         electricity_prices=electricity_prices,
         features=features,
-        freq_mins=freq_mins
+        freq_mins=freq_mins,
     )
     env = gym.wrappers.NormalizeReward(env)
     env = Monitor(env, filename="./data/data.log")
