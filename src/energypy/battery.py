@@ -149,7 +149,9 @@ class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
         )
 
         # Calculate reward using price
-        reward = float(self.electricity_prices[self.index] * export_energy_mwh)
+        reward = float(self.electricity_prices[self.index] * export_energy_mwh) - float(
+            self.electricity_prices[self.index] * import_energy_mwh
+        )
         terminated = self.episode_step + 1 == self.episode_length
         truncated = False
 

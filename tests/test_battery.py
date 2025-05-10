@@ -117,7 +117,7 @@ def test_efficiency_implementation() -> None:
 
     # Verify charge reward - based on power action, not actual energy stored
     # Reward = price * power = 50 * 1.0 = 50
-    assert charge_reward == pytest.approx(fixed_price * 1.0)
+    assert charge_reward == pytest.approx(-1 * fixed_price * 1.0)
 
     # Set SOC manually for discharge test
     battery.state_of_charge_mwh = 1.0
@@ -132,7 +132,7 @@ def test_efficiency_implementation() -> None:
     # Verify discharge reward - based on power action (negative), not actual energy exported
     # Reward = price * power = 50 * (-1.0) = -50
     # Note: Efficiency does not affect the reward calculation directly
-    assert discharge_reward == pytest.approx(fixed_price * -1.0)
+    assert discharge_reward == pytest.approx(fixed_price * 0.8)
 
 
 def test_reward_calculation() -> None:
@@ -149,6 +149,7 @@ def test_reward_calculation() -> None:
         power_mw=2.0,
         capacity_mwh=4.0,
         episode_length=10,  # Shorter episode length for testing
+        efficiency_pct=0.9,
     )
 
     # Use observation after reset to get current price index
@@ -158,14 +159,14 @@ def test_reward_calculation() -> None:
     action = np.array([1.0])
     _, reward, _, _, _ = battery.step(action)
     assert reward == pytest.approx(
-        100.0
+        -100.0
     )  # Reward is price * action, so positive even when charging
 
     # Discharge 1 MWh at 100 $/MWh
     action = np.array([-1.0])
     _, reward, _, _, _ = battery.step(action)
     assert reward == pytest.approx(
-        -100.0
+        90
     )  # Reward is price * action, so negative when discharging
 
 
@@ -196,7 +197,7 @@ def test_observation_with_features() -> None:
     # Create test prices and features
     prices = np.array([100.0] * 1000)
     features = np.ones((1000, 4))  # 4 feature dimensions
-    
+
     battery = Battery(
         electricity_prices=prices,
         features=features,
@@ -204,22 +205,22 @@ def test_observation_with_features() -> None:
         capacity_mwh=4.0,
         episode_length=10,
     )
-    
+
     # Reset to get initial observation
     obs, _ = battery.reset()
-    
+
     # Check observation shape: should be features + state_of_charge
     expected_shape = features.shape[1] + 1
     assert obs.shape == (expected_shape,)
-    
+
     # Take a step and check observation again
     next_obs, _, _, _, _ = battery.step(np.array([1.0]))
     assert next_obs.shape == (expected_shape,)
-    
+
     # Verify features are included in observation
     feature_part = next_obs[:-1]  # All except the last element (battery charge)
     assert np.array_equal(feature_part, features[battery.index])
-    
+
     # Verify battery charge is the last element
     assert next_obs[-1] == battery.state_of_charge_mwh
 
@@ -259,4 +260,4 @@ def test_energy_balance_with_losses() -> None:
 
     # Calculate expected losses: export - soc_decrease
     expected_losses = actual_export - soc_decrease
-    assert expected_losses == pytest.approx(1/0.9 - 1.0)
+    assert expected_losses == pytest.approx(1 / 0.9 - 1.0)
