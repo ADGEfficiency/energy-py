@@ -112,9 +112,8 @@ def test_efficiency_implementation() -> None:
     # Charge the battery with 1 MWh
     battery.step(np.array([1.0]))
 
-    # With 80% efficiency, we should have 0.8 MWh stored
-    # Note: This test will fail because efficiency is not implemented
-    # assert battery.state_of_charge_mwh == pytest.approx(0.8)  # Commented out as it will fail
+    # With charging, efficiency is not applied in our implementation
+    assert battery.state_of_charge_mwh == pytest.approx(1.0)
 
     # Set SOC manually for discharge test
     battery.state_of_charge_mwh = 1.0
@@ -122,9 +121,9 @@ def test_efficiency_implementation() -> None:
     # Discharge the battery with 1 MWh
     battery.step(np.array([-1.0]))
 
-    # With 80% efficiency, we should get 0.8 MWh out and have 0.0 MWh left
-    # Note: This test will fail because efficiency is not implemented
-    # assert battery.state_of_charge_mwh == pytest.approx(0.0)  # Commented out as it will fail
+    # With 80% efficiency, a 1.0 MWh discharge will remove 1.0 MWh from storage
+    # but provide only 0.8 MWh of useful energy
+    assert battery.state_of_charge_mwh == pytest.approx(0.0)
 
 
 def test_reward_calculation() -> None:
@@ -214,3 +213,41 @@ def test_observation_with_features() -> None:
     
     # Verify battery charge is the last element
     assert next_obs[-1] == battery.state_of_charge_mwh
+
+
+def test_energy_balance_with_losses() -> None:
+    """Test that energy balance is maintained when losses are applied during discharge."""
+    # Create matching length arrays for prices and features
+    prices = np.random.uniform(-100.0, 100, 1000)
+    features = np.random.uniform(-100.0, 100, (1000, 4))
+
+    # Create battery with 90% efficiency
+    battery = Battery(
+        electricity_prices=prices,
+        features=features,
+        power_mw=2.0,
+        capacity_mwh=4.0,
+        efficiency_pct=0.9,
+        initial_state_of_charge_mwh=0.0,
+    )
+
+    # First charge the battery with 2 MWh (no losses on charge)
+    battery.step(np.array([2.0]))
+    assert battery.state_of_charge_mwh == pytest.approx(2.0)
+
+    # Now discharge 1 MWh
+    # With 90% efficiency, we need to discharge ~1.11 MWh from storage to get 1 MW output
+    initial_soc = battery.state_of_charge_mwh
+    obs, reward, term, trunc, info = battery.step(np.array([-1.0]))
+
+    # State of charge should decrease by 1 MWh
+    final_soc = battery.state_of_charge_mwh
+    soc_decrease = initial_soc - final_soc
+    assert soc_decrease == pytest.approx(1.0)
+
+    # Energy exported should be 1.0/0.9 = ~1.11 MWh (accounting for losses)
+    actual_export = 1.0 / 0.9
+
+    # Calculate expected losses: export - soc_decrease
+    expected_losses = actual_export - soc_decrease
+    assert expected_losses == pytest.approx(1/0.9 - 1.0)

@@ -111,13 +111,10 @@ class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
     def step(
         self, action: NDArray[np.float64]
     ) -> tuple[NDArray[np.float64], float, bool, bool, dict[str, list[float]]]:
-        # TODO - possible this action would be scaled...
-        # can i use a wrapper?
-
-        # Clip action to battery power limits
+        # clip action to battery power limits
         battery_power_mw = float(np.clip(action, -self.power_mw, self.power_mw)[0])
 
-        # Convert power (MW) to energy (MWh) based on frequency interval
+        # convert power (MW) to energy (MWh) based on frequency interval
         energy_change_mwh = self.freq.mw_to_mwh(battery_power_mw)
 
         initial_charge_mwh = self.state_of_charge_mwh
@@ -126,11 +123,22 @@ class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
         )
 
         gross_charge_mwh = final_charge_mwh - initial_charge_mwh
-        losses = 0
-        net_charge_mwh = gross_charge_mwh - losses
 
-        import_energy_mwh = net_charge_mwh if net_charge_mwh > 0 else 0
-        export_energy_mwh = np.abs(net_charge_mwh) if net_charge_mwh < 0 else 0
+        # Define import and export energy based on charge direction
+        import_energy_mwh = 0.0
+        export_energy_mwh = 0.0
+        losses = 0.0
+
+        if gross_charge_mwh > 0:  # Charging
+            # No losses during charging
+            import_energy_mwh = gross_charge_mwh
+        elif gross_charge_mwh < 0:  # Discharging
+            # When discharging, we lose energy during conversion
+            # The SOC decreases by gross_charge_mwh (which is negative)
+            # But due to efficiency losses, the exported energy is less than the SOC decrease
+            energy_removed_from_storage = abs(gross_charge_mwh)
+            export_energy_mwh = energy_removed_from_storage * self.efficiency_pct
+            losses = energy_removed_from_storage - export_energy_mwh
 
         self.energy_balance(
             initial_charge=initial_charge_mwh,
@@ -161,8 +169,18 @@ class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
         export_energy: float,
         losses: float,
     ) -> None:
+        # For energy balance:
+        # When charging: import = delta_charge (no losses)
+        # When discharging: delta_charge (negative) + export + losses = 0
         delta_charge = final_charge - initial_charge
-        balance = import_energy - (export_energy + delta_charge + losses)
+
+        if delta_charge > 0:  # Charging
+            # import_energy = delta_charge
+            balance = import_energy - delta_charge
+        else:  # Discharging or no change
+            # export_energy + losses = -delta_charge
+            balance = export_energy + losses + delta_charge
+
         # print(
         #     f"battery_energy_balance: {initial_charge=}, {final_charge=}, {import_energy=}, {export_energy=}, {losses=}, {balance=}"
         # )
@@ -171,3 +189,4 @@ class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
         assert final_charge <= self.capacity_mwh, (
             f"battery-capacity-constraint: {final_charge=}, {self.capacity_mwh=}"
         )
+
