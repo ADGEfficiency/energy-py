@@ -16,6 +16,26 @@ class HasShape(typing.Protocol):
 NumericSequence = typing.Union[NDArray[np.float64], typing.Sequence[float]]
 
 
+class Freq:
+    """Handles conversion of power (MW) to energy (MWh) at different interval frequencies."""
+
+    def __init__(self, mins: int) -> None:
+        """Initialize a Freq class."""
+        self.mins = mins
+
+    def mw_to_mwh(self, mw: float) -> float:
+        """Convert power MW to energy MWh."""
+        return mw * self.mins / 60
+
+    def mwh_to_mw(self, mw: float) -> float:
+        """Convert energy MWh to power MW."""
+        return mw * 60 / self.mins
+
+    def __repr__(self) -> str:
+        """Control printing."""
+        return f"Freq(mins={self.mins})"
+
+
 class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
     def __init__(
         self,
@@ -26,12 +46,14 @@ class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
         efficiency_pct: float = 0.9,
         initial_state_of_charge_mwh: float = 0.0,
         episode_length: int = 48,
+        freq_mins: int = 60,  # Default to hourly
     ):
         self.power_mw = power_mw
         self.capacity_mwh = capacity_mwh
         self.efficiency_pct = efficiency_pct
         self.electricity_prices = electricity_prices
         self.features = features
+        self.freq = Freq(mins=freq_mins)
 
         assert len(self.electricity_prices) == features.shape[0], (
             "Features and prices must have same length"
@@ -92,12 +114,15 @@ class Battery(gym.Env[NDArray[np.float64], NDArray[np.float64]]):
         # TODO - possible this action would be scaled...
         # can i use a wrapper?
 
-        # TODO - not converting from MW to MWh
-        battery_power_mw = np.clip(action, -self.power_mw, self.power_mw)
+        # Clip action to battery power limits
+        battery_power_mw = float(np.clip(action, -self.power_mw, self.power_mw)[0])
+
+        # Convert power (MW) to energy (MWh) based on frequency interval
+        energy_change_mwh = self.freq.mw_to_mwh(battery_power_mw)
 
         initial_charge_mwh = self.state_of_charge_mwh
-        final_charge_mwh = np.clip(
-            initial_charge_mwh + battery_power_mw, 0, self.capacity_mwh
+        final_charge_mwh = float(
+            np.clip(initial_charge_mwh + energy_change_mwh, 0, self.capacity_mwh)
         )
 
         gross_charge_mwh = final_charge_mwh - initial_charge_mwh
