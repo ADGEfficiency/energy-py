@@ -56,7 +56,7 @@ for noise_var in noise:
         env_te=env_te,
         agent=PPO(
             policy="MlpPolicy",
-            env=env,
+            env=env_tr,
             learning_rate=0.000386,
             n_steps=1024,
             batch_size=64,

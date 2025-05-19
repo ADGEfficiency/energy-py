@@ -1,6 +1,5 @@
 import uuid
 
-import numpy as np
 import optuna
 import polars as pl
 from stable_baselines3 import PPO
@@ -188,5 +187,5 @@ if __name__ == "__main__":
     final_result = energypy.run_experiment(cfg=final_config)
 
     print(f"Final model performance: {final_result.checkpoints[-1]}")
-    print(f"Model saved to models/battery_best_hpo")
+    print("Model saved to models/battery_best_hpo")
 
